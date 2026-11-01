@@ -1,0 +1,398 @@
+// Your Academy — PostgreSQL schema (source of truth via migrations)
+// See docs/05-database-design.md
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum QuestionStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum DocumentVisibility {
+  PUBLIC
+  AUTHENTICATED
+  PREMIUM
+}
+
+enum MediaResourceType {
+  IMAGE
+  RAW
+  VIDEO
+  AUTO
+}
+
+enum MediaDeliveryType {
+  UPLOAD
+  PRIVATE
+  AUTHENTICATED
+}
+
+enum BrowsingSessionStatus {
+  ACTIVE
+  ENDED
+  EXPIRED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  EXPIRED
+  PAST_DUE
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+// ─── Models ──────────────────────────────────────────────────────────────────
+
+model User {
+  id             String     @id @default(uuid()) @db.Uuid
+  name           String     @db.VarChar(120)
+  whatsappNumber String     @unique @map("whatsapp_number") @db.VarChar(32)
+  email          String?    @unique @db.VarChar(255)
+  passwordHash   String     @map("password_hash")
+  role           UserRole   @default(USER)
+  status         UserStatus @default(ACTIVE)
+  avatarAssetId  String?    @unique @map("avatar_asset_id") @db.Uuid
+  trialStartedAt DateTime   @map("trial_started_at") @db.Timestamptz(3)
+  trialEndsAt    DateTime   @map("trial_ends_at") @db.Timestamptz(3)
+  createdAt      DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt      DateTime?  @map("deleted_at") @db.Timestamptz(3)
+
+  avatarAsset         MediaAsset?         @relation("UserAvatar", fields: [avatarAssetId], references: [id], onDelete: SetNull)
+  uploadedAssets      MediaAsset[]        @relation("UploadedBy")
+  authSessions        AuthSession[]
+  createdQuestions    Question[]          @relation("QuestionCreator")
+  questionBookmarks   QuestionBookmark[]
+  documentBookmarks   DocumentBookmark[]
+  browsingSessions    BrowsingSession[]
+  subscriptions       UserSubscription[]
+  createdNews         News[]              @relation("NewsCreator")
+  createdDocuments    Document[]          @relation("DocumentCreator")
+  auditLogs           AuditLog[]
+
+  @@index([status])
+  @@index([trialEndsAt])
+  @@index([createdAt])
+  @@map("users")
+}
+
+model AuthSession {
+  id                   String    @id @default(uuid()) @db.Uuid
+  userId               String    @map("user_id") @db.Uuid
+  refreshTokenHash     String    @unique @map("refresh_token_hash")
+  familyId             String    @map("family_id") @db.Uuid
+  userAgent            String?   @map("user_agent")
+  ipAddress            String?   @map("ip_address") @db.VarChar(64)
+  expiresAt            DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt            DateTime? @map("revoked_at") @db.Timestamptz(3)
+  replacedBySessionId  String?   @map("replaced_by_session_id") @db.Uuid
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("auth_sessions")
+}
+
+model Category {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @db.VarChar(120)
+  slug        String   @unique @db.VarChar(140)
+  description String?
+  parentId    String?  @map("parent_id") @db.Uuid
+  isActive    Boolean  @default(true) @map("is_active")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  parent          Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children        Category[] @relation("CategoryTree")
+  questions       Question[] @relation("QuestionCategory")
+  subQuestions    Question[] @relation("QuestionSubcategory")
+  documents       Document[]
+
+  @@index([parentId])
+  @@index([isActive])
+  @@index([sortOrder])
+  @@map("categories")
+}
+
+model Question {
+  id             String         @id @default(uuid()) @db.Uuid
+  title          String         @db.VarChar(200)
+  content        String
+  explanation    String?
+  categoryId     String         @map("category_id") @db.Uuid
+  subcategoryId  String?        @map("subcategory_id") @db.Uuid
+  difficulty     Difficulty     @default(MEDIUM)
+  status         QuestionStatus @default(DRAFT)
+  imageAssetId   String?        @map("image_asset_id") @db.Uuid
+  createdById    String?        @map("created_by_id") @db.Uuid
+  publishedAt    DateTime?      @map("published_at") @db.Timestamptz(3)
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt      DateTime?      @map("deleted_at") @db.Timestamptz(3)
+
+  category    Category          @relation("QuestionCategory", fields: [categoryId], references: [id], onDelete: Restrict)
+  subcategory Category?         @relation("QuestionSubcategory", fields: [subcategoryId], references: [id], onDelete: SetNull)
+  imageAsset  MediaAsset?       @relation("QuestionImage", fields: [imageAssetId], references: [id], onDelete: SetNull)
+  createdBy   User?             @relation("QuestionCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  options     QuestionOption[]
+  bookmarks   QuestionBookmark[]
+
+  @@index([status, publishedAt(sort: Desc), id(sort: Desc)])
+  @@index([categoryId, status])
+  @@index([subcategoryId, status])
+  @@index([difficulty, status])
+  @@map("questions")
+}
+
+model QuestionOption {
+  id         String  @id @default(uuid()) @db.Uuid
+  questionId String  @map("question_id") @db.Uuid
+  label      String  @db.VarChar(10)
+  content    String
+  isCorrect  Boolean @default(false) @map("is_correct")
+  sortOrder  Int     @default(0) @map("sort_order")
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId, sortOrder])
+  @@map("question_options")
+}
+
+model News {
+  id           String    @id @default(uuid()) @db.Uuid
+  title        String    @db.VarChar(200)
+  slug         String    @unique @db.VarChar(220)
+  summary      String?
+  body         String
+  coverAssetId String?   @map("cover_asset_id") @db.Uuid
+  isPublished  Boolean   @default(false) @map("is_published")
+  publishedAt  DateTime? @map("published_at") @db.Timestamptz(3)
+  createdById  String?   @map("created_by_id") @db.Uuid
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz(3)
+
+  coverAsset MediaAsset?    @relation("NewsCover", fields: [coverAssetId], references: [id], onDelete: SetNull)
+  createdBy  User?          @relation("NewsCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  documents  NewsDocument[]
+
+  @@index([isPublished, publishedAt(sort: Desc)])
+  @@map("news")
+}
+
+model Document {
+  id           String             @id @default(uuid()) @db.Uuid
+  title        String             @db.VarChar(200)
+  description  String?
+  mediaAssetId String             @map("media_asset_id") @db.Uuid
+  categoryId   String?            @map("category_id") @db.Uuid
+  visibility   DocumentVisibility @default(AUTHENTICATED)
+  isPublished  Boolean            @default(false) @map("is_published")
+  createdById  String?            @map("created_by_id") @db.Uuid
+  createdAt    DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt    DateTime?          @map("deleted_at") @db.Timestamptz(3)
+
+  mediaAsset MediaAsset         @relation("DocumentFile", fields: [mediaAssetId], references: [id], onDelete: Restrict)
+  category   Category?          @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  createdBy  User?              @relation("DocumentCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  newsLinks  NewsDocument[]
+  bookmarks  DocumentBookmark[]
+
+  @@index([isPublished])
+  @@index([visibility])
+  @@map("documents")
+}
+
+model NewsDocument {
+  newsId     String @map("news_id") @db.Uuid
+  documentId String @map("document_id") @db.Uuid
+  sortOrder  Int    @default(0) @map("sort_order")
+
+  news     News     @relation(fields: [newsId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@id([newsId, documentId])
+  @@map("news_documents")
+}
+
+model MediaAsset {
+  id               String            @id @default(uuid()) @db.Uuid
+  publicId         String            @map("public_id") @db.VarChar(255)
+  resourceType     MediaResourceType @map("resource_type")
+  deliveryType     MediaDeliveryType @map("delivery_type")
+  format           String?           @db.VarChar(32)
+  bytes            Int
+  mimeType         String            @map("mime_type") @db.VarChar(127)
+  width            Int?
+  height           Int?
+  originalFilename String?           @map("original_filename") @db.VarChar(255)
+  uploadedById     String?           @map("uploaded_by_id") @db.Uuid
+  createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  deletedAt        DateTime?         @map("deleted_at") @db.Timestamptz(3)
+
+  uploadedBy       User?      @relation("UploadedBy", fields: [uploadedById], references: [id], onDelete: SetNull)
+  userAvatar       User?      @relation("UserAvatar")
+  questionImages   Question[] @relation("QuestionImage")
+  newsCovers       News[]     @relation("NewsCover")
+  documents        Document[] @relation("DocumentFile")
+
+  @@unique([publicId, resourceType])
+  @@index([uploadedById])
+  @@map("media_assets")
+}
+
+model QuestionBookmark {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  questionId String   @map("question_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, questionId])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("question_bookmarks")
+}
+
+model DocumentBookmark {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  documentId String   @map("document_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, documentId])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("document_bookmarks")
+}
+
+model BrowsingSession {
+  id               String                @id @default(uuid()) @db.Uuid
+  userId           String                @map("user_id") @db.Uuid
+  startedAt        DateTime              @default(now()) @map("started_at") @db.Timestamptz(3)
+  lastHeartbeatAt  DateTime              @default(now()) @map("last_heartbeat_at") @db.Timestamptz(3)
+  endedAt          DateTime?             @map("ended_at") @db.Timestamptz(3)
+  accruedSeconds   Int                   @default(0) @map("accrued_seconds")
+  clientInstanceId String?               @map("client_instance_id") @db.VarChar(64)
+  userAgent        String?               @map("user_agent")
+  status           BrowsingSessionStatus @default(ACTIVE)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, startedAt(sort: Desc)])
+  @@map("browsing_sessions")
+}
+
+model SubscriptionPlan {
+  id            String   @id @default(uuid()) @db.Uuid
+  code          String   @unique @db.VarChar(64)
+  name          String   @db.VarChar(120)
+  description   String?
+  durationDays  Int      @map("duration_days")
+  priceCents    Int      @default(0) @map("price_cents")
+  currency      String   @default("USD") @db.Char(3)
+  entitlements  Json     @default("[]")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  subscriptions UserSubscription[]
+
+  @@map("subscription_plans")
+}
+
+model UserSubscription {
+  id         String             @id @default(uuid()) @db.Uuid
+  userId     String             @map("user_id") @db.Uuid
+  planId     String             @map("plan_id") @db.Uuid
+  status     SubscriptionStatus @default(ACTIVE)
+  startsAt   DateTime           @map("starts_at") @db.Timestamptz(3)
+  endsAt     DateTime           @map("ends_at") @db.Timestamptz(3)
+  canceledAt DateTime?          @map("canceled_at") @db.Timestamptz(3)
+  createdAt  DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan     SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
+  payments Payment[]
+
+  @@index([userId, status])
+  @@index([endsAt])
+  @@map("user_subscriptions")
+}
+
+model Payment {
+  id                 String        @id @default(uuid()) @db.Uuid
+  userSubscriptionId String        @map("user_subscription_id") @db.Uuid
+  provider           String        @db.VarChar(64)
+  providerRef        String        @map("provider_ref") @db.VarChar(255)
+  amountCents        Int           @map("amount_cents")
+  currency           String        @db.Char(3)
+  status             PaymentStatus @default(PENDING)
+  rawPayload         Json?         @map("raw_payload")
+  createdAt          DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  userSubscription UserSubscription @relation(fields: [userSubscriptionId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerRef])
+  @@map("payments")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  actorUserId String?  @map("actor_user_id") @db.Uuid
+  action      String   @db.VarChar(80)
+  entityType  String   @map("entity_type") @db.VarChar(80)
+  entityId    String?  @map("entity_id") @db.Uuid
+  metadata    Json     @default("{}")
+  ipAddress   String?  @map("ip_address") @db.VarChar(64)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  actor User? @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt(sort: Desc)])
+  @@index([entityType, entityId])
+  @@index([actorUserId, createdAt(sort: Desc)])
+  @@map("audit_logs")
+}

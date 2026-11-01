@@ -1,7 +1,7 @@
 import { Entitlement } from '@your-academy/shared';
 
 /**
- * Phase 1 stub worker process.
+ * Worker process stub.
  * Phase 9 will register BullMQ processors here.
  */
 function main() {
@@ -11,18 +11,18 @@ function main() {
   );
   console.log(`[${service}-worker] shared package OK: ${Entitlement.VIEW_ANSWERS}`);
 
+  const keepAlive = setInterval(() => {
+    // Keep process alive until BullMQ workers are registered.
+  }, 60_000);
+
   const shutdown = (signal: string) => {
     console.log(`[${service}-worker] received ${signal}, shutting down`);
+    clearInterval(keepAlive);
     process.exit(0);
   };
 
   process.on('SIGTERM', () => shutdown('SIGTERM'));
   process.on('SIGINT', () => shutdown('SIGINT'));
-
-  // Keep process alive in Docker/dev until BullMQ is wired.
-  setInterval(() => {
-    // heartbeat noop
-  }, 60_000);
 }
 
 main();

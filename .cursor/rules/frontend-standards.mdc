@@ -1,35 +1,17 @@
 ---
-description: Next.js frontend coding standards for Your Academy
+description: Frontend standards — details in AGENTS.md §5 & §7
 globs:
   - frontend/**/*
 alwaysApply: false
 ---
 
-# Frontend Standards
+# Frontend
 
-See `docs/11-frontend-architecture.md` and `docs/18-coding-standards.md`.
+Follow `AGENTS.md` sections on clean code, frontend, and security UI.
 
-## Organization
-
-- Feature-based directories under `frontend/`.
-- Separate public, auth, user dashboard, and admin dashboard route groups.
-- Reusable UI via shadcn/ui + project components; Lucide for icons.
-
-## React / Next.js
-
-- Prefer Server Components.
-- Use Client Components only for interactivity, forms, charts, heartbeats, etc.
-- TanStack Query for server state; avoid unnecessary global client stores.
-- React Hook Form + Zod for forms; align schemas with `shared/` when possible.
-
-## API & security UI
-
-- Call the API only through typed client/services.
-- Never treat UI hiding as authorization: premium answer/explanation UI must still assume the API omits restricted fields.
-- Never put Cloudinary API secrets or unsigned unrestricted upload presets in client code.
-- Auth uses HTTP-only cookies + CSRF (`credentials: 'include'`, `X-CSRF-Token` on mutations). Never store JWTs in `localStorage` (DEC-012). See `docs/07-authentication-and-authorization.md`.
-
-## UX boundaries
-
-- Admin screens must be route-protected and still fail closed if the API returns 403.
-- Post-trial users may browse questions; do not show fabricated “correct” markers client-side.
+- Server Components default; client only when needed
+- Typed API clients; `credentials: 'include'` + CSRF header on mutations
+- Never store JWTs in localStorage
+- UI hide ≠ authorization for answers
+- TanStack Query for server state; RHF + Zod for forms
+- Feature folders; accessible forms

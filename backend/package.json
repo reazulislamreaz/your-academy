@@ -3,19 +3,29 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "build": "nest build",
+    "build": "prisma generate && nest build",
     "dev": "nest start --watch",
     "start": "node dist/main.js",
     "start:prod": "node dist/main.js",
     "lint": "eslint \"src/**/*.ts\" --max-warnings=0",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "echo \"No backend tests yet\""
+    "test": "echo \"No backend tests yet\"",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy",
+    "prisma:seed": "tsx prisma/seed.ts",
+    "prisma:studio": "prisma studio"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
-    "@your-academy/shared": "workspace:*",
     "@nestjs/common": "^11.0.11",
     "@nestjs/core": "^11.0.11",
     "@nestjs/platform-express": "^11.0.11",
+    "@prisma/client": "^6.5.0",
+    "@your-academy/shared": "workspace:*",
+    "argon2": "^0.45.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"
   },
@@ -24,6 +34,8 @@
     "@nestjs/schematics": "^11.0.1",
     "@types/express": "^5.0.0",
     "@types/node": "^22.13.9",
+    "prisma": "6.5.0",
+    "tsx": "^4.23.15",
     "typescript": "^5.8.2"
   }
 }

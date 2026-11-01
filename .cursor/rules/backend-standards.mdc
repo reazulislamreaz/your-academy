@@ -1,5 +1,5 @@
 ---
-description: NestJS backend coding standards for Your Academy
+description: Backend standards — details in AGENTS.md §5–6
 globs:
   - backend/**/*
   - worker/**/*
@@ -7,38 +7,15 @@ globs:
 alwaysApply: false
 ---
 
-# Backend Standards
+# Backend
 
-See `docs/12-backend-architecture.md` and `docs/18-coding-standards.md`.
+Follow `AGENTS.md` sections on clean code, backend, security, DB, BullMQ.
 
-## Structure
-
-- One NestJS module per domain (`Auth`, `Users`, `Questions`, etc.).
-- Controllers: HTTP mapping only; no business rules.
-- Services: domain logic and orchestration.
-- Repositories: Prisma access when abstraction aids testing; avoid empty wrappers.
-- DTOs validated at the boundary; reject unknown fields.
-
-## Data & migrations
-
-- Prisma migrations are the only production schema path. Never `db push` in prod.
-- Multi-row business operations use transactions.
-- Soft-delete only where the schema documents it.
-
-## Access control
-
-- Use guards for auth + RBAC on every protected route.
-- Answer/explanation fields stripped or omitted via a dedicated access-control service — never rely on the client.
-- Check resource ownership for user-scoped mutations (bookmarks, profile, sessions).
-
-## Jobs
-
-- Enqueue via BullMQ only for async/long work (email, PDF processing, aggregations, cleanup).
-- Jobs must be idempotent. Do not use queues for simple CRUD.
-
-## API
-
-- Version under `/api/v1`.
-- Consistent success/error envelopes.
-- Document with Swagger.
-- Prefer cursor pagination for large question lists.
+- Thin controllers; logic in services
+- Validate inputs; transactions for multi-row writes
+- Prisma migrations only (never prod `db push`)
+- Use shared API envelope helpers
+- Omit answer fields for non-entitled users
+- RBAC + IDOR on protected routes
+- Jobs idempotent; not for simple CRUD
+- Graceful shutdown; never log secrets

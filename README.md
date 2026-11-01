@@ -34,18 +34,29 @@ docs/         Architecture & requirements (source of truth)
 - Browsing-time analytics
 - Admin KPIs dashboard
 
-**Current milestone:** Phase 1 — monorepo + Docker scaffolding. See `docs/16-development-roadmap.md`.
+**Current milestone:** Phase 2 — Prisma/PostgreSQL schema + seed. Next: auth (Phase 3). See `docs/16-development-roadmap.md`.
+
+## Secrets / `.env`
+
+- Copy `.env.example` → `.env` for local use.
+- **Never commit `.env` or real secrets** — gitignored (`.env`, `.env.*`, credentials files).
+- Only `.env.example` (placeholders) is safe to push to GitHub.
+- Rotate any key that was ever committed by mistake.
 
 ## Quick start
 
 ```bash
-cp .env.example .env
+cp .env.example .env   # then fill real values locally — do not commit
 pnpm install
 pnpm build
 
+# Database (Postgres must be running — e.g. docker compose postgres)
+pnpm db:deploy         # prisma migrate deploy
+pnpm db:seed           # admin + sample categories
+
 # Local apps
-pnpm dev:backend    # http://localhost:3001/health
-pnpm dev:frontend   # http://localhost:3000
+pnpm dev:backend       # http://localhost:3001/health
+pnpm dev:frontend      # http://localhost:3000
 
 # Full stack (Postgres, Redis, API, worker, web, Nginx)
 pnpm docker:dev

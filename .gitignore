@@ -9,11 +9,26 @@ build/
 out/
 *.tsbuildinfo
 
-# Env / secrets
+# ---------------------------------------------------------------------------
+# Environment / secrets — NEVER commit real credentials
+# Only `.env.example` (placeholders) is allowed in git.
+# ---------------------------------------------------------------------------
 .env
-.env.local
-.env.*.local
+.env.*
 !.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Common secret filenames
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+service-account*.json
+secrets/
+.secrets/
 
 # Logs / coverage
 logs/
@@ -35,6 +50,6 @@ Thumbs.db
 # Docker volumes / local data
 docker/data/
 
-# Misc
-*.pem
+# Database dumps
 *.sql.gz
+*.dump

@@ -34,14 +34,15 @@ Dependency-ordered phases. Complete acceptance criteria before advancing.
 
 ## Phase 2 — Database and Prisma Setup
 
-**Depends on:** Phase 1
+**Depends on:** Phase 1  
+**Status:** Complete — schema, migration `init`, seed, and `DatabaseModule` verified against Docker Postgres.
 
 **Work:**
 
 - Prisma schema for all entities in `05-database-design.md`
-- Initial migration
-- Seed script (admin user, sample categories)
-- PrismaService module
+- Initial migration (plus partial unique indexes for correct options & active browsing sessions)
+- Seed script (admin user, Programming categories, PREMIUM plan stub)
+- PrismaService / DatabaseModule; `/ready` checks DB
 
 **Acceptance:** `migrate deploy` on clean DB succeeds; seed creates admin; schema matches docs.
 

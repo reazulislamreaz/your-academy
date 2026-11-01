@@ -2,6 +2,9 @@
 
 PostgreSQL via Prisma. Migrations are the source of truth. **Never** use `prisma db push` as the production migration strategy.
 
+**Location:** `backend/prisma/schema.prisma` and `backend/prisma/migrations/`.  
+**Commands (repo root):** `pnpm db:deploy`, `pnpm db:seed`, `pnpm db:generate`.
+
 ## 1. ER Overview
 
 ```mermaid

@@ -1,6 +1,7 @@
 # 18 — Coding Standards
 
-Complement `.cursor/rules/*` and `AGENTS.md`.
+**Primary rulebook:** root [`AGENTS.md`](../AGENTS.md) (especially §5 Clean Code).  
+This file expands style notes; `.cursor/rules/*` point agents back to `AGENTS.md`.
 
 ## 1. General
 
