@@ -4,8 +4,9 @@ Subscription-ready MCQ EdTech platform — browse questions by category, learn w
 
 ## Status
 
-**Phase 0 complete:** Requirements analysis and documentation foundation.  
-Application code is not implemented yet. See [`docs/16-development-roadmap.md`](docs/16-development-roadmap.md).
+**Phase 1 in progress / scaffolding complete:** pnpm + Turborepo monorepo, app stubs, Docker Compose, CI.
+
+See [`docs/16-development-roadmap.md`](docs/16-development-roadmap.md).
 
 ## Documentation
 
@@ -13,37 +14,78 @@ Application code is not implemented yet. See [`docs/16-development-roadmap.md`](
 |----------|------------|
 | AI agents | [`AGENTS.md`](AGENTS.md) |
 | Humans (overview) | [`docs/00-project-overview.md`](docs/00-project-overview.md) |
-| Business rules | [`docs/01-business-requirements.md`](docs/01-business-requirements.md) |
 | Architecture | [`docs/04-system-architecture.md`](docs/04-system-architecture.md) |
-| API | [`docs/06-api-specification.md`](docs/06-api-specification.md) |
 | Decisions | [`docs/19-decisions-and-assumptions.md`](docs/19-decisions-and-assumptions.md) |
 
-Full index: see Documentation Map in [`AGENTS.md`](AGENTS.md).
-
-## Planned Stack
-
-- **Web:** Next.js (App Router), TypeScript, Tailwind CSS, shadcn/ui, TanStack Query
-- **API:** NestJS, Prisma, PostgreSQL, Redis, BullMQ
-- **Storage:** Cloudinary (abstracted)
-- **Deploy:** Docker Compose, Nginx, GitHub Actions, Ubuntu VPS
-
-## Planned Monorepo Layout
+## Monorepo layout
 
 ```text
-apps/web      # Next.js frontend
-apps/api      # NestJS API
-apps/worker   # BullMQ workers
-packages/shared
-docs/
-docker/
+apps/web       Next.js (App Router)
+apps/api       NestJS REST API
+apps/worker    Background worker stub (BullMQ in Phase 9)
+packages/shared  Shared enums/types (browser-safe)
+docker/        Compose, Dockerfiles, Nginx
+docs/          Requirements & architecture
 ```
 
-## Quick Links for Implementers
+## Prerequisites
 
-1. Read `AGENTS.md`
-2. Confirm open items in `docs/19-decisions-and-assumptions.md`
-3. Follow Phase 1 in `docs/16-development-roadmap.md`
-4. Environment catalog: `docs/17-environment-variables.md`
+- Node.js 20+
+- pnpm 9+
+- Docker + Docker Compose (for infra)
+
+## Quick start (local)
+
+```bash
+cp .env.example .env
+pnpm install
+pnpm --filter @confiro/shared build
+pnpm build
+```
+
+### Dev apps (without Docker for Node)
+
+```bash
+# Terminal A — API (http://localhost:3001/health)
+pnpm dev:api
+
+# Terminal B — Web (http://localhost:3000)
+pnpm dev:web
+
+# Terminal C — Worker stub
+pnpm dev:worker
+```
+
+### Docker (Postgres, Redis, API, Worker, Web, Nginx)
+
+```bash
+cp .env.example .env
+pnpm docker:dev
+```
+
+- Web: http://localhost:3000 (direct) or http://localhost:8080 via Nginx
+- API health: http://localhost:3001/health or http://localhost:8080/health
+- Postgres: localhost:5432
+- Redis: localhost:6379
+
+Stop:
+
+```bash
+pnpm docker:down
+```
+
+## Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `pnpm build` | Build all packages/apps |
+| `pnpm lint` | Lint all |
+| `pnpm typecheck` | Typecheck all |
+| `pnpm docker:dev` | Compose up (dev ports) |
+
+## Stack
+
+Next.js · NestJS · Prisma (Phase 2) · PostgreSQL · Redis · BullMQ · Cloudinary · Docker
 
 ## License
 

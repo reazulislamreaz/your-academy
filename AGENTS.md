@@ -11,7 +11,7 @@ Users register, browse educational MCQs by category, view answers/explanations d
 
 Administrators manage users, questions, categories, news, PDFs, publishing workflows, analytics, and subscription-related settings.
 
-**Current phase:** Documentation foundation complete. Feature implementation follows the roadmap in `docs/16-development-roadmap.md`.
+**Current phase:** Phase 1 monorepo/infra scaffolding complete. Next: Phase 2 (Prisma/database). See `docs/16-development-roadmap.md`.
 
 ---
 

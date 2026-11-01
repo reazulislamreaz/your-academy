@@ -20,6 +20,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | DEC-003 | Question bank requires authentication | CONFIRMED |
 | DEC-004 | Password reset delivered via email | CONFIRMED |
 | DEC-012 | Web auth via HTTP-only cookies + CSRF protection | CONFIRMED |
+| DEC-020 | pnpm workspaces + Turborepo | CONFIRMED |
 
 ---
 
@@ -218,10 +219,9 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Field | Value |
 |-------|-------|
 | Question | pnpm + Turborepo vs npm workspaces? |
-| Current assumption | **pnpm workspaces + Turborepo** |
-| Recommended option | Same |
+| Decision | **pnpm workspaces + Turborepo** (implemented in Phase 1) |
 | Impact | Phase 1 scaffolding |
-| Status | **PROPOSED** |
+| Status | **CONFIRMED** |
 
 ---
 

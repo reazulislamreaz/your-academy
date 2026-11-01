@@ -16,16 +16,17 @@ Dependency-ordered phases. Complete acceptance criteria before advancing.
 
 ## Phase 1 — Monorepo and Infrastructure Setup
 
-**Depends on:** Phase 0
+**Depends on:** Phase 0  
+**Status:** Complete — verified with `pnpm build`, `pnpm lint`, `pnpm typecheck`, and `pnpm docker:dev` (Postgres/Redis/API/Web/Worker/Nginx healthy).
 
 **Work:**
 
-- Initialize monorepo (pnpm/npm workspaces or Turborepo)
+- Initialize monorepo (pnpm workspaces + Turborepo)
 - Scaffold `apps/web`, `apps/api`, `apps/worker`, `packages/shared`
 - Base ESLint/Prettier/tsconfig
-- Docker Compose dev: postgres, redis, api/web stubs, nginx optional
-- CI lint/build skeleton
-- Env example files
+- Docker Compose: postgres, redis, api, worker, web, nginx
+- CI lint/build skeleton (GitHub Actions)
+- Env example files (`.env.example`)
 
 **Acceptance:** `compose up` runs Postgres+Redis; empty API health endpoint responds; web hello page builds.
 

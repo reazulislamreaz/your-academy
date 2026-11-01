@@ -1,0 +1,19 @@
+@import 'tailwindcss';
+
+:root {
+  --background: #0b1220;
+  --foreground: #e8eef9;
+  --accent: #3d8bfd;
+  --muted: #93a4c3;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--foreground);
+  background:
+    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(61, 139, 253, 0.25), transparent),
+    radial-gradient(ellipse 60% 40% at 90% 10%, rgba(45, 212, 191, 0.12), transparent),
+    var(--background);
+  font-family: 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
+}
