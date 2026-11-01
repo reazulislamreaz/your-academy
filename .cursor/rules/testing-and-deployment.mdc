@@ -1,0 +1,37 @@
+---
+description: Testing and deployment standards for Confiro
+globs:
+alwaysApply: false
+---
+
+# Testing and Deployment
+
+See `docs/14-testing-strategy.md` and `docs/15-docker-and-deployment.md`.
+
+## Testing priorities
+
+1. Authentication and session/refresh flows
+2. RBAC (user vs admin)
+3. Trial / subscription answer-privacy (API must omit restricted fields)
+4. Question publish validation (options count, exactly one correct)
+5. Bookmark uniqueness and ownership
+6. Browsing heartbeat anti-inflation basics
+7. Storage signed-upload / delete flows (mocked Cloudinary in unit tests)
+
+Backend: Jest + Supertest. Do not mark access-control work done without automated tests.
+
+## Deployment
+
+- Containerize `web`, `api`, `worker`, `postgres`, `redis`, `nginx`.
+- Multi-stage Dockerfiles; non-root; health checks; separate compose for dev vs prod.
+- Never expose DB/Redis ports publicly in production.
+- Migrations run as an explicit deploy step — not ad-hoc `db push`.
+- Cloudinary remains an external service.
+
+## Definition of done (feature)
+
+- Implements documented requirements
+- AuthZ enforced server-side
+- Tests for critical paths
+- Docs updated if behavior/architecture changed
+- No secrets in repo

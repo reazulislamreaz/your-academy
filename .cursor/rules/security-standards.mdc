@@ -1,0 +1,42 @@
+---
+description: Security requirements for Confiro implementation
+globs:
+alwaysApply: true
+---
+
+# Security Standards
+
+See `docs/13-security-and-threat-model.md`. Security is layered mitigations — never claim 100% security.
+
+## Auth
+
+- Hash passwords with Argon2id.
+- Short-lived access JWTs; rotating refresh tokens; store refresh token hashes server-side; revoke on logout/password change.
+- Rate-limit login, registration, and password-reset endpoints.
+- Unique WhatsApp number; document (do not silently skip) trial-abuse limits.
+
+## Authorization
+
+- RBAC on every protected endpoint.
+- Prevent IDOR: authorize by ownership or admin role.
+- Answer privacy is a **backend** requirement: omit `correctOptionId` / `isCorrect` / `explanation` when the caller lacks premium entitlement.
+
+## Input & output
+
+- Validate and sanitize all inputs.
+- Parameterized queries via Prisma only.
+- Escape/encode output; CSP-friendly frontend practices.
+- CSRF protection where cookie-based auth applies.
+
+## Files
+
+- Server-side or signed Cloudinary uploads only.
+- MIME + size validation; ownership checks; secure delete.
+- Private/authenticated delivery or short-lived signed URLs for restricted assets.
+
+## Ops
+
+- Secrets only in env / secret store; never commit.
+- Do not expose Postgres or Redis publicly.
+- Audit sensitive admin actions.
+- Keep dependencies patched; review advisories in CI when available.

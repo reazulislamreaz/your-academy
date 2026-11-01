@@ -1,0 +1,29 @@
+---
+description: Confiro project architecture constraints for AI agents
+globs:
+alwaysApply: true
+---
+
+# Project Architecture
+
+Confiro is a modular monolith EdTech MCQ platform. Read `AGENTS.md` and `docs/04-system-architecture.md` before structural changes.
+
+## Non-negotiable decisions
+
+- Stack is fixed (Next.js + NestJS + Prisma + PostgreSQL + Redis + BullMQ + Cloudinary). Do not swap without approval.
+- Modular monolith only — no microservices unless explicitly approved.
+- Monorepo: `apps/web`, `apps/api`, `apps/worker`, `packages/shared`.
+- Backend flow: Controller → Service → Repository → Prisma → PostgreSQL.
+- Frontend: feature folders; Server Components default; TanStack Query for server state.
+- Share only browser-safe contracts in `packages/shared`.
+
+## Business gates
+
+- 7-day trial from registration; compute expiry dynamically from `trialStartedAt` / `trialEndsAt`.
+- Post-trial users must not receive correct answers, indicators, or explanations from the API.
+- Question management is admin-only.
+- No payment provider in the initial release; keep subscription modules ready but empty of payment complexity.
+
+## When unsure
+
+Add or update an entry in `docs/19-decisions-and-assumptions.md` with status `NEEDS APPROVAL`. Do not invent product rules.

@@ -1,0 +1,44 @@
+---
+description: NestJS backend coding standards for Confiro
+globs:
+  - apps/api/**/*
+  - apps/worker/**/*
+  - packages/shared/**/*
+alwaysApply: false
+---
+
+# Backend Standards
+
+See `docs/12-backend-architecture.md` and `docs/18-coding-standards.md`.
+
+## Structure
+
+- One NestJS module per domain (`Auth`, `Users`, `Questions`, etc.).
+- Controllers: HTTP mapping only; no business rules.
+- Services: domain logic and orchestration.
+- Repositories: Prisma access when abstraction aids testing; avoid empty wrappers.
+- DTOs validated at the boundary; reject unknown fields.
+
+## Data & migrations
+
+- Prisma migrations are the only production schema path. Never `db push` in prod.
+- Multi-row business operations use transactions.
+- Soft-delete only where the schema documents it.
+
+## Access control
+
+- Use guards for auth + RBAC on every protected route.
+- Answer/explanation fields stripped or omitted via a dedicated access-control service — never rely on the client.
+- Check resource ownership for user-scoped mutations (bookmarks, profile, sessions).
+
+## Jobs
+
+- Enqueue via BullMQ only for async/long work (email, PDF processing, aggregations, cleanup).
+- Jobs must be idempotent. Do not use queues for simple CRUD.
+
+## API
+
+- Version under `/api/v1`.
+- Consistent success/error envelopes.
+- Document with Swagger.
+- Prefer cursor pagination for large question lists.

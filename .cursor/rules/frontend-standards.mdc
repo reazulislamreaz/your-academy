@@ -1,0 +1,35 @@
+---
+description: Next.js frontend coding standards for Confiro
+globs:
+  - apps/web/**/*
+alwaysApply: false
+---
+
+# Frontend Standards
+
+See `docs/11-frontend-architecture.md` and `docs/18-coding-standards.md`.
+
+## Organization
+
+- Feature-based directories under `apps/web`.
+- Separate public, auth, user dashboard, and admin dashboard route groups.
+- Reusable UI via shadcn/ui + project components; Lucide for icons.
+
+## React / Next.js
+
+- Prefer Server Components.
+- Use Client Components only for interactivity, forms, charts, heartbeats, etc.
+- TanStack Query for server state; avoid unnecessary global client stores.
+- React Hook Form + Zod for forms; align schemas with `packages/shared` when possible.
+
+## API & security UI
+
+- Call the API only through typed client/services.
+- Never treat UI hiding as authorization: premium answer/explanation UI must still assume the API omits restricted fields.
+- Never put Cloudinary API secrets or unsigned unrestricted upload presets in client code.
+- Do not store access tokens in `localStorage` if HTTP-only cookie strategy is selected; follow `docs/07-authentication-and-authorization.md`.
+
+## UX boundaries
+
+- Admin screens must be route-protected and still fail closed if the API returns 403.
+- Post-trial users may browse questions; do not show fabricated “correct” markers client-side.
