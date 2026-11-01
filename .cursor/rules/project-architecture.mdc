@@ -12,10 +12,10 @@ Confiro is a modular monolith EdTech MCQ platform. Read `AGENTS.md` and `docs/04
 
 - Stack is fixed (Next.js + NestJS + Prisma + PostgreSQL + Redis + BullMQ + Cloudinary). Do not swap without approval.
 - Modular monolith only — no microservices unless explicitly approved.
-- Monorepo: `apps/web`, `apps/api`, `apps/worker`, `packages/shared`.
+- Monorepo layout: `frontend/`, `backend/`, `worker/`, `shared/`.
 - Backend flow: Controller → Service → Repository → Prisma → PostgreSQL.
 - Frontend: feature folders; Server Components default; TanStack Query for server state.
-- Share only browser-safe contracts in `packages/shared`.
+- Share only browser-safe contracts in `shared/`.
 
 ## Business gates
 

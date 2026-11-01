@@ -1,5 +1,5 @@
 {
-  "name": "@confiro/api",
+  "name": "@confiro/backend",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -9,7 +9,7 @@
     "start:prod": "node dist/main.js",
     "lint": "eslint \"src/**/*.ts\" --max-warnings=0",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "echo \"No api tests yet\""
+    "test": "echo \"No backend tests yet\""
   },
   "dependencies": {
     "@confiro/shared": "workspace:*",

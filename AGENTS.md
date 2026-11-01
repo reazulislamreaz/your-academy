@@ -54,19 +54,17 @@ Do **not** introduce microservices, GraphQL, alternative ORMs, or payment provid
 **Style:** Modular monolith.
 
 ```
-apps/
-  web/          # Next.js frontend
-  api/          # NestJS REST API
-  worker/       # BullMQ workers (separate process/container)
-packages/
-  shared/       # API contracts, enums, Zod schemas, shared types (browser-safe only)
-docs/           # Source of truth for requirements and architecture
-docker/         # Docker Compose overlays and Nginx configs
+frontend/   # Next.js UI
+backend/    # NestJS REST API
+worker/     # BullMQ workers (separate process/container)
+shared/     # API contracts, enums, schemas, types (browser-safe only)
+docs/       # Requirements & architecture (source of truth)
+docker/     # Compose + Nginx
 ```
 
 **Backend flow:** `Controller → Service → Repository → Prisma → PostgreSQL`
 
-**Frontend:** Feature-based folders; Server Components by default; Client Components only when interaction requires it; TanStack Query for server state.
+**Frontend:** Feature-based folders; Server Components by default; Client Components only when needed; TanStack Query for server state.
 
 See `docs/04-system-architecture.md`, `docs/11-frontend-architecture.md`, `docs/12-backend-architecture.md`.
 
@@ -110,7 +108,7 @@ Full rules: `docs/01-business-requirements.md`, `docs/08-subscription-and-access
 
 ### Frontend
 
-- Feature-based organization under `apps/web`.
+- Feature-based organization under `frontend/`.
 - API calls only through reusable service/client modules.
 - Strict TypeScript; no `any` without justification.
 - Avoid unnecessary global state.
@@ -123,7 +121,7 @@ Full rules: `docs/01-business-requirements.md`, `docs/08-subscription-and-access
 - Soft-delete where documented; otherwise hard-delete with clear cascade rules.
 - Source of truth: Prisma migrations.
 
-### Shared package
+### Shared package (`shared/`)
 
 - Share contracts, enums, schemas, types only.
 - Never share backend secrets, Prisma client, or Nest-only code with the browser.

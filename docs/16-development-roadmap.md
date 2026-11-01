@@ -22,7 +22,7 @@ Dependency-ordered phases. Complete acceptance criteria before advancing.
 **Work:**
 
 - Initialize monorepo (pnpm workspaces + Turborepo)
-- Scaffold `apps/web`, `apps/api`, `apps/worker`, `packages/shared`
+- Scaffold `frontend/`, `backend/`, `worker/`, `shared/`
 - Base ESLint/Prettier/tsconfig
 - Docker Compose: postgres, redis, api, worker, web, nginx
 - CI lint/build skeleton (GitHub Actions)

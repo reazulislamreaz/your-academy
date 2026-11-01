@@ -1,9 +1,9 @@
 ---
 description: NestJS backend coding standards for Confiro
 globs:
-  - apps/api/**/*
-  - apps/worker/**/*
-  - packages/shared/**/*
+  - backend/**/*
+  - worker/**/*
+  - shared/**/*
 alwaysApply: false
 ---
 

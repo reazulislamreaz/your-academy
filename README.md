@@ -1,91 +1,70 @@
 # Confiro
 
-Subscription-ready MCQ EdTech platform — browse questions by category, learn with explanations during a seven-day trial, save resources, and track study activity.
+MCQ-based EdTech platform with a 7-day free trial, category browsing, bookmarks, news/PDFs, and an admin dashboard.
 
-## Status
+Built as a **production-style modular monolith** — clear frontend/backend split, shared types, Dockerized infra.
 
-**Phase 1 in progress / scaffolding complete:** pnpm + Turborepo monorepo, app stubs, Docker Compose, CI.
+## Stack
 
-See [`docs/16-development-roadmap.md`](docs/16-development-roadmap.md).
+| Layer | Tech |
+|-------|------|
+| Frontend | Next.js (App Router), TypeScript, Tailwind |
+| Backend | NestJS, REST `/api/v1`, TypeScript |
+| Data | PostgreSQL, Prisma *(Phase 2)*, Redis, BullMQ |
+| Auth | JWT in HTTP-only cookies + CSRF, Argon2id, RBAC |
+| Storage | Cloudinary (abstracted) |
+| Ops | Docker Compose, Nginx, GitHub Actions |
 
-## Documentation
-
-| Audience | Start here |
-|----------|------------|
-| AI agents | [`AGENTS.md`](AGENTS.md) |
-| Humans (overview) | [`docs/00-project-overview.md`](docs/00-project-overview.md) |
-| Architecture | [`docs/04-system-architecture.md`](docs/04-system-architecture.md) |
-| Decisions | [`docs/19-decisions-and-assumptions.md`](docs/19-decisions-and-assumptions.md) |
-
-## Monorepo layout
+## Repository layout
 
 ```text
-apps/web       Next.js (App Router)
-apps/api       NestJS REST API
-apps/worker    Background worker stub (BullMQ in Phase 9)
-packages/shared  Shared enums/types (browser-safe)
-docker/        Compose, Dockerfiles, Nginx
-docs/          Requirements & architecture
+frontend/     Next.js UI
+backend/      NestJS API
+worker/       Background jobs (BullMQ)
+shared/       Shared TypeScript types & enums
+docker/       Compose + Nginx
+docs/         Architecture & requirements (source of truth)
 ```
 
-## Prerequisites
+## Features (planned / in progress)
 
-- Node.js 20+
-- pnpm 9+
-- Docker + Docker Compose (for infra)
+- Auth, 7-day trial, post-trial answer gating (API-enforced)
+- Categories & MCQ management (admin)
+- Bookmarks, news, PDF resources
+- Browsing-time analytics
+- Admin KPIs dashboard
 
-## Quick start (local)
+**Current milestone:** Phase 1 — monorepo + Docker scaffolding. See `docs/16-development-roadmap.md`.
+
+## Quick start
 
 ```bash
 cp .env.example .env
 pnpm install
-pnpm --filter @confiro/shared build
 pnpm build
-```
 
-### Dev apps (without Docker for Node)
+# Local apps
+pnpm dev:backend    # http://localhost:3001/health
+pnpm dev:frontend   # http://localhost:3000
 
-```bash
-# Terminal A — API (http://localhost:3001/health)
-pnpm dev:api
-
-# Terminal B — Web (http://localhost:3000)
-pnpm dev:web
-
-# Terminal C — Worker stub
-pnpm dev:worker
-```
-
-### Docker (Postgres, Redis, API, Worker, Web, Nginx)
-
-```bash
-cp .env.example .env
+# Full stack (Postgres, Redis, API, worker, web, Nginx)
 pnpm docker:dev
 ```
 
-- Web: http://localhost:3000 (direct) or http://localhost:8080 via Nginx
-- API health: http://localhost:3001/health or http://localhost:8080/health
-- Postgres: localhost:5432
-- Redis: localhost:6379
+| URL | What |
+|-----|------|
+| http://localhost:3000 | Frontend |
+| http://localhost:3001/health | Backend health |
+| http://localhost:8080 | Nginx gateway |
 
-Stop:
+## Docs for reviewers
 
-```bash
-pnpm docker:down
-```
-
-## Scripts
-
-| Script | Purpose |
-|--------|---------|
-| `pnpm build` | Build all packages/apps |
-| `pnpm lint` | Lint all |
-| `pnpm typecheck` | Typecheck all |
-| `pnpm docker:dev` | Compose up (dev ports) |
-
-## Stack
-
-Next.js · NestJS · Prisma (Phase 2) · PostgreSQL · Redis · BullMQ · Cloudinary · Docker
+| Doc | Why read it |
+|-----|-------------|
+| [`AGENTS.md`](AGENTS.md) | Project rules & stack |
+| [`docs/00-project-overview.md`](docs/00-project-overview.md) | Product summary |
+| [`docs/04-system-architecture.md`](docs/04-system-architecture.md) | System design |
+| [`docs/08-subscription-and-access-control.md`](docs/08-subscription-and-access-control.md) | Trial / access rules |
 
 ## License
 

@@ -1,5 +1,5 @@
 {
-  "name": "@confiro/web",
+  "name": "@confiro/frontend",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -8,7 +8,7 @@
     "start": "next start --port ${PORT:-3000}",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "echo \"No web tests yet\""
+    "test": "echo \"No frontend tests yet\""
   },
   "dependencies": {
     "@confiro/shared": "workspace:*",

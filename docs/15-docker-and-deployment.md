@@ -4,9 +4,9 @@
 
 | Service | Image/build | Notes |
 |---------|-------------|-------|
-| `web` | `apps/web` multi-stage | Next.js standalone output preferred |
-| `api` | `apps/api` multi-stage | NestJS prod build |
-| `worker` | `apps/worker` multi-stage | Same codebase family |
+| `web` | `frontend/` multi-stage | Next.js standalone output preferred |
+| `api` | `backend/` multi-stage | NestJS prod build |
+| `worker` | `worker/` multi-stage | Background jobs |
 | `postgres` | Official Postgres | Named volume; not published in prod |
 | `redis` | Official Redis | Persistence config; not published in prod |
 | `nginx` | Official Nginx | TLS, reverse proxy |

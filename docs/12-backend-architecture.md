@@ -2,10 +2,10 @@
 
 ## 1. Applications
 
-| App | Role |
-|-----|------|
-| `apps/api` | HTTP REST, auth, domain services, job producers |
-| `apps/worker` | BullMQ consumers |
+| Folder | Role |
+|--------|------|
+| `backend/` | HTTP REST, auth, domain services, job producers |
+| `worker/` | BullMQ consumers |
 
 Both use TypeScript, NestJS patterns, Prisma client, shared package.
 

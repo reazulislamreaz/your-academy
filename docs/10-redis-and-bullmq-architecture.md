@@ -32,7 +32,7 @@ Use BullMQ for asynchronous / long-running work:
 | `analytics-queue` | Aggregations | 2 |
 | `maintenance-queue` | Orphan cleanup, temp purge | 2 |
 
-Register queues in `BullMQModule`; producers in API services; consumers in `apps/worker`.
+Register queues in `BullMQModule`; producers in backend services; consumers in `worker/`.
 
 ## 4. Producer Architecture
 
@@ -43,7 +43,7 @@ Register queues in `BullMQModule`; producers in API services; consumers in `apps
 
 ## 5. Worker Architecture
 
-- Separate NestJS (or lean Node) process: `apps/worker`
+- Separate NestJS (or lean Node) process: `worker/`
 - Same Prisma schema and StorageService
 - Processors per queue
 - Graceful shutdown: stop taking jobs, wait in-flight with timeout

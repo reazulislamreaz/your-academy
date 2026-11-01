@@ -6,14 +6,14 @@ WORKDIR /app
 
 FROM base AS deps
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* turbo.json tsconfig.base.json ./
-COPY packages/shared/package.json packages/shared/
-COPY apps/worker/package.json apps/worker/
+COPY shared/package.json shared/
+COPY worker/package.json worker/
 RUN pnpm install --filter @confiro/worker... --frozen-lockfile=false
 
 FROM base AS build
 COPY --from=deps /app /app
-COPY packages/shared packages/shared
-COPY apps/worker apps/worker
+COPY shared shared
+COPY worker worker
 RUN pnpm --filter @confiro/shared build && pnpm --filter @confiro/worker build
 
 FROM node:20-alpine AS runner
@@ -22,8 +22,8 @@ ENV NODE_ENV=production
 RUN addgroup -S confiro && adduser -S confiro -G confiro
 COPY --from=build /app/package.json /app/pnpm-workspace.yaml ./
 COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/packages/shared ./packages/shared
-COPY --from=build /app/apps/worker ./apps/worker
+COPY --from=build /app/shared ./shared
+COPY --from=build /app/worker ./worker
 USER confiro
-WORKDIR /app/apps/worker
+WORKDIR /app/worker
 CMD ["node", "dist/main.js"]

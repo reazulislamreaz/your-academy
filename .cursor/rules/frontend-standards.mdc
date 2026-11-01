@@ -1,7 +1,7 @@
 ---
 description: Next.js frontend coding standards for Confiro
 globs:
-  - apps/web/**/*
+  - frontend/**/*
 alwaysApply: false
 ---
 
@@ -11,7 +11,7 @@ See `docs/11-frontend-architecture.md` and `docs/18-coding-standards.md`.
 
 ## Organization
 
-- Feature-based directories under `apps/web`.
+- Feature-based directories under `frontend/`.
 - Separate public, auth, user dashboard, and admin dashboard route groups.
 - Reusable UI via shadcn/ui + project components; Lucide for icons.
 
@@ -20,7 +20,7 @@ See `docs/11-frontend-architecture.md` and `docs/18-coding-standards.md`.
 - Prefer Server Components.
 - Use Client Components only for interactivity, forms, charts, heartbeats, etc.
 - TanStack Query for server state; avoid unnecessary global client stores.
-- React Hook Form + Zod for forms; align schemas with `packages/shared` when possible.
+- React Hook Form + Zod for forms; align schemas with `shared/` when possible.
 
 ## API & security UI
 

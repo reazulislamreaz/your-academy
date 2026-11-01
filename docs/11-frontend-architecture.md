@@ -7,8 +7,8 @@ Next.js App Router, React, TypeScript, Tailwind CSS, shadcn/ui, TanStack Query, 
 ## 2. Top-Level Structure
 
 ```text
-apps/web/
-  app/
+frontend/
+  src/app/
     (public)/           # marketing, public news
     (auth)/             # login, register, reset
     (app)/              # authenticated learner
@@ -63,7 +63,7 @@ Default to Server Components; add `"use client"` only when required.
 ## 5. Forms & Validation
 
 - React Hook Form + Zod
-- Share Zod schemas with `packages/shared` when identical to API
+- Share Zod schemas with `shared/` when identical to API
 - Accessible error rendering; disable submit while pending
 
 ## 6. Auth UX (DEC-012)

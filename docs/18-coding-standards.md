@@ -59,7 +59,7 @@ Complement `.cursor/rules/*` and `AGENTS.md`.
 - Imperative commit subjects focused on why
 - Do not commit `.env`, keys, dumps, `node_modules`
 
-## 9. Shared Package Rules
+## 9. Shared Package Rules (`shared/`)
 
 - Export types/schemas only
 - Version internally with workspace protocol

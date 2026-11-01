@@ -4,14 +4,15 @@
 
 **Modular monolith** deployed as multiple processes/containers from one codebase:
 
-| Process | Responsibility |
-|---------|----------------|
-| `web` | Next.js UI (SSR/RSC + client islands) |
-| `api` | NestJS REST API, auth, sync business logic, enqueue jobs |
-| `worker` | BullMQ processors |
+| Process / folder | Responsibility |
+|------------------|----------------|
+| `frontend/` (`web`) | Next.js UI (SSR/RSC + client islands) |
+| `backend/` (`api`) | NestJS REST API, auth, sync business logic, enqueue jobs |
+| `worker/` | BullMQ processors |
+| `shared/` | Browser-safe types, enums, contracts |
 | `postgres` | System of record |
 | `redis` | BullMQ broker (+ optional cache) |
-| `nginx` | TLS termination, reverse proxy, static routing |
+| `nginx` | TLS termination, reverse proxy |
 
 Cloudinary is an **external** managed service.
 
@@ -42,8 +43,8 @@ flowchart TB
     Nginx
   end
   subgraph app [Docker network]
-    Web[web - Next.js]
-    Api[api - NestJS]
+    Web[frontend - Next.js]
+    Api[backend - NestJS]
     Worker[worker - BullMQ]
   end
   subgraph data [Data]
@@ -122,7 +123,7 @@ Server Components fetch where cookie/session allows; mutations and heartbeats vi
 
 ## 8. Shared Package
 
-`packages/shared` exports:
+`shared/` exports:
 
 - Enums (`UserRole`, `QuestionStatus`, `Difficulty`, …)
 - Zod schemas for shared validation

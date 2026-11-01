@@ -7,8 +7,8 @@
   },
   "scripts": {
     "dev": "turbo run dev --parallel",
-    "dev:api": "turbo run dev --filter=@confiro/api",
-    "dev:web": "turbo run dev --filter=@confiro/web",
+    "dev:frontend": "turbo run dev --filter=@confiro/frontend",
+    "dev:backend": "turbo run dev --filter=@confiro/backend",
     "dev:worker": "turbo run dev --filter=@confiro/worker",
     "build": "turbo run build",
     "lint": "turbo run lint",
