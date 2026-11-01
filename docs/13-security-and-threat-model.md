@@ -38,6 +38,7 @@ Security is a set of mitigations and residual risks — **not** absolute protect
 
 - Argon2id passwords
 - Short-lived JWT + rotating refresh; hashed at rest
+- Web: HTTP-only access/refresh cookies (DEC-012); never `localStorage`
 - Session revocation; reuse detection
 - Generic messages on login failure
 
@@ -58,11 +59,11 @@ Security is a set of mitigations and residual risks — **not** absolute protect
 
 - React default escaping
 - CSP headers via Nginx/Helmet where feasible
-- Prefer HTTP-only refresh cookies
+- Prefer HTTP-only access/refresh cookies (DEC-012)
 
 ### CSRF
 
-- Required if cookie-based session for mutations; SameSite + CSRF token pattern (DEC-012)
+- **Required** for cookie-authenticated mutating requests: double-submit CSRF cookie + `X-CSRF-Token` header; SameSite=`Lax`; CORS credentials with explicit origin allowlist (DEC-012)
 
 ### SSRF
 

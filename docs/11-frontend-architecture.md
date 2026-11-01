@@ -66,10 +66,13 @@ Default to Server Components; add `"use client"` only when required.
 - Share Zod schemas with `packages/shared` when identical to API
 - Accessible error rendering; disable submit while pending
 
-## 6. Auth UX
+## 6. Auth UX (DEC-012)
 
-- Register/login pages call API; store access token per DEC-012
-- Route guards: middleware checks session cookie/token presence; **always** rely on API 401/403
+- Register/login set HTTP-only auth cookies via API; do **not** store JWTs in `localStorage`
+- All API clients use `credentials: 'include'`
+- Mutating requests send `X-CSRF-Token` from the readable `csrf_token` cookie
+- Route guards: middleware may check presence of session hint; **always** rely on API 401/403
+- On 401: try `/auth/refresh` once, then redirect to login
 - Admin layout: hide nav if role≠ADMIN; API still enforces
 
 ## 7. Answer Privacy UX

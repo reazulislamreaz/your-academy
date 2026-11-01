@@ -61,9 +61,12 @@ Prefer **cursor** pagination for questions. Offset allowed for small admin table
 | 429 | Rate limited |
 | 500 | Unexpected |
 
-### 1.3 Auth header / cookies
+### 1.3 Auth header / cookies (DEC-012 CONFIRMED)
 
-Proposed default (DEC-012): access token in memory or short-lived cookie; refresh token in **HTTP-only Secure SameSite** cookie. Authorization: `Bearer <access>` supported for API clients.
+- **Web:** `access_token` and `refresh_token` as HTTP-only Secure SameSite=`Lax` cookies; `csrf_token` (readable) for double-submit CSRF.
+- Mutating browser requests must send `X-CSRF-Token` matching the CSRF cookie.
+- Frontend uses `credentials: 'include'`.
+- **Also supported:** `Authorization: Bearer <access>` for Swagger, tests, and non-browser clients.
 
 ---
 

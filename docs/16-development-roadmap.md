@@ -53,13 +53,14 @@ Dependency-ordered phases. Complete acceptance criteria before advancing.
 **Work:**
 
 - Register/login/logout/refresh/change-password
+- HTTP-only access/refresh cookies + CSRF guard (DEC-012); CORS credentials
 - Password reset via email (DEC-004) + `email-queue` stub/provider
 - Argon2id; sessions; JWT guards; RBAC
 - Profile get/update
 - Rate limiting on auth routes
-- Swagger for auth/users
+- Swagger for auth/users (Bearer for non-browser)
 
-**Acceptance:** Auth API tests green; refresh rotation works; suspended users blocked; trial timestamps set; forgot-password sends mail when email present and never enumerates accounts.
+**Acceptance:** Auth API tests green; refresh rotation works; CSRF rejects mutating requests without header; suspended users blocked; trial timestamps set; forgot-password sends mail when email present and never enumerates accounts.
 
 ---
 
@@ -232,4 +233,4 @@ flowchart TD
 
 ## Recommended Next Step
 
-Start **Phase 1**. DEC-001, DEC-003, and DEC-004 are confirmed. Remaining high-impact open item: **DEC-012** (token/cookie storage).
+Start **Phase 1**. DEC-001, DEC-003, DEC-004, and DEC-012 (cookies + CSRF) are confirmed.

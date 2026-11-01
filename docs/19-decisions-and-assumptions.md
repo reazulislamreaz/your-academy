@@ -19,6 +19,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | DEC-001 | Post-trial published PDFs/documents remain accessible | CONFIRMED |
 | DEC-003 | Question bank requires authentication | CONFIRMED |
 | DEC-004 | Password reset delivered via email | CONFIRMED |
+| DEC-012 | Web auth via HTTP-only cookies + CSRF protection | CONFIRMED |
 
 ---
 
@@ -136,10 +137,11 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Field | Value |
 |-------|-------|
 | Question | Access token in memory vs cookie? CSRF approach? |
-| Current assumption | Refresh token in **HTTP-only Secure** cookie; access token in memory; CSRF: custom header required on mutating cookie-authenticated routes |
-| Recommended option | Same (BFF optional later) |
-| Impact | Auth UX, Nginx, CORS credentials |
-| Status | **NEEDS APPROVAL** |
+| Decision | **HTTP-only cookies for both access and refresh tokens**, plus **CSRF protection** on cookie-authenticated mutating requests. Never store tokens in `localStorage` or readable JS storage. `Authorization: Bearer` remains supported for Swagger, non-browser clients, and tests. |
+| Cookie details | Access: HTTP-only, Secure (prod), SameSite=`Lax`, short TTL. Refresh: HTTP-only, Secure (prod), SameSite=`Lax`, longer TTL, preferably path-scoped to `/api/v1/auth/refresh` (and logout). |
+| CSRF details | Double-submit CSRF cookie (non-HTTP-only) + require matching `X-CSRF-Token` header on unsafe methods (`POST`/`PATCH`/`PUT`/`DELETE`) when the browser sends auth cookies. Safe methods (`GET`/`HEAD`/`OPTIONS`) skip CSRF. CORS must use credentials with explicit origin allowlist (not `*`). |
+| Impact | Auth UX, Nginx, CORS `credentials: true`, frontend `credentials: 'include'`, CSRF middleware/guard |
+| Status | **CONFIRMED** |
 
 ### DEC-013 — Password complexity
 

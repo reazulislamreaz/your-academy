@@ -23,6 +23,7 @@ Confiro is a modular monolith EdTech MCQ platform. Read `AGENTS.md` and `docs/04
 - Post-trial users must not receive correct answers, indicators, or explanations from the API.
 - Question management is admin-only.
 - No payment provider in the initial release; keep subscription modules ready but empty of payment complexity.
+- Web auth: HTTP-only cookies + CSRF (DEC-012); question bank requires auth (DEC-003); post-trial PDFs allowed (DEC-001); password reset via email (DEC-004).
 
 ## When unsure
 

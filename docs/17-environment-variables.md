@@ -22,8 +22,12 @@ Never commit real secrets. Provide `.env.example` files during Phase 1 with plac
 | `JWT_ACCESS_SECRET` | yes | Strong random secret |
 | `JWT_ACCESS_TTL_SECONDS` | yes | Default `900` |
 | `JWT_REFRESH_TTL_SECONDS` | yes | Default `2592000` |
-| `COOKIE_DOMAIN` | no | Shared cookie domain |
+| `COOKIE_DOMAIN` | no | Shared parent domain if web/API split hosts; prefer same-origin via Nginx |
 | `COOKIE_SECURE` | yes | `true` in production |
+| `COOKIE_SAME_SITE` | no | Default `lax` (DEC-012) |
+| `CSRF_COOKIE_NAME` | no | Default `csrf_token` |
+| `ACCESS_COOKIE_NAME` | no | Default `access_token` |
+| `REFRESH_COOKIE_NAME` | no | Default `refresh_token` |
 | `THROTTLE_TTL_SECONDS` | no | Rate limit window |
 | `THROTTLE_LIMIT` | no | Requests per window |
 | `ARGON2_MEMORY_COST` | no | Tunable |

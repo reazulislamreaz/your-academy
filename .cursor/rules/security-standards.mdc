@@ -12,6 +12,7 @@ See `docs/13-security-and-threat-model.md`. Security is layered mitigations — 
 
 - Hash passwords with Argon2id.
 - Short-lived access JWTs; rotating refresh tokens; store refresh token hashes server-side; revoke on logout/password change.
+- Web auth: HTTP-only access/refresh cookies + CSRF (`X-CSRF-Token` double-submit); never `localStorage` for tokens (DEC-012).
 - Rate-limit login, registration, and password-reset endpoints.
 - Unique WhatsApp number; document (do not silently skip) trial-abuse limits.
 

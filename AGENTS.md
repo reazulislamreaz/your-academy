@@ -40,7 +40,7 @@ Before implementing any feature:
 |-------|------------|
 | Frontend | Next.js (App Router), React, TypeScript, Tailwind CSS, shadcn/ui, TanStack Query, React Hook Form, Zod, Lucide React |
 | Backend | NestJS, Node.js, TypeScript, REST (`/api/v1`), Prisma, PostgreSQL, Redis, BullMQ, Swagger/OpenAPI |
-| Auth | JWT access tokens, refresh token rotation, Argon2id, RBAC, HTTP-only cookies where appropriate |
+| Auth | JWT access + refresh in HTTP-only cookies (web), CSRF double-submit + `X-CSRF-Token`, Argon2id, RBAC; Bearer also supported for non-browser clients |
 | Storage | Cloudinary (via `StorageService` abstraction) |
 | Jobs | Redis + BullMQ |
 | Infra | Docker, Docker Compose, Nginx, GitHub Actions, Ubuntu VPS |
@@ -85,6 +85,7 @@ See `docs/04-system-architecture.md`, `docs/11-frontend-architecture.md`, `docs/
 | Question access | Authenticated users only (DEC-003) |
 | Post-trial PDFs | Published documents remain accessible when authenticated (DEC-001) |
 | Password reset | Delivered by **email** (DEC-004); requires email on account |
+| Web session | HTTP-only access/refresh cookies + CSRF header (DEC-012); never `localStorage` for tokens |
 
 Full rules: `docs/01-business-requirements.md`, `docs/08-subscription-and-access-control.md`.
 
@@ -135,11 +136,12 @@ Details: `docs/18-coding-standards.md` and `.cursor/rules/*`.
 
 - Argon2id for passwords.
 - Short-lived JWT access tokens + rotating refresh tokens stored hashed server-side.
+- Web: HTTP-only Secure cookies for access/refresh; CSRF double-submit + `X-CSRF-Token` on mutations (DEC-012).
 - Session revocation on logout/password change.
 - RBAC on every protected route.
 - IDOR checks: users may only access/modify their own resources unless admin.
 - Rate limit auth and sensitive endpoints.
-- Helmet, CORS, CSRF where applicable.
+- Helmet, CORS with credentials + explicit origin allowlist.
 - Cloudinary: signed uploads / server-side upload; no API secrets on frontend.
 - Private/authenticated delivery or signed URLs for restricted files.
 - Never log secrets or tokens.
