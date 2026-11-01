@@ -1,11 +1,11 @@
-# AGENTS.md — Confiro EdTech Platform
+# AGENTS.md — Your Academy EdTech Platform
 
 > Primary instruction file for AI coding agents and human developers.
 > Read this first. Detailed specifications live in `docs/`.
 
 ## Project Summary
 
-**Confiro** is a subscription-ready MCQ-based EdTech platform.
+**Your Academy** is a subscription-ready MCQ-based EdTech platform.
 
 Users register, browse educational MCQs by category, view answers/explanations during a **seven-day full-access trial**, save questions and documents, browse educational news/PDFs, manage profiles, and track browsing activity.
 

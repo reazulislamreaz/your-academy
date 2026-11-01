@@ -29,9 +29,6 @@ importers:
 
   backend:
     dependencies:
-      '@confiro/shared':
-        specifier: workspace:*
-        version: link:../shared
       '@nestjs/common':
         specifier: ^11.0.11
         version: 11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2)
@@ -41,6 +38,9 @@ importers:
       '@nestjs/platform-express':
         specifier: ^11.0.11
         version: 11.2.8(@nestjs/common@11.2.8(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.2.8)
+      '@your-academy/shared':
+        specifier: workspace:*
+        version: link:../shared
       reflect-metadata:
         specifier: ^0.2.2
         version: 0.2.2
@@ -66,7 +66,7 @@ importers:
 
   frontend:
     dependencies:
-      '@confiro/shared':
+      '@your-academy/shared':
         specifier: workspace:*
         version: link:../shared
       next:
@@ -106,7 +106,7 @@ importers:
 
   worker:
     dependencies:
-      '@confiro/shared':
+      '@your-academy/shared':
         specifier: workspace:*
         version: link:../shared
     devDependencies:

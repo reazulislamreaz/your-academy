@@ -1,11 +1,11 @@
-import { Entitlement } from '@confiro/shared';
+import { Entitlement } from '@your-academy/shared';
 
 /**
  * Phase 1 stub worker process.
  * Phase 9 will register BullMQ processors here.
  */
 function main() {
-  const service = process.env.APP_NAME ?? 'confiro';
+  const service = process.env.APP_NAME ?? 'your-academy';
   console.log(
     `[${service}-worker] stub running (NODE_ENV=${process.env.NODE_ENV ?? 'development'})`,
   );

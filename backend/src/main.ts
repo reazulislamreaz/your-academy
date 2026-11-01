@@ -12,7 +12,7 @@ async function bootstrap() {
 
   const port = Number(process.env.API_PORT ?? 3001);
   await app.listen(port);
-  console.log(`Confiro API listening on port ${port}`);
+  console.log(`Your Academy API listening on port ${port}`);
 }
 
 void bootstrap();

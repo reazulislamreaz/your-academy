@@ -4,7 +4,7 @@ Status legend: **CONFIRMED** decisions must not change without explicit approval
 
 ## 1. Product Scope
 
-Confiro provides MCQ-centric learning with categorized questions, educational news, PDF/document resources, bookmarks, profiles, browsing-time tracking, and an admin console. The initial release supports a seven-day full-access trial and a limited free post-trial experience. Paid subscriptions are architected but not monetized in v1.
+Your Academy provides MCQ-centric learning with categorized questions, educational news, PDF/document resources, bookmarks, profiles, browsing-time tracking, and an admin console. The initial release supports a seven-day full-access trial and a limited free post-trial experience. Paid subscriptions are architected but not monetized in v1.
 
 ## 2. Confirmed Rules
 

@@ -1,5 +1,5 @@
 {
-  "name": "confiro",
+  "name": "your-academy",
   "private": true,
   "packageManager": "pnpm@9.15.9",
   "engines": {
@@ -7,9 +7,9 @@
   },
   "scripts": {
     "dev": "turbo run dev --parallel",
-    "dev:frontend": "turbo run dev --filter=@confiro/frontend",
-    "dev:backend": "turbo run dev --filter=@confiro/backend",
-    "dev:worker": "turbo run dev --filter=@confiro/worker",
+    "dev:frontend": "turbo run dev --filter=@your-academy/frontend",
+    "dev:backend": "turbo run dev --filter=@your-academy/backend",
+    "dev:worker": "turbo run dev --filter=@your-academy/worker",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",

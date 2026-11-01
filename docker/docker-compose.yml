@@ -1,17 +1,17 @@
-name: confiro
+name: your-academy
 
 services:
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-confiro}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-confiro_dev_password}
-      POSTGRES_DB: ${POSTGRES_DB:-confiro}
+      POSTGRES_USER: ${POSTGRES_USER:-your_academy}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-your_academy_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-your_academy}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-confiro} -d ${POSTGRES_DB:-confiro}']
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-your_academy} -d ${POSTGRES_DB:-your_academy}']
       interval: 5s
       timeout: 5s
       retries: 10
@@ -42,7 +42,7 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-development}
       API_PORT: 3001
-      DATABASE_URL: postgresql://${POSTGRES_USER:-confiro}:${POSTGRES_PASSWORD:-confiro_dev_password}@postgres:5432/${POSTGRES_DB:-confiro}?schema=public
+      DATABASE_URL: postgresql://${POSTGRES_USER:-your_academy}:${POSTGRES_PASSWORD:-your_academy_dev_password}@postgres:5432/${POSTGRES_DB:-your_academy}?schema=public
       REDIS_URL: redis://redis:6379
       WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:3000}
     depends_on:
@@ -75,7 +75,7 @@ services:
       - ../.env
     environment:
       NODE_ENV: ${NODE_ENV:-development}
-      DATABASE_URL: postgresql://${POSTGRES_USER:-confiro}:${POSTGRES_PASSWORD:-confiro_dev_password}@postgres:5432/${POSTGRES_DB:-confiro}?schema=public
+      DATABASE_URL: postgresql://${POSTGRES_USER:-your_academy}:${POSTGRES_PASSWORD:-your_academy_dev_password}@postgres:5432/${POSTGRES_DB:-your_academy}?schema=public
       REDIS_URL: redis://redis:6379
     depends_on:
       postgres:

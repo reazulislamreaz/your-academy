@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Confiro is a production-oriented, subscription-ready **MCQ EdTech platform**. Learners browse categorized multiple-choice questions, study with explanations during a free trial, save learning resources, follow educational news, and track browsing activity. Administrators operate content, users, and platform analytics.
+Your Academy is a production-oriented, subscription-ready **MCQ EdTech platform**. Learners browse categorized multiple-choice questions, study with explanations during a free trial, save learning resources, follow educational news, and track browsing activity. Administrators operate content, users, and platform analytics.
 
 ## Goals
 

@@ -7,7 +7,7 @@ Never commit real secrets. Provide `.env.example` files during Phase 1 with plac
 | Variable | Used by | Description |
 |----------|---------|-------------|
 | `NODE_ENV` | all | `development` \| `production` \| `test` |
-| `APP_NAME` | all | `confiro` |
+| `APP_NAME` | all | `your-academy` |
 | `LOG_LEVEL` | api, worker | `debug` \| `info` \| `warn` \| `error` |
 
 ## 2. API
@@ -62,7 +62,7 @@ No `CLOUDINARY_API_SECRET` on web.
 | `CLOUDINARY_CLOUD_NAME` | yes | |
 | `CLOUDINARY_API_KEY` | yes | Server only |
 | `CLOUDINARY_API_SECRET` | yes | Server only |
-| `CLOUDINARY_FOLDER_PREFIX` | no | Default `confiro` |
+| `CLOUDINARY_FOLDER_PREFIX` | no | Default `your-academy` |
 
 ## 6. PostgreSQL / Redis (Compose)
 

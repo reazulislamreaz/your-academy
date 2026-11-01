@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Confiro',
+  title: 'Your Academy',
   description: 'MCQ EdTech platform',
 };
 

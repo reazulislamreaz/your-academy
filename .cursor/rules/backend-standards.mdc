@@ -1,5 +1,5 @@
 ---
-description: NestJS backend coding standards for Confiro
+description: NestJS backend coding standards for Your Academy
 globs:
   - backend/**/*
   - worker/**/*

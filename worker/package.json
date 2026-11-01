@@ -1,5 +1,5 @@
 {
-  "name": "@confiro/worker",
+  "name": "@your-academy/worker",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -12,7 +12,7 @@
     "test": "echo \"No worker tests yet\""
   },
   "dependencies": {
-    "@confiro/shared": "workspace:*"
+    "@your-academy/shared": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.13.9",

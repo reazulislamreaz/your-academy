@@ -1,5 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
-import type { ApiSuccess, HealthData } from '@confiro/shared';
+import type { ApiSuccess, HealthData } from '@your-academy/shared';
 import { randomUUID } from 'node:crypto';
 
 @Controller()

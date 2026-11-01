@@ -20,16 +20,16 @@ Cloudinary is an **external** managed service.
 
 ```mermaid
 C4Context
-title Confiro system context
+title Your Academy system context
 Person(learner, "Learner")
 Person(admin, "Administrator")
-System(confiro, "Confiro Platform")
+System(your_academy, "Your Academy Platform")
 System_Ext(cloudinary, "Cloudinary")
 System_Ext(email, "Email Provider (future)")
-Rel(learner, confiro, "HTTPS")
-Rel(admin, confiro, "HTTPS")
-Rel(confiro, cloudinary, "Signed upload/delivery")
-Rel(confiro, email, "Transactional email")
+Rel(learner, your_academy, "HTTPS")
+Rel(admin, your_academy, "HTTPS")
+Rel(your_academy, cloudinary, "Signed upload/delivery")
+Rel(your_academy, email, "Transactional email")
 ```
 
 ## 3. Container Diagram

@@ -1,12 +1,12 @@
 ---
-description: Confiro project architecture constraints for AI agents
+description: Your Academy project architecture constraints for AI agents
 globs:
 alwaysApply: true
 ---
 
 # Project Architecture
 
-Confiro is a modular monolith EdTech MCQ platform. Read `AGENTS.md` and `docs/04-system-architecture.md` before structural changes.
+Your Academy is a modular monolith EdTech MCQ platform. Read `AGENTS.md` and `docs/04-system-architecture.md` before structural changes.
 
 ## Non-negotiable decisions
 

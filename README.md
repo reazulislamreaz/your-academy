@@ -1,4 +1,4 @@
-# Confiro
+# Your Academy
 
 MCQ-based EdTech platform with a 7-day free trial, category browsing, bookmarks, news/PDFs, and an admin dashboard.
 

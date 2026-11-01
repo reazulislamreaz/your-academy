@@ -227,7 +227,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 
 ## Assumption Log (Non-Decision Facts We Are Proceeding With)
 
-1. Product name in repo context is **Confiro**.
+1. Product name in repo context is **Your Academy**.
 2. Primary deployment target is a single Ubuntu VPS with Docker Compose initially.
 3. Heartbeat interval is **30 seconds** as specified.
 4. Cloudinary remains the only planned object store for v1.

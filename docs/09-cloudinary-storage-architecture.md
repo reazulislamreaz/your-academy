@@ -22,7 +22,7 @@ interface StorageService {
 
 ## 3. Resource Types & Delivery
 
-| Cloudinary concept | Use in Confiro |
+| Cloudinary concept | Use in Your Academy |
 |--------------------|----------------|
 | **image** | Avatars, question images, news covers — transformations/optimization |
 | **raw** | PDFs and non-image documents |
@@ -59,7 +59,7 @@ Multipart to API → validate → `StorageService.upload` → DB. Use for admin 
 | Size | Avatar ≤ 2 MB; images ≤ 5 MB; PDF ≤ 20 MB (configurable) |
 | Ownership | confirm/delete only by uploader or ADMIN |
 | Filename | Sanitize; do not trust client path |
-| Purpose | Folder prefix per purpose: `confiro/avatars/…` |
+| Purpose | Folder prefix per purpose: `your-academy/avatars/…` |
 
 ## 6. Database Metadata
 
