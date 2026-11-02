@@ -1,28 +1,54 @@
-import { Entitlement } from '@your-academy/shared';
+import { Queue, Worker } from 'bullmq';
+import IORedis from 'ioredis';
 
-/**
- * Worker process stub.
- * Phase 9 will register BullMQ processors here.
- */
-function main() {
-  const service = process.env.APP_NAME ?? 'your-academy';
-  console.log(
-    `[${service}-worker] stub running (NODE_ENV=${process.env.NODE_ENV ?? 'development'})`,
+const redisUrl = process.env.REDIS_URL ?? 'redis://127.0.0.1:6379';
+const service = process.env.APP_NAME ?? 'your-academy';
+
+async function main() {
+  const connection = new IORedis(redisUrl, { maxRetriesPerRequest: null });
+
+  const emailQueue = new Queue('email-queue', { connection });
+  const maintenanceQueue = new Queue('maintenance-queue', { connection });
+
+  const emailWorker = new Worker(
+    'email-queue',
+    async (job) => {
+      // Idempotent stub: log only until SMTP is configured.
+      console.log(`[${service}-worker] email job ${job.id}`, job.name, job.data);
+    },
+    { connection, concurrency: 5 },
   );
-  console.log(`[${service}-worker] shared package OK: ${Entitlement.VIEW_ANSWERS}`);
 
-  const keepAlive = setInterval(() => {
-    // Keep process alive until BullMQ workers are registered.
-  }, 60_000);
+  const maintenanceWorker = new Worker(
+    'maintenance-queue',
+    async (job) => {
+      console.log(`[${service}-worker] maintenance job ${job.id}`, job.name, job.data);
+    },
+    { connection, concurrency: 2 },
+  );
 
-  const shutdown = (signal: string) => {
-    console.log(`[${service}-worker] received ${signal}, shutting down`);
-    clearInterval(keepAlive);
+  emailWorker.on('failed', (job, err) => {
+    console.error(`[${service}-worker] email failed`, job?.id, err.message);
+  });
+  maintenanceWorker.on('failed', (job, err) => {
+    console.error(`[${service}-worker] maintenance failed`, job?.id, err.message);
+  });
+
+  console.log(`[${service}-worker] BullMQ workers online`);
+
+  const shutdown = async (signal: string) => {
+    console.log(`[${service}-worker] ${signal} — closing`);
+    await Promise.all([emailWorker.close(), maintenanceWorker.close()]);
+    await Promise.all([emailQueue.close(), maintenanceQueue.close()]);
+    await connection.quit();
     process.exit(0);
   };
 
-  process.on('SIGTERM', () => shutdown('SIGTERM'));
-  process.on('SIGINT', () => shutdown('SIGINT'));
+  process.on('SIGTERM', () => void shutdown('SIGTERM'));
+  process.on('SIGINT', () => void shutdown('SIGINT'));
 }
 
-main();
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

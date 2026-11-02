@@ -12,7 +12,9 @@
     "test": "echo \"No worker tests yet\""
   },
   "dependencies": {
-    "@your-academy/shared": "workspace:*"
+    "@your-academy/shared": "workspace:*",
+    "bullmq": "^6.5.3",
+    "ioredis": "^6.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.13.9",

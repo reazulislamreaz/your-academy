@@ -1,81 +1,64 @@
 # Your Academy
 
-MCQ-based EdTech platform with a 7-day free trial, category browsing, bookmarks, news/PDFs, and an admin dashboard.
+MCQ-based EdTech platform with a 7-day free trial, category browsing, bookmarks, news, analytics, and an admin dashboard.
 
-Built as a **production-style modular monolith** — clear frontend/backend split, shared types, Dockerized infra.
+Modular monolith: **Next.js frontend** + **NestJS backend** + **BullMQ worker** + **PostgreSQL/Redis**.
 
 ## Stack
 
 | Layer | Tech |
 |-------|------|
-| Frontend | Next.js (App Router), TypeScript, Tailwind |
-| Backend | NestJS, REST `/api/v1`, TypeScript |
-| Data | PostgreSQL, Prisma *(Phase 2)*, Redis, BullMQ |
-| Auth | JWT in HTTP-only cookies + CSRF, Argon2id, RBAC |
-| Storage | Cloudinary (abstracted) |
+| Frontend | Next.js App Router, TypeScript, Tailwind, TanStack Query |
+| Backend | NestJS, Prisma, PostgreSQL, JWT cookies + CSRF, Argon2id, RBAC |
+| Jobs | Redis + BullMQ |
 | Ops | Docker Compose, Nginx, GitHub Actions |
 
-## Repository layout
+## Layout
 
 ```text
-frontend/     Next.js UI
-backend/      NestJS API
-worker/       Background jobs (BullMQ)
-shared/       Shared TypeScript types & enums
-docker/       Compose + Nginx
-docs/         Architecture & requirements (source of truth)
+frontend/   Next.js UI
+backend/    NestJS API + Prisma
+worker/     BullMQ workers
+shared/     Shared types/enums
+docker/     Compose + Nginx
+docs/       Architecture & requirements
 ```
 
-## Features (planned / in progress)
+## Features
 
-- Auth, 7-day trial, post-trial answer gating (API-enforced)
-- Categories & MCQ management (admin)
-- Bookmarks, news, PDF resources
-- Browsing-time analytics
-- Admin KPIs dashboard
-
-**Current milestone:** Phase 2 — Prisma/PostgreSQL schema + seed. Next: auth (Phase 3). See `docs/16-development-roadmap.md`.
-
-## Secrets / `.env`
-
-- Copy `.env.example` → `.env` for local use.
-- **Never commit `.env` or real secrets** — gitignored (`.env`, `.env.*`, credentials files).
-- Only `.env.example` (placeholders) is safe to push to GitHub.
-- Rotate any key that was ever committed by mistake.
+- Auth (register/login/refresh/logout, CSRF cookies, password reset tokens)
+- 7-day trial with **API-enforced** answer/explanation privacy after expiry
+- Categories + MCQ create/publish (admin)
+- Bookmarks, profile stats, browsing heartbeats
+- News publish/browse
+- Admin KPI dashboard
+- Storage signed-upload stub (Cloudinary-ready)
 
 ## Quick start
 
 ```bash
-cp .env.example .env   # then fill real values locally — do not commit
-pnpm install
-pnpm build
+cp .env.example .env   # database: your_academy / your_academy_dev_password
+pnpm setup             # install, start Postgres+Redis, migrate, seed
 
-# Database (Postgres must be running — e.g. docker compose postgres)
-pnpm db:deploy         # prisma migrate deploy
-pnpm db:seed           # admin + sample categories
-
-# Local apps
-pnpm dev:backend       # http://localhost:3001/health
-pnpm dev:frontend      # http://localhost:3000
-
-# Full stack (Postgres, Redis, API, worker, web, Nginx)
-pnpm docker:dev
+# Run (loads root .env via dotenv-cli)
+pnpm dev:backend    # :3001
+pnpm dev:frontend   # :3000 (proxies /api/v1 → backend)
+pnpm dev:worker     # BullMQ
 ```
+
+Do not leave `POSTGRES_USER` empty — it overrides Compose defaults and breaks Postgres.
+
+Seeded admin: WhatsApp from `BOOTSTRAP_ADMIN_WHATSAPP` / password `BOOTSTRAP_ADMIN_PASSWORD`.
 
 | URL | What |
 |-----|------|
-| http://localhost:3000 | Frontend |
-| http://localhost:3001/health | Backend health |
-| http://localhost:8080 | Nginx gateway |
+| http://localhost:3000 | App UI |
+| http://localhost:3001/health | API health |
+| http://localhost:3001/ready | API + DB readiness |
 
-## Docs for reviewers
+## Docs
 
-| Doc | Why read it |
-|-----|-------------|
-| [`AGENTS.md`](AGENTS.md) | Project rules & stack |
-| [`docs/00-project-overview.md`](docs/00-project-overview.md) | Product summary |
-| [`docs/04-system-architecture.md`](docs/04-system-architecture.md) | System design |
-| [`docs/08-subscription-and-access-control.md`](docs/08-subscription-and-access-control.md) | Trial / access rules |
+Start with [`AGENTS.md`](AGENTS.md) and [`docs/00-project-overview.md`](docs/00-project-overview.md).
 
 ## License
 

@@ -1,8 +1,44 @@
 import { Module } from '@nestjs/common';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { AdminModule } from './admin/admin.module';
+import { AnalyticsModule } from './analytics/analytics.module';
+import { AuthModule } from './auth/auth.module';
+import { BookmarksModule } from './bookmarks/bookmarks.module';
+import { CategoriesModule } from './categories/categories.module';
+import { ApiExceptionFilter } from './common/filters/api-exception.filter';
 import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './health/health.module';
+import { NewsModule } from './news/news.module';
+import { QuestionsModule } from './questions/questions.module';
+import { StorageModule } from './storage/storage.module';
+import { SubscriptionsModule } from './subscriptions/subscriptions.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
-  imports: [DatabaseModule, HealthModule],
+  imports: [
+    ThrottlerModule.forRoot([
+      {
+        ttl: Number(process.env.THROTTLE_TTL_SECONDS ?? 60) * 1000,
+        limit: Number(process.env.THROTTLE_LIMIT ?? 100),
+      },
+    ]),
+    DatabaseModule,
+    SubscriptionsModule,
+    AuthModule,
+    UsersModule,
+    CategoriesModule,
+    QuestionsModule,
+    BookmarksModule,
+    NewsModule,
+    AnalyticsModule,
+    AdminModule,
+    StorageModule,
+    HealthModule,
+  ],
+  providers: [
+    { provide: APP_FILTER, useClass: ApiExceptionFilter },
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+  ],
 })
 export class AppModule {}

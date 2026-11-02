@@ -1,8 +1,28 @@
 # 17 — Environment Variables
 
-Never commit real secrets. Provide `.env.example` files during Phase 1 with placeholders only.
+Never commit real secrets. Use `.env.example` → `.env`. Prisma also reads `backend/.env` (synced by `pnpm setup`).
 
-## 1. Cross-Cutting
+## Database (canonical local values)
+
+| Variable | Value |
+|----------|-------|
+| `POSTGRES_USER` | `your_academy` |
+| `POSTGRES_PASSWORD` | `your_academy_dev_password` |
+| `POSTGRES_DB` | `your_academy` |
+| `POSTGRES_PORT` | `5432` |
+| `DATABASE_URL` (host) | `postgresql://your_academy:your_academy_dev_password@localhost:5432/your_academy?schema=public` |
+
+Docker Compose overrides `DATABASE_URL` host to `postgres` for `api` / `worker` containers.
+
+**Do not leave `POSTGRES_USER` empty** — an empty value overrides Compose defaults and breaks Postgres.
+
+## Redis
+
+| Variable | Host apps | Inside Compose |
+|----------|-----------|----------------|
+| `REDIS_URL` | `redis://localhost:6379` | `redis://redis:6379` (set on services) |
+
+## Cross-cutting
 
 | Variable | Used by | Description |
 |----------|---------|-------------|
@@ -10,92 +30,46 @@ Never commit real secrets. Provide `.env.example` files during Phase 1 with plac
 | `APP_NAME` | all | `your-academy` |
 | `LOG_LEVEL` | api, worker | `debug` \| `info` \| `warn` \| `error` |
 
-## 2. API
+## API
 
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `API_PORT` | yes | Default `3001` |
-| `API_PUBLIC_URL` | yes | e.g. `https://api.example.com` |
-| `WEB_ORIGIN` | yes | CORS origin |
-| `DATABASE_URL` | yes | PostgreSQL connection string |
-| `REDIS_URL` | yes | Redis connection string |
-| `JWT_ACCESS_SECRET` | yes | Strong random secret |
+| `API_PUBLIC_URL` | yes | e.g. `http://localhost:3001` |
+| `WEB_ORIGIN` | yes | CORS origin (`http://localhost:3000`) |
+| `JWT_ACCESS_SECRET` | yes | Strong random secret (≥32 chars) |
 | `JWT_ACCESS_TTL_SECONDS` | yes | Default `900` |
 | `JWT_REFRESH_TTL_SECONDS` | yes | Default `2592000` |
-| `COOKIE_DOMAIN` | no | Shared parent domain if web/API split hosts; prefer same-origin via Nginx |
-| `COOKIE_SECURE` | yes | `true` in production |
-| `COOKIE_SAME_SITE` | no | Default `lax` (DEC-012) |
-| `CSRF_COOKIE_NAME` | no | Default `csrf_token` |
+| `COOKIE_SECURE` | yes | `false` local, `true` production |
+| `COOKIE_SAME_SITE` | no | Default `lax` |
 | `ACCESS_COOKIE_NAME` | no | Default `access_token` |
 | `REFRESH_COOKIE_NAME` | no | Default `refresh_token` |
+| `CSRF_COOKIE_NAME` | no | Default `csrf_token` |
+| `TRIAL_DAYS` | yes | Must be `7` unless approved |
+| `SWAGGER_ENABLED` | no | Default true in dev |
 | `THROTTLE_TTL_SECONDS` | no | Rate limit window |
 | `THROTTLE_LIMIT` | no | Requests per window |
-| `ARGON2_MEMORY_COST` | no | Tunable |
-| `ARGON2_TIME_COST` | no | Tunable |
-| `ARGON2_PARALLELISM` | no | Tunable |
-| `TRIAL_DAYS` | yes | Must be `7` unless approved change |
-| `SWAGGER_ENABLED` | no | Default true in dev |
 
-## 3. Worker
+## Web
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `DATABASE_URL` | yes | Same DB |
-| `REDIS_URL` | yes | Same Redis |
-| `CLOUDINARY_*` | yes | Same as API |
-| `EMAIL_*` | no | When email enabled |
-
-## 4. Web
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `NEXT_PUBLIC_API_BASE_URL` | yes | Browser-visible API base (`/api/v1` via Nginx or absolute) |
+| `NEXT_PUBLIC_API_BASE_URL` | yes | Prefer `/api/v1` (Next rewrite) |
+| `API_INTERNAL_URL` | yes | Backend origin for rewrite (`http://localhost:3001` or `http://api:3001` in Docker) |
 | `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | yes | Public cloud name only |
 | `PORT` | no | Next listen port |
 
 No `CLOUDINARY_API_SECRET` on web.
 
-## 5. Cloudinary
+## Cloudinary / Email / Bootstrap
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `CLOUDINARY_CLOUD_NAME` | yes | |
-| `CLOUDINARY_API_KEY` | yes | Server only |
-| `CLOUDINARY_API_SECRET` | yes | Server only |
-| `CLOUDINARY_FOLDER_PREFIX` | no | Default `your-academy` |
+See `.env.example` for `CLOUDINARY_*`, `SMTP_*`, `PASSWORD_RESET_*`, and `BOOTSTRAP_ADMIN_*`.
 
-## 6. PostgreSQL / Redis (Compose)
+## Ready-to-run
 
-| Variable | Description |
-|----------|-------------|
-| `POSTGRES_USER` | DB user |
-| `POSTGRES_PASSWORD` | DB password |
-| `POSTGRES_DB` | DB name |
-| `POSTGRES_PORT` | Dev published port only |
-
-## 7. Email (Required for password reset — DEC-004)
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `SMTP_HOST` | yes (prod) | SMTP host |
-| `SMTP_PORT` | yes (prod) | SMTP port |
-| `SMTP_USER` | no | Auth user if required |
-| `SMTP_PASS` | no | Auth password if required |
-| `EMAIL_FROM` | yes (prod) | From address |
-| `PASSWORD_RESET_URL_BASE` | yes | e.g. `https://app.example.com/reset-password` |
-| `PASSWORD_RESET_TTL_SECONDS` | no | Default `3600` |
-
-Dev may use Ethereal/Mailhog; document in Phase 3.
-
-## 8. Admin Bootstrap
-
-| Variable | Description |
-|----------|-------------|
-| `BOOTSTRAP_ADMIN_WHATSAPP` | Seed only |
-| `BOOTSTRAP_ADMIN_PASSWORD` | Seed only — change after first login |
-
-## 9. Validation Rules
-
-- Fail fast if required vars missing
-- Refuse to boot production if `JWT_ACCESS_SECRET` length insufficient
-- `TRIAL_DAYS` should warn if not `7`
+```bash
+cp .env.example .env   # if needed
+pnpm setup             # install, docker postgres/redis, migrate, seed
+pnpm dev:backend
+pnpm dev:frontend
+```
