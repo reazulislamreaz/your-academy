@@ -18,6 +18,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { newRequestId } from '../common/request-id';
 import { CreateQuestionDto } from './dto/create-question.dto';
+import { UpdateQuestionDto } from './dto/update-question.dto';
 import { QuestionsService } from './questions.service';
 
 @Controller('api/v1')
@@ -110,7 +111,7 @@ export class QuestionsController {
   @Patch('admin/questions/:id')
   @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
   @Roles(UserRole.ADMIN)
-  async update(@Param('id') id: string, @Body() dto: CreateQuestionDto) {
+  async update(@Param('id') id: string, @Body() dto: UpdateQuestionDto) {
     return createSuccessResponse(await this.questions.update(id, dto), newRequestId());
   }
 

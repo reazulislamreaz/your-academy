@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { createSuccessResponse } from '@your-academy/shared';
 import type { RequestUser } from '../auth/auth.types';
@@ -8,6 +8,7 @@ import { CsrfGuard } from '../common/guards/csrf.guard';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { newRequestId } from '../common/request-id';
+import { CreateNewsDto, UpdateNewsDto } from './dto/create-news.dto';
 import { NewsService } from './news.service';
 
 @Controller('api/v1')
@@ -24,14 +25,32 @@ export class NewsController {
     return createSuccessResponse(await this.news.getBySlug(slug), newRequestId());
   }
 
+  @Get('admin/news')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async adminList() {
+    return createSuccessResponse(await this.news.adminList(), newRequestId());
+  }
+
+  @Get('admin/news/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async adminGet(@Param('id') id: string) {
+    return createSuccessResponse(await this.news.adminGet(id), newRequestId());
+  }
+
   @Post('admin/news')
   @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
   @Roles(UserRole.ADMIN)
-  async create(
-    @CurrentUser() user: RequestUser,
-    @Body() body: { title: string; slug: string; summary?: string; body: string },
-  ) {
+  async create(@CurrentUser() user: RequestUser, @Body() body: CreateNewsDto) {
     return createSuccessResponse(await this.news.create(user, body), newRequestId());
+  }
+
+  @Patch('admin/news/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
+  @Roles(UserRole.ADMIN)
+  async update(@Param('id') id: string, @Body() body: UpdateNewsDto) {
+    return createSuccessResponse(await this.news.update(id, body), newRequestId());
   }
 
   @Post('admin/news/:id/publish')
@@ -39,5 +58,19 @@ export class NewsController {
   @Roles(UserRole.ADMIN)
   async publish(@Param('id') id: string) {
     return createSuccessResponse(await this.news.publish(id), newRequestId());
+  }
+
+  @Post('admin/news/:id/unpublish')
+  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
+  @Roles(UserRole.ADMIN)
+  async unpublish(@Param('id') id: string) {
+    return createSuccessResponse(await this.news.unpublish(id), newRequestId());
+  }
+
+  @Delete('admin/news/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
+  @Roles(UserRole.ADMIN)
+  async remove(@Param('id') id: string) {
+    return createSuccessResponse(await this.news.softDelete(id), newRequestId());
   }
 }

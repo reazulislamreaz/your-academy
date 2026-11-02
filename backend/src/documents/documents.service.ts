@@ -1,7 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { DocumentVisibility } from '@prisma/client';
 import { createErrorResponse } from '@your-academy/shared';
+import type { RequestUser } from '../auth/auth.types';
 import { newRequestId } from '../common/request-id';
 import { PrismaService } from '../database/prisma.service';
+import type { CreateDocumentDto, UpdateDocumentDto } from './dto/create-document.dto';
 
 @Injectable()
 export class DocumentsService {
@@ -31,6 +34,25 @@ export class DocumentsService {
     return { items, nextCursor };
   }
 
+  async adminList() {
+    return this.prisma.document.findMany({
+      where: { deletedAt: null },
+      orderBy: [{ updatedAt: 'desc' }],
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        visibility: true,
+        isPublished: true,
+        category: { select: { id: true, name: true } },
+        mediaAsset: {
+          select: { originalFilename: true, mimeType: true, bytes: true },
+        },
+        updatedAt: true,
+      },
+    });
+  }
+
   async getPublished(id: string) {
     const doc = await this.prisma.document.findFirst({
       where: { id, isPublished: true, deletedAt: null },
@@ -58,7 +80,6 @@ export class DocumentsService {
       );
     }
 
-    // Signed download arrives with real Cloudinary wiring (Phase 6 closeout).
     return {
       ...doc,
       download: {
@@ -67,5 +88,95 @@ export class DocumentsService {
         url: null as string | null,
       },
     };
+  }
+
+  async adminGet(id: string) {
+    const doc = await this.prisma.document.findFirst({
+      where: { id, deletedAt: null },
+      include: {
+        category: { select: { id: true, name: true } },
+        mediaAsset: {
+          select: {
+            id: true,
+            mimeType: true,
+            bytes: true,
+            originalFilename: true,
+            format: true,
+          },
+        },
+      },
+    });
+    if (!doc) {
+      throw new NotFoundException(
+        createErrorResponse('DOCUMENT_NOT_FOUND', 'Document not found', newRequestId()),
+      );
+    }
+    return doc;
+  }
+
+  async create(user: RequestUser, dto: CreateDocumentDto) {
+    const filename = dto.filename?.trim() || `${dto.title.trim().toLowerCase().replace(/\s+/g, '-')}.pdf`;
+    const publicId = `admin-placeholder/${user.userId}/${Date.now()}-${filename}`;
+
+    return this.prisma.$transaction(async (tx) => {
+      const media = await tx.mediaAsset.create({
+        data: {
+          publicId,
+          resourceType: 'RAW',
+          deliveryType: 'UPLOAD',
+          format: 'pdf',
+          bytes: 0,
+          mimeType: 'application/pdf',
+          originalFilename: filename,
+          uploadedById: user.userId,
+        },
+      });
+
+      return tx.document.create({
+        data: {
+          title: dto.title.trim(),
+          description: dto.description,
+          categoryId: dto.categoryId,
+          visibility: dto.visibility ?? DocumentVisibility.AUTHENTICATED,
+          isPublished: dto.isPublished ?? false,
+          mediaAssetId: media.id,
+          createdById: user.userId,
+        },
+        include: {
+          category: { select: { id: true, name: true } },
+          mediaAsset: {
+            select: { originalFilename: true, mimeType: true, bytes: true },
+          },
+        },
+      });
+    });
+  }
+
+  async update(id: string, dto: UpdateDocumentDto) {
+    await this.adminGet(id);
+    return this.prisma.document.update({
+      where: { id },
+      data: {
+        ...(dto.title ? { title: dto.title.trim() } : {}),
+        ...(dto.description !== undefined ? { description: dto.description } : {}),
+        ...(dto.categoryId !== undefined ? { categoryId: dto.categoryId } : {}),
+        ...(dto.visibility ? { visibility: dto.visibility } : {}),
+        ...(dto.isPublished !== undefined ? { isPublished: dto.isPublished } : {}),
+      },
+      include: {
+        category: { select: { id: true, name: true } },
+        mediaAsset: {
+          select: { originalFilename: true, mimeType: true, bytes: true },
+        },
+      },
+    });
+  }
+
+  async softDelete(id: string) {
+    await this.adminGet(id);
+    return this.prisma.document.update({
+      where: { id },
+      data: { deletedAt: new Date(), isPublished: false },
+    });
   }
 }

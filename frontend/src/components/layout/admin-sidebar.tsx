@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Newspaper,
   FolderTree,
+  FileText,
   ArrowLeft,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -16,8 +17,9 @@ import { Separator } from '@/components/ui/separator';
 const items = [
   { href: '/admin/dashboard', label: 'Overview', icon: LayoutDashboard },
   { href: '/admin/questions', label: 'Questions', icon: FileQuestion },
-  { href: '/admin/categories', label: 'Categories', icon: FolderTree, disabled: true },
-  { href: '/admin/news', label: 'News', icon: Newspaper, disabled: true },
+  { href: '/admin/categories', label: 'Categories', icon: FolderTree },
+  { href: '/admin/news', label: 'News', icon: Newspaper },
+  { href: '/admin/documents', label: 'Documents', icon: FileText },
 ];
 
 export function AdminSidebar() {
@@ -34,25 +36,15 @@ export function AdminSidebar() {
         {items.map((item) => {
           const Icon = item.icon;
           const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
-          if (item.disabled) {
-            return (
-              <span
-                key={item.href}
-                className="flex items-center gap-2 rounded-[var(--radius-sm)] px-3 py-2.5 text-sm text-white/35"
-                title="Coming in a later phase"
-              >
-                <Icon className="h-4 w-4" />
-                {item.label}
-              </span>
-            );
-          }
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
                 'flex items-center gap-2 rounded-[var(--radius-sm)] px-3 py-2.5 text-sm font-medium transition-colors',
-                active ? 'bg-[var(--highlight)] text-[var(--highlight-fg)]' : 'text-white/75 hover:bg-white/10 hover:text-white',
+                active
+                  ? 'bg-[var(--highlight)] text-[var(--highlight-fg)]'
+                  : 'text-white/75 hover:bg-white/10 hover:text-white',
               )}
             >
               <Icon className="h-4 w-4" />

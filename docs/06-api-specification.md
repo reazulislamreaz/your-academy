@@ -211,13 +211,18 @@ Query params for list: `cursor`, `limit`, `categoryId`, `subcategoryId`, `diffic
 | GET | `/news/:slug` | Article + linked docs | Public/User | — |
 | GET | `/documents` | Published document list | User | USER/ADMIN |
 | GET | `/documents/:id` | Metadata + signed download if allowed (download may be unavailable until storage configured) | User | USER/ADMIN |
-| POST | `/admin/news` | Create | User | ADMIN |
+| GET | `/admin/news` | Admin list (drafts + published) | User | ADMIN |
+| GET | `/admin/news/:id` | Admin detail | User | ADMIN |
+| POST | `/admin/news` | Create draft | User | ADMIN |
 | PATCH | `/admin/news/:id` | Update | User | ADMIN |
 | POST | `/admin/news/:id/publish` | Publish | User | ADMIN |
+| POST | `/admin/news/:id/unpublish` | Unpublish | User | ADMIN |
 | DELETE | `/admin/news/:id` | Soft delete | User | ADMIN |
-| POST | `/admin/documents` | Create + attach upload | User | ADMIN |
-| PATCH | `/admin/documents/:id` | Update | User | ADMIN |
-| DELETE | `/admin/documents/:id` | Soft delete + cleanup job | User | ADMIN |
+| GET | `/admin/documents` | Admin list | User | ADMIN |
+| GET | `/admin/documents/:id` | Admin detail | User | ADMIN |
+| POST | `/admin/documents` | Create metadata (+ placeholder media until Cloudinary) | User | ADMIN |
+| PATCH | `/admin/documents/:id` | Update / publish toggle | User | ADMIN |
+| DELETE | `/admin/documents/:id` | Soft delete | User | ADMIN |
 
 ---
 

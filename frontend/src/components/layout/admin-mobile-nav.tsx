@@ -7,6 +7,9 @@ import { cn } from '@/lib/utils';
 const items = [
   { href: '/admin/dashboard', label: 'Overview' },
   { href: '/admin/questions', label: 'Questions' },
+  { href: '/admin/categories', label: 'Categories' },
+  { href: '/admin/news', label: 'News' },
+  { href: '/admin/documents', label: 'Docs' },
 ];
 
 export function AdminMobileNav() {
@@ -17,7 +20,7 @@ export function AdminMobileNav() {
       aria-label="Admin sections"
     >
       {items.map((item) => {
-        const active = pathname.startsWith(item.href);
+        const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
         return (
           <Link
             key={item.href}

@@ -58,3 +58,29 @@ export type DocumentListItem = {
   category?: { id: string; name: string } | null;
   updatedAt: string;
 };
+
+export type AccessSnapshot = {
+  trialStartedAt: string;
+  trialEndsAt: string;
+  isTrialActive: boolean;
+  hasActiveSubscription: boolean;
+  role: string;
+  entitlements: string[];
+};
+
+export type MeUser = {
+  id: string;
+  name: string;
+  whatsappNumber: string;
+  email: string | null;
+  role: string;
+  status: string;
+  createdAt?: string;
+  access: AccessSnapshot;
+};
+
+export type UserStats = {
+  questionBookmarks: number;
+  documentBookmarks: number;
+  browsingSeconds: number;
+};

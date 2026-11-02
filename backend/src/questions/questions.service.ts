@@ -11,6 +11,7 @@ import { newRequestId } from '../common/request-id';
 import { PrismaService } from '../database/prisma.service';
 import { AccessControlService } from '../subscriptions/access-control.service';
 import type { CreateQuestionDto } from './dto/create-question.dto';
+import type { UpdateQuestionDto } from './dto/update-question.dto';
 
 @Injectable()
 export class QuestionsService {
@@ -46,7 +47,7 @@ export class QuestionsService {
     });
   }
 
-  async update(id: string, dto: Partial<CreateQuestionDto>) {
+  async update(id: string, dto: UpdateQuestionDto) {
     const existing = await this.prisma.question.findUnique({ where: { id } });
     if (!existing || existing.deletedAt) {
       throw new NotFoundException(

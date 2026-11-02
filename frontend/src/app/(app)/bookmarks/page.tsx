@@ -1,12 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { PageHeader } from '@/components/layout/page-header';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
+import { isUnauthorized } from '@/features/auth/use-auth';
 import { apiFetch } from '@/lib/api/client';
 
 type BookmarkRow = {
@@ -15,9 +17,20 @@ type BookmarkRow = {
 };
 
 export default function BookmarksPage() {
+  const qc = useQueryClient();
   const { data, isLoading, error } = useQuery({
     queryKey: ['bookmarks'],
     queryFn: () => apiFetch<BookmarkRow[]>('/bookmarks/questions'),
+    retry: false,
+  });
+
+  const remove = useMutation({
+    mutationFn: (questionId: string) =>
+      apiFetch(`/bookmarks/questions/${questionId}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['bookmarks'] });
+      void qc.invalidateQueries({ queryKey: ['stats'] });
+    },
   });
 
   return (
@@ -29,7 +42,7 @@ export default function BookmarksPage() {
           <Skeleton className="h-16 w-full" />
         </div>
       ) : null}
-      {error ? (
+      {isUnauthorized(error) ? (
         <Alert variant="warning">
           Sign in to view bookmarks.{' '}
           <Link href="/login" className="font-semibold underline-offset-2 hover:underline">
@@ -42,7 +55,10 @@ export default function BookmarksPage() {
           title="No bookmarks yet"
           description="Save a question from its detail page to see it here."
           action={
-            <Link href="/questions" className="text-sm font-semibold text-[var(--ink)] underline-offset-2 hover:underline">
+            <Link
+              href="/questions"
+              className="text-sm font-semibold text-[var(--ink)] underline-offset-2 hover:underline"
+            >
               Browse questions
             </Link>
           }
@@ -50,17 +66,26 @@ export default function BookmarksPage() {
       ) : null}
       <div className="grid gap-3">
         {data?.map((b) => (
-          <Link
+          <div
             key={b.id}
-            href={`/questions/${b.question.id}`}
             className="flex items-start justify-between gap-3 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] p-4"
           >
-            <div>
+            <Link href={`/questions/${b.question.id}`} className="min-w-0 flex-1">
               <p className="font-semibold">{b.question.title}</p>
               <p className="text-sm text-[var(--muted)]">{b.question.category.name}</p>
+            </Link>
+            <div className="flex shrink-0 items-center gap-2">
+              <Badge variant="outline">{b.question.difficulty}</Badge>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={remove.isPending}
+                onClick={() => remove.mutate(b.question.id)}
+              >
+                Remove
+              </Button>
             </div>
-            <Badge variant="outline">{b.question.difficulty}</Badge>
-          </Link>
+          </div>
         ))}
       </div>
     </div>

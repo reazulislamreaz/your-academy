@@ -235,5 +235,5 @@ flowchart TD
 
 ## Recommended Next Step
 
-**Design system + public site (Phases 2–3) established** — see `docs/21-design-system.md`.  
-Next: auth/session UX + learner dashboard (Phase 4), then admin CMS depth (Phase 5).
+**Phases 2–5 (design system → admin CMS) established.**  
+Next: backend closeout (real Cloudinary, email queue) and hardening/tests.

@@ -3,15 +3,19 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Surface } from '@/components/ui/surface';
+import { meQueryKey } from '@/features/auth/use-auth';
 import { ApiError, apiFetch } from '@/lib/api/client';
+import type { MeUser } from '@/lib/api/types';
 
 export default function RegisterPage() {
   const router = useRouter();
+  const qc = useQueryClient();
   const [form, setForm] = useState({
     name: '',
     whatsappNumber: '+880',
@@ -26,7 +30,7 @@ export default function RegisterPage() {
     setLoading(true);
     setError(null);
     try {
-      await apiFetch('/auth/register', {
+      const result = await apiFetch<{ user: MeUser }>('/auth/register', {
         method: 'POST',
         body: JSON.stringify({
           name: form.name,
@@ -34,8 +38,11 @@ export default function RegisterPage() {
           password: form.password,
           ...(form.email ? { email: form.email } : {}),
         }),
+        skipRefresh: true,
       });
+      qc.setQueryData(meQueryKey, result.user);
       router.push('/questions');
+      router.refresh();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Registration failed');
     } finally {
@@ -72,7 +79,7 @@ export default function RegisterPage() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="email">Email (optional)</Label>
+            <Label htmlFor="email">Email (optional — needed for password reset)</Label>
             <Input
               id="email"
               type="email"
@@ -90,6 +97,7 @@ export default function RegisterPage() {
               value={form.password}
               onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
               autoComplete="new-password"
+              minLength={8}
             />
           </div>
           {error ? <Alert variant="danger">{error}</Alert> : null}
