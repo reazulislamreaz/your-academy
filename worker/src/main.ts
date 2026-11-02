@@ -12,7 +12,7 @@ type PasswordResetJob = {
 };
 
 async function sendPasswordResetEmail(data: PasswordResetJob) {
-  const host = process.env.SMTP_HOST;
+  const host = process.env.SMTP_HOST?.trim();
   const port = Number(process.env.SMTP_PORT ?? 1025);
   const from = process.env.EMAIL_FROM ?? 'noreply@your-academy.local';
 
@@ -32,13 +32,26 @@ async function sendPasswordResetEmail(data: PasswordResetJob) {
         : undefined,
   });
 
-  await transporter.sendMail({
-    from,
-    to: data.to,
-    subject: 'Reset your Your Academy password',
-    text: `Reset your password using this link (expires soon):\n\n${data.resetUrl}\n\nIf you did not request this, ignore this email.`,
-    html: `<p>Reset your password using this link (expires soon):</p><p><a href="${data.resetUrl}">${data.resetUrl}</a></p><p>If you did not request this, ignore this email.</p>`,
-  });
+  try {
+    await transporter.sendMail({
+      from,
+      to: data.to,
+      subject: 'Reset your Your Academy password',
+      text: `Reset your password using this link (expires soon):\n\n${data.resetUrl}\n\nIf you did not request this, ignore this email.`,
+      html: `<p>Reset your password using this link (expires soon):</p><p><a href="${data.resetUrl}">${data.resetUrl}</a></p><p>If you did not request this, ignore this email.</p>`,
+    });
+    console.log(`[${service}-worker] password-reset email sent to ${data.to}`);
+  } catch (err) {
+    // Local Mailhog often isn't running — log link so resets stay usable.
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn(
+        `[${service}-worker] SMTP send failed (${String(err)}); logging resetUrl for ${data.to}`,
+      );
+      console.log(`[${service}-worker] resetUrl=${data.resetUrl}`);
+      return;
+    }
+    throw err;
+  }
 }
 
 async function main() {

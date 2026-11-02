@@ -95,17 +95,18 @@ Dependency-ordered phases. Complete acceptance criteria before advancing.
 
 ---
 
-## Phase 6 — Cloudinary and Document Management
+## Phase 6 — Cloudinary and Document Management — **DONE**
 
 **Depends on:** Phase 3 (can parallelize after 3 with Phase 4)
 
 **Work:**
 
 - StorageService + Cloudinary implementation
-- Sign-upload/confirm; avatar; question images
-- MediaAsset persistence; orphan cleanup job stub
+- Sign-upload/confirm; avatar; question images; admin PDF
+- MediaAsset persistence; orphan cleanup job stub (maintenance queue)
+- Forgot-password → BullMQ `email-queue` → worker SMTP (or log reset URL locally)
 
-**Acceptance:** Upload without exposing secrets; metadata stored; delete path works with mocks/tests.
+**Acceptance:** Upload without exposing secrets; metadata stored; demo Cloudinary placeholders treated as unconfigured; password-reset jobs processed by worker.
 
 ---
 

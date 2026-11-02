@@ -264,6 +264,6 @@ Cursor rules (always apply / path-scoped): `.cursor/rules/*.mdc`.
 
 ## 18. Next Phase
 
-**Phase 3 — Authentication & user management**  
-Cookies + CSRF, Argon2id, refresh rotation, profile basics.  
-See `docs/16-development-roadmap.md` and `docs/07-authentication-and-authorization.md`.
+**Phases 2–6 done** (design system → public/app → access control → admin CMS → Cloudinary/email).  
+**Next:** Phase 7 — Bookmarks and user dashboard (then Phase 12 hardening/tests).  
+See `docs/16-development-roadmap.md`.

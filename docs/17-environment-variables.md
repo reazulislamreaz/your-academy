@@ -83,7 +83,9 @@ Placeholder values (`demo` / `demo_secret_change_me`) are treated as **not confi
 | `PASSWORD_RESET_URL_BASE` | api | e.g. `http://localhost:3000/reset-password` |
 | `PASSWORD_RESET_TTL_SECONDS` | api | Default `3600` |
 
-Forgot-password enqueues a BullMQ `password-reset` job on `email-queue`. Non-production API also logs the reset link so local resets work without SMTP.
+Forgot-password enqueues a BullMQ `password-reset` job on `email-queue`. The worker sends via SMTP when reachable; in non-production it logs the reset URL if SMTP fails (e.g. Mailhog not running). The API also logs the link when `NODE_ENV !== production`.
+
+Local scripts use `dotenv -e .env -o` so `.env` wins over inherited Docker hostnames (e.g. `REDIS_URL=redis://redis:6379`). Turbo runs with `envMode: "loose"` so worker/API receive those vars.
 
 ## Bootstrap admin
 
