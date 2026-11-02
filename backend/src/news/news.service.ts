@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { createErrorResponse } from '@your-academy/shared';
+import { AuditService } from '../audit/audit.service';
 import type { RequestUser } from '../auth/auth.types';
 import { newRequestId } from '../common/request-id';
 import { PrismaService } from '../database/prisma.service';
@@ -20,7 +21,10 @@ const linkedDocumentSelect = {
 
 @Injectable()
 export class NewsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   listPublished() {
     return this.prisma.news.findMany({
@@ -194,28 +198,49 @@ export class NewsService {
     }
   }
 
-  async publish(id: string) {
+  async publish(id: string, actorUserId?: string) {
     await this.adminGet(id);
-    return this.prisma.news.update({
+    const updated = await this.prisma.news.update({
       where: { id },
       data: { isPublished: true, publishedAt: new Date() },
     });
+    await this.audit.record({
+      actorUserId,
+      action: 'NEWS_PUBLISH',
+      entityType: 'news',
+      entityId: id,
+    });
+    return updated;
   }
 
-  async unpublish(id: string) {
+  async unpublish(id: string, actorUserId?: string) {
     await this.adminGet(id);
-    return this.prisma.news.update({
+    const updated = await this.prisma.news.update({
       where: { id },
       data: { isPublished: false },
     });
+    await this.audit.record({
+      actorUserId,
+      action: 'NEWS_UNPUBLISH',
+      entityType: 'news',
+      entityId: id,
+    });
+    return updated;
   }
 
-  async softDelete(id: string) {
+  async softDelete(id: string, actorUserId?: string) {
     await this.adminGet(id);
-    return this.prisma.news.update({
+    const updated = await this.prisma.news.update({
       where: { id },
       data: { deletedAt: new Date(), isPublished: false },
     });
+    await this.audit.record({
+      actorUserId,
+      action: 'NEWS_SOFT_DELETE',
+      entityType: 'news',
+      entityId: id,
+    });
+    return updated;
   }
 
   private async assertDocumentsExist(documentIds: string[]) {

@@ -6,13 +6,15 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { UserRole, UserStatus, type User } from '@prisma/client';
+import { BrowsingSessionStatus, UserRole, UserStatus, type User } from '@prisma/client';
 import { createErrorResponse } from '@your-academy/shared';
 import * as argon2 from 'argon2';
 import { randomUUID } from 'node:crypto';
+import { AuditService } from '../audit/audit.service';
 import { newRequestId } from '../common/request-id';
 import { randomToken, sha256 } from '../common/utils/crypto';
 import { isValidWhatsapp, normalizeWhatsapp } from '../common/utils/whatsapp';
+import { getJwtAccessSecret } from '../config/env';
 import { PrismaService } from '../database/prisma.service';
 import { EmailQueueService } from '../queue/email-queue.service';
 import { AccessControlService } from '../subscriptions/access-control.service';
@@ -32,6 +34,7 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly access: AccessControlService,
     private readonly emailQueue: EmailQueueService,
+    private readonly audit: AuditService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -142,6 +145,10 @@ export class AuthService {
       where: { id: user.sessionId },
       data: { revokedAt: new Date() },
     });
+    await this.prisma.browsingSession.updateMany({
+      where: { userId: user.userId, status: BrowsingSessionStatus.ACTIVE },
+      data: { status: BrowsingSessionStatus.ENDED, endedAt: new Date() },
+    });
   }
 
   async changePassword(user: RequestUser, dto: ChangePasswordDto) {
@@ -161,6 +168,13 @@ export class AuthService {
         data: { revokedAt: new Date() },
       }),
     ]);
+
+    await this.audit.record({
+      actorUserId: user.userId,
+      action: 'PASSWORD_CHANGE',
+      entityType: 'user',
+      entityId: user.userId,
+    });
 
     return this.issueSession(await this.prisma.user.findUniqueOrThrow({ where: { id: user.userId } }));
   }
@@ -276,7 +290,7 @@ export class AuthService {
 
     const payload: JwtPayload = { sub: user.id, role: user.role, sid: session.id };
     const accessToken = await this.jwt.signAsync(payload, {
-      secret: process.env.JWT_ACCESS_SECRET ?? 'dev-only-change-me-access-secret-32chars',
+      secret: getJwtAccessSecret(),
       expiresIn: accessTtl,
     });
 

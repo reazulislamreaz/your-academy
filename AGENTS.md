@@ -4,7 +4,7 @@
 > Deep specs live in `docs/`. Cursor rules in `.cursor/rules/` mirror these constraints.
 
 **Product:** Your Academy — subscription-ready MCQ EdTech platform.  
-**Phase:** Backend scaffold + design system (`docs/21-design-system.md`) in place. Next: public/app feature depth, documents/storage, tests. See `docs/16-development-roadmap.md` and `docs/20-production-readiness-audit.md`.
+**Phase:** Phases 2–13 complete in-repo (prod Compose/TLS/deploy scaffolding). Live VPS cutover: `docs/22-operations-runbook.md`. See `docs/16-development-roadmap.md` and `docs/20-production-readiness-audit.md`.
 
 ---
 
@@ -245,6 +245,7 @@ Forbidden without approval: microservices, GraphQL, alternate ORMs, payment prov
 | `docs/11`–`12` | Frontend, backend structure |
 | `docs/13`–`15` | Security, testing, Docker |
 | `docs/16`–`19` | Roadmap, env, coding standards, decisions |
+| `docs/20`–`22` | Production audit, design system, ops runbook |
 
 Cursor rules (always apply / path-scoped): `.cursor/rules/*.mdc`.
 
@@ -264,6 +265,6 @@ Cursor rules (always apply / path-scoped): `.cursor/rules/*.mdc`.
 
 ## 18. Next Phase
 
-**Phases 2–8 done**; Phase 12 started (answer privacy / bookmarks / DEC-001 tests in CI).  
-**Next:** Finish Phase 12 hardening, or Phases 9–11 polish.  
+**Phases 2–13 done** (including prod Compose/TLS/deploy runbook).  
+**Next:** Follow `docs/22-operations-runbook.md` for live VPS cutover.  
 See `docs/16-development-roadmap.md`.

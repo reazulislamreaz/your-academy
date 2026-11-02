@@ -200,12 +200,18 @@ importers:
 
   worker:
     dependencies:
+      '@prisma/client':
+        specifier: ^6.5.0
+        version: 6.5.0(prisma@6.5.0(typescript@5.9.3))(typescript@5.9.3)
       '@your-academy/shared':
         specifier: workspace:*
         version: link:../shared
       bullmq:
         specifier: ^6.5.3
         version: 6.5.3(ioredis@6.0.0)
+      cloudinary:
+        specifier: ^2.11.0
+        version: 2.11.0
       ioredis:
         specifier: ^6.0.0
         version: 6.0.0
@@ -219,6 +225,9 @@ importers:
       '@types/nodemailer':
         specifier: ^8.0.2
         version: 8.0.2
+      prisma:
+        specifier: 6.5.0
+        version: 6.5.0(typescript@5.9.3)
       tsx:
         specifier: ^4.19.3
         version: 4.23.15

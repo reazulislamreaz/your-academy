@@ -140,6 +140,8 @@ export class StorageService {
         ? 'application/pdf'
         : `image/${remote.format ?? input.format ?? 'jpeg'}`);
 
+    this.assertMimeForPurpose(purpose, mimeType);
+
     const deliveryType =
       remote.type === 'authenticated'
         ? MediaDeliveryType.AUTHENTICATED
@@ -217,6 +219,29 @@ export class StorageService {
         createErrorResponse(
           'FORBIDDEN',
           'Only admins can upload this asset type',
+          newRequestId(),
+        ),
+      );
+    }
+  }
+
+  private assertMimeForPurpose(purpose: UploadPurpose, mimeType: string) {
+    const normalized = mimeType.toLowerCase().split(';')[0]?.trim() ?? '';
+    const imageOk = ['image/jpeg', 'image/png', 'image/webp'].includes(normalized);
+    const pdfOk = normalized === 'application/pdf';
+
+    const allowed =
+      purpose === 'pdf'
+        ? pdfOk
+        : purpose === 'avatar' || purpose === 'question-image' || purpose === 'news-cover'
+          ? imageOk
+          : false;
+
+    if (!allowed) {
+      throw new BadRequestException(
+        createErrorResponse(
+          'INVALID_MIME_TYPE',
+          `MIME type ${mimeType} is not allowed for purpose ${purpose}`,
           newRequestId(),
         ),
       );

@@ -83,7 +83,7 @@ export class DocumentsController {
   @Delete('admin/documents/:id')
   @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
   @Roles(UserRole.ADMIN)
-  async remove(@Param('id') id: string) {
-    return createSuccessResponse(await this.documents.softDelete(id), newRequestId());
+  async remove(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return createSuccessResponse(await this.documents.softDelete(id, user.userId), newRequestId());
   }
 }

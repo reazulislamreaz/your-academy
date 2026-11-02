@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { apiFetch } from '@/lib/api/client';
+import { ApiError, apiFetch } from '@/lib/api/client';
 import { getCookie } from '@/lib/utils';
 import { useMe } from '@/features/auth/use-auth';
 
 const HEARTBEAT_MS = 30_000;
-const IDLE_MS = 5 * 60_000;
+/** DEC-009 current assumption: 120s without interaction pauses accrual. */
+const IDLE_MS = 120_000;
 const INSTANCE_KEY = 'ya_client_instance_id';
 
 function getClientInstanceId(): string {
@@ -24,7 +25,7 @@ function getClientInstanceId(): string {
 
 /**
  * Starts a browsing session while authenticated and heartbeats every 30s
- * when the tab is visible and the user is not idle (docs/11).
+ * when the tab is visible and the user is not idle.
  */
 export function BrowsingHeartbeat() {
   const me = useMe();
@@ -61,33 +62,30 @@ export function BrowsingHeartbeat() {
     }
 
     async function beat() {
-      const id = sessionIdRef.current;
-      if (!id || cancelled) return;
+      if (cancelled) return;
+      let id = sessionIdRef.current;
+      if (!id) {
+        await ensureSession();
+        id = sessionIdRef.current;
+      }
+      if (!id) return;
+
       const idle = Date.now() - lastActiveRef.current > IDLE_MS;
       const hidden = document.visibilityState === 'hidden';
-      if (idle || hidden) {
-        try {
-          await apiFetch(`/analytics/sessions/${id}/heartbeat`, {
-            method: 'POST',
-            body: JSON.stringify({
-              visibilityState: 'hidden',
-              clientInstanceId,
-            }),
-          });
-        } catch {
-          /* ignore */
-        }
-        return;
-      }
       try {
         await apiFetch(`/analytics/sessions/${id}/heartbeat`, {
           method: 'POST',
           body: JSON.stringify({
-            visibilityState: 'visible',
+            visibilityState: idle || hidden ? 'hidden' : 'visible',
             clientInstanceId,
           }),
         });
-      } catch {
+      } catch (err) {
+        if (err instanceof ApiError && err.code === 'SESSION_NOT_FOUND') {
+          sessionIdRef.current = null;
+          await ensureSession();
+          return;
+        }
         sessionIdRef.current = null;
       }
     }

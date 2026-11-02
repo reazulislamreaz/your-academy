@@ -17,7 +17,8 @@ describe('NewsService', () => {
     $transaction: jest.fn(),
   };
 
-  const service = new NewsService(prisma as never);
+  const audit = { record: jest.fn() };
+  const service = new NewsService(prisma as never, audit as never);
   const user = { userId: 'admin-1', role: 'ADMIN' as const, sessionId: 's1' };
 
   beforeEach(() => {

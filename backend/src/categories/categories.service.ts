@@ -5,13 +5,17 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { createErrorResponse } from '@your-academy/shared';
+import { AuditService } from '../audit/audit.service';
 import { newRequestId } from '../common/request-id';
 import { PrismaService } from '../database/prisma.service';
 import type { CreateCategoryDto } from './dto/create-category.dto';
 
 @Injectable()
 export class CategoriesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   async listActive() {
     const roots = await this.prisma.category.findMany({
@@ -85,7 +89,14 @@ export class CategoriesService {
     });
   }
 
-  async deactivate(id: string) {
-    return this.update(id, { isActive: false });
+  async deactivate(id: string, actorUserId?: string) {
+    const updated = await this.update(id, { isActive: false });
+    await this.audit.record({
+      actorUserId,
+      action: 'CATEGORY_DEACTIVATE',
+      entityType: 'category',
+      entityId: id,
+    });
+    return updated;
   }
 }

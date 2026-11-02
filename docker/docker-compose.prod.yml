@@ -1,0 +1,123 @@
+# Production overrides — NEVER stack with docker-compose.dev.yml
+# Usage:
+#   docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml \
+#     --env-file .env.production up -d --build
+#
+# Postgres/Redis stay on the internal network only (no host ports).
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: '10m'
+    max-file: '5'
+
+services:
+  postgres:
+    restart: unless-stopped
+    logging: *default-logging
+    # Explicitly no ports — internal network only
+
+  redis:
+    restart: unless-stopped
+    logging: *default-logging
+
+  migrate:
+    build:
+      context: ..
+      dockerfile: docker/api.Dockerfile
+    restart: 'no'
+    env_file:
+      - ../.env.production
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+    # Uses the API image (pnpm places the Prisma CLI under backend/node_modules).
+    command:
+      [
+        '/app/backend/node_modules/.bin/prisma',
+        'migrate',
+        'deploy',
+        '--schema',
+        '/app/backend/prisma/schema.prisma',
+      ]
+    working_dir: /app/backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - internal
+    logging: *default-logging
+
+  api:
+    restart: unless-stopped
+    stop_grace_period: 30s
+    env_file:
+      - ../.env.production
+    environment:
+      NODE_ENV: production
+      API_PORT: 3001
+      COOKIE_SECURE: 'true'
+      SWAGGER_ENABLED: 'false'
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+      REDIS_URL: redis://redis:6379
+      WEB_ORIGIN: ${WEB_ORIGIN}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    logging: *default-logging
+
+  worker:
+    restart: unless-stopped
+    stop_grace_period: 45s
+    env_file:
+      - ../.env.production
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    logging: *default-logging
+
+  web:
+    restart: unless-stopped
+    stop_grace_period: 20s
+    env_file:
+      - ../.env.production
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-/api/v1}
+      API_INTERNAL_URL: http://api:3001
+    depends_on:
+      api:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    logging: *default-logging
+
+  nginx:
+    restart: unless-stopped
+    # Standard edge ports (do not inherit local NGINX_HTTP_PORT=8080 from .env.example).
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - ${TLS_CERTS_DIR:-./certs}:/etc/nginx/certs:ro
+      - ${CERTBOT_WWW_DIR:-./certbot-www}:/var/www/certbot:ro
+    depends_on:
+      api:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+    logging: *default-logging

@@ -3,8 +3,11 @@ import { NestFactory } from '@nestjs/core';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { getWebOrigins, validateEnv } from './config/env';
 
 async function bootstrap() {
+  validateEnv();
+
   const app = await NestFactory.create(AppModule);
   app.enableShutdownHooks();
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
@@ -17,9 +20,19 @@ async function bootstrap() {
     }),
   );
 
-  const webOrigin = process.env.WEB_ORIGIN ?? 'http://localhost:3000';
+  const origins = getWebOrigins();
   app.enableCors({
-    origin: webOrigin,
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
+      // Non-browser clients (curl, server-to-server) may omit Origin.
+      if (!origin || origins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error(`Origin ${origin} not allowed by CORS`), false);
+    },
     credentials: true,
   });
 

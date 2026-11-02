@@ -8,7 +8,7 @@ FROM base AS deps
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* turbo.json tsconfig.base.json ./
 COPY shared/package.json shared/
 COPY worker/package.json worker/
-RUN pnpm install --filter @your-academy/worker... --frozen-lockfile=false
+RUN pnpm install --filter @your-academy/worker... --frozen-lockfile
 
 FROM base AS build
 COPY --from=deps /app /app

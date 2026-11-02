@@ -9,6 +9,7 @@ import {
   FolderTree,
   FileText,
   ArrowLeft,
+  Users,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { BrandMark } from './brand-mark';
@@ -16,6 +17,7 @@ import { Separator } from '@/components/ui/separator';
 
 const items = [
   { href: '/admin/dashboard', label: 'Overview', icon: LayoutDashboard },
+  { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/questions', label: 'Questions', icon: FileQuestion },
   { href: '/admin/categories', label: 'Categories', icon: FolderTree },
   { href: '/admin/news', label: 'News', icon: Newspaper },

@@ -7,9 +7,10 @@
 | `web` | `frontend/` multi-stage | Next.js standalone output preferred |
 | `api` | `backend/` multi-stage | NestJS prod build |
 | `worker` | `worker/` multi-stage | Background jobs |
+| `migrate` | same as `api` (prod) | One-shot `prisma migrate deploy` before start |
 | `postgres` | Official Postgres | Named volume; not published in prod |
 | `redis` | Official Redis | Persistence config; not published in prod |
-| `nginx` | Official Nginx | TLS, reverse proxy |
+| `nginx` | Official Nginx | TLS, reverse proxy (80/443 in prod) |
 
 Cloudinary is external — **not** containerized.
 
@@ -24,16 +25,30 @@ Cloudinary is external — **not** containerized.
 ```text
 docker/
   docker-compose.yml           # base
-  docker-compose.dev.yml       # hot reload, published DB ports optional
-  docker-compose.prod.yml      # restart policies, no DB ports
+  docker-compose.dev.yml       # published DB/API/web ports for local
+  docker-compose.prod.yml      # TLS nginx, migrate job, no DB ports, log caps
   nginx/
-    nginx.conf
+    nginx.conf                 # local/dev HTTP
+    nginx.prod.conf            # HTTPS + HSTS + ACME webroot
+  certs/                       # mount host TLS material (not committed)
   api.Dockerfile
   web.Dockerfile
   worker.Dockerfile
 ```
 
-Root scripts: `docker compose -f … up`.
+```bash
+# Local infra only
+pnpm docker:up
+
+# Full local compose (dev ports)
+pnpm docker:dev
+
+# Production (requires .env.production + TLS certs)
+pnpm docker:prod
+# or: ./scripts/deploy.sh
+```
+
+**Never** stack `docker-compose.dev.yml` with prod — it publishes Postgres/Redis.
 
 ## 4. Dockerfile Standards
 
@@ -74,33 +89,50 @@ Root scripts: `docker compose -f … up`.
 
 ## 9. CI/CD (GitHub Actions)
 
-Proposed pipeline:
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| `.github/workflows/ci.yml` | PR + push | Lint, typecheck, unit tests, build |
+| `.github/workflows/deploy.yml` | After CI success on `main`, or manual | SSH → `git pull` → `./scripts/deploy.sh` → HTTPS health gate |
 
-1. Lint + test on PR
-2. Build Docker images
-3. On main: SSH/deploy to Ubuntu VPS **or** push images + compose pull
-4. `prisma migrate deploy` before/at api start (init container or deploy script)
-5. Health gate
+Deploy secrets: `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`, `DEPLOY_PATH`, `DEPLOY_DOMAIN` (see `docs/22-operations-runbook.md`).
 
-Exact host provisioning is Phase 13.
+Migrations: Compose `migrate` service runs `prisma migrate deploy` and must succeed before `api`/`worker`/`web` start.
 
 ## 10. Database Backup & Restore
 
-**Backup:**
+**Scripts (preferred):**
 
 ```bash
-docker compose exec -T postgres pg_dump -U $POSTGRES_USER $POSTGRES_DB | gzip > backup_$(date +%F).sql.gz
+pnpm db:backup
+# → backups/backup_your_academy_YYYY-MM-DD_HHMMSS.sql.gz (mode 600)
+
+pnpm db:restore backups/backup_your_academy_YYYY-MM-DD_HHMMSS.sql.gz
+```
+
+Wrappers: `scripts/backup-db.sh`, `scripts/restore-db.sh` (Compose postgres service).
+
+**Manual equivalent:**
+
+```bash
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml --env-file .env \
+  exec -T postgres pg_dump -U $POSTGRES_USER $POSTGRES_DB | gzip > backup_$(date +%F).sql.gz
+
+gunzip -c backup.sql.gz | docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml --env-file .env \
+  exec -T postgres psql -U $POSTGRES_USER $POSTGRES_DB
 ```
 
 Store off-box; restrict permissions; encrypt at rest if possible.
 
-**Restore:**
+### Restore drill
 
-```bash
-gunzip -c backup.sql.gz | docker compose exec -T postgres psql -U $POSTGRES_USER $POSTGRES_DB
-```
+| Field | Value |
+|-------|-------|
+| Procedure | `pnpm db:backup` → copy artifact off-box → on a scratch DB/stack run `pnpm db:restore <file>` → spot-check `/ready`, admin login, question count |
+| Proposed RPO | 24h (initial production) |
+| Proposed RTO | < 1h for single-node VPS restore |
+| Last drill | **2026-11-02** — local Compose backup script verified (`pnpm db:backup` writes gzip under `backups/`) |
 
-Test restores periodically. Document RPO/RTO targets when production launches (proposed RPO 24h initial).
+Test restores periodically (see `docs/22-operations-runbook.md`).
 
 ## 11. Logging
 

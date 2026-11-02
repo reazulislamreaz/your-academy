@@ -8,6 +8,7 @@ import { Difficulty, Prisma, QuestionStatus } from '@prisma/client';
 import { createErrorResponse } from '@your-academy/shared';
 import type { RequestUser } from '../auth/auth.types';
 import { newRequestId } from '../common/request-id';
+import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../database/prisma.service';
 import { AccessControlService } from '../subscriptions/access-control.service';
 import type { CreateQuestionDto } from './dto/create-question.dto';
@@ -18,6 +19,7 @@ export class QuestionsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly access: AccessControlService,
+    private readonly audit: AuditService,
   ) {}
 
   async createDraft(user: RequestUser, dto: CreateQuestionDto) {
@@ -92,7 +94,7 @@ export class QuestionsService {
     });
   }
 
-  async publish(id: string) {
+  async publish(id: string, actorUserId?: string) {
     const question = await this.prisma.question.findUnique({
       where: { id },
       include: { options: true },
@@ -104,7 +106,7 @@ export class QuestionsService {
     }
     this.assertOptionShape(question.options, true);
 
-    return this.prisma.question.update({
+    const updated = await this.prisma.question.update({
       where: { id },
       data: {
         status: QuestionStatus.PUBLISHED,
@@ -112,13 +114,27 @@ export class QuestionsService {
       },
       include: { options: { orderBy: { sortOrder: 'asc' } } },
     });
+    await this.audit.record({
+      actorUserId,
+      action: 'QUESTION_PUBLISH',
+      entityType: 'question',
+      entityId: id,
+    });
+    return updated;
   }
 
-  async archive(id: string) {
-    return this.prisma.question.update({
+  async archive(id: string, actorUserId?: string) {
+    const updated = await this.prisma.question.update({
       where: { id },
       data: { status: QuestionStatus.ARCHIVED },
     });
+    await this.audit.record({
+      actorUserId,
+      action: 'QUESTION_ARCHIVE',
+      entityType: 'question',
+      entityId: id,
+    });
+    return updated;
   }
 
   async adminList(params: { cursor?: string; limit?: number; status?: QuestionStatus }) {
@@ -212,20 +228,12 @@ export class QuestionsService {
       select: { id: true },
     });
 
-    const options = canView
-      ? question.options.map(({ id: oid, label, content, isCorrect, sortOrder }) => ({
-          id: oid,
-          label,
-          content,
-          isCorrect,
-          sortOrder,
-        }))
-      : question.options.map(({ id: oid, label, content, sortOrder }) => ({
-          id: oid,
-          label,
-          content,
-          sortOrder,
-        }));
+    const options = question.options.map(({ id: oid, label, content, isCorrect, sortOrder }) =>
+      this.access.stripAnswerFields(
+        { id: oid, label, content, isCorrect, sortOrder },
+        canView,
+      ),
+    );
 
     return {
       id: question.id,
@@ -235,7 +243,7 @@ export class QuestionsService {
       category: question.category,
       subcategory: question.subcategory,
       options,
-      explanation: canView ? question.explanation : undefined,
+      explanation: canView ? (question.explanation ?? undefined) : undefined,
       publishedAt: question.publishedAt,
       bookmarked: Boolean(bookmark),
       answersVisible: canView,

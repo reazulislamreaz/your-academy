@@ -105,7 +105,7 @@ The **backend core is largely scaffolded and API-wired** (auth, trial privacy, q
 
 16. Single unit test (`access-control.service.spec.ts`); no auth/privacy e2e.
 17. No Bengali typography path (if bilingual required — **NEEDS APPROVAL** if not in docs).
-18. Production TLS/deploy still Phase 13.
+18. Production TLS/deploy scaffolding landed (Phase 13); live VPS cutover still required.
 19. shadcn/ui / RHF / Zod / Lucide largely unused despite stack approval.
 20. Shared package contracts underused by frontend pages (inline types).
 
@@ -194,13 +194,13 @@ Consolidated from focused backend and docs reviews (complements §§1–9).
 |---------|--------|
 | `GET /categories` requires JWT | Guest homepage “featured categories” needs public read **or** server-only marketing fetch — decide in Phase 3/6 |
 | `AuditLog` model never written | Admin audit UI would be empty until writers added |
-| JWT secret fallback hardcoded if env missing | Prod risk — fail fast when `JWT_ACCESS_SECRET` unset |
+| ~~JWT secret fallback hardcoded if env missing~~ | **Closed Phase 12:** `validateEnv` / `getJwtAccessSecret` fail-fast in production |
 | ~~No BullMQ producers in API~~ | **Closed Phase 6:** forgot-password enqueues `email-queue` |
 | News: create/publish only | Admin news UI now patches/unpublishes (Phase 5); API may still lag |
 | ~~avatar / `storage/confirm`~~ | **Closed Phase 6:** sign-upload → confirm → MediaAsset; avatar + admin PDF |
 | No `/admin/users`, sessions list, account delete | Spec gaps vs `docs/06` |
-| `/ready` checks DB only | Redis not in readiness |
-| Answer stripping on detail is manual; `stripAnswerFields` unused | Prefer one path + HTTP privacy tests |
+| ~~`/ready` checks DB only~~ | **Closed Phase 12:** `/ready` pings Postgres + Redis |
+| ~~Answer stripping unused~~ | **Closed Phase 12:** `getPublishedDetail` uses `stripAnswerFields`; unit privacy tests in CI |
 
 ### Confirmed preserve list (extra)
 

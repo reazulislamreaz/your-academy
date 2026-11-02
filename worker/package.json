@@ -3,23 +3,29 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "prisma generate --schema ../backend/prisma/schema.prisma && tsc -p tsconfig.json",
     "dev": "tsx watch src/main.ts",
     "start": "node dist/main.js",
     "start:prod": "node dist/main.js",
     "lint": "eslint \"src/**/*.ts\" --max-warnings=0",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "prisma generate --schema ../backend/prisma/schema.prisma && tsc -p tsconfig.json --noEmit",
     "test": "echo \"No worker tests yet\""
   },
+  "prisma": {
+    "schema": "../backend/prisma/schema.prisma"
+  },
   "dependencies": {
+    "@prisma/client": "^6.5.0",
     "@your-academy/shared": "workspace:*",
     "bullmq": "^6.5.3",
+    "cloudinary": "^2.11.0",
     "ioredis": "^6.0.0",
     "nodemailer": "^10.3.1"
   },
   "devDependencies": {
     "@types/node": "^22.13.9",
     "@types/nodemailer": "^8.0.2",
+    "prisma": "6.5.0",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2"
   }

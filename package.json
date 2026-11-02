@@ -20,11 +20,16 @@
     "docker:up": "docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml --env-file .env up -d postgres redis",
     "docker:dev": "docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml --env-file .env up --build",
     "docker:down": "docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml --env-file .env down",
+    "docker:prod": "docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml --env-file .env.production up -d --build",
+    "docker:prod:down": "docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml --env-file .env.production down",
+    "deploy": "./scripts/deploy.sh",
     "db:generate": "dotenv -e .env -- pnpm --filter @your-academy/backend prisma:generate",
     "db:migrate": "dotenv -e .env -- pnpm --filter @your-academy/backend prisma:migrate",
     "db:deploy": "dotenv -e .env -- pnpm --filter @your-academy/backend prisma:deploy",
     "db:seed": "dotenv -e .env -- pnpm --filter @your-academy/backend prisma:seed",
-    "db:reset": "dotenv -e .env -- pnpm --filter @your-academy/backend exec prisma migrate reset --force"
+    "db:reset": "dotenv -e .env -- pnpm --filter @your-academy/backend exec prisma migrate reset --force",
+    "db:backup": "./scripts/backup-db.sh",
+    "db:restore": "./scripts/restore-db.sh"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",

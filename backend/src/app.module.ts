@@ -3,6 +3,7 @@ import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AdminModule } from './admin/admin.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
 import { BookmarksModule } from './bookmarks/bookmarks.module';
 import { CategoriesModule } from './categories/categories.module';
@@ -28,6 +29,7 @@ import { UsersModule } from './users/users.module';
     ]),
     DatabaseModule,
     QueueModule,
+    AuditModule,
     SubscriptionsModule,
     AuthModule,
     UsersModule,

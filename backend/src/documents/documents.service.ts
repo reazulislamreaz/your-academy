@@ -7,7 +7,9 @@ import { DocumentVisibility, MediaResourceType, UserRole } from '@prisma/client'
 import { createErrorResponse } from '@your-academy/shared';
 import type { RequestUser } from '../auth/auth.types';
 import { newRequestId } from '../common/request-id';
+import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../database/prisma.service';
+import { MaintenanceQueueService } from '../queue/maintenance-queue.service';
 import { AccessControlService } from '../subscriptions/access-control.service';
 import { StorageService } from '../storage/storage.service';
 import type { CreateDocumentDto, UpdateDocumentDto } from './dto/create-document.dto';
@@ -18,6 +20,8 @@ export class DocumentsService {
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
     private readonly access: AccessControlService,
+    private readonly maintenanceQueue: MaintenanceQueueService,
+    private readonly audit: AuditService,
   ) {}
 
   async listPublished(
@@ -261,11 +265,31 @@ export class DocumentsService {
     });
   }
 
-  async softDelete(id: string) {
+  async softDelete(id: string, actorUserId?: string) {
     await this.adminGet(id);
-    return this.prisma.document.update({
+    const doc = await this.prisma.document.update({
       where: { id },
       data: { deletedAt: new Date(), isPublished: false },
+      include: {
+        mediaAsset: { select: { id: true, publicId: true, resourceType: true, deletedAt: true } },
+      },
     });
+
+    if (doc.mediaAsset && !doc.mediaAsset.deletedAt) {
+      await this.maintenanceQueue.enqueueDeleteAsset({
+        mediaAssetId: doc.mediaAsset.id,
+        publicId: doc.mediaAsset.publicId,
+        resourceType: doc.mediaAsset.resourceType === MediaResourceType.RAW ? 'raw' : 'image',
+      });
+    }
+
+    await this.audit.record({
+      actorUserId,
+      action: 'DOCUMENT_SOFT_DELETE',
+      entityType: 'document',
+      entityId: id,
+    });
+
+    return doc;
   }
 }

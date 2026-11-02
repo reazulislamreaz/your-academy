@@ -63,6 +63,7 @@ export class AuthController {
 
   @Post('refresh')
   @HttpCode(200)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const name = process.env.REFRESH_COOKIE_NAME ?? 'refresh_token';
     const result = await this.auth.refresh(req.cookies?.[name]);

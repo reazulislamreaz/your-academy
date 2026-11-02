@@ -211,6 +211,7 @@ Query params for list: `cursor`, `limit`, `categoryId`, `subcategoryId`, `diffic
 | GET | `/news/:slug` | Article + linked **published** docs | Public/User | — |
 | GET | `/documents` | Published document list (hides `PREMIUM` when not entitled) | User | USER/ADMIN |
 | GET | `/documents/:id` | Metadata + signed download if allowed; `403 DOCUMENT_PREMIUM_REQUIRED` for gated PDFs | User | USER/ADMIN |
+| GET | `/ready` | Readiness: Postgres + Redis must be up | Public | — |
 | GET | `/admin/news` | Admin list (drafts + published) | User | ADMIN |
 | GET | `/admin/news/:id` | Admin detail + `documentIds` / linked docs | User | ADMIN |
 | POST | `/admin/news` | Create draft (`documentIds?`) | User | ADMIN |

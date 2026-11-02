@@ -56,21 +56,21 @@ export class NewsController {
   @Post('admin/news/:id/publish')
   @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
   @Roles(UserRole.ADMIN)
-  async publish(@Param('id') id: string) {
-    return createSuccessResponse(await this.news.publish(id), newRequestId());
+  async publish(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return createSuccessResponse(await this.news.publish(id, user.userId), newRequestId());
   }
 
   @Post('admin/news/:id/unpublish')
   @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
   @Roles(UserRole.ADMIN)
-  async unpublish(@Param('id') id: string) {
-    return createSuccessResponse(await this.news.unpublish(id), newRequestId());
+  async unpublish(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return createSuccessResponse(await this.news.unpublish(id, user.userId), newRequestId());
   }
 
   @Delete('admin/news/:id')
   @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
   @Roles(UserRole.ADMIN)
-  async remove(@Param('id') id: string) {
-    return createSuccessResponse(await this.news.softDelete(id), newRequestId());
+  async remove(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return createSuccessResponse(await this.news.softDelete(id, user.userId), newRequestId());
   }
 }

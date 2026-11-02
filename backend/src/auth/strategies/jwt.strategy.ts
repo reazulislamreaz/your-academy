@@ -4,6 +4,7 @@ import { UserStatus } from '@prisma/client';
 import { createErrorResponse } from '@your-academy/shared';
 import type { Request } from 'express';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { getJwtAccessSecret } from '../../config/env';
 import { PrismaService } from '../../database/prisma.service';
 import { newRequestId } from '../../common/request-id';
 import type { JwtPayload, RequestUser } from '../auth.types';
@@ -21,7 +22,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     super({
       jwtFromRequest: cookieOrBearerExtractor,
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_ACCESS_SECRET ?? 'dev-only-change-me-access-secret-32chars',
+      secretOrKey: getJwtAccessSecret(),
     });
   }
 

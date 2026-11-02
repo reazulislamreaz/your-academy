@@ -30,6 +30,9 @@ service-account*.json
 secrets/
 .secrets/
 
+# DB dumps (pnpm db:backup)
+backups/
+
 # Logs / coverage
 logs/
 *.log
@@ -49,6 +52,10 @@ Thumbs.db
 
 # Docker volumes / local data
 docker/data/
+docker/certs/*.pem
+docker/certs/*.key
+docker/certbot-www/
+!docker/certs/README.md
 
 # Database dumps
 *.sql.gz

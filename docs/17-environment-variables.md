@@ -36,7 +36,8 @@ Docker Compose overrides `DATABASE_URL` host to `postgres` for `api` / `worker` 
 |----------|----------|-------------|
 | `API_PORT` | yes | Default `3001` |
 | `API_PUBLIC_URL` | yes | e.g. `http://localhost:3001` |
-| `WEB_ORIGIN` | yes | CORS origin (`http://localhost:3000`) |
+| `WEB_ORIGIN` | yes | CORS origin (`http://localhost:3000`). Comma-separated multi-origin also accepted via `WEB_ORIGINS` or `WEB_ORIGIN`. |
+| `WEB_ORIGINS` | no | Optional alias for multi-origin allowlist |
 | `JWT_ACCESS_SECRET` | yes | Strong random secret (≥32 chars) |
 | `JWT_ACCESS_TTL_SECONDS` | yes | Default `900` |
 | `JWT_REFRESH_TTL_SECONDS` | yes | Default `2592000` |
@@ -90,6 +91,25 @@ Local scripts use `dotenv -e .env -o` so `.env` wins over inherited Docker hostn
 ## Bootstrap admin
 
 See `.env.example` for `BOOTSTRAP_ADMIN_*` (seed).
+
+## Production (`.env.production` on VPS)
+
+Never commit. `chmod 600`. Used by `pnpm docker:prod` / `./scripts/deploy.sh`.
+
+| Variable | Notes |
+|----------|-------|
+| `NODE_ENV` | `production` |
+| `COOKIE_SECURE` | `true` |
+| `SWAGGER_ENABLED` | `false` |
+| `WEB_ORIGIN` / `API_PUBLIC_URL` | `https://your.domain` |
+| `PASSWORD_RESET_URL_BASE` | `https://your.domain/reset-password` |
+| `NEXT_PUBLIC_API_BASE_URL` | `/api/v1` (nginx proxies `/api/`) |
+| `NGINX_HTTP_PORT` / `NGINX_HTTPS_PORT` | `80` / `443` |
+| `TLS_CERTS_DIR` | Host dir with `fullchain.pem` + `privkey.pem` (default `./docker/certs`) |
+| `CERTBOT_WWW_DIR` | ACME webroot (default `./docker/certbot-www`) |
+| JWT / Postgres / Cloudinary / SMTP | Real secrets — no example defaults |
+
+Compose overrides `DATABASE_URL` / `REDIS_URL` to service hostnames. Postgres and Redis stay internal-only (no host ports). See `docs/22-operations-runbook.md`.
 
 ## Ready-to-run
 

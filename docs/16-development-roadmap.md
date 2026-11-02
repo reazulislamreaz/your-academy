@@ -138,77 +138,77 @@ Dependency-ordered phases. Complete acceptance criteria before advancing.
 
 ---
 
-## Phase 9 — Redis and BullMQ Background Processing
+## Phase 9 — Redis and BullMQ Background Processing — **DONE**
 
 **Depends on:** Phase 1; useful after 6–8
 
 **Work:**
 
-- Worker app; queues; email stub; document-processing; maintenance deletes
-- Repeatable maintenance jobs
-- Failure/retry configuration
+- Worker app; queues; email; document/image/analytics stubs; maintenance deletes
+- Repeatable `expire-stale-sessions` + `orphan-media-scan`
+- Failure/retry configuration; separate Redis connections; API queue teardown
 
 **Acceptance:** Job retries idempotent; API remains responsive without inline PDF heavy work.
 
 ---
 
-## Phase 10 — Browsing Analytics
+## Phase 10 — Browsing Analytics — **DONE**
 
 **Depends on:** Phase 3
 
 **Work:**
 
 - Session start/heartbeat/end
-- Visibility/idle/multi-tab policy per decisions
-- User + admin summaries
-- Anti-inflation clamps
+- Visibility/idle/multi-tab policy per DEC-009/010 assumptions (no inventing steal TTL)
+- User summaries (total/day/week); logout ends ACTIVE sessions
+- Anti-inflation clamps (≤35s / beat)
 
-**Acceptance:** Hidden tab does not inflate; concurrent tab policy matches DEC-010; admin aggregates coherent.
+**Acceptance:** Hidden tab does not inflate; concurrent tab policy matches DEC-010 assumption; admin aggregates coherent.
 
 ---
 
-## Phase 11 — Admin Dashboard
+## Phase 11 — Admin Dashboard — **DONE**
 
 **Depends on:** Phases 4–10
 
 **Work:**
 
-- KPI endpoint `/admin/dashboard`
-- Admin UI pages wired to existing admin APIs
-- Recent activity from AuditLog
+- KPI endpoint `/admin/dashboard` (+ archived questions, recent activity)
+- Admin UI pages wired; users list/suspend/reinstate
+- AuditLog writers on key mutations; recent activity feed
 
 **Acceptance:** All KPIs match DB counts; non-admin 403; RBAC on every mutation.
 
 ---
 
-## Phase 12 — Testing and Security Hardening — **IN PROGRESS**
+## Phase 12 — Testing and Security Hardening — **DONE**
 
 **Depends on:** Features above
 
 **Work:**
 
-- Fill coverage gaps; e2e smoke
-- Security checklist; header hardening; backup script documented
-- Performance pass against NFR targets
-
-**Done so far:** answer-privacy + bookmark + DEC-001 document access + news publish/association unit tests; backend `pnpm test` in CI.
+- Fill coverage gaps; critical unit tests in CI
+- Security checklist: JWT fail-fast, CORS allowlist, refresh throttle, Nginx headers, MIME allowlist
+- `/ready` checks Postgres + Redis
+- Backup/restore scripts + drill note
 
 **Acceptance:** Critical tests in CI; known high issues resolved; backup/restore drill noted.
 
 ---
 
-## Phase 13 — Production Deployment
+## Phase 13 — Production Deployment — **DONE** (in-repo)
 
 **Depends on:** Phase 12
 
 **Work:**
 
-- Prod compose; Nginx TLS; secrets on VPS
-- GitHub Actions deploy
-- Monitoring/log rotation
-- Runbook
+- Prod compose (`docker-compose.prod.yml`); Nginx TLS (`nginx.prod.conf`); secrets via `.env.production`
+- GitHub Actions deploy + `scripts/deploy.sh`; migrate-before-start
+- Logging caps; ops runbook (`docs/22-operations-runbook.md`)
 
 **Acceptance:** Public HTTPS; migrations on deploy; health green; DB/Redis not public.
+
+> Live VPS cutover still requires DNS/certs/secrets on the host — follow the runbook.
 
 ---
 
@@ -239,5 +239,5 @@ flowchart TD
 
 ## Recommended Next Step
 
-**Phases 2–8 established**; Phase 12 started (critical unit tests in CI).  
-Next: finish Phase 12 hardening (backup drill, Redis readiness, residual audit items) or Phases 9–11 polish.
+**Phases 2–13 established** (product through production deploy scaffolding).  
+Next: cut over a real VPS using `docs/22-operations-runbook.md`, or deepen e2e/perf as needed.

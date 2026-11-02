@@ -118,14 +118,14 @@ export class QuestionsController {
   @Post('admin/questions/:id/publish')
   @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
   @Roles(UserRole.ADMIN)
-  async publish(@Param('id') id: string) {
-    return createSuccessResponse(await this.questions.publish(id), newRequestId());
+  async publish(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return createSuccessResponse(await this.questions.publish(id, user.userId), newRequestId());
   }
 
   @Post('admin/questions/:id/archive')
   @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
   @Roles(UserRole.ADMIN)
-  async archive(@Param('id') id: string) {
-    return createSuccessResponse(await this.questions.archive(id), newRequestId());
+  async archive(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return createSuccessResponse(await this.questions.archive(id, user.userId), newRequestId());
   }
 }

@@ -1,6 +1,8 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { createSuccessResponse } from '@your-academy/shared';
+import type { RequestUser } from '../auth/auth.types';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CsrfGuard } from '../common/guards/csrf.guard';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -36,7 +38,10 @@ export class CategoriesController {
   @Delete('admin/categories/:id')
   @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
   @Roles(UserRole.ADMIN)
-  async remove(@Param('id') id: string) {
-    return createSuccessResponse(await this.categories.deactivate(id), newRequestId());
+  async remove(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return createSuccessResponse(
+      await this.categories.deactivate(id, user.userId),
+      newRequestId(),
+    );
   }
 }

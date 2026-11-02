@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { BrowsingSessionStatus } from '@prisma/client';
+import { BrowsingSessionStatus, Prisma } from '@prisma/client';
 import { createErrorResponse } from '@your-academy/shared';
 import type { RequestUser } from '../auth/auth.types';
 import { newRequestId } from '../common/request-id';
@@ -12,20 +12,54 @@ const MAX_SKEW_SECONDS = 5;
 export class AnalyticsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /**
+   * DEC-010 current assumption: at most one ACTIVE session per user.
+   * Same clientInstanceId reattaches; other tabs reuse the ACTIVE session without multiplying time.
+   */
   async start(user: RequestUser, clientInstanceId?: string, userAgent?: string) {
-    await this.prisma.browsingSession.updateMany({
-      where: { userId: user.userId, status: BrowsingSessionStatus.ACTIVE },
-      data: { status: BrowsingSessionStatus.ENDED, endedAt: new Date() },
-    });
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const active = await tx.browsingSession.findFirst({
+          where: { userId: user.userId, status: BrowsingSessionStatus.ACTIVE },
+        });
 
-    return this.prisma.browsingSession.create({
-      data: {
-        userId: user.userId,
-        clientInstanceId,
-        userAgent,
-        status: BrowsingSessionStatus.ACTIVE,
-      },
-    });
+        if (active) {
+          if (
+            clientInstanceId &&
+            active.clientInstanceId &&
+            active.clientInstanceId !== clientInstanceId
+          ) {
+            // Another tab owns the billable session — attach by returning it (no-op create).
+            return active;
+          }
+          return tx.browsingSession.update({
+            where: { id: active.id },
+            data: {
+              ...(clientInstanceId ? { clientInstanceId } : {}),
+              ...(userAgent ? { userAgent } : {}),
+              lastHeartbeatAt: new Date(),
+            },
+          });
+        }
+
+        return tx.browsingSession.create({
+          data: {
+            userId: user.userId,
+            clientInstanceId,
+            userAgent,
+            status: BrowsingSessionStatus.ACTIVE,
+          },
+        });
+      });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        const active = await this.prisma.browsingSession.findFirst({
+          where: { userId: user.userId, status: BrowsingSessionStatus.ACTIVE },
+        });
+        if (active) return active;
+      }
+      throw err;
+    }
   }
 
   async heartbeat(
@@ -40,6 +74,15 @@ export class AnalyticsService {
       throw new NotFoundException(
         createErrorResponse('SESSION_NOT_FOUND', 'Browsing session not found', newRequestId()),
       );
+    }
+
+    // Non-owner tabs must not steal ownership or double-accrue.
+    if (
+      session.clientInstanceId &&
+      body.clientInstanceId &&
+      session.clientInstanceId !== body.clientInstanceId
+    ) {
+      return { accruedSeconds: session.accruedSeconds, paused: true, ignored: true };
     }
 
     if (body.visibilityState === 'hidden') {
@@ -62,7 +105,10 @@ export class AnalyticsService {
       data: {
         lastHeartbeatAt: now,
         accruedSeconds,
-        ...(body.clientInstanceId ? { clientInstanceId: body.clientInstanceId } : {}),
+        // Claim ownership only when unset (first successful visible beat).
+        ...(body.clientInstanceId && !session.clientInstanceId
+          ? { clientInstanceId: body.clientInstanceId }
+          : {}),
       },
     });
   }
@@ -82,15 +128,40 @@ export class AnalyticsService {
     });
   }
 
-  async mySummary(user: RequestUser) {
-    const agg = await this.prisma.browsingSession.aggregate({
-      where: { userId: user.userId },
-      _sum: { accruedSeconds: true },
-      _count: true,
+  async endActiveForUser(userId: string) {
+    await this.prisma.browsingSession.updateMany({
+      where: { userId, status: BrowsingSessionStatus.ACTIVE },
+      data: { status: BrowsingSessionStatus.ENDED, endedAt: new Date() },
     });
+  }
+
+  async mySummary(user: RequestUser) {
+    const now = new Date();
+    const startOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const startOfWeek = new Date(startOfDay);
+    startOfWeek.setUTCDate(startOfWeek.getUTCDate() - startOfWeek.getUTCDay());
+
+    const [all, day, week] = await Promise.all([
+      this.prisma.browsingSession.aggregate({
+        where: { userId: user.userId },
+        _sum: { accruedSeconds: true },
+        _count: true,
+      }),
+      this.prisma.browsingSession.aggregate({
+        where: { userId: user.userId, startedAt: { gte: startOfDay } },
+        _sum: { accruedSeconds: true },
+      }),
+      this.prisma.browsingSession.aggregate({
+        where: { userId: user.userId, startedAt: { gte: startOfWeek } },
+        _sum: { accruedSeconds: true },
+      }),
+    ]);
+
     return {
-      totalSeconds: agg._sum.accruedSeconds ?? 0,
-      sessions: agg._count,
+      totalSeconds: all._sum.accruedSeconds ?? 0,
+      sessions: all._count,
+      daySeconds: day._sum.accruedSeconds ?? 0,
+      weekSeconds: week._sum.accruedSeconds ?? 0,
     };
   }
 }

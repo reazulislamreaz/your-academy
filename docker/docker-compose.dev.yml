@@ -15,3 +15,7 @@ services:
   web:
     ports:
       - '${PORT:-3000}:3000'
+
+  nginx:
+    ports:
+      - '${NGINX_HTTP_PORT:-8080}:80'

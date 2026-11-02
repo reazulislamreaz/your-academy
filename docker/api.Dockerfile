@@ -8,7 +8,7 @@ FROM base AS deps
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* turbo.json tsconfig.base.json ./
 COPY shared/package.json shared/
 COPY backend/package.json backend/
-RUN pnpm install --filter @your-academy/backend... --frozen-lockfile=false
+RUN pnpm install --filter @your-academy/backend... --frozen-lockfile
 
 FROM base AS build
 COPY --from=deps /app /app
@@ -24,6 +24,7 @@ COPY --from=build /app/package.json /app/pnpm-workspace.yaml ./
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/shared ./shared
 COPY --from=build /app/backend ./backend
+# prisma CLI must remain available for the one-shot migrate service
 USER youracademy
 WORKDIR /app/backend
 EXPOSE 3001

@@ -14,11 +14,24 @@ describe('QuestionsService answer privacy', () => {
     },
   };
 
+  function stripAnswerFields<T extends { isCorrect?: boolean; explanation?: string | null }>(
+    question: T,
+    canView: boolean,
+  ): T {
+    if (canView) return question;
+    const clone = { ...question };
+    delete clone.isCorrect;
+    delete clone.explanation;
+    return clone;
+  }
+
   const access = {
     canViewAnswers: jest.fn(),
+    stripAnswerFields: jest.fn(stripAnswerFields),
   };
 
-  const service = new QuestionsService(prisma as never, access as never);
+  const audit = { record: jest.fn() };
+  const service = new QuestionsService(prisma as never, access as never, audit as never);
 
   const entitledUser = {
     id: 'u1',
@@ -56,7 +69,8 @@ describe('QuestionsService answer privacy', () => {
   };
 
   beforeEach(() => {
-    jest.resetAllMocks();
+    jest.clearAllMocks();
+    access.stripAnswerFields.mockImplementation(stripAnswerFields);
     prisma.question.findFirst.mockResolvedValue(questionRow);
     prisma.user.findUniqueOrThrow.mockResolvedValue(entitledUser);
     prisma.questionBookmark.findUnique.mockResolvedValue(null);

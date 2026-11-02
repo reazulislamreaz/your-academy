@@ -7,6 +7,7 @@ import { CsrfGuard } from '../common/guards/csrf.guard';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { newRequestId } from '../common/request-id';
 import { AnalyticsService } from './analytics.service';
+import { HeartbeatDto, StartSessionDto } from './dto/analytics.dto';
 
 @Controller('api/v1/analytics')
 @UseGuards(JwtAuthGuard)
@@ -17,7 +18,7 @@ export class AnalyticsController {
   @UseGuards(CsrfGuard)
   async start(
     @CurrentUser() user: RequestUser,
-    @Body() body: { clientInstanceId?: string },
+    @Body() body: StartSessionDto,
     @Req() req: Request,
   ) {
     return createSuccessResponse(
@@ -31,7 +32,7 @@ export class AnalyticsController {
   async heartbeat(
     @CurrentUser() user: RequestUser,
     @Param('id') id: string,
-    @Body() body: { visibilityState?: string; clientInstanceId?: string },
+    @Body() body: HeartbeatDto,
   ) {
     return createSuccessResponse(await this.analytics.heartbeat(user, id, body), newRequestId());
   }
