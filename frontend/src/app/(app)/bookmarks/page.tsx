@@ -2,6 +2,11 @@
 
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
+import { PageHeader } from '@/components/layout/page-header';
+import { Alert } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Skeleton } from '@/components/ui/skeleton';
 import { apiFetch } from '@/lib/api/client';
 
 type BookmarkRow = {
@@ -16,20 +21,47 @@ export default function BookmarksPage() {
   });
 
   return (
-    <div className="space-y-6 py-8">
-      <h1 className="font-[family-name:var(--font-display)] text-4xl font-bold">Saved questions</h1>
-      {isLoading && <p>Loading…</p>}
-      {error && <p className="text-[var(--danger)]">Sign in to view bookmarks.</p>}
+    <div className="space-y-8">
+      <PageHeader title="Saved questions" description="Questions you bookmarked for later." />
+      {isLoading ? (
+        <div className="space-y-3">
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+        </div>
+      ) : null}
+      {error ? (
+        <Alert variant="warning">
+          Sign in to view bookmarks.{' '}
+          <Link href="/login" className="font-semibold underline-offset-2 hover:underline">
+            Sign in
+          </Link>
+        </Alert>
+      ) : null}
+      {!isLoading && !error && data?.length === 0 ? (
+        <EmptyState
+          title="No bookmarks yet"
+          description="Save a question from its detail page to see it here."
+          action={
+            <Link href="/questions" className="text-sm font-semibold text-[var(--ink)] underline-offset-2 hover:underline">
+              Browse questions
+            </Link>
+          }
+        />
+      ) : null}
       <div className="grid gap-3">
         {data?.map((b) => (
-          <Link key={b.id} href={`/questions/${b.question.id}`} className="rounded-2xl border border-[var(--line)] bg-white p-4">
-            <p className="font-semibold">{b.question.title}</p>
-            <p className="text-sm text-[var(--muted)]">
-              {b.question.category.name} · {b.question.difficulty}
-            </p>
+          <Link
+            key={b.id}
+            href={`/questions/${b.question.id}`}
+            className="flex items-start justify-between gap-3 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] p-4"
+          >
+            <div>
+              <p className="font-semibold">{b.question.title}</p>
+              <p className="text-sm text-[var(--muted)]">{b.question.category.name}</p>
+            </div>
+            <Badge variant="outline">{b.question.difficulty}</Badge>
           </Link>
         ))}
-        {data?.length === 0 && <p className="text-[var(--muted)]">No bookmarks yet.</p>}
       </div>
     </div>
   );

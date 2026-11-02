@@ -13,8 +13,8 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 export class CategoriesController {
   constructor(private readonly categories: CategoriesService) {}
 
+  /** Public: category names/tree for marketing + filters (question content remains auth-gated). */
   @Get('categories')
-  @UseGuards(JwtAuthGuard)
   async list() {
     return createSuccessResponse(await this.categories.listActive(), newRequestId());
   }

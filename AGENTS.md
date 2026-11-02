@@ -4,7 +4,7 @@
 > Deep specs live in `docs/`. Cursor rules in `.cursor/rules/` mirror these constraints.
 
 **Product:** Your Academy — subscription-ready MCQ EdTech platform.  
-**Phase:** Core features delivered through admin/analytics/UI (Phases 3–11 scaffolded). Continue hardening tests and production deploy (12–13). See `docs/16-development-roadmap.md`.
+**Phase:** Backend scaffold + design system (`docs/21-design-system.md`) in place. Next: public/app feature depth, documents/storage, tests. See `docs/16-development-roadmap.md` and `docs/20-production-readiness-audit.md`.
 
 ---
 

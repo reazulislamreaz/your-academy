@@ -173,10 +173,13 @@ export class QuestionsService {
       take: limit + 1,
       ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {}),
       orderBy: [{ publishedAt: 'desc' }, { id: 'desc' }],
-      include: {
+      select: {
+        id: true,
+        title: true,
+        difficulty: true,
+        publishedAt: true,
         category: { select: { id: true, name: true, slug: true } },
         subcategory: { select: { id: true, name: true, slug: true } },
-        options: { orderBy: { sortOrder: 'asc' }, select: { id: true, label: true, content: true } },
       },
     });
 
@@ -201,10 +204,27 @@ export class QuestionsService {
 
     const dbUser = await this.prisma.user.findUniqueOrThrow({ where: { id: user.userId } });
     const canView = await this.access.canViewAnswers(dbUser);
+    const bookmark = await this.prisma.questionBookmark.findUnique({
+      where: {
+        userId_questionId: { userId: user.userId, questionId: id },
+      },
+      select: { id: true },
+    });
 
     const options = canView
-      ? question.options
-      : question.options.map(({ isCorrect: _i, ...rest }) => rest);
+      ? question.options.map(({ id: oid, label, content, isCorrect, sortOrder }) => ({
+          id: oid,
+          label,
+          content,
+          isCorrect,
+          sortOrder,
+        }))
+      : question.options.map(({ id: oid, label, content, sortOrder }) => ({
+          id: oid,
+          label,
+          content,
+          sortOrder,
+        }));
 
     return {
       id: question.id,
@@ -216,6 +236,8 @@ export class QuestionsService {
       options,
       explanation: canView ? question.explanation : undefined,
       publishedAt: question.publishedAt,
+      bookmarked: Boolean(bookmark),
+      answersVisible: canView,
     };
   }
 

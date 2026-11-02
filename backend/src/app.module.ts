@@ -8,8 +8,10 @@ import { BookmarksModule } from './bookmarks/bookmarks.module';
 import { CategoriesModule } from './categories/categories.module';
 import { ApiExceptionFilter } from './common/filters/api-exception.filter';
 import { DatabaseModule } from './database/database.module';
+import { DocumentsModule } from './documents/documents.module';
 import { HealthModule } from './health/health.module';
 import { NewsModule } from './news/news.module';
+import { PublicModule } from './public/public.module';
 import { QuestionsModule } from './questions/questions.module';
 import { StorageModule } from './storage/storage.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
@@ -31,6 +33,8 @@ import { UsersModule } from './users/users.module';
     QuestionsModule,
     BookmarksModule,
     NewsModule,
+    DocumentsModule,
+    PublicModule,
     AnalyticsModule,
     AdminModule,
     StorageModule,

@@ -103,10 +103,13 @@ lib/api/auth.ts
 
 ## 10. Styling
 
-- Tailwind + CSS variables for theme
-- shadcn/ui primitives
-- Responsive layouts; accessible focus states
-- Prefer existing design system once established; avoid purple-gradient clichés on marketing if designing from scratch (see user design rules when building UI)
+- **Source of truth:** [`docs/21-design-system.md`](21-design-system.md) (“exam desk” navy + amber)
+- Tailwind v4 + CSS variables in `frontend/src/app/globals.css`
+- `next/font`: Syne (display), Manrope (UI), Source Serif 4 (reading)
+- Primitives in `frontend/src/components/ui/*` (CVA); layout shells in `components/layout/*`
+- Route-group shells: `(marketing)` / `(auth)` / `(app)` / `(admin)`
+- Responsive layouts; `:focus-visible` rings; `prefers-reduced-motion`
+- Avoid purple-gradient / cream-terracotta AI clichés
 
 ## 11. Performance
 

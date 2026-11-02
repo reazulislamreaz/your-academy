@@ -26,7 +26,7 @@ Docker Compose overrides `DATABASE_URL` host to `postgres` for `api` / `worker` 
 
 | Variable | Used by | Description |
 |----------|---------|-------------|
-| `NODE_ENV` | all | `development` \| `production` \| `test` |
+| `NODE_ENV` | all | Prefer **unset** in `.env`. Next `build`/`start` force `production`. Nest defaults to development when unset. Do not leave `NODE_ENV=development` in `.env` if `pnpm build` inherits it. |
 | `APP_NAME` | all | `your-academy` |
 | `LOG_LEVEL` | api, worker | `debug` \| `info` \| `warn` \| `error` |
 

@@ -126,7 +126,8 @@ Profile picture: separate upload after auth or multipart field if approved.
 
 | Method | Endpoint | Description | Auth | Role |
 |--------|----------|-------------|------|------|
-| GET | `/categories` | Active tree/list | User | USER/ADMIN |
+| GET | `/categories` | Active tree/list (names only; public for marketing/filters) | Public | — |
+| GET | `/public/stats` | Published counts (questions/categories/news/documents) | Public | — |
 | GET | `/categories/:id` | Detail | User | USER/ADMIN |
 | POST | `/admin/categories` | Create | User | ADMIN |
 | PATCH | `/admin/categories/:id` | Update | User | ADMIN |
@@ -208,7 +209,8 @@ Query params for list: `cursor`, `limit`, `categoryId`, `subcategoryId`, `diffic
 |--------|----------|-------------|------|------|
 | GET | `/news` | Published list | Public/User | — |
 | GET | `/news/:slug` | Article + linked docs | Public/User | — |
-| GET | `/documents/:id` | Metadata + signed download if allowed | User | USER/ADMIN |
+| GET | `/documents` | Published document list | User | USER/ADMIN |
+| GET | `/documents/:id` | Metadata + signed download if allowed (download may be unavailable until storage configured) | User | USER/ADMIN |
 | POST | `/admin/news` | Create | User | ADMIN |
 | PATCH | `/admin/news/:id` | Update | User | ADMIN |
 | POST | `/admin/news/:id/publish` | Publish | User | ADMIN |

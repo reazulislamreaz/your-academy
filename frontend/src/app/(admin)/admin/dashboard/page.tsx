@@ -1,6 +1,10 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { PageHeader } from '@/components/layout/page-header';
+import { Alert } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Surface } from '@/components/ui/surface';
 import { apiFetch } from '@/lib/api/client';
 
 type Dashboard = {
@@ -14,10 +18,10 @@ type Dashboard = {
 
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-[24px] border border-[var(--line)] bg-white p-5">
+    <Surface className="p-5">
       <p className="text-sm text-[var(--muted)]">{label}</p>
-      <p className="mt-2 text-3xl font-semibold">{value}</p>
-    </div>
+      <p className="mt-2 font-display text-3xl font-bold tracking-tight">{value}</p>
+    </Surface>
   );
 }
 
@@ -27,12 +31,26 @@ export default function AdminDashboardPage() {
     queryFn: () => apiFetch<Dashboard>('/admin/dashboard'),
   });
 
-  if (isLoading) return <p className="py-10">Loading…</p>;
-  if (error || !data) return <p className="py-10 text-[var(--danger)]">Admin access required.</p>;
+  if (isLoading) {
+    return (
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <Skeleton key={i} className="h-24 w-full" />
+        ))}
+      </div>
+    );
+  }
+  if (error || !data) {
+    return <Alert variant="danger">Admin access required.</Alert>;
+  }
 
   return (
-    <div className="space-y-6 py-8">
-      <h1 className="font-[family-name:var(--font-display)] text-4xl font-bold">Admin dashboard</h1>
+    <div className="space-y-8">
+      <PageHeader
+        eyebrow="Operations"
+        title="Overview"
+        description="Live counts from the Your Academy database."
+      />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Users" value={data.users.total} />
         <Stat label="Trial active" value={data.users.trialActive} />

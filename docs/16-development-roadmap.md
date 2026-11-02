@@ -235,4 +235,5 @@ flowchart TD
 
 ## Recommended Next Step
 
-Start **Phase 1**. DEC-001, DEC-003, DEC-004, and DEC-012 (cookies + CSRF) are confirmed.
+**Design system + public site (Phases 2–3) established** — see `docs/21-design-system.md`.  
+Next: auth/session UX + learner dashboard (Phase 4), then admin CMS depth (Phase 5).
