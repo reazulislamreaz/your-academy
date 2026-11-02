@@ -1,9 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { DocumentVisibility, MediaResourceType } from '@prisma/client';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { DocumentVisibility, MediaResourceType, UserRole } from '@prisma/client';
 import { createErrorResponse } from '@your-academy/shared';
 import type { RequestUser } from '../auth/auth.types';
 import { newRequestId } from '../common/request-id';
 import { PrismaService } from '../database/prisma.service';
+import { AccessControlService } from '../subscriptions/access-control.service';
 import { StorageService } from '../storage/storage.service';
 import type { CreateDocumentDto, UpdateDocumentDto } from './dto/create-document.dto';
 
@@ -12,15 +17,27 @@ export class DocumentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
+    private readonly access: AccessControlService,
   ) {}
 
-  async listPublished(params: { cursor?: string; limit?: number; categoryId?: string }) {
+  async listPublished(
+    user: RequestUser,
+    params: { cursor?: string; limit?: number; categoryId?: string },
+  ) {
     const limit = Math.min(params.limit ?? 20, 100);
+    const dbUser = await this.prisma.user.findUniqueOrThrow({ where: { id: user.userId } });
+    const allowPremium =
+      dbUser.role === UserRole.ADMIN ||
+      (await this.access.canAccessDocument(dbUser, DocumentVisibility.PREMIUM));
+
     const items = await this.prisma.document.findMany({
       where: {
         isPublished: true,
         deletedAt: null,
         ...(params.categoryId ? { categoryId: params.categoryId } : {}),
+        visibility: allowPremium
+          ? undefined
+          : { in: [DocumentVisibility.PUBLIC, DocumentVisibility.AUTHENTICATED] },
       },
       take: limit + 1,
       ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {}),
@@ -57,7 +74,7 @@ export class DocumentsService {
     });
   }
 
-  async getPublished(id: string, user?: RequestUser) {
+  async getPublished(id: string, user: RequestUser) {
     const doc = await this.prisma.document.findFirst({
       where: { id, isPublished: true, deletedAt: null },
       select: {
@@ -84,14 +101,24 @@ export class DocumentsService {
       );
     }
 
-    const bookmark = user
-      ? await this.prisma.documentBookmark.findUnique({
-          where: {
-            userId_documentId: { userId: user.userId, documentId: id },
-          },
-          select: { id: true },
-        })
-      : null;
+    const dbUser = await this.prisma.user.findUniqueOrThrow({ where: { id: user.userId } });
+    const allowed = await this.access.canAccessDocument(dbUser, doc.visibility);
+    if (!allowed) {
+      throw new ForbiddenException(
+        createErrorResponse(
+          'DOCUMENT_PREMIUM_REQUIRED',
+          'This document requires an active trial or subscription',
+          newRequestId(),
+        ),
+      );
+    }
+
+    const bookmark = await this.prisma.documentBookmark.findUnique({
+      where: {
+        userId_documentId: { userId: user.userId, documentId: id },
+      },
+      select: { id: true },
+    });
 
     return {
       ...doc,

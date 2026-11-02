@@ -208,13 +208,13 @@ Query params for list: `cursor`, `limit`, `categoryId`, `subcategoryId`, `diffic
 | Method | Endpoint | Description | Auth | Role |
 |--------|----------|-------------|------|------|
 | GET | `/news` | Published list | Public/User | — |
-| GET | `/news/:slug` | Article + linked docs | Public/User | — |
-| GET | `/documents` | Published document list | User | USER/ADMIN |
-| GET | `/documents/:id` | Metadata + signed download if allowed (download may be unavailable until storage configured) | User | USER/ADMIN |
+| GET | `/news/:slug` | Article + linked **published** docs | Public/User | — |
+| GET | `/documents` | Published document list (hides `PREMIUM` when not entitled) | User | USER/ADMIN |
+| GET | `/documents/:id` | Metadata + signed download if allowed; `403 DOCUMENT_PREMIUM_REQUIRED` for gated PDFs | User | USER/ADMIN |
 | GET | `/admin/news` | Admin list (drafts + published) | User | ADMIN |
-| GET | `/admin/news/:id` | Admin detail | User | ADMIN |
-| POST | `/admin/news` | Create draft | User | ADMIN |
-| PATCH | `/admin/news/:id` | Update | User | ADMIN |
+| GET | `/admin/news/:id` | Admin detail + `documentIds` / linked docs | User | ADMIN |
+| POST | `/admin/news` | Create draft (`documentIds?`) | User | ADMIN |
+| PATCH | `/admin/news/:id` | Update (optional `documentIds` replaces associations) | User | ADMIN |
 | POST | `/admin/news/:id/publish` | Publish | User | ADMIN |
 | POST | `/admin/news/:id/unpublish` | Unpublish | User | ADMIN |
 | DELETE | `/admin/news/:id` | Soft delete | User | ADMIN |

@@ -14,7 +14,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Surface } from '@/components/ui/surface';
 import { Textarea } from '@/components/ui/textarea';
 import { ApiError, apiFetch } from '@/lib/api/client';
-import type { AdminNewsDetail } from '@/lib/api/admin-types';
+import type { AdminDocumentItem, AdminNewsDetail } from '@/lib/api/admin-types';
+import { cn } from '@/lib/utils';
 
 export default function EditNewsPage() {
   const params = useParams<{ id: string }>();
@@ -23,6 +24,7 @@ export default function EditNewsPage() {
   const [slug, setSlug] = useState('');
   const [summary, setSummary] = useState('');
   const [body, setBody] = useState('');
+  const [documentIds, setDocumentIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -31,12 +33,18 @@ export default function EditNewsPage() {
     queryFn: () => apiFetch<AdminNewsDetail>(`/admin/news/${params.id}`),
   });
 
+  const documents = useQuery({
+    queryKey: ['admin-documents'],
+    queryFn: () => apiFetch<AdminDocumentItem[]>('/admin/documents'),
+  });
+
   useEffect(() => {
     if (!detail.data) return;
     setTitle(detail.data.title);
     setSlug(detail.data.slug);
     setSummary(detail.data.summary ?? '');
     setBody(detail.data.body);
+    setDocumentIds(detail.data.documentIds ?? detail.data.documents?.map((d) => d.id) ?? []);
   }, [detail.data]);
 
   const save = useMutation({
@@ -48,6 +56,7 @@ export default function EditNewsPage() {
           slug,
           summary: summary || null,
           body,
+          documentIds,
         }),
       }),
     onSuccess: () => {
@@ -72,6 +81,12 @@ export default function EditNewsPage() {
       void qc.invalidateQueries({ queryKey: ['news'] });
     },
   });
+
+  function toggleDocument(id: string) {
+    setDocumentIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
+    );
+  }
 
   if (detail.isLoading) return <Skeleton className="h-64 w-full" />;
   if (detail.error || !detail.data) return <Alert variant="danger">Article not found.</Alert>;
@@ -133,6 +148,52 @@ export default function EditNewsPage() {
               onChange={(e) => setBody(e.target.value)}
             />
           </div>
+
+          <div className="space-y-3 border-t border-[var(--line)] pt-4">
+            <Label>Attached PDFs</Label>
+            <p className="text-sm text-[var(--muted)]">
+              Select documents to show on the public article. Only published PDFs appear to learners.
+            </p>
+            {documents.isLoading ? <Skeleton className="h-24 w-full" /> : null}
+            <div className="grid max-h-64 gap-2 overflow-y-auto">
+              {documents.data?.map((doc) => {
+                const checked = documentIds.includes(doc.id);
+                return (
+                  <label
+                    key={doc.id}
+                    className={cn(
+                      'flex cursor-pointer items-start gap-3 rounded-[var(--radius)] border p-3',
+                      checked
+                        ? 'border-[var(--ink)] bg-[var(--bg)]'
+                        : 'border-[var(--line)] bg-[var(--bg-elevated)]',
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      className="mt-1"
+                      checked={checked}
+                      onChange={() => toggleDocument(doc.id)}
+                    />
+                    <span className="min-w-0">
+                      <span className="block font-medium">{doc.title}</span>
+                      <span className="text-xs text-[var(--muted)]">
+                        {doc.isPublished ? 'Published' : 'Draft'} · {doc.visibility}
+                      </span>
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+            {!documents.isLoading && (documents.data?.length ?? 0) === 0 ? (
+              <p className="text-sm text-[var(--muted)]">
+                No documents yet.{' '}
+                <Link href="/admin/documents" className="font-semibold underline-offset-2 hover:underline">
+                  Create one
+                </Link>
+              </p>
+            ) : null}
+          </div>
+
           {msg ? <Alert variant="success">{msg}</Alert> : null}
           {error ? <Alert variant="danger">{error}</Alert> : null}
           <Button type="submit" disabled={save.isPending}>

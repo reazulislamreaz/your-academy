@@ -1,4 +1,13 @@
-import { IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Matches,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
 export class CreateNewsDto {
   @IsString()
@@ -22,6 +31,13 @@ export class CreateNewsDto {
   @IsString()
   @MinLength(3)
   body!: string;
+
+  /** Optional published/draft PDFs to attach (order preserved). */
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsUUID('4', { each: true })
+  documentIds?: string[];
 }
 
 export class UpdateNewsDto {
@@ -47,4 +63,11 @@ export class UpdateNewsDto {
   @IsString()
   @MinLength(3)
   body?: string;
+
+  /** When set, replaces the full news↔document association set. */
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsUUID('4', { each: true })
+  documentIds?: string[];
 }

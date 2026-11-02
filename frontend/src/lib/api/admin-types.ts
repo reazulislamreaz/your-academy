@@ -47,6 +47,13 @@ export type AdminNewsDetail = {
   body: string;
   isPublished: boolean;
   publishedAt?: string | null;
+  documentIds?: string[];
+  documents?: Array<{
+    id: string;
+    title: string;
+    visibility: string;
+    isPublished: boolean;
+  }>;
 };
 
 export type AdminDocumentItem = {

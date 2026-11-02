@@ -264,6 +264,6 @@ Cursor rules (always apply / path-scoped): `.cursor/rules/*.mdc`.
 
 ## 18. Next Phase
 
-**Phases 2–7 done** (through bookmarks + learner dashboard).  
-**Next:** Phase 8 — News/PDF polish, or Phase 12 hardening/tests.  
+**Phases 2–8 done**; Phase 12 started (answer privacy / bookmarks / DEC-001 tests in CI).  
+**Next:** Finish Phase 12 hardening, or Phases 9–11 polish.  
 See `docs/16-development-roadmap.md`.

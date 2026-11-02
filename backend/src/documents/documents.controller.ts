@@ -28,11 +28,12 @@ export class DocumentsController {
   @Get('documents')
   @UseGuards(JwtAuthGuard)
   async list(
+    @CurrentUser() user: RequestUser,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
     @Query('categoryId') categoryId?: string,
   ) {
-    const data = await this.documents.listPublished({
+    const data = await this.documents.listPublished(user, {
       cursor,
       limit: limit ? Number(limit) : undefined,
       categoryId,

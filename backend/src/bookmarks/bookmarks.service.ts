@@ -94,6 +94,7 @@ export class BookmarksService {
         createErrorResponse('DOCUMENT_NOT_FOUND', 'Document not found', newRequestId()),
       );
     }
+    // Visibility gating is enforced on document detail/download (DEC-001 / PREMIUM).
     try {
       return await this.prisma.documentBookmark.create({
         data: { userId: user.userId, documentId },

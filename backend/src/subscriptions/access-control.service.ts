@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { SubscriptionStatus, UserRole, type User } from '@prisma/client';
+import {
+  DocumentVisibility,
+  SubscriptionStatus,
+  UserRole,
+  type User,
+} from '@prisma/client';
 import { Entitlement } from '@your-academy/shared';
 import { PrismaService } from '../database/prisma.service';
 
@@ -55,6 +60,28 @@ export class AccessControlService {
 
   async canViewAnswers(user: AccessUser): Promise<boolean> {
     return this.can(user, Entitlement.VIEW_ANSWERS);
+  }
+
+  /**
+   * DEC-001: AUTHENTICATED/PUBLIC docs stay available post-trial.
+   * PREMIUM is reserved for trial/subscription (or admin).
+   */
+  async canAccessDocument(
+    user: AccessUser,
+    visibility: DocumentVisibility,
+  ): Promise<boolean> {
+    if (user.role === UserRole.ADMIN) return true;
+    if (
+      visibility === DocumentVisibility.PUBLIC ||
+      visibility === DocumentVisibility.AUTHENTICATED
+    ) {
+      return true;
+    }
+    if (visibility === DocumentVisibility.PREMIUM) {
+      if (this.isTrialActive(user)) return true;
+      return this.hasActiveSubscription(user.id);
+    }
+    return false;
   }
 
   async getAccessSnapshot(user: AccessUser) {

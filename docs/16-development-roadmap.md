@@ -124,15 +124,15 @@ Dependency-ordered phases. Complete acceptance criteria before advancing.
 
 ---
 
-## Phase 8 — News and PDF Management
+## Phase 8 — News and PDF Management — **DONE**
 
 **Depends on:** Phase 6
 
 **Work:**
 
-- News CRUD/publish; document association
-- Learner news browse; PDF signed download per policy
-- PDF gating per DEC-001 (post-trial authenticated access confirmed)
+- News CRUD/publish; document association (`documentIds` sync via `NewsDocument`)
+- Learner news browse + attached PDF links; PDF signed download per policy
+- PDF gating per DEC-001 (`AUTHENTICATED` post-trial; `PREMIUM` trial/sub)
 
 **Acceptance:** Published news visible; unpublished hidden; PDF delivery signed when private.
 
@@ -181,7 +181,7 @@ Dependency-ordered phases. Complete acceptance criteria before advancing.
 
 ---
 
-## Phase 12 — Testing and Security Hardening
+## Phase 12 — Testing and Security Hardening — **IN PROGRESS**
 
 **Depends on:** Features above
 
@@ -190,6 +190,8 @@ Dependency-ordered phases. Complete acceptance criteria before advancing.
 - Fill coverage gaps; e2e smoke
 - Security checklist; header hardening; backup script documented
 - Performance pass against NFR targets
+
+**Done so far:** answer-privacy + bookmark + DEC-001 document access + news publish/association unit tests; backend `pnpm test` in CI.
 
 **Acceptance:** Critical tests in CI; known high issues resolved; backup/restore drill noted.
 
@@ -237,5 +239,5 @@ flowchart TD
 
 ## Recommended Next Step
 
-**Phases 2–7 established** (through bookmarks + learner dashboard).  
-Next: Phase 8 news/PDF polish, or hardening/tests (Phase 12).
+**Phases 2–8 established**; Phase 12 started (critical unit tests in CI).  
+Next: finish Phase 12 hardening (backup drill, Redis readiness, residual audit items) or Phases 9–11 polish.

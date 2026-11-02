@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { Alert } from '@/components/ui/alert';
@@ -11,7 +12,12 @@ type NewsDetail = {
   title: string;
   body: string;
   publishedAt?: string;
-  documents: Array<{ document: { id: string; title: string } }>;
+  documents: Array<{
+    id: string;
+    title: string;
+    description?: string | null;
+    visibility: string;
+  }>;
 };
 
 export default function NewsDetailPage() {
@@ -33,6 +39,9 @@ export default function NewsDetailPage() {
 
   return (
     <article className="space-y-5">
+      <Link href="/news" className="text-sm text-[var(--muted)] hover:text-[var(--ink)]">
+        ← News
+      </Link>
       <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">{data.title}</h1>
       {data.publishedAt ? (
         <p className="text-sm text-[var(--muted)]">
@@ -44,12 +53,26 @@ export default function NewsDetailPage() {
       </p>
       {data.documents.length > 0 ? (
         <Surface className="p-4">
-          <h2 className="font-semibold">Attachments</h2>
-          <ul className="mt-2 space-y-1 text-sm text-[var(--muted-strong)]">
-            {data.documents.map((d) => (
-              <li key={d.document.id}>{d.document.title}</li>
+          <h2 className="font-semibold">Attached PDFs</h2>
+          <ul className="mt-3 space-y-2">
+            {data.documents.map((doc) => (
+              <li key={doc.id}>
+                <Link
+                  href={`/documents/${doc.id}`}
+                  className="text-sm font-semibold underline-offset-2 hover:underline"
+                >
+                  {doc.title}
+                </Link>
+                {doc.visibility === 'PREMIUM' ? (
+                  <span className="ml-2 text-xs text-[var(--muted)]">Premium</span>
+                ) : null}
+              </li>
             ))}
           </ul>
+          <p className="mt-3 text-xs text-[var(--muted)]">
+            Sign in to open authenticated PDFs. Downloads use short-lived signed URLs when Cloudinary
+            is configured.
+          </p>
         </Surface>
       ) : null}
     </article>

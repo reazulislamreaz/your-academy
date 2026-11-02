@@ -29,5 +29,8 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      - name: Test
+        run: pnpm --filter @your-academy/backend test
+
       - name: Build
         run: pnpm build
