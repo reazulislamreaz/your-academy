@@ -54,8 +54,8 @@ The **backend core is largely scaffolded and API-wired** (auth, trial privacy, q
 | News | list/slug; admin create/publish | No admin news UI; limited learner polish |
 | Analytics | sessions start/heartbeat/end; me/summary | **No frontend heartbeat** |
 | Admin | dashboard KPIs | No users list, audit log UI |
-| Storage | sign-upload | **Placeholder signature** |
-| Documents | list + detail | Download URL gated until Cloudinary closeout |
+| Storage | status, sign-upload, confirm | Real Cloudinary when configured; placeholders rejected |
+| Documents | list + detail + admin CRUD | Signed download when Cloudinary + real asset |
 | Public | `/public/stats` | Marketing counts |
 | Health | `/health`, `/ready` | OK |
 
@@ -195,9 +195,10 @@ Consolidated from focused backend and docs reviews (complements §§1–9).
 | `GET /categories` requires JWT | Guest homepage “featured categories” needs public read **or** server-only marketing fetch — decide in Phase 3/6 |
 | `AuditLog` model never written | Admin audit UI would be empty until writers added |
 | JWT secret fallback hardcoded if env missing | Prod risk — fail fast when `JWT_ACCESS_SECRET` unset |
-| No BullMQ producers in API | Worker queues idle; forgot-password not enqueued |
-| News: create/publish only | No PATCH/unpublish/delete |
-| No `/admin/users`, sessions list, account delete, avatar, `storage/confirm` | Spec gaps vs `docs/06` |
+| ~~No BullMQ producers in API~~ | **Closed Phase 6:** forgot-password enqueues `email-queue` |
+| News: create/publish only | Admin news UI now patches/unpublishes (Phase 5); API may still lag |
+| ~~avatar / `storage/confirm`~~ | **Closed Phase 6:** sign-upload → confirm → MediaAsset; avatar + admin PDF |
+| No `/admin/users`, sessions list, account delete | Spec gaps vs `docs/06` |
 | `/ready` checks DB only | Redis not in readiness |
 | Answer stripping on detail is manual; `stripAnswerFields` unused | Prefer one path + HTTP privacy tests |
 

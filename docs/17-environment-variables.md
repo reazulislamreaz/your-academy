@@ -61,9 +61,33 @@ Docker Compose overrides `DATABASE_URL` host to `postgres` for `api` / `worker` 
 
 No `CLOUDINARY_API_SECRET` on web.
 
-## Cloudinary / Email / Bootstrap
+## Cloudinary (API + worker host)
 
-See `.env.example` for `CLOUDINARY_*`, `SMTP_*`, `PASSWORD_RESET_*`, and `BOOTSTRAP_ADMIN_*`.
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `CLOUDINARY_CLOUD_NAME` | for uploads | Cloud name |
+| `CLOUDINARY_API_KEY` | for uploads | API key |
+| `CLOUDINARY_API_SECRET` | for uploads | Secret — **API only**, never on web |
+| `CLOUDINARY_FOLDER_PREFIX` | no | Default `your-academy` |
+
+Placeholder values (`demo` / `demo_secret_change_me`) are treated as **not configured**. `GET /api/v1/storage/status` returns `{ configured: false }` until real credentials are set. Admin PDF upload and profile avatar then stay in metadata/placeholder mode.
+
+## Email / password reset (API enqueue → worker SMTP)
+
+| Variable | Used by | Description |
+|----------|---------|-------------|
+| `SMTP_HOST` | worker | If unset, worker logs the reset URL |
+| `SMTP_PORT` | worker | Default `1025` (Mailhog) |
+| `SMTP_USER` / `SMTP_PASS` | worker | Optional auth |
+| `EMAIL_FROM` | worker | From address |
+| `PASSWORD_RESET_URL_BASE` | api | e.g. `http://localhost:3000/reset-password` |
+| `PASSWORD_RESET_TTL_SECONDS` | api | Default `3600` |
+
+Forgot-password enqueues a BullMQ `password-reset` job on `email-queue`. Non-production API also logs the reset link so local resets work without SMTP.
+
+## Bootstrap admin
+
+See `.env.example` for `BOOTSTRAP_ADMIN_*` (seed).
 
 ## Ready-to-run
 
@@ -72,4 +96,6 @@ cp .env.example .env   # if needed
 pnpm setup             # install, docker postgres/redis, migrate, seed
 pnpm dev:backend
 pnpm dev:frontend
+pnpm dev:worker        # required for password-reset email jobs
 ```
+

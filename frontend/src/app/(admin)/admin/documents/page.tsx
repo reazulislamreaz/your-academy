@@ -16,6 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import type { AdminDocumentItem } from '@/lib/api/admin-types';
 import type { CategoryNode } from '@/lib/api/types';
+import { getStorageStatus, uploadViaSignedRequest } from '@/lib/cloudinary-upload';
 
 const selectClass =
   'h-11 w-full rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] px-3.5 text-sm';
@@ -25,10 +26,15 @@ export default function AdminDocumentsPage() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [categoryId, setCategoryId] = useState('');
-  const [filename, setFilename] = useState('');
+  const [file, setFile] = useState<File | null>(null);
   const [publishNow, setPublishNow] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+
+  const storage = useQuery({
+    queryKey: ['storage-status'],
+    queryFn: getStorageStatus,
+  });
 
   const categories = useQuery({
     queryKey: ['categories'],
@@ -41,31 +47,42 @@ export default function AdminDocumentsPage() {
   });
 
   const create = useMutation({
-    mutationFn: () =>
-      apiFetch('/admin/documents', {
+    mutationFn: async () => {
+      let mediaAssetId: string | undefined;
+      if (storage.data?.configured && file) {
+        const media = await uploadViaSignedRequest('pdf', file);
+        mediaAssetId = media.id;
+      }
+      return apiFetch('/admin/documents', {
         method: 'POST',
         body: JSON.stringify({
           title,
           description: description || undefined,
           categoryId: categoryId || undefined,
-          filename: filename || undefined,
+          filename: file?.name,
+          mediaAssetId,
           isPublished: publishNow,
           visibility: 'AUTHENTICATED',
         }),
-      }),
+      });
+    },
     onSuccess: () => {
       setTitle('');
       setDescription('');
-      setFilename('');
+      setFile(null);
       setCategoryId('');
-      setMsg('Document created (placeholder file until Cloudinary uploads).');
+      setMsg(
+        storage.data?.configured && file
+          ? 'Document created with Cloudinary asset.'
+          : 'Document created (metadata/placeholder — configure Cloudinary for real PDFs).',
+      );
       setError(null);
       void qc.invalidateQueries({ queryKey: ['admin-documents'] });
       void qc.invalidateQueries({ queryKey: ['documents'] });
     },
     onError: (err) => {
       setMsg(null);
-      setError(err instanceof ApiError ? err.message : 'Create failed');
+      setError(err instanceof ApiError ? err.message : err instanceof Error ? err.message : 'Create failed');
     },
   });
 
@@ -94,8 +111,17 @@ export default function AdminDocumentsPage() {
       <PageHeader
         eyebrow="Content"
         title="Documents"
-        description="Manage PDF metadata. Secure binary upload arrives with Cloudinary closeout."
+        description="Publish PDF library entries. Uploads use signed Cloudinary requests when configured."
       />
+
+      {storage.data ? (
+        <Alert variant={storage.data.configured ? 'success' : 'info'}>
+          Cloudinary:{' '}
+          {storage.data.configured
+            ? 'configured — PDF file upload enabled'
+            : 'not configured — metadata/placeholder mode only (set real CLOUDINARY_* in .env)'}
+        </Alert>
+      ) : null}
 
       <Surface className="p-6">
         <h2 className="font-display text-lg font-semibold">Add document</h2>
@@ -136,12 +162,12 @@ export default function AdminDocumentsPage() {
               </select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="file">Filename (placeholder)</Label>
+              <Label htmlFor="file">PDF file</Label>
               <Input
                 id="file"
-                value={filename}
-                placeholder="notes.pdf"
-                onChange={(e) => setFilename(e.target.value)}
+                type="file"
+                accept="application/pdf"
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
               />
             </div>
           </div>
@@ -163,7 +189,7 @@ export default function AdminDocumentsPage() {
 
       {list.isLoading ? <Skeleton className="h-32 w-full" /> : null}
       {!list.isLoading && (list.data?.length ?? 0) === 0 ? (
-        <EmptyState title="No documents" description="Create metadata above." />
+        <EmptyState title="No documents" description="Create an entry above." />
       ) : null}
 
       <ul className="divide-y divide-[var(--line)] overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)]">
@@ -175,7 +201,8 @@ export default function AdminDocumentsPage() {
             <div>
               <p className="font-semibold">{doc.title}</p>
               <p className="text-sm text-[var(--muted)]">
-                {doc.mediaAsset?.originalFilename ?? 'file'} · {doc.category?.name ?? 'Uncategorized'}
+                {doc.mediaAsset?.originalFilename ?? 'file'} ·{' '}
+                {doc.category?.name ?? 'Uncategorized'}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">

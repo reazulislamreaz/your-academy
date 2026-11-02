@@ -235,5 +235,5 @@ flowchart TD
 
 ## Recommended Next Step
 
-**Phases 2–5 (design system → admin CMS) established.**  
-Next: backend closeout (real Cloudinary, email queue) and hardening/tests.
+**Phases 2–6 established** (design system → admin CMS → Cloudinary/email closeout).  
+Next: hardening/tests (Phase 12), Redis readiness, and remaining DEC-gated product gaps.

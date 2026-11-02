@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Post, UseGuards } from '@nestjs/common';
 import { createSuccessResponse } from '@your-academy/shared';
 import type { RequestUser } from '../auth/auth.types';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -28,6 +28,18 @@ export class UsersController {
   @UseGuards(CsrfGuard)
   async updateMe(@CurrentUser() user: RequestUser, @Body() dto: UpdateProfileDto) {
     return createSuccessResponse(await this.users.updateMe(user, dto), newRequestId());
+  }
+
+  @Post('users/me/avatar')
+  @UseGuards(CsrfGuard)
+  async setAvatar(
+    @CurrentUser() user: RequestUser,
+    @Body() body: { mediaAssetId: string },
+  ) {
+    return createSuccessResponse(
+      await this.users.setAvatar(user, body.mediaAssetId),
+      newRequestId(),
+    );
   }
 
   @Get('users/me/stats')

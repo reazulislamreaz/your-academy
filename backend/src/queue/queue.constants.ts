@@ -1,0 +1,2 @@
+export const REDIS_CONNECTION = 'REDIS_CONNECTION';
+export const EMAIL_QUEUE = 'EMAIL_QUEUE';

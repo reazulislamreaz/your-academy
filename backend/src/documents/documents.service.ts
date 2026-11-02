@@ -1,14 +1,18 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { DocumentVisibility } from '@prisma/client';
+import { DocumentVisibility, MediaResourceType } from '@prisma/client';
 import { createErrorResponse } from '@your-academy/shared';
 import type { RequestUser } from '../auth/auth.types';
 import { newRequestId } from '../common/request-id';
 import { PrismaService } from '../database/prisma.service';
+import { StorageService } from '../storage/storage.service';
 import type { CreateDocumentDto, UpdateDocumentDto } from './dto/create-document.dto';
 
 @Injectable()
 export class DocumentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storage: StorageService,
+  ) {}
 
   async listPublished(params: { cursor?: string; limit?: number; categoryId?: string }) {
     const limit = Math.min(params.limit ?? 20, 100);
@@ -82,12 +86,31 @@ export class DocumentsService {
 
     return {
       ...doc,
-      download: {
-        available: false,
-        reason: 'STORAGE_NOT_CONFIGURED',
-        url: null as string | null,
-      },
+      download: await this.resolveDownload(doc.mediaAsset.id),
     };
+  }
+
+  private async resolveDownload(mediaAssetId: string) {
+    const asset = await this.prisma.mediaAsset.findUnique({ where: { id: mediaAssetId } });
+    if (!asset || asset.deletedAt) {
+      return { available: false, reason: 'ASSET_MISSING', url: null as string | null };
+    }
+    if (asset.publicId.startsWith('seed/') || asset.publicId.startsWith('admin-placeholder/')) {
+      return {
+        available: false,
+        reason: this.storage.isConfigured() ? 'PLACEHOLDER_ASSET' : 'STORAGE_NOT_CONFIGURED',
+        url: null as string | null,
+      };
+    }
+    const signed = await this.storage.generateSignedDownloadUrl(asset.publicId, {
+      resourceType: asset.resourceType === MediaResourceType.RAW ? 'raw' : 'image',
+      deliveryType: asset.deliveryType,
+      ttlSeconds: 180,
+    });
+    if (!signed) {
+      return { available: false, reason: 'STORAGE_NOT_CONFIGURED', url: null as string | null };
+    }
+    return { available: true, reason: 'OK', url: signed };
   }
 
   async adminGet(id: string) {
@@ -115,7 +138,36 @@ export class DocumentsService {
   }
 
   async create(user: RequestUser, dto: CreateDocumentDto) {
-    const filename = dto.filename?.trim() || `${dto.title.trim().toLowerCase().replace(/\s+/g, '-')}.pdf`;
+    if (dto.mediaAssetId) {
+      const media = await this.prisma.mediaAsset.findFirst({
+        where: { id: dto.mediaAssetId, deletedAt: null, uploadedById: user.userId },
+      });
+      if (!media) {
+        throw new NotFoundException(
+          createErrorResponse('MEDIA_NOT_FOUND', 'Media asset not found', newRequestId()),
+        );
+      }
+      return this.prisma.document.create({
+        data: {
+          title: dto.title.trim(),
+          description: dto.description,
+          categoryId: dto.categoryId,
+          visibility: dto.visibility ?? DocumentVisibility.AUTHENTICATED,
+          isPublished: dto.isPublished ?? false,
+          mediaAssetId: media.id,
+          createdById: user.userId,
+        },
+        include: {
+          category: { select: { id: true, name: true } },
+          mediaAsset: {
+            select: { originalFilename: true, mimeType: true, bytes: true },
+          },
+        },
+      });
+    }
+
+    const filename =
+      dto.filename?.trim() || `${dto.title.trim().toLowerCase().replace(/\s+/g, '-')}.pdf`;
     const publicId = `admin-placeholder/${user.userId}/${Date.now()}-${filename}`;
 
     return this.prisma.$transaction(async (tx) => {

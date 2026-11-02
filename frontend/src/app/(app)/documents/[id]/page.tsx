@@ -70,8 +70,11 @@ export default function DocumentDetailPage() {
           </a>
         ) : (
           <Alert variant="info">
-            Secure download is not available yet ({data.download.reason}). Metadata is listed so the
-            library UX can be verified; Cloudinary signing ships in the storage closeout.
+            {data.download.reason === 'STORAGE_NOT_CONFIGURED'
+              ? 'Cloudinary is not configured — signed download unavailable. Set real CLOUDINARY_* credentials to enable PDF delivery.'
+              : data.download.reason === 'PLACEHOLDER_ASSET'
+                ? 'This entry uses a placeholder asset (seed/admin metadata). Re-upload a real PDF via Admin → Documents when Cloudinary is configured.'
+                : `Download unavailable (${data.download.reason}).`}
           </Alert>
         )}
       </Surface>

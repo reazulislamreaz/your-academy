@@ -14,6 +14,7 @@ import { newRequestId } from '../common/request-id';
 import { randomToken, sha256 } from '../common/utils/crypto';
 import { isValidWhatsapp, normalizeWhatsapp } from '../common/utils/whatsapp';
 import { PrismaService } from '../database/prisma.service';
+import { EmailQueueService } from '../queue/email-queue.service';
 import { AccessControlService } from '../subscriptions/access-control.service';
 import type { JwtPayload, RequestUser } from './auth.types';
 import type { ChangePasswordDto } from './dto/change-password.dto';
@@ -30,6 +31,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
     private readonly access: AccessControlService,
+    private readonly emailQueue: EmailQueueService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -184,9 +186,21 @@ export class AuthService {
         },
       });
       const base = process.env.PASSWORD_RESET_URL_BASE ?? 'http://localhost:3000/reset-password';
-      // Phase 9: enqueue email. For now log reset link in development only.
+      const resetUrl = `${base}?token=${token}`;
+      try {
+        await this.emailQueue.enqueuePasswordReset(
+          { to: user.email, resetUrl, userId: user.id },
+          sha256(token).slice(0, 32),
+        );
+      } catch (err) {
+        this.logger.error(`Failed to enqueue password reset email: ${String(err)}`);
+        // Still log in non-production so local resets remain usable without worker.
+        if (process.env.NODE_ENV !== 'production') {
+          this.logger.log(`Password reset link for ${user.email}: ${resetUrl}`);
+        }
+      }
       if (process.env.NODE_ENV !== 'production') {
-        this.logger.log(`Password reset link for ${user.email}: ${base}?token=${token}`);
+        this.logger.log(`Password reset link for ${user.email}: ${resetUrl}`);
       }
     }
 

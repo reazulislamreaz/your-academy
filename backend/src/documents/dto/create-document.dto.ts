@@ -24,11 +24,16 @@ export class CreateDocumentDto {
   @IsBoolean()
   isPublished?: boolean;
 
-  /** Placeholder filename until Cloudinary uploads are wired. */
+  /** Placeholder filename when Cloudinary is not used. */
   @IsOptional()
   @IsString()
   @MaxLength(255)
   filename?: string;
+
+  /** Prefer MediaAsset id from POST /storage/confirm after a signed Cloudinary upload. */
+  @IsOptional()
+  @IsUUID()
+  mediaAssetId?: string;
 }
 
 export class UpdateDocumentDto {

@@ -1,8 +1,45 @@
 import { Queue, Worker } from 'bullmq';
 import IORedis from 'ioredis';
+import nodemailer from 'nodemailer';
 
 const redisUrl = process.env.REDIS_URL ?? 'redis://127.0.0.1:6379';
 const service = process.env.APP_NAME ?? 'your-academy';
+
+type PasswordResetJob = {
+  to: string;
+  resetUrl: string;
+  userId: string;
+};
+
+async function sendPasswordResetEmail(data: PasswordResetJob) {
+  const host = process.env.SMTP_HOST;
+  const port = Number(process.env.SMTP_PORT ?? 1025);
+  const from = process.env.EMAIL_FROM ?? 'noreply@your-academy.local';
+
+  if (!host) {
+    console.log(`[${service}-worker] SMTP_HOST unset — logging password reset for ${data.to}`);
+    console.log(`[${service}-worker] resetUrl=${data.resetUrl}`);
+    return;
+  }
+
+  const transporter = nodemailer.createTransport({
+    host,
+    port,
+    secure: port === 465,
+    auth:
+      process.env.SMTP_USER && process.env.SMTP_PASS
+        ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+        : undefined,
+  });
+
+  await transporter.sendMail({
+    from,
+    to: data.to,
+    subject: 'Reset your Your Academy password',
+    text: `Reset your password using this link (expires soon):\n\n${data.resetUrl}\n\nIf you did not request this, ignore this email.`,
+    html: `<p>Reset your password using this link (expires soon):</p><p><a href="${data.resetUrl}">${data.resetUrl}</a></p><p>If you did not request this, ignore this email.</p>`,
+  });
+}
 
 async function main() {
   const connection = new IORedis(redisUrl, { maxRetriesPerRequest: null });
@@ -13,7 +50,10 @@ async function main() {
   const emailWorker = new Worker(
     'email-queue',
     async (job) => {
-      // Idempotent stub: log only until SMTP is configured.
+      if (job.name === 'password-reset') {
+        await sendPasswordResetEmail(job.data as PasswordResetJob);
+        return;
+      }
       console.log(`[${service}-worker] email job ${job.id}`, job.name, job.data);
     },
     { connection, concurrency: 5 },
@@ -22,6 +62,7 @@ async function main() {
   const maintenanceWorker = new Worker(
     'maintenance-queue',
     async (job) => {
+      // Orphan Cloudinary deletes / soft-delete cleanup — logged until ops jobs expand.
       console.log(`[${service}-worker] maintenance job ${job.id}`, job.name, job.data);
     },
     { connection, concurrency: 2 },

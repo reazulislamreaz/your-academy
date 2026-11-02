@@ -1,9 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { createErrorResponse } from '@your-academy/shared';
+import type { RequestUser } from '../auth/auth.types';
 import { newRequestId } from '../common/request-id';
 import { PrismaService } from '../database/prisma.service';
 import { AccessControlService } from '../subscriptions/access-control.service';
-import type { RequestUser } from '../auth/auth.types';
 
 @Injectable()
 export class UsersService {
@@ -52,6 +52,27 @@ export class UsersService {
       status: updated.status,
       access,
     };
+  }
+
+  async setAvatar(user: RequestUser, mediaAssetId: string) {
+    const media = await this.prisma.mediaAsset.findFirst({
+      where: {
+        id: mediaAssetId,
+        deletedAt: null,
+        uploadedById: user.userId,
+        resourceType: 'IMAGE',
+      },
+    });
+    if (!media) {
+      throw new NotFoundException(
+        createErrorResponse('MEDIA_NOT_FOUND', 'Avatar media not found', newRequestId()),
+      );
+    }
+    const updated = await this.prisma.user.update({
+      where: { id: user.userId },
+      data: { avatarAssetId: media.id },
+    });
+    return this.getMe({ userId: updated.id, role: updated.role, sessionId: user.sessionId });
   }
 
   async getStats(user: RequestUser) {

@@ -14,6 +14,7 @@ import { TrialCountdown } from '@/features/auth/trial-countdown';
 import { isUnauthorized, meQueryKey, useLogout, useMe } from '@/features/auth/use-auth';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import type { MeUser, UserStats } from '@/lib/api/types';
+import { getStorageStatus, uploadViaSignedRequest } from '@/lib/cloudinary-upload';
 
 export default function ProfilePage() {
   const me = useMe();
@@ -24,11 +25,18 @@ export default function ProfilePage() {
     queryFn: () => apiFetch<UserStats>('/users/me/stats'),
     enabled: Boolean(me.data),
   });
+  const storage = useQuery({
+    queryKey: ['storage-status'],
+    queryFn: getStorageStatus,
+    enabled: Boolean(me.data),
+  });
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [profileMsg, setProfileMsg] = useState<string | null>(null);
   const [profileErr, setProfileErr] = useState<string | null>(null);
+  const [avatarMsg, setAvatarMsg] = useState<string | null>(null);
+  const [avatarErr, setAvatarErr] = useState<string | null>(null);
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -78,6 +86,31 @@ export default function ProfilePage() {
     onError: (err) => {
       setPasswordMsg(null);
       setPasswordErr(err instanceof ApiError ? err.message : 'Password change failed');
+    },
+  });
+
+  const uploadAvatar = useMutation({
+    mutationFn: async (file: File) => {
+      const media = await uploadViaSignedRequest('avatar', file);
+      return apiFetch<MeUser>('/users/me/avatar', {
+        method: 'POST',
+        body: JSON.stringify({ mediaAssetId: media.id }),
+      });
+    },
+    onSuccess: (user) => {
+      qc.setQueryData(meQueryKey, user);
+      setAvatarMsg('Avatar updated');
+      setAvatarErr(null);
+    },
+    onError: (err) => {
+      setAvatarMsg(null);
+      setAvatarErr(
+        err instanceof ApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : 'Avatar upload failed',
+      );
     },
   });
 
@@ -189,6 +222,36 @@ export default function ProfilePage() {
             {saveProfile.isPending ? 'Saving…' : 'Save profile'}
           </Button>
         </form>
+
+        <div className="mt-8 space-y-3 border-t border-[var(--line)] pt-6">
+          <h3 className="font-display text-lg font-semibold">Avatar</h3>
+          {storage.data && !storage.data.configured ? (
+            <Alert variant="info">
+              Cloudinary is not configured — avatar upload stays disabled until real CLOUDINARY_*
+              credentials are set.
+            </Alert>
+          ) : (
+            <>
+              <Label htmlFor="avatar">Profile photo</Label>
+              <Input
+                id="avatar"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                disabled={uploadAvatar.isPending || storage.isLoading}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) uploadAvatar.mutate(file);
+                  e.target.value = '';
+                }}
+              />
+            </>
+          )}
+          {avatarMsg ? <Alert variant="success">{avatarMsg}</Alert> : null}
+          {avatarErr ? <Alert variant="danger">{avatarErr}</Alert> : null}
+          {uploadAvatar.isPending ? (
+            <p className="text-sm text-[var(--muted)]">Uploading…</p>
+          ) : null}
+        </div>
       </Surface>
 
       <Surface className="p-6">
