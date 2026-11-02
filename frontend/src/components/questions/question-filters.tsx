@@ -3,12 +3,11 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
+import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
 import type { CategoryNode } from '@/lib/api/types';
-
-const selectClass =
-  'h-11 w-full rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] px-3.5 text-sm outline-none focus:border-[var(--ink)] focus:shadow-[0_0_0_3px_var(--highlight-soft)]';
 
 type Props = {
   categories: CategoryNode[];
@@ -51,13 +50,13 @@ export function QuestionFilters({ categories }: Props) {
 
   return (
     <form
-      className="grid gap-3 rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] p-4 sm:grid-cols-2 lg:grid-cols-5"
+      className="grid gap-3 rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)]/90 p-4 shadow-[var(--shadow-sm)] sm:grid-cols-2 lg:grid-cols-5"
       onSubmit={(e) => {
         e.preventDefault();
         apply();
       }}
     >
-      <div className="space-y-1.5 lg:col-span-2">
+      <Field className="lg:col-span-2">
         <Label htmlFor="q-search">Search</Label>
         <Input
           id="q-search"
@@ -65,12 +64,11 @@ export function QuestionFilters({ categories }: Props) {
           onChange={(e) => setQ(e.target.value)}
           placeholder="Title or content"
         />
-      </div>
-      <div className="space-y-1.5">
+      </Field>
+      <Field>
         <Label htmlFor="q-cat">Category</Label>
-        <select
+        <Select
           id="q-cat"
-          className={selectClass}
           value={categoryId}
           onChange={(e) => {
             setCategoryId(e.target.value);
@@ -83,13 +81,12 @@ export function QuestionFilters({ categories }: Props) {
               {c.name}
             </option>
           ))}
-        </select>
-      </div>
-      <div className="space-y-1.5">
+        </Select>
+      </Field>
+      <Field>
         <Label htmlFor="q-sub">Subcategory</Label>
-        <select
+        <Select
           id="q-sub"
-          className={selectClass}
           value={subcategoryId}
           onChange={(e) => setSubcategoryId(e.target.value)}
           disabled={!selected}
@@ -100,13 +97,12 @@ export function QuestionFilters({ categories }: Props) {
               {c.name}
             </option>
           ))}
-        </select>
-      </div>
-      <div className="space-y-1.5">
+        </Select>
+      </Field>
+      <Field>
         <Label htmlFor="q-diff">Difficulty</Label>
-        <select
+        <Select
           id="q-diff"
-          className={selectClass}
           value={difficulty}
           onChange={(e) => setDifficulty(e.target.value)}
         >
@@ -114,8 +110,8 @@ export function QuestionFilters({ categories }: Props) {
           <option value="EASY">Easy</option>
           <option value="MEDIUM">Medium</option>
           <option value="HARD">Hard</option>
-        </select>
-      </div>
+        </Select>
+      </Field>
       <div className="flex flex-wrap items-end gap-2 sm:col-span-2 lg:col-span-5">
         <Button type="submit" disabled={pending}>
           {pending ? 'Filtering…' : 'Apply filters'}

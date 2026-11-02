@@ -10,6 +10,7 @@ import { ConfirmButton } from '@/components/ui/confirm-button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Surface } from '@/components/ui/surface';
 import { Textarea } from '@/components/ui/textarea';
@@ -17,9 +18,6 @@ import { ApiError, apiFetch } from '@/lib/api/client';
 import type { AdminDocumentItem } from '@/lib/api/admin-types';
 import type { CategoryNode } from '@/lib/api/types';
 import { getStorageStatus, uploadViaSignedRequest } from '@/lib/cloudinary-upload';
-
-const selectClass =
-  'h-11 w-full rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] px-3.5 text-sm';
 
 export default function AdminDocumentsPage() {
   const qc = useQueryClient();
@@ -147,9 +145,8 @@ export default function AdminDocumentsPage() {
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="cat">Category</Label>
-              <select
+              <Select
                 id="cat"
-                className={selectClass}
                 value={categoryId}
                 onChange={(e) => setCategoryId(e.target.value)}
               >
@@ -159,7 +156,7 @@ export default function AdminDocumentsPage() {
                     {c.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="file">PDF file</Label>

@@ -13,7 +13,6 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { BrandMark } from './brand-mark';
-import { Separator } from '@/components/ui/separator';
 
 const items = [
   { href: '/admin/dashboard', label: 'Overview', icon: LayoutDashboard },
@@ -28,13 +27,14 @@ export function AdminSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="flex h-full w-60 shrink-0 flex-col border-r border-[var(--line)] bg-[var(--bg-inverse)] text-white">
-      <div className="px-5 py-5">
-        <BrandMark className="text-white" href="/admin/dashboard" />
-        <p className="mt-1 text-xs tracking-wide text-white/55 uppercase">Admin</p>
+    <aside className="flex h-full w-60 shrink-0 flex-col bg-[var(--bg-inverse)] text-white">
+      <div className="border-b border-white/10 px-5 py-5">
+        <BrandMark inverse href="/admin/dashboard" />
+        <p className="mt-2 text-[10px] font-semibold tracking-[0.16em] text-white/45 uppercase">
+          Control room
+        </p>
       </div>
-      <Separator className="bg-white/10" />
-      <nav className="flex flex-1 flex-col gap-1 p-3" aria-label="Admin">
+      <nav className="flex flex-1 flex-col gap-0.5 p-3" aria-label="Admin">
         {items.map((item) => {
           const Icon = item.icon;
           const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -43,22 +43,22 @@ export function AdminSidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                'flex items-center gap-2 rounded-[var(--radius-sm)] px-3 py-2.5 text-sm font-medium transition-colors',
+                'motion-nav-indicator flex items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2.5 text-sm font-medium',
                 active
                   ? 'bg-[var(--highlight)] text-[var(--highlight-fg)]'
-                  : 'text-white/75 hover:bg-white/10 hover:text-white',
+                  : 'text-white/70 hover:bg-white/10 hover:text-white',
               )}
             >
-              <Icon className="h-4 w-4" />
+              <Icon className="h-4 w-4 shrink-0 opacity-90" />
               {item.label}
             </Link>
           );
         })}
       </nav>
-      <div className="p-3">
+      <div className="border-t border-white/10 p-3">
         <Link
           href="/questions"
-          className="flex items-center gap-2 rounded-[var(--radius-sm)] px-3 py-2.5 text-sm text-white/70 hover:bg-white/10 hover:text-white"
+          className="flex items-center gap-2 rounded-[var(--radius-sm)] px-3 py-2.5 text-sm text-white/60 hover:bg-white/10 hover:text-white"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to app

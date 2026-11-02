@@ -23,10 +23,14 @@ export function PageHeader({ title, description, actions, className, eyebrow }: 
             {eyebrow}
           </p>
         ) : null}
-        <h1 className="font-display text-3xl font-bold tracking-tight text-[var(--ink)] sm:text-4xl">
+        <h1 className="font-display text-[clamp(1.75rem,3vw,2.25rem)] font-bold tracking-tight text-[var(--ink)]">
           {title}
         </h1>
-        {description ? <p className="max-w-2xl text-[var(--muted)]">{description}</p> : null}
+        {description ? (
+          <p className="max-w-2xl text-sm leading-relaxed text-[var(--muted)] sm:text-base">
+            {description}
+          </p>
+        ) : null}
       </div>
       {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
     </div>

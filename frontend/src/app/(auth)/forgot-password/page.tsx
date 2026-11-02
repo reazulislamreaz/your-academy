@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Surface } from '@/components/ui/surface';
@@ -34,14 +35,14 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="space-y-6 py-4">
+    <div className="motion-rise space-y-6">
       <div>
         <h1 className="font-display text-3xl font-bold tracking-tight">Reset password</h1>
-        <p className="mt-2 text-[var(--muted)]">
-          Enter the email on your account. If it matches, we send a reset link (DEC-004).
+        <p className="mt-2 text-sm leading-relaxed text-[var(--muted)] sm:text-base">
+          Enter the email on your account. If it matches, we send a reset link.
         </p>
       </div>
-      <Surface className="p-6">
+      <Surface className="p-6 sm:p-7">
         {done ? (
           <Alert variant="success">
             If an account with that email exists, a reset link has been sent. Check your inbox — in
@@ -49,7 +50,7 @@ export default function ForgotPasswordPage() {
           </Alert>
         ) : (
           <form onSubmit={onSubmit} className="space-y-4">
-            <div className="space-y-2">
+            <Field>
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
@@ -59,7 +60,7 @@ export default function ForgotPasswordPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
               />
-            </div>
+            </Field>
             {error ? <Alert variant="danger">{error}</Alert> : null}
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Sending…' : 'Send reset link'}
@@ -68,7 +69,10 @@ export default function ForgotPasswordPage() {
         )}
       </Surface>
       <p className="text-sm text-[var(--muted)]">
-        <Link href="/login" className="font-semibold text-[var(--ink)] underline-offset-2 hover:underline">
+        <Link
+          href="/login"
+          className="font-semibold text-[var(--ink)] underline-offset-2 hover:underline"
+        >
           Back to sign in
         </Link>
       </p>

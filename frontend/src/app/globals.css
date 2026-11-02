@@ -8,10 +8,11 @@
 
 :root {
   /* Surfaces */
-  --bg: #f3f5f8;
+  --bg: #f1f4f8;
   --bg-elevated: #ffffff;
-  --bg-muted: #e8ecf1;
+  --bg-muted: #e6ebf2;
   --bg-inverse: #0b1f33;
+  --bg-desk: #e9eef5;
 
   /* Ink */
   --ink: #0b1f33;
@@ -29,7 +30,9 @@
   --highlight: #e5a008;
   --highlight-fg: #1a1400;
   --highlight-soft: #fff4d6;
-  --brand-wash: rgba(11, 31, 51, 0.06);
+  --highlight-hover: #ffe9b0;
+  --brand-wash: rgba(11, 31, 51, 0.05);
+  --brand-wash-strong: rgba(11, 31, 51, 0.09);
 
   /* Semantic */
   --success: #0f6b5c;
@@ -51,8 +54,9 @@
   --radius-lg: 16px;
   --radius-xl: 22px;
 
-  /* Spacing rhythm (reference) */
+  /* Spacing rhythm */
   --space-section: clamp(3rem, 6vw, 5.5rem);
+  --space-page: clamp(1.25rem, 3vw, 2rem);
 
   /* Motion */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
@@ -115,11 +119,20 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Exam-desk atmosphere: cool paper + faint ruled texture */
 body {
-  background:
-    radial-gradient(ellipse 80% 50% at 0% -10%, var(--brand-wash), transparent 55%),
-    radial-gradient(ellipse 50% 40% at 100% 0%, rgba(229, 160, 8, 0.08), transparent 45%),
-    var(--bg);
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(rgba(11, 31, 51, 0.035) 1px, transparent 1px),
+    radial-gradient(ellipse 90% 55% at 8% -15%, var(--brand-wash-strong), transparent 55%),
+    radial-gradient(ellipse 55% 45% at 100% 0%, rgba(229, 160, 8, 0.07), transparent 48%),
+    linear-gradient(180deg, var(--bg-desk) 0%, var(--bg) 28%, var(--bg) 100%);
+  background-size:
+    100% 28px,
+    auto,
+    auto,
+    auto;
+  background-attachment: fixed;
 }
 
 a {
@@ -156,6 +169,30 @@ select {
   text-wrap: balance;
 }
 
+.section-pad {
+  padding-block: var(--space-section);
+}
+
+.page-pad {
+  padding-inline: var(--space-page);
+}
+
+/* Quiet list row — preferred over boxed cards for browse lists */
+.list-row {
+  display: block;
+  border-bottom: 1px solid var(--line);
+  padding: 1rem 0.15rem;
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.list-row:hover {
+  background-color: var(--brand-wash);
+}
+
+.list-row:focus-visible {
+  outline-offset: -2px;
+}
+
 /* Motion utilities — respect reduced motion */
 @media (prefers-reduced-motion: no-preference) {
   .motion-fade-in {
@@ -180,6 +217,10 @@ select {
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
+  }
+
+  body {
+    background-attachment: scroll;
   }
 
   .motion-fade-in,

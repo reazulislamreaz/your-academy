@@ -35,10 +35,12 @@ type Dashboard = {
 
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
-    <Surface className="p-5">
-      <p className="text-sm text-[var(--muted)]">{label}</p>
-      <p className="mt-2 font-display text-3xl font-bold tracking-tight">{value}</p>
-    </Surface>
+    <div className="bg-[var(--bg-elevated)] px-4 py-4">
+      <p className="text-[10px] font-semibold tracking-[0.12em] text-[var(--muted)] uppercase">
+        {label}
+      </p>
+      <p className="mt-1.5 font-display text-2xl font-bold tracking-tight tabular-nums">{value}</p>
+    </div>
   );
 }
 
@@ -50,9 +52,9 @@ export default function AdminDashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {Array.from({ length: 8 }).map((_, i) => (
-          <Skeleton key={i} className="h-24 w-full" />
+          <Skeleton key={i} className="h-20 w-full" />
         ))}
       </div>
     );
@@ -68,50 +70,56 @@ export default function AdminDashboardPage() {
         title="Overview"
         description="Live counts, recent signups, and audit activity."
       />
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Users" value={data.users.total} />
-        <Stat label="Active users" value={data.users.active} />
-        <Stat label="Trial active" value={data.users.trialActive} />
-        <Stat label="Trial expired" value={data.users.trialExpired} />
-        <Stat label="Questions" value={data.questions.total} />
-        <Stat label="Published" value={data.questions.published} />
-        <Stat label="Drafts" value={data.questions.draft} />
-        <Stat label="Archived" value={data.questions.archived} />
-        <Stat label="Categories" value={data.categories} />
-        <Stat label="News" value={data.news} />
-        <Stat label="Documents" value={data.documents} />
-        <Stat label="Browsing hours" value={Math.round(data.browsingSecondsTotal / 3600)} />
+
+      <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)]">
+        <div className="grid gap-px bg-[var(--line)] sm:grid-cols-2 lg:grid-cols-4">
+          <Stat label="Users" value={data.users.total} />
+          <Stat label="Active users" value={data.users.active} />
+          <Stat label="Trial active" value={data.users.trialActive} />
+          <Stat label="Trial expired" value={data.users.trialExpired} />
+          <Stat label="Questions" value={data.questions.total} />
+          <Stat label="Published" value={data.questions.published} />
+          <Stat label="Drafts" value={data.questions.draft} />
+          <Stat label="Archived" value={data.questions.archived} />
+          <Stat label="Categories" value={data.categories} />
+          <Stat label="News" value={data.news} />
+          <Stat label="Documents" value={data.documents} />
+          <Stat label="Browsing hours" value={Math.round(data.browsingSecondsTotal / 3600)} />
+        </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Surface className="space-y-3 p-5">
+      <div className="grid gap-5 lg:grid-cols-2">
+        <Surface density="compact" className="space-y-3 p-5">
           <div className="flex items-center justify-between">
             <h2 className="font-display text-lg font-semibold">Recent users</h2>
-            <Link href="/admin/users" className="text-sm font-semibold underline-offset-2 hover:underline">
+            <Link
+              href="/admin/users"
+              className="text-sm font-semibold underline-offset-2 hover:underline"
+            >
               Manage
             </Link>
           </div>
-          <ul className="space-y-2">
+          <ul className="divide-y divide-[var(--line)]">
             {data.recentUsers.map((user) => (
-              <li key={user.id} className="flex items-center justify-between gap-3 text-sm">
-                <span>
+              <li key={user.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+                <span className="min-w-0 truncate">
                   <span className="font-medium">{user.name}</span>
                   <span className="text-[var(--muted)]"> · {user.whatsappNumber}</span>
                 </span>
-                <span className="text-xs text-[var(--muted)]">{user.status}</span>
+                <span className="shrink-0 text-xs text-[var(--muted)]">{user.status}</span>
               </li>
             ))}
           </ul>
         </Surface>
 
-        <Surface className="space-y-3 p-5">
+        <Surface density="compact" className="space-y-3 p-5">
           <h2 className="font-display text-lg font-semibold">Recent activity</h2>
           {data.recentActivity.length === 0 ? (
             <p className="text-sm text-[var(--muted)]">No audit events yet.</p>
           ) : (
-            <ul className="space-y-2">
+            <ul className="divide-y divide-[var(--line)]">
               {data.recentActivity.map((item) => (
-                <li key={item.id} className="text-sm">
+                <li key={item.id} className="py-2.5 text-sm">
                   <span className="font-medium">{item.action}</span>
                   <span className="text-[var(--muted)]">
                     {' '}

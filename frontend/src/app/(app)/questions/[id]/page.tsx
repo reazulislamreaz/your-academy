@@ -98,7 +98,7 @@ function QuestionDetailContent() {
   }
 
   return (
-    <article className="space-y-6">
+    <article className="mx-auto max-w-3xl space-y-7">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2 text-sm text-[var(--muted)]">
           <Link href={`/questions${filterQs ? `?${filterQs}` : ''}`} className="hover:text-[var(--ink)]">
@@ -112,7 +112,7 @@ function QuestionDetailContent() {
               <span>{data.subcategory.name}</span>
             </>
           ) : null}
-          <Badge>{data.difficulty}</Badge>
+          <Badge variant="highlight">{data.difficulty}</Badge>
         </div>
         <Button
           variant="outline"
@@ -124,10 +124,14 @@ function QuestionDetailContent() {
         </Button>
       </div>
 
-      <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">{data.title}</h1>
-      <p className="font-reading text-lg leading-relaxed text-[var(--ink-soft)]">{data.content}</p>
+      <header className="space-y-4 border-b border-[var(--line)] pb-6">
+        <h1 className="font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-bold tracking-tight">
+          {data.title}
+        </h1>
+        <p className="font-reading text-lg leading-relaxed text-[var(--ink-soft)]">{data.content}</p>
+      </header>
 
-      <div className="grid gap-3" role="radiogroup" aria-label="Answer options">
+      <div className="grid gap-2.5" role="radiogroup" aria-label="Answer options">
         {data.options.map((option) => {
           const isSelected = selectedId === option.id;
           const isCorrect = option.isCorrect === true;
@@ -146,7 +150,7 @@ function QuestionDetailContent() {
                 setRevealed(true);
               }}
               className={cn(
-                'rounded-[var(--radius)] border px-4 py-3 text-left transition-colors',
+                'motion-press rounded-[var(--radius)] border px-4 py-3.5 text-left transition-colors',
                 showCorrect && 'border-[var(--success)] bg-[var(--success-soft)]',
                 showWrong && 'border-[var(--danger)] bg-[var(--danger-soft)]',
                 !showCorrect &&
@@ -179,9 +183,11 @@ function QuestionDetailContent() {
       ) : null}
 
       {data.explanation ? (
-        <Surface className="p-5">
-          <h2 className="font-semibold">Explanation</h2>
-          <p className="font-reading mt-2 leading-relaxed text-[var(--muted-strong)]">
+        <Surface className="border-l-[3px] border-l-[var(--highlight)] p-5 sm:p-6">
+          <h2 className="text-xs font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
+            Explanation
+          </h2>
+          <p className="font-reading mt-3 leading-relaxed text-[var(--muted-strong)]">
             {data.explanation}
           </p>
         </Surface>
@@ -193,7 +199,7 @@ function QuestionDetailContent() {
         </Alert>
       ) : null}
 
-      <div className="flex flex-wrap gap-3 border-t border-[var(--line)] pt-4">
+      <div className="flex flex-wrap gap-3 border-t border-[var(--line)] pt-5">
         {nav?.prevId ? (
           <Link href={navHref(nav.prevId)}>
             <Button variant="ghost">Previous</Button>

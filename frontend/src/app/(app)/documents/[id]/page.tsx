@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Surface } from '@/components/ui/surface';
@@ -55,7 +56,7 @@ export default function DocumentDetailPage() {
     },
   });
 
-  if (isLoading) return <Skeleton className="h-40 w-full" />;
+  if (isLoading) return <Skeleton className="mx-auto h-40 w-full max-w-3xl" />;
 
   if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
     return (
@@ -71,7 +72,7 @@ export default function DocumentDetailPage() {
   if (error || !data) return <Alert variant="danger">Document not found.</Alert>;
 
   return (
-    <article className="space-y-6">
+    <article className="mx-auto max-w-3xl space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link href="/documents" className="text-sm text-[var(--muted)] hover:text-[var(--ink)]">
           ← PDF library
@@ -85,18 +86,23 @@ export default function DocumentDetailPage() {
           {data.bookmarked ? 'Remove bookmark' : 'Save PDF'}
         </Button>
       </div>
-      <h1 className="font-display text-3xl font-bold tracking-tight">{data.title}</h1>
-      {data.description ? (
-        <p className="text-[var(--muted-strong)]">{data.description}</p>
-      ) : null}
-      <Surface className="space-y-3 p-5">
-        <p className="text-sm text-[var(--muted)]">
-          File: {data.mediaAsset.originalFilename ?? 'document'} ·{' '}
-          {data.mediaAsset.mimeType} · {Math.max(1, Math.round(data.mediaAsset.bytes / 1024))} KB
-        </p>
-        {data.category ? (
-          <p className="text-sm text-[var(--muted)]">Category: {data.category.name}</p>
+      <header className="space-y-3 border-b border-[var(--line)] pb-6">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="outline">{data.visibility}</Badge>
+          {data.category ? <Badge>{data.category.name}</Badge> : null}
+        </div>
+        <h1 className="font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-bold tracking-tight">
+          {data.title}
+        </h1>
+        {data.description ? (
+          <p className="text-[var(--muted-strong)] leading-relaxed">{data.description}</p>
         ) : null}
+      </header>
+      <Surface className="space-y-4 p-5 sm:p-6">
+        <p className="text-sm text-[var(--muted)]">
+          File: {data.mediaAsset.originalFilename ?? 'document'} · {data.mediaAsset.mimeType} ·{' '}
+          {Math.max(1, Math.round(data.mediaAsset.bytes / 1024))} KB
+        </p>
         {data.download.available && data.download.url ? (
           <a href={data.download.url} target="_blank" rel="noreferrer">
             <Button>Download</Button>

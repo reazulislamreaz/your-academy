@@ -21,10 +21,7 @@ export function AppHeader() {
       : baseLinks;
 
   return (
-    <header
-      className="sticky top-0 z-30 border-b border-[var(--line)] bg-[var(--bg-elevated)]"
-      style={{ ['--header-h' as string]: '64px' }}
-    >
+    <header className="sticky top-0 z-30 border-b border-[var(--line)]/80 bg-[var(--bg-elevated)]/90 backdrop-blur-md">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-6">
         <BrandMark />
         <DesktopNav items={links} />

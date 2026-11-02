@@ -12,10 +12,7 @@ const links: NavItem[] = [
 
 export function MarketingHeader() {
   return (
-    <header
-      className="sticky top-0 z-30 border-b border-[var(--line)]/80 bg-[var(--bg)]/90 backdrop-blur-md"
-      style={{ ['--header-h' as string]: '64px' }}
-    >
+    <header className="sticky top-0 z-30 border-b border-[var(--line)]/70 bg-[var(--bg)]/85 backdrop-blur-md">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-6">
         <BrandMark />
         <DesktopNav items={links} />

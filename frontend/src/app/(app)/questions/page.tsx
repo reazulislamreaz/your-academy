@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { ChevronRight } from 'lucide-react';
 import { Suspense } from 'react';
 import { PageHeader } from '@/components/layout/page-header';
 import { QuestionFilters } from '@/components/questions/question-filters';
@@ -10,6 +11,7 @@ import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
+import { ListRow } from '@/components/ui/list-row';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ApiError, apiFetch, apiFetchResult } from '@/lib/api/client';
 import type { CategoryNode, QuestionListItem } from '@/lib/api/types';
@@ -52,6 +54,7 @@ function QuestionsContent() {
   return (
     <div className="space-y-8">
       <PageHeader
+        eyebrow="Practice"
         title="Question bank"
         description="Search and filter published MCQs. Authentication required."
       />
@@ -60,9 +63,9 @@ function QuestionsContent() {
 
       {list.isLoading ? (
         <div className="space-y-3">
-          <Skeleton className="h-24 w-full" />
-          <Skeleton className="h-24 w-full" />
-          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
         </div>
       ) : null}
 
@@ -98,24 +101,23 @@ function QuestionsContent() {
         />
       ) : null}
 
-      <div className="grid gap-3">
+      <div className="divide-y divide-[var(--line)] border-y border-[var(--line)]">
         {items.map((q) => (
-          <Link
+          <ListRow
             key={q.id}
             href={`/questions/${q.id}${filterKey ? `?${filterKey}` : ''}`}
-            className="group block rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] p-5 shadow-[var(--shadow-sm)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] hover:border-[var(--line-strong)] hover:shadow-[var(--shadow)]"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-lg font-semibold text-[var(--ink)]">{q.title}</h2>
-                <p className="mt-1 text-sm text-[var(--muted)]">
+            meta={
+              <>
+                <span>
                   {q.category.name}
                   {q.subcategory ? ` · ${q.subcategory.name}` : ''}
-                </p>
-              </div>
-              <Badge variant="highlight">{q.difficulty}</Badge>
-            </div>
-          </Link>
+                </span>
+                <Badge variant="highlight">{q.difficulty}</Badge>
+              </>
+            }
+            title={<span className="font-display text-lg font-semibold tracking-tight">{q.title}</span>}
+            trailing={<ChevronRight className="h-4 w-4 text-[var(--muted)]" aria-hidden />}
+          />
         ))}
       </div>
 

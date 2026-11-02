@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { ConfirmButton } from '@/components/ui/confirm-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Surface } from '@/components/ui/surface';
 import { Textarea } from '@/components/ui/textarea';
@@ -111,9 +112,8 @@ export default function AdminCategoriesPage() {
           </div>
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="parent">Parent (optional subcategory)</Label>
-            <select
+            <Select
               id="parent"
-              className="h-11 w-full rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] px-3.5 text-sm"
               value={parentId}
               onChange={(e) => setParentId(e.target.value)}
             >
@@ -123,7 +123,7 @@ export default function AdminCategoriesPage() {
                   {c.name}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
           {error ? <Alert className="md:col-span-2" variant="danger">{error}</Alert> : null}
           {msg ? <Alert className="md:col-span-2" variant="success">{msg}</Alert> : null}

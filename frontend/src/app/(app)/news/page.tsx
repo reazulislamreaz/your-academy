@@ -17,38 +17,43 @@ export default function NewsPage() {
   return (
     <div className="space-y-8">
       <PageHeader
+        eyebrow="Updates"
         title="News"
         description="Platform updates and study tips. Public — no login required."
       />
       {isLoading ? (
         <div className="space-y-3">
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
         </div>
       ) : null}
-      {error ? (
-        <p className="text-sm text-[var(--danger)]">Could not load news.</p>
-      ) : null}
+      {error ? <p className="text-sm text-[var(--danger)]">Could not load news.</p> : null}
       {!isLoading && !error && data?.length === 0 ? (
         <EmptyState title="No published articles yet" description="New posts will appear here." />
       ) : null}
-      <div className="grid gap-3">
+      <ul className="divide-y divide-[var(--line)] border-y border-[var(--line)]">
         {data?.map((item) => (
-          <Link
-            key={item.id}
-            href={`/news/${item.slug}`}
-            className="block rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] p-5 shadow-[var(--shadow-sm)] transition-shadow hover:shadow-[var(--shadow)]"
-          >
-            <h2 className="text-xl font-semibold">{item.title}</h2>
-            {item.summary ? <p className="mt-2 text-[var(--muted)]">{item.summary}</p> : null}
-            {item.publishedAt ? (
-              <p className="mt-3 text-xs text-[var(--muted)]">
-                {new Date(item.publishedAt).toLocaleDateString()}
-              </p>
-            ) : null}
-          </Link>
+          <li key={item.id}>
+            <Link href={`/news/${item.slug}`} className="group block py-5">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <h2 className="font-display text-xl font-semibold tracking-tight group-hover:underline group-hover:underline-offset-4">
+                  {item.title}
+                </h2>
+                {item.publishedAt ? (
+                  <time className="text-xs text-[var(--muted)]">
+                    {new Date(item.publishedAt).toLocaleDateString()}
+                  </time>
+                ) : null}
+              </div>
+              {item.summary ? (
+                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--muted)]">
+                  {item.summary}
+                </p>
+              ) : null}
+            </Link>
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   );
 }

@@ -1,8 +1,8 @@
 # 21 — Design System
 
-**Status:** Phase 2 established (2026-11-02)  
+**Status:** Elevated (2026-11-02 UI refresh)  
 **Product:** Your Academy  
-**Direction:** “Exam desk” — cool paper surfaces, deep navy ink, amber highlighter CTAs.
+**Direction:** “Exam desk” — cool paper surfaces, faint ruled texture, deep navy ink, amber highlighter CTAs.
 
 Do **not** drift into purple SaaS gradients, cream+terracotta serif kits, or neon dark dashboards.
 
@@ -11,8 +11,8 @@ Do **not** drift into purple SaaS gradients, cream+terracotta serif kits, or neo
 ## 1. Brand principles
 
 1. **Brand first on marketing** — “Your Academy” is the hero signal; supporting copy stays secondary.
-2. **One job per section** — avoid stat strips and card grids on heroes.
-3. **Surfaces with purpose** — `Surface` for forms/tables; open layout for marketing heroes and reading.
+2. **One job per section** — avoid stat strips and card grids on heroes (stats may sit below the fold).
+3. **Surfaces with purpose** — `Surface` for forms/tables; open / list-row layouts for browse lists; reading column for MCQ/news/PDF detail.
 4. **Admin ≠ learner** — dense navy sidebar admin chrome; calmer app shell for study.
 5. **Motion with restraint** — fade/rise + press feedback; honor `prefers-reduced-motion`.
 
@@ -22,19 +22,21 @@ Do **not** drift into purple SaaS gradients, cream+terracotta serif kits, or neo
 
 | Token | Role | Value (reference) |
 |-------|------|-------------------|
-| `--bg` | Page | `#F3F5F8` |
+| `--bg` | Page | `#F1F4F8` |
+| `--bg-desk` | Desk wash / admin canvas | `#E9EEF5` |
 | `--bg-elevated` | Panels | `#FFFFFF` |
-| `--bg-muted` | Soft fill | `#E8ECF1` |
+| `--bg-muted` | Soft fill | `#E6EBF2` |
 | `--bg-inverse` | Admin / dark panels | `#0B1F33` |
 | `--ink` | Primary text | `#0B1F33` |
 | `--muted` | Secondary text | `#5C6B7A` |
 | `--line` | Borders | `#D5DCE5` |
 | `--highlight` | Primary CTA | `#E5A008` |
 | `--highlight-soft` | Soft accent | `#FFF4D6` |
+| `--highlight-hover` | Soft button hover | `#FFE9B0` |
 | `--accent` | Secondary solid (navy) | `#0B1F33` |
 | `--success` / `--danger` | Semantic | teal / red |
 
-Legacy aliases kept for gradual migration: `--accent` remains usable; primary **buttons** use `--highlight`.
+Page atmosphere: fixed faint horizontal rules + cool navy/amber radial washes (not decorative glow kits).
 
 ---
 
@@ -55,7 +57,8 @@ Bengali UI fonts are **out of scope** until i18n is approved.
 - Radius: `--radius-sm` 8 · `--radius` 12 · `--radius-lg` 16 · `--radius-xl` 22  
 - Prefer **12px controls**, not pill-everything.
 - Shadows: `--shadow-sm` / `--shadow` / `--shadow-lg`
-- Section padding: `--space-section`
+- Section padding: `--space-section` (utility `.section-pad`)
+- Page inline: `--space-page` (utility `.page-pad`)
 
 ---
 
@@ -64,15 +67,18 @@ Bengali UI fonts are **out of scope** until i18n is approved.
 | Component | Use |
 |-----------|-----|
 | `Button` | `primary` (amber), `secondary` (navy), `outline`, `ghost`, `danger`, `soft` |
-| `Input` / `Textarea` / `Label` | Forms |
+| `Input` / `Textarea` / `Select` / `Label` / `Field` | Forms |
 | `Badge` | Difficulty, status |
 | `Alert` | Inline feedback |
 | `Skeleton` | Loading placeholders |
-| `Surface` | Bordered panel |
+| `Surface` | Bordered panel (`density`, `quiet` optional) |
+| `ListRow` | Quiet browse-list rows (prefer over boxed cards) |
 | `EmptyState` | Zero-data |
 | `Separator` | Dividers |
 
-Layout: `BrandMark`, `MarketingHeader`, `AppHeader`, `AdminSidebar`, `AdminMobileNav`, `SiteFooter`, `PageHeader`, `MobileNav` / `DesktopNav`.
+Layout: `BrandMark` (mark + wordmark; `inverse` on navy), `MarketingHeader`, `AppHeader`, `AdminSidebar`, `AdminMobileNav`, `SiteFooter`, `PageHeader`, `MobileNav` / `DesktopNav`.
+
+List utility: `.list-row` in `globals.css` for hover/divider rhythm.
 
 ---
 
@@ -81,11 +87,13 @@ Layout: `BrandMark`, `MarketingHeader`, `AppHeader`, `AdminSidebar`, `AdminMobil
 | Group | Shell | Routes |
 |-------|-------|--------|
 | `(marketing)` | Marketing header + footer | `/` |
-| `(auth)` | Minimal brand bar | `/login`, `/register` |
-| `(app)` | Learner header | `/questions`, `/bookmarks`, `/news`, `/profile` |
-| `(admin)` | Sidebar + mobile tabs | `/admin/*` |
+| `(auth)` | Split navy brand panel + form (desktop); stacked on mobile | `/login`, `/register`, … |
+| `(app)` | Learner header | `/questions`, `/bookmarks`, `/news`, `/profile`, … |
+| `(admin)` | Navy sidebar + mobile tabs | `/admin/*` |
 
 Root `layout.tsx` only mounts fonts + providers (no global header).
+
+Marketing hero: full-bleed navy plane; brand + one line + CTAs only in first viewport. KPI strip below fold.
 
 ---
 
@@ -108,5 +116,7 @@ Disabled under `prefers-reduced-motion: reduce`.
 2. Use `PageHeader` on app/admin list pages.
 3. Do not reintroduce cream/teal Fraunces/Sora Google `@import` fonts.
 4. Do not put KPI cards or filter chrome in the marketing hero.
-5. When adding shadcn-generated files later, map them onto these CSS variables.
-6. Update this doc when tokens or shells change.
+5. Prefer `ListRow` / open dividers for browse lists; `Surface` for forms and interactive panels.
+6. Use shared `Select` / `Field` instead of duplicated select class strings.
+7. When adding shadcn-generated files later, map them onto these CSS variables.
+8. Update this doc when tokens or shells change.

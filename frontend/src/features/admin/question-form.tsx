@@ -3,13 +3,12 @@
 import { useMemo, useState } from 'react';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import type { CategoryNode } from '@/lib/api/types';
-
-const selectClass =
-  'h-11 w-full rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] px-3.5 text-sm outline-none focus:border-[var(--ink)] focus:shadow-[0_0_0_3px_var(--highlight-soft)]';
 
 export type QuestionFormValues = {
   title: string;
@@ -66,7 +65,7 @@ export function QuestionForm({
         onSubmit(values);
       }}
     >
-      <div className="space-y-2">
+      <Field>
         <Label htmlFor="title">Title</Label>
         <Input
           id="title"
@@ -74,8 +73,8 @@ export function QuestionForm({
           value={values.title}
           onChange={(e) => setValues((v) => ({ ...v, title: e.target.value }))}
         />
-      </div>
-      <div className="space-y-2">
+      </Field>
+      <Field>
         <Label htmlFor="content">Question</Label>
         <Textarea
           id="content"
@@ -83,21 +82,20 @@ export function QuestionForm({
           value={values.content}
           onChange={(e) => setValues((v) => ({ ...v, content: e.target.value }))}
         />
-      </div>
-      <div className="space-y-2">
+      </Field>
+      <Field>
         <Label htmlFor="explanation">Explanation</Label>
         <Textarea
           id="explanation"
           value={values.explanation}
           onChange={(e) => setValues((v) => ({ ...v, explanation: e.target.value }))}
         />
-      </div>
+      </Field>
       <div className="grid gap-3 md:grid-cols-3">
-        <div className="space-y-2">
+        <Field>
           <Label htmlFor="category">Category</Label>
-          <select
+          <Select
             id="category"
-            className={selectClass}
             required
             value={values.categoryId}
             onChange={(e) =>
@@ -110,13 +108,12 @@ export function QuestionForm({
                 {c.name}
               </option>
             ))}
-          </select>
-        </div>
-        <div className="space-y-2">
+          </Select>
+        </Field>
+        <Field>
           <Label htmlFor="sub">Subcategory</Label>
-          <select
+          <Select
             id="sub"
-            className={selectClass}
             value={values.subcategoryId}
             onChange={(e) => setValues((v) => ({ ...v, subcategoryId: e.target.value }))}
           >
@@ -126,13 +123,12 @@ export function QuestionForm({
                 {c.name}
               </option>
             ))}
-          </select>
-        </div>
-        <div className="space-y-2">
+          </Select>
+        </Field>
+        <Field>
           <Label htmlFor="diff">Difficulty</Label>
-          <select
+          <Select
             id="diff"
-            className={selectClass}
             value={values.difficulty}
             onChange={(e) =>
               setValues((v) => ({
@@ -144,12 +140,12 @@ export function QuestionForm({
             <option value="EASY">Easy</option>
             <option value="MEDIUM">Medium</option>
             <option value="HARD">Hard</option>
-          </select>
-        </div>
+          </Select>
+        </Field>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         {values.options.map((opt, i) => (
-          <div key={i} className="space-y-2">
+          <Field key={i}>
             <Label htmlFor={`opt-${i}`}>Option {['A', 'B', 'C', 'D'][i]}</Label>
             <Input
               id={`opt-${i}`}
@@ -162,14 +158,13 @@ export function QuestionForm({
                 }))
               }
             />
-          </div>
+          </Field>
         ))}
       </div>
-      <div className="space-y-2">
+      <Field>
         <Label htmlFor="correct">Correct option</Label>
-        <select
+        <Select
           id="correct"
-          className={selectClass}
           value={values.correct}
           onChange={(e) => setValues((v) => ({ ...v, correct: e.target.value }))}
         >
@@ -178,8 +173,8 @@ export function QuestionForm({
               {l}
             </option>
           ))}
-        </select>
-      </div>
+        </Select>
+      </Field>
       {error ? <Alert variant="danger">{error}</Alert> : null}
       <Button type="submit" disabled={pending}>
         {pending ? 'Saving…' : submitLabel}

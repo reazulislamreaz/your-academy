@@ -6,6 +6,7 @@ import { Suspense, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Surface } from '@/components/ui/surface';
@@ -44,14 +45,16 @@ function LoginForm() {
   }
 
   return (
-    <div className="space-y-6 py-4">
+    <div className="motion-rise space-y-6">
       <div>
         <h1 className="font-display text-3xl font-bold tracking-tight">Welcome back</h1>
-        <p className="mt-2 text-[var(--muted)]">Sign in with your WhatsApp number.</p>
+        <p className="mt-2 text-sm leading-relaxed text-[var(--muted)] sm:text-base">
+          Sign in with your WhatsApp number.
+        </p>
       </div>
-      <Surface className="p-6">
+      <Surface className="p-6 sm:p-7">
         <form onSubmit={onSubmit} className="space-y-4">
-          <div className="space-y-2">
+          <Field>
             <Label htmlFor="whatsapp">WhatsApp number</Label>
             <Input
               id="whatsapp"
@@ -60,8 +63,8 @@ function LoginForm() {
               autoComplete="username"
               required
             />
-          </div>
-          <div className="space-y-2">
+          </Field>
+          <Field>
             <div className="flex items-center justify-between gap-2">
               <Label htmlFor="password">Password</Label>
               <Link
@@ -79,7 +82,7 @@ function LoginForm() {
               autoComplete="current-password"
               required
             />
-          </div>
+          </Field>
           {error ? <Alert variant="danger">{error}</Alert> : null}
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? 'Signing in…' : 'Sign in'}
@@ -88,7 +91,10 @@ function LoginForm() {
       </Surface>
       <p className="text-sm text-[var(--muted)]">
         New here?{' '}
-        <Link href="/register" className="font-semibold text-[var(--ink)] underline-offset-2 hover:underline">
+        <Link
+          href="/register"
+          className="font-semibold text-[var(--ink)] underline-offset-2 hover:underline"
+        >
           Create account
         </Link>
       </p>

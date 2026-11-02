@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { PageHeader } from '@/components/layout/page-header';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -139,6 +140,7 @@ export default function ProfilePage() {
   return (
     <div className="space-y-8">
       <PageHeader
+        eyebrow="Account"
         title="Your dashboard"
         description="Profile, trial status, and account security."
         actions={
@@ -148,8 +150,10 @@ export default function ProfilePage() {
         }
       />
 
-      <Surface className="space-y-4 p-6">
-        <h2 className="font-display text-xl font-semibold">Trial</h2>
+      <Surface className="space-y-4 border-l-[3px] border-l-[var(--highlight)] p-6">
+        <h2 className="text-xs font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
+          Trial
+        </h2>
         <TrialCountdown
           trialEndsAt={user.access.trialEndsAt}
           isTrialActive={user.access.isTrialActive}
@@ -161,18 +165,25 @@ export default function ProfilePage() {
         </p>
       </Surface>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Surface className="p-5">
-          <p className="text-sm text-[var(--muted)]">Saved questions</p>
+      <div className="grid gap-px overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--line)] sm:grid-cols-3">
+        <div className="bg-[var(--bg-elevated)] p-5">
+          <p className="text-xs font-semibold tracking-[0.12em] text-[var(--muted)] uppercase">
+            Saved questions
+          </p>
           <p className="mt-2 font-display text-3xl font-bold">
             {stats.data?.questionBookmarks ?? 0}
           </p>
-          <Link href="/bookmarks" className="mt-3 inline-block text-sm font-semibold underline-offset-2 hover:underline">
+          <Link
+            href="/bookmarks"
+            className="mt-3 inline-block text-sm font-semibold underline-offset-2 hover:underline"
+          >
             View saved
           </Link>
-        </Surface>
-        <Surface className="p-5">
-          <p className="text-sm text-[var(--muted)]">Saved PDFs</p>
+        </div>
+        <div className="bg-[var(--bg-elevated)] p-5">
+          <p className="text-xs font-semibold tracking-[0.12em] text-[var(--muted)] uppercase">
+            Saved PDFs
+          </p>
           <p className="mt-2 font-display text-3xl font-bold">
             {stats.data?.documentBookmarks ?? 0}
           </p>
@@ -182,14 +193,16 @@ export default function ProfilePage() {
           >
             View saved
           </Link>
-        </Surface>
-        <Surface className="p-5">
-          <p className="text-sm text-[var(--muted)]">Browsing time</p>
+        </div>
+        <div className="bg-[var(--bg-elevated)] p-5">
+          <p className="text-xs font-semibold tracking-[0.12em] text-[var(--muted)] uppercase">
+            Browsing time
+          </p>
           <p className="mt-2 font-display text-3xl font-bold">
             {Math.round((stats.data?.browsingSeconds ?? 0) / 60)} min
           </p>
           <p className="mt-3 text-xs text-[var(--muted)]">Tracked while you study with this tab open.</p>
-        </Surface>
+        </div>
       </div>
 
       {stats.data &&
@@ -254,11 +267,11 @@ export default function ProfilePage() {
             saveProfile.mutate();
           }}
         >
-          <div className="space-y-2">
+          <Field>
             <Label htmlFor="name">Name</Label>
             <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
-          </div>
-          <div className="space-y-2">
+          </Field>
+          <Field>
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
@@ -267,7 +280,7 @@ export default function ProfilePage() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Needed for password reset"
             />
-          </div>
+          </Field>
           {profileMsg ? <Alert variant="success">{profileMsg}</Alert> : null}
           {profileErr ? <Alert variant="danger">{profileErr}</Alert> : null}
           <Button type="submit" disabled={saveProfile.isPending}>
@@ -315,7 +328,7 @@ export default function ProfilePage() {
             changePassword.mutate();
           }}
         >
-          <div className="space-y-2">
+          <Field>
             <Label htmlFor="current">Current password</Label>
             <Input
               id="current"
@@ -325,8 +338,8 @@ export default function ProfilePage() {
               onChange={(e) => setCurrentPassword(e.target.value)}
               autoComplete="current-password"
             />
-          </div>
-          <div className="space-y-2">
+          </Field>
+          <Field>
             <Label htmlFor="next">New password</Label>
             <Input
               id="next"
@@ -337,7 +350,7 @@ export default function ProfilePage() {
               onChange={(e) => setNewPassword(e.target.value)}
               autoComplete="new-password"
             />
-          </div>
+          </Field>
           {passwordMsg ? <Alert variant="success">{passwordMsg}</Alert> : null}
           {passwordErr ? <Alert variant="danger">{passwordErr}</Alert> : null}
           <Button type="submit" variant="secondary" disabled={changePassword.isPending}>

@@ -84,11 +84,12 @@ export default function BookmarksPage() {
   return (
     <div className="space-y-8">
       <PageHeader
+        eyebrow="Library"
         title="Saved"
         description="Questions and PDFs you bookmarked for later study."
       />
 
-      <div className="flex gap-2 border-b border-[var(--line)] pb-3">
+      <div className="flex gap-1 border-b border-[var(--line)]">
         {(
           [
             { id: 'questions', label: 'Questions' },
@@ -100,21 +101,24 @@ export default function BookmarksPage() {
             type="button"
             onClick={() => setTab(item.id)}
             className={cn(
-              'rounded-[var(--radius)] px-3 py-1.5 text-sm font-semibold transition-colors',
+              'relative px-4 py-2.5 text-sm font-semibold transition-colors',
               tab === item.id
-                ? 'bg-[var(--ink)] text-[var(--bg)]'
+                ? 'text-[var(--ink)]'
                 : 'text-[var(--muted)] hover:text-[var(--ink)]',
             )}
           >
             {item.label}
+            {tab === item.id ? (
+              <span className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-[var(--highlight)]" />
+            ) : null}
           </button>
         ))}
       </div>
 
       {active.isLoading ? (
         <div className="space-y-3">
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-14 w-full" />
+          <Skeleton className="h-14 w-full" />
         </div>
       ) : null}
 
@@ -158,14 +162,11 @@ export default function BookmarksPage() {
       ) : null}
 
       {tab === 'questions' ? (
-        <div className="grid gap-3">
+        <div className="divide-y divide-[var(--line)] border-y border-[var(--line)]">
           {questionRows.map((b) => (
-            <div
-              key={b.id}
-              className="flex items-start justify-between gap-3 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] p-4"
-            >
-              <Link href={`/questions/${b.question.id}`} className="min-w-0 flex-1">
-                <p className="font-semibold">{b.question.title}</p>
+            <div key={b.id} className="flex items-start justify-between gap-3 py-4">
+              <Link href={`/questions/${b.question.id}`} className="min-w-0 flex-1 space-y-1">
+                <p className="font-medium text-[var(--ink)]">{b.question.title}</p>
                 <p className="text-sm text-[var(--muted)]">{b.question.category.name}</p>
               </Link>
               <div className="flex shrink-0 items-center gap-2">
@@ -183,14 +184,11 @@ export default function BookmarksPage() {
           ))}
         </div>
       ) : (
-        <div className="grid gap-3">
+        <div className="divide-y divide-[var(--line)] border-y border-[var(--line)]">
           {documentRows.map((b) => (
-            <div
-              key={b.id}
-              className="flex items-start justify-between gap-3 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] p-4"
-            >
-              <Link href={`/documents/${b.document.id}`} className="min-w-0 flex-1">
-                <p className="font-semibold">{b.document.title}</p>
+            <div key={b.id} className="flex items-start justify-between gap-3 py-4">
+              <Link href={`/documents/${b.document.id}`} className="min-w-0 flex-1 space-y-1">
+                <p className="font-medium text-[var(--ink)]">{b.document.title}</p>
                 <p className="text-sm text-[var(--muted)]">{b.document.visibility}</p>
               </Link>
               <Button

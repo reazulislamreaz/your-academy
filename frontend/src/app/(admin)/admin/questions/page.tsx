@@ -8,12 +8,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ConfirmButton } from '@/components/ui/confirm-button';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Select } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { apiFetch, apiFetchResult } from '@/lib/api/client';
 import type { AdminQuestionListItem } from '@/lib/api/admin-types';
-
-const selectClass =
-  'h-10 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] px-3 text-sm';
 
 export default function AdminQuestionsPage() {
   const qc = useQueryClient();
@@ -57,9 +55,9 @@ export default function AdminQuestionsPage() {
         <label className="text-sm text-[var(--muted)]" htmlFor="status">
           Status
         </label>
-        <select
+        <Select
           id="status"
-          className={selectClass}
+          className="h-10 w-auto min-w-[9rem]"
           value={status}
           onChange={(e) => setStatus(e.target.value)}
         >
@@ -67,7 +65,7 @@ export default function AdminQuestionsPage() {
           <option value="DRAFT">Draft</option>
           <option value="PUBLISHED">Published</option>
           <option value="ARCHIVED">Archived</option>
-        </select>
+        </Select>
       </div>
 
       {list.isLoading ? (

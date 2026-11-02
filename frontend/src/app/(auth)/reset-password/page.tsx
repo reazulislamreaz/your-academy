@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Surface } from '@/components/ui/surface';
@@ -46,23 +47,28 @@ function ResetForm() {
   }
 
   return (
-    <div className="space-y-6 py-4">
+    <div className="motion-rise space-y-6">
       <div>
         <h1 className="font-display text-3xl font-bold tracking-tight">Choose a new password</h1>
-        <p className="mt-2 text-[var(--muted)]">Use at least 8 characters with a letter and a number.</p>
+        <p className="mt-2 text-sm leading-relaxed text-[var(--muted)] sm:text-base">
+          Use at least 8 characters with a letter and a number.
+        </p>
       </div>
-      <Surface className="p-6">
+      <Surface className="p-6 sm:p-7">
         <form onSubmit={onSubmit} className="space-y-4">
           {!token ? (
             <Alert variant="warning">
               No token in the URL. Request a new link from{' '}
-              <Link href="/forgot-password" className="font-semibold underline-offset-2 hover:underline">
+              <Link
+                href="/forgot-password"
+                className="font-semibold underline-offset-2 hover:underline"
+              >
                 forgot password
               </Link>
               .
             </Alert>
           ) : null}
-          <div className="space-y-2">
+          <Field>
             <Label htmlFor="password">New password</Label>
             <Input
               id="password"
@@ -73,8 +79,8 @@ function ResetForm() {
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="new-password"
             />
-          </div>
-          <div className="space-y-2">
+          </Field>
+          <Field>
             <Label htmlFor="confirm">Confirm password</Label>
             <Input
               id="confirm"
@@ -85,7 +91,7 @@ function ResetForm() {
               onChange={(e) => setConfirm(e.target.value)}
               autoComplete="new-password"
             />
-          </div>
+          </Field>
           {error ? <Alert variant="danger">{error}</Alert> : null}
           <Button type="submit" className="w-full" disabled={loading || !token}>
             {loading ? 'Updating…' : 'Update password'}

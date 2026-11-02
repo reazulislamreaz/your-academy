@@ -29,7 +29,7 @@ export default function NewsDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
+      <div className="mx-auto max-w-3xl space-y-4">
         <Skeleton className="h-10 w-2/3" />
         <Skeleton className="h-40 w-full" />
       </div>
@@ -38,25 +38,31 @@ export default function NewsDetailPage() {
   if (error || !data) return <Alert variant="danger">Article not found.</Alert>;
 
   return (
-    <article className="space-y-5">
+    <article className="mx-auto max-w-3xl space-y-6">
       <Link href="/news" className="text-sm text-[var(--muted)] hover:text-[var(--ink)]">
         ← News
       </Link>
-      <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">{data.title}</h1>
-      {data.publishedAt ? (
-        <p className="text-sm text-[var(--muted)]">
-          {new Date(data.publishedAt).toLocaleDateString()}
-        </p>
-      ) : null}
+      <header className="space-y-3 border-b border-[var(--line)] pb-6">
+        <h1 className="font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-bold tracking-tight">
+          {data.title}
+        </h1>
+        {data.publishedAt ? (
+          <p className="text-sm text-[var(--muted)]">
+            {new Date(data.publishedAt).toLocaleDateString()}
+          </p>
+        ) : null}
+      </header>
       <p className="font-reading whitespace-pre-wrap text-lg leading-relaxed text-[var(--ink-soft)]">
         {data.body}
       </p>
       {data.documents.length > 0 ? (
-        <Surface className="p-4">
-          <h2 className="font-semibold">Attached PDFs</h2>
-          <ul className="mt-3 space-y-2">
+        <Surface className="p-5">
+          <h2 className="text-xs font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
+            Attached PDFs
+          </h2>
+          <ul className="mt-4 divide-y divide-[var(--line)]">
             {data.documents.map((doc) => (
-              <li key={doc.id}>
+              <li key={doc.id} className="py-3 first:pt-0 last:pb-0">
                 <Link
                   href={`/documents/${doc.id}`}
                   className="text-sm font-semibold underline-offset-2 hover:underline"
