@@ -110,14 +110,15 @@ Dependency-ordered phases. Complete acceptance criteria before advancing.
 
 ---
 
-## Phase 7 — Bookmarks and User Dashboard
+## Phase 7 — Bookmarks and User Dashboard — **DONE**
 
 **Depends on:** Phases 4–6
 
 **Work:**
 
-- Question/document bookmarks
-- User stats dashboard endpoints + UI
+- Question/document bookmarks (DTO validation, category filter on question list)
+- Document detail `bookmarked` + save/remove UI; bookmarks page tabs + cursor pagination
+- User stats dashboard (`/users/me/stats` counts + recent items) on profile
 
 **Acceptance:** Duplicate bookmarks 409; ownership enforced; paginated lists.
 
@@ -236,5 +237,5 @@ flowchart TD
 
 ## Recommended Next Step
 
-**Phases 2–6 established** (design system → admin CMS → Cloudinary/email closeout).  
-Next: hardening/tests (Phase 12), Redis readiness, and remaining DEC-gated product gaps.
+**Phases 2–7 established** (through bookmarks + learner dashboard).  
+Next: Phase 8 news/PDF polish, or hardening/tests (Phase 12).

@@ -76,19 +76,57 @@ export class UsersService {
   }
 
   async getStats(user: RequestUser) {
-    const [questionBookmarks, documentBookmarks, browsing] = await Promise.all([
-      this.prisma.questionBookmark.count({ where: { userId: user.userId } }),
-      this.prisma.documentBookmark.count({ where: { userId: user.userId } }),
-      this.prisma.browsingSession.aggregate({
-        where: { userId: user.userId },
-        _sum: { accruedSeconds: true },
-      }),
-    ]);
+    const [questionBookmarks, documentBookmarks, browsing, recentQuestions, recentDocuments] =
+      await Promise.all([
+        this.prisma.questionBookmark.count({ where: { userId: user.userId } }),
+        this.prisma.documentBookmark.count({ where: { userId: user.userId } }),
+        this.prisma.browsingSession.aggregate({
+          where: { userId: user.userId },
+          _sum: { accruedSeconds: true },
+        }),
+        this.prisma.questionBookmark.findMany({
+          where: { userId: user.userId },
+          take: 5,
+          orderBy: { createdAt: 'desc' },
+          select: {
+            id: true,
+            createdAt: true,
+            question: {
+              select: { id: true, title: true, difficulty: true },
+            },
+          },
+        }),
+        this.prisma.documentBookmark.findMany({
+          where: { userId: user.userId },
+          take: 5,
+          orderBy: { createdAt: 'desc' },
+          select: {
+            id: true,
+            createdAt: true,
+            document: {
+              select: { id: true, title: true },
+            },
+          },
+        }),
+      ]);
 
     return {
       questionBookmarks,
       documentBookmarks,
       browsingSeconds: browsing._sum.accruedSeconds ?? 0,
+      recentQuestions: recentQuestions.map((row) => ({
+        bookmarkId: row.id,
+        savedAt: row.createdAt.toISOString(),
+        id: row.question.id,
+        title: row.question.title,
+        difficulty: row.question.difficulty,
+      })),
+      recentDocuments: recentDocuments.map((row) => ({
+        bookmarkId: row.id,
+        savedAt: row.createdAt.toISOString(),
+        id: row.document.id,
+        title: row.document.title,
+      })),
     };
   }
 }

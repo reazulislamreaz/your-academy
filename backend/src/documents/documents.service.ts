@@ -57,7 +57,7 @@ export class DocumentsService {
     });
   }
 
-  async getPublished(id: string) {
+  async getPublished(id: string, user?: RequestUser) {
     const doc = await this.prisma.document.findFirst({
       where: { id, isPublished: true, deletedAt: null },
       select: {
@@ -84,8 +84,18 @@ export class DocumentsService {
       );
     }
 
+    const bookmark = user
+      ? await this.prisma.documentBookmark.findUnique({
+          where: {
+            userId_documentId: { userId: user.userId, documentId: id },
+          },
+          select: { id: true },
+        })
+      : null;
+
     return {
       ...doc,
+      bookmarked: Boolean(bookmark),
       download: await this.resolveDownload(doc.mediaAsset.id),
     };
   }

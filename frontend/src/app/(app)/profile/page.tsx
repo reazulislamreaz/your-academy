@@ -176,8 +176,11 @@ export default function ProfilePage() {
           <p className="mt-2 font-display text-3xl font-bold">
             {stats.data?.documentBookmarks ?? 0}
           </p>
-          <Link href="/documents" className="mt-3 inline-block text-sm font-semibold underline-offset-2 hover:underline">
-            PDF library
+          <Link
+            href="/bookmarks"
+            className="mt-3 inline-block text-sm font-semibold underline-offset-2 hover:underline"
+          >
+            View saved
           </Link>
         </Surface>
         <Surface className="p-5">
@@ -188,6 +191,55 @@ export default function ProfilePage() {
           <p className="mt-3 text-xs text-[var(--muted)]">Tracked while you study with this tab open.</p>
         </Surface>
       </div>
+
+      {stats.data &&
+      (stats.data.recentQuestions.length > 0 || stats.data.recentDocuments.length > 0) ? (
+        <Surface className="space-y-5 p-6">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="font-display text-xl font-semibold">Recent saves</h2>
+            <Link
+              href="/bookmarks"
+              className="text-sm font-semibold underline-offset-2 hover:underline"
+            >
+              All bookmarks
+            </Link>
+          </div>
+          {stats.data.recentQuestions.length > 0 ? (
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-[var(--muted)]">Questions</p>
+              <ul className="space-y-2">
+                {stats.data.recentQuestions.map((item) => (
+                  <li key={item.bookmarkId}>
+                    <Link
+                      href={`/questions/${item.id}`}
+                      className="text-sm font-semibold underline-offset-2 hover:underline"
+                    >
+                      {item.title}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          {stats.data.recentDocuments.length > 0 ? (
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-[var(--muted)]">PDFs</p>
+              <ul className="space-y-2">
+                {stats.data.recentDocuments.map((item) => (
+                  <li key={item.bookmarkId}>
+                    <Link
+                      href={`/documents/${item.id}`}
+                      className="text-sm font-semibold underline-offset-2 hover:underline"
+                    >
+                      {item.title}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </Surface>
+      ) : null}
 
       <Surface className="p-6">
         <h2 className="font-display text-xl font-semibold">Profile</h2>

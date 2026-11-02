@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -14,6 +14,7 @@ type DocumentDetail = {
   title: string;
   description?: string | null;
   visibility: string;
+  bookmarked: boolean;
   category?: { id: string; name: string } | null;
   mediaAsset: {
     mimeType: string;
@@ -26,10 +27,32 @@ type DocumentDetail = {
 
 export default function DocumentDetailPage() {
   const params = useParams<{ id: string }>();
+  const qc = useQueryClient();
   const { data, isLoading, error } = useQuery({
     queryKey: ['document', params.id],
     queryFn: () => apiFetch<DocumentDetail>(`/documents/${params.id}`),
     retry: false,
+  });
+
+  const bookmark = useMutation({
+    mutationFn: async () => {
+      if (data?.bookmarked) {
+        await apiFetch(`/bookmarks/documents/${params.id}`, { method: 'DELETE' });
+        return false;
+      }
+      await apiFetch('/bookmarks/documents', {
+        method: 'POST',
+        body: JSON.stringify({ documentId: params.id }),
+      });
+      return true;
+    },
+    onSuccess: (bookmarked) => {
+      qc.setQueryData<DocumentDetail>(['document', params.id], (prev) =>
+        prev ? { ...prev, bookmarked } : prev,
+      );
+      void qc.invalidateQueries({ queryKey: ['bookmarks'] });
+      void qc.invalidateQueries({ queryKey: ['stats'] });
+    },
   });
 
   if (isLoading) return <Skeleton className="h-40 w-full" />;
@@ -49,9 +72,19 @@ export default function DocumentDetailPage() {
 
   return (
     <article className="space-y-6">
-      <Link href="/documents" className="text-sm text-[var(--muted)] hover:text-[var(--ink)]">
-        ← PDF library
-      </Link>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Link href="/documents" className="text-sm text-[var(--muted)] hover:text-[var(--ink)]">
+          ← PDF library
+        </Link>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={bookmark.isPending}
+          onClick={() => bookmark.mutate()}
+        >
+          {data.bookmarked ? 'Remove bookmark' : 'Save PDF'}
+        </Button>
+      </div>
       <h1 className="font-display text-3xl font-bold tracking-tight">{data.title}</h1>
       {data.description ? (
         <p className="text-[var(--muted-strong)]">{data.description}</p>

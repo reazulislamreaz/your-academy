@@ -6,6 +6,10 @@ import { CsrfGuard } from '../common/guards/csrf.guard';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { newRequestId } from '../common/request-id';
 import { BookmarksService } from './bookmarks.service';
+import {
+  CreateDocumentBookmarkDto,
+  CreateQuestionBookmarkDto,
+} from './dto/create-bookmark.dto';
 
 @Controller('api/v1/bookmarks')
 @UseGuards(JwtAuthGuard)
@@ -17,19 +21,25 @@ export class BookmarksController {
     @CurrentUser() user: RequestUser,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
+    @Query('categoryId') categoryId?: string,
   ) {
-    const data = await this.bookmarks.listQuestions(user, cursor, limit ? Number(limit) : 20);
+    const parsedLimit = limit ? Number(limit) : 20;
+    const data = await this.bookmarks.listQuestions(user, {
+      cursor,
+      limit: parsedLimit,
+      categoryId,
+    });
     return createSuccessResponse(data.items, newRequestId(), {
       nextCursor: data.nextCursor,
       prevCursor: null,
-      limit: limit ? Number(limit) : 20,
+      limit: parsedLimit,
       total: null,
     });
   }
 
   @Post('questions')
   @UseGuards(CsrfGuard)
-  async addQuestion(@CurrentUser() user: RequestUser, @Body() body: { questionId: string }) {
+  async addQuestion(@CurrentUser() user: RequestUser, @Body() body: CreateQuestionBookmarkDto) {
     return createSuccessResponse(
       await this.bookmarks.addQuestion(user, body.questionId),
       newRequestId(),
@@ -48,18 +58,22 @@ export class BookmarksController {
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
   ) {
-    const data = await this.bookmarks.listDocuments(user, cursor, limit ? Number(limit) : 20);
+    const parsedLimit = limit ? Number(limit) : 20;
+    const data = await this.bookmarks.listDocuments(user, {
+      cursor,
+      limit: parsedLimit,
+    });
     return createSuccessResponse(data.items, newRequestId(), {
       nextCursor: data.nextCursor,
       prevCursor: null,
-      limit: limit ? Number(limit) : 20,
+      limit: parsedLimit,
       total: null,
     });
   }
 
   @Post('documents')
   @UseGuards(CsrfGuard)
-  async addDocument(@CurrentUser() user: RequestUser, @Body() body: { documentId: string }) {
+  async addDocument(@CurrentUser() user: RequestUser, @Body() body: CreateDocumentBookmarkDto) {
     return createSuccessResponse(
       await this.bookmarks.addDocument(user, body.documentId),
       newRequestId(),

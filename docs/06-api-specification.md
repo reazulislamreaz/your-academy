@@ -114,7 +114,7 @@ Profile picture: separate upload after auth or multipart field if approved.
 | GET | `/users/me` | Own profile | User | USER/ADMIN |
 | PATCH | `/users/me` | Update profile | User | USER/ADMIN |
 | POST | `/users/me/avatar` | Avatar upload init/complete | User | USER/ADMIN |
-| GET | `/users/me/stats` | Personal dashboard stats | User | USER/ADMIN |
+| GET | `/users/me/stats` | Personal dashboard stats (bookmark counts, browsing seconds, recent saves) | User | USER/ADMIN |
 | GET | `/admin/users` | List users | User | ADMIN |
 | GET | `/admin/users/:id` | User detail | User | ADMIN |
 | PATCH | `/admin/users/:id/status` | Suspend/reinstate | User | ADMIN |
@@ -192,14 +192,14 @@ Query params for list: `cursor`, `limit`, `categoryId`, `subcategoryId`, `diffic
 
 | Method | Endpoint | Description | Auth | Role |
 |--------|----------|-------------|------|------|
-| GET | `/bookmarks/questions` | List | User | USER/ADMIN |
+| GET | `/bookmarks/questions` | List (`cursor`, `limit`, optional `categoryId`) | User | USER/ADMIN |
 | POST | `/bookmarks/questions` | `{ "questionId" }` | User | USER/ADMIN |
 | DELETE | `/bookmarks/questions/:questionId` | Remove | User | USER/ADMIN |
-| GET | `/bookmarks/documents` | List | User | USER/ADMIN |
+| GET | `/bookmarks/documents` | List (`cursor`, `limit`) | User | USER/ADMIN |
 | POST | `/bookmarks/documents` | `{ "documentId" }` | User | USER/ADMIN |
 | DELETE | `/bookmarks/documents/:documentId` | Remove | User | USER/ADMIN |
 
-`409` on duplicate.
+`409` on duplicate. Lists are owner-scoped. Document detail includes `bookmarked`.
 
 ---
 

@@ -83,4 +83,17 @@ export type UserStats = {
   questionBookmarks: number;
   documentBookmarks: number;
   browsingSeconds: number;
+  recentQuestions: Array<{
+    bookmarkId: string;
+    savedAt: string;
+    id: string;
+    title: string;
+    difficulty: string;
+  }>;
+  recentDocuments: Array<{
+    bookmarkId: string;
+    savedAt: string;
+    id: string;
+    title: string;
+  }>;
 };

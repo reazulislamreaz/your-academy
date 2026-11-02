@@ -61,6 +61,7 @@ function QuestionDetailContent() {
         prev ? { ...prev, bookmarked } : prev,
       );
       void qc.invalidateQueries({ queryKey: ['bookmarks'] });
+      void qc.invalidateQueries({ queryKey: ['stats'] });
     },
   });
 

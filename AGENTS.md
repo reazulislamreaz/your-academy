@@ -264,6 +264,6 @@ Cursor rules (always apply / path-scoped): `.cursor/rules/*.mdc`.
 
 ## 18. Next Phase
 
-**Phases 2–6 done** (design system → public/app → access control → admin CMS → Cloudinary/email).  
-**Next:** Phase 7 — Bookmarks and user dashboard (then Phase 12 hardening/tests).  
+**Phases 2–7 done** (through bookmarks + learner dashboard).  
+**Next:** Phase 8 — News/PDF polish, or Phase 12 hardening/tests.  
 See `docs/16-development-roadmap.md`.

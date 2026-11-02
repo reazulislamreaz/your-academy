@@ -8,12 +8,24 @@ import { PrismaService } from '../database/prisma.service';
 export class BookmarksService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async listQuestions(user: RequestUser, cursor?: string, limit = 20) {
-    const take = Math.min(limit, 100);
+  async listQuestions(
+    user: RequestUser,
+    opts: { cursor?: string; limit?: number; categoryId?: string } = {},
+  ) {
+    const take = Math.min(opts.limit ?? 20, 100);
     const items = await this.prisma.questionBookmark.findMany({
-      where: { userId: user.userId },
+      where: {
+        userId: user.userId,
+        ...(opts.categoryId
+          ? {
+              question: {
+                OR: [{ categoryId: opts.categoryId }, { subcategoryId: opts.categoryId }],
+              },
+            }
+          : {}),
+      },
       take: take + 1,
-      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      ...(opts.cursor ? { cursor: { id: opts.cursor }, skip: 1 } : {}),
       orderBy: { createdAt: 'desc' },
       include: {
         question: {
@@ -57,12 +69,15 @@ export class BookmarksService {
     return { ok: true };
   }
 
-  async listDocuments(user: RequestUser, cursor?: string, limit = 20) {
-    const take = Math.min(limit, 100);
+  async listDocuments(
+    user: RequestUser,
+    opts: { cursor?: string; limit?: number } = {},
+  ) {
+    const take = Math.min(opts.limit ?? 20, 100);
     const items = await this.prisma.documentBookmark.findMany({
       where: { userId: user.userId },
       take: take + 1,
-      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      ...(opts.cursor ? { cursor: { id: opts.cursor }, skip: 1 } : {}),
       orderBy: { createdAt: 'desc' },
       include: { document: { select: { id: true, title: true, visibility: true } } },
     });

@@ -47,8 +47,8 @@ export class DocumentsController {
 
   @Get('documents/:id')
   @UseGuards(JwtAuthGuard)
-  async detail(@Param('id') id: string) {
-    return createSuccessResponse(await this.documents.getPublished(id), newRequestId());
+  async detail(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return createSuccessResponse(await this.documents.getPublished(id, user), newRequestId());
   }
 
   @Get('admin/documents')
