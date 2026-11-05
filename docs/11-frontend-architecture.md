@@ -12,6 +12,8 @@ frontend/
     (public)/           # marketing, public news
     (auth)/             # login, register, reset
     (app)/              # authenticated learner
+      home/             # study home (continue, trial, suggestions)
+      onboarding/       # post-register topic picks + trial explainer
       questions/
       bookmarks/
       profile/

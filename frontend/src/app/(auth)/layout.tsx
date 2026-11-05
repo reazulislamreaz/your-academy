@@ -31,7 +31,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           <ul className="space-y-3 pt-2 text-sm text-white/75">
             <li className="flex gap-3">
               <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--highlight)]" />
-              WhatsApp signup, secure cookie sessions
+              WhatsApp for login only — HTTP-only cookie sessions
             </li>
             <li className="flex gap-3">
               <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--highlight)]" />
@@ -39,7 +39,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
             </li>
             <li className="flex gap-3">
               <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--highlight)]" />
-              Fair trial — no fake locked-content theater
+              Fair trial — answers omitted by the API when not entitled
             </li>
           </ul>
         </div>

@@ -182,11 +182,14 @@ select {
   display: block;
   border-bottom: 1px solid var(--line);
   padding: 1rem 0.15rem;
-  transition: background-color var(--duration-fast) var(--ease-out);
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    padding-inline var(--duration-fast) var(--ease-out);
 }
 
 .list-row:hover {
   background-color: var(--brand-wash);
+  padding-inline: 0.35rem;
 }
 
 .list-row:focus-visible {

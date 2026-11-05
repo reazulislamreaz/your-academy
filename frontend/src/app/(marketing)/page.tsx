@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { ProductPreview } from '@/components/marketing/product-preview';
 import { serverFetch } from '@/lib/api/client';
 import type { CategoryNode, NewsListItem, PublicStats } from '@/lib/api/types';
 
@@ -16,7 +17,7 @@ export default async function HomePage() {
 
   return (
     <div>
-      {/* Hero — brand, one line, CTAs, full-bleed desk visual */}
+      {/* Hero — brand, one line, CTAs only in first viewport */}
       <section className="relative overflow-hidden border-b border-[var(--line)]">
         <div
           aria-hidden
@@ -68,7 +69,7 @@ export default async function HomePage() {
 
       {stats ? (
         <section className="border-b border-[var(--line)] bg-[var(--bg-elevated)]">
-          <div className="mx-auto grid w-full max-w-6xl grid-cols-3 gap-6 px-6 py-10">
+          <div className="mx-auto grid w-full max-w-6xl grid-cols-2 gap-6 px-6 py-10 sm:grid-cols-4">
             <div className="motion-fade-in">
               <p className="text-xs font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
                 Questions
@@ -87,9 +88,90 @@ export default async function HomePage() {
               </p>
               <p className="mt-1 font-display text-3xl font-bold tracking-tight">{stats.news}</p>
             </div>
+            <div className="motion-fade-in" style={{ animationDelay: '120ms' }}>
+              <p className="text-xs font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
+                PDFs
+              </p>
+              <p className="mt-1 font-display text-3xl font-bold tracking-tight">{stats.documents}</p>
+            </div>
           </div>
         </section>
       ) : null}
+
+      <section id="how-trial-works" className="section-pad border-b border-[var(--line)]">
+        <div className="mx-auto w-full max-w-6xl px-6">
+          <div className="mb-10 max-w-xl">
+            <h2 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
+              How the trial works
+            </h2>
+            <p className="mt-3 text-[var(--muted)]">
+              One fair week of full answers — then the library stays open without locking you out.
+            </p>
+          </div>
+          <ol className="grid gap-8 sm:grid-cols-3">
+            {[
+              {
+                step: '01',
+                title: 'Register with WhatsApp',
+                body: 'Create an account in minutes. Your number is for login — not a public profile.',
+              },
+              {
+                step: '02',
+                title: 'Seven days unlocked',
+                body: 'Practice MCQs with correct answers, indicators, and explanations included.',
+              },
+              {
+                step: '03',
+                title: 'Keep browsing after',
+                body: 'Questions, options, PDFs, and news remain. Answer keys become premium.',
+              },
+            ].map((item, i) => (
+              <li
+                key={item.step}
+                className="motion-rise space-y-3"
+                style={{ animationDelay: `${i * 60}ms` }}
+              >
+                <p className="font-display text-sm font-bold tracking-[0.16em] text-[var(--highlight)]">
+                  {item.step}
+                </p>
+                <h3 className="font-display text-xl font-semibold tracking-tight">{item.title}</h3>
+                <p className="text-sm leading-relaxed text-[var(--muted)]">{item.body}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      <section className="section-pad border-b border-[var(--line)] bg-[var(--bg-inverse)] text-white">
+        <div className="mx-auto grid w-full max-w-6xl items-center gap-12 px-6 lg:grid-cols-2">
+          <div className="motion-rise space-y-4">
+            <h2 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
+              Inside a question
+            </h2>
+            <p className="max-w-md text-white/65">
+              A calm practice desk: stem, options, check, then explanation when you are entitled —
+              never fake locked theater.
+            </p>
+            <ul className="space-y-2 pt-2 text-sm text-white/75">
+              <li className="flex gap-3">
+                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--highlight)]" />
+                Category and difficulty filters
+              </li>
+              <li className="flex gap-3">
+                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--highlight)]" />
+                Deterministic previous / next navigation
+              </li>
+              <li className="flex gap-3">
+                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--highlight)]" />
+                Save questions and PDFs for later
+              </li>
+            </ul>
+          </div>
+          <div className="motion-rise" style={{ animationDelay: '80ms' }}>
+            <ProductPreview />
+          </div>
+        </div>
+      </section>
 
       <section className="section-pad border-b border-[var(--line)]">
         <div className="mx-auto w-full max-w-6xl px-6">
@@ -170,6 +252,26 @@ export default async function HomePage() {
           )}
         </div>
       </section>
+
+      {stats ? (
+        <section className="border-b border-[var(--line)]">
+          <div className="mx-auto max-w-6xl px-6 py-14">
+            <div className="max-w-2xl space-y-3">
+              <h2 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">
+                Built for fair practice
+              </h2>
+              <p className="text-[var(--muted)]">
+                Live library size from this platform — not marketing placeholders. Answers are
+                gated by the API after trial, so the UI never invents correctness.
+              </p>
+              <p className="text-sm font-medium text-[var(--ink-soft)]">
+                {stats.questions} published questions · {stats.categories} categories ·{' '}
+                {stats.documents} documents · {stats.news} news articles
+              </p>
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       <section className="relative overflow-hidden bg-[var(--bg-inverse)] text-white">
         <div

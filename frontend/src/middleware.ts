@@ -18,6 +18,8 @@ export function middleware(request: NextRequest) {
     pathname.startsWith('/reset-password');
 
   const needsAuth =
+    pathname.startsWith('/home') ||
+    pathname.startsWith('/onboarding') ||
     pathname.startsWith('/questions') ||
     pathname.startsWith('/bookmarks') ||
     pathname.startsWith('/documents') ||
@@ -33,7 +35,7 @@ export function middleware(request: NextRequest) {
 
   if (isAuthPage && hasSession && (pathname === '/login' || pathname === '/register')) {
     const url = request.nextUrl.clone();
-    url.pathname = '/questions';
+    url.pathname = '/home';
     url.search = '';
     return NextResponse.redirect(url);
   }
@@ -43,6 +45,10 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    '/home',
+    '/home/:path*',
+    '/onboarding',
+    '/onboarding/:path*',
     '/questions',
     '/questions/:path*',
     '/bookmarks',

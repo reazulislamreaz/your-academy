@@ -6,6 +6,7 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { ChevronRight } from 'lucide-react';
 import { Suspense } from 'react';
 import { PageHeader } from '@/components/layout/page-header';
+import { FilterChips } from '@/components/questions/filter-chips';
 import { QuestionFilters } from '@/components/questions/question-filters';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +31,11 @@ function buildQuery(sp: URLSearchParams, cursor?: string) {
 function QuestionsContent() {
   const searchParams = useSearchParams();
   const filterKey = searchParams.toString();
+  const q = searchParams.get('q') ?? undefined;
+  const categoryId = searchParams.get('categoryId') ?? undefined;
+  const subcategoryId = searchParams.get('subcategoryId') ?? undefined;
+  const difficulty = searchParams.get('difficulty') ?? undefined;
+  const hasFilters = Boolean(q || categoryId || subcategoryId || difficulty);
 
   const categories = useQuery({
     queryKey: ['categories'],
@@ -50,6 +56,7 @@ function QuestionsContent() {
   const unauthorized =
     list.error instanceof ApiError && (list.error.status === 401 || list.error.status === 403);
   const items = list.data?.pages.flatMap((p) => p.data) ?? [];
+  const hasMore = Boolean(list.hasNextPage);
 
   return (
     <div className="space-y-8">
@@ -61,6 +68,23 @@ function QuestionsContent() {
 
       <QuestionFilters categories={categories.data ?? []} />
 
+      <FilterChips
+        categories={categories.data ?? []}
+        q={q}
+        categoryId={categoryId}
+        subcategoryId={subcategoryId}
+        difficulty={difficulty}
+      />
+
+      {!list.isLoading && !list.isError ? (
+        <p className="text-sm text-[var(--muted)]" aria-live="polite">
+          Showing{' '}
+          <span className="font-semibold text-[var(--ink-soft)] tabular-nums">{items.length}</span>
+          {hasMore ? '+' : ''} question{items.length === 1 ? '' : 's'}
+          {hasFilters ? ' matching your filters' : ''}
+        </p>
+      ) : null}
+
       {list.isLoading ? (
         <div className="space-y-3">
           <Skeleton className="h-16 w-full" />
@@ -70,17 +94,22 @@ function QuestionsContent() {
       ) : null}
 
       {unauthorized ? (
-        <Alert variant="warning">
-          Sign in to browse the question bank.{' '}
-          <Link href="/login" className="font-semibold underline-offset-2 hover:underline">
-            Sign in
-          </Link>{' '}
-          or{' '}
-          <Link href="/register" className="font-semibold underline-offset-2 hover:underline">
-            start a free trial
-          </Link>
-          .
-        </Alert>
+        <EmptyState
+          title="Sign in to browse"
+          description="The question bank requires an account. Start a free seven-day trial to unlock answers and explanations."
+          action={
+            <div className="flex flex-wrap justify-center gap-2">
+              <Link href="/login">
+                <Button variant="outline" size="sm">
+                  Sign in
+                </Button>
+              </Link>
+              <Link href="/register">
+                <Button size="sm">Start free trial</Button>
+              </Link>
+            </div>
+          }
+        />
       ) : null}
 
       {list.isError && !unauthorized ? (
@@ -90,32 +119,41 @@ function QuestionsContent() {
       {!list.isLoading && !list.isError && items.length === 0 ? (
         <EmptyState
           title="No questions match"
-          description="Try clearing filters or check back after new items are published."
+          description={
+            hasFilters
+              ? 'Try clearing a filter chip or broadening your search.'
+              : 'Check back after new items are published.'
+          }
           action={
-            <Link href="/questions">
-              <Button variant="outline" size="sm">
-                Reset filters
-              </Button>
-            </Link>
+            hasFilters ? (
+              <Link href="/questions">
+                <Button variant="outline" size="sm">
+                  Reset filters
+                </Button>
+              </Link>
+            ) : undefined
           }
         />
       ) : null}
 
       <div className="divide-y divide-[var(--line)] border-y border-[var(--line)]">
-        {items.map((q) => (
+        {items.map((item) => (
           <ListRow
-            key={q.id}
-            href={`/questions/${q.id}${filterKey ? `?${filterKey}` : ''}`}
+            key={item.id}
+            href={`/questions/${item.id}${filterKey ? `?${filterKey}` : ''}`}
+            className="motion-press"
             meta={
               <>
                 <span>
-                  {q.category.name}
-                  {q.subcategory ? ` · ${q.subcategory.name}` : ''}
+                  {item.category.name}
+                  {item.subcategory ? ` · ${item.subcategory.name}` : ''}
                 </span>
-                <Badge variant="highlight">{q.difficulty}</Badge>
+                <Badge variant="highlight">{item.difficulty}</Badge>
               </>
             }
-            title={<span className="font-display text-lg font-semibold tracking-tight">{q.title}</span>}
+            title={
+              <span className="font-display text-lg font-semibold tracking-tight">{item.title}</span>
+            }
             trailing={<ChevronRight className="h-4 w-4 text-[var(--muted)]" aria-hidden />}
           />
         ))}

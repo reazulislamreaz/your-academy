@@ -5,6 +5,7 @@ import { DesktopNav, MobileNav, type NavItem } from './mobile-nav';
 import { UserMenu } from './user-menu';
 
 const links: NavItem[] = [
+  { href: '/#how-trial-works', label: 'How it works' },
   { href: '/questions', label: 'Questions', match: 'prefix' },
   { href: '/news', label: 'News', match: 'prefix' },
   { href: '/documents', label: 'PDFs', match: 'prefix' },

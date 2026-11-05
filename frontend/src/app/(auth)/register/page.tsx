@@ -42,7 +42,7 @@ export default function RegisterPage() {
         skipRefresh: true,
       });
       qc.setQueryData(meQueryKey, result.user);
-      router.push('/questions');
+      router.push('/onboarding');
       router.refresh();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Registration failed');
@@ -80,6 +80,9 @@ export default function RegisterPage() {
               onChange={(e) => setForm((f) => ({ ...f, whatsappNumber: e.target.value }))}
               autoComplete="tel"
             />
+            <FieldHint>
+              Used for login only. We never show your number on public pages.
+            </FieldHint>
           </Field>
           <Field>
             <Label htmlFor="email">Email</Label>

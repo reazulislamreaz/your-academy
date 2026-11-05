@@ -140,19 +140,26 @@ export default function ProfilePage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        eyebrow="Account"
-        title="Your dashboard"
-        description="Profile, trial status, and account security."
+        eyebrow="Study report"
+        title="Your profile"
+        description="Practice summary, trial access, and account settings."
         actions={
-          <Button variant="outline" size="sm" disabled={logout.isPending} onClick={() => logout.mutate()}>
-            {logout.isPending ? 'Signing out…' : 'Sign out'}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/home">
+              <Button variant="soft" size="sm">
+                Study home
+              </Button>
+            </Link>
+            <Button variant="outline" size="sm" disabled={logout.isPending} onClick={() => logout.mutate()}>
+              {logout.isPending ? 'Signing out…' : 'Sign out'}
+            </Button>
+          </div>
         }
       />
 
       <Surface className="space-y-4 border-l-[3px] border-l-[var(--highlight)] p-6">
         <h2 className="text-xs font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
-          Trial
+          Trial access
         </h2>
         <TrialCountdown
           trialEndsAt={user.access.trialEndsAt}
@@ -165,45 +172,50 @@ export default function ProfilePage() {
         </p>
       </Surface>
 
-      <div className="grid gap-px overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--line)] sm:grid-cols-3">
-        <div className="bg-[var(--bg-elevated)] p-5">
-          <p className="text-xs font-semibold tracking-[0.12em] text-[var(--muted)] uppercase">
-            Saved questions
-          </p>
-          <p className="mt-2 font-display text-3xl font-bold">
-            {stats.data?.questionBookmarks ?? 0}
-          </p>
-          <Link
-            href="/bookmarks"
-            className="mt-3 inline-block text-sm font-semibold underline-offset-2 hover:underline"
-          >
-            View saved
-          </Link>
+      <section className="space-y-3">
+        <h2 className="font-display text-xl font-semibold tracking-tight">Study summary</h2>
+        <div className="grid gap-px overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--line)] sm:grid-cols-3">
+          <div className="bg-[var(--bg-elevated)] p-5">
+            <p className="text-xs font-semibold tracking-[0.12em] text-[var(--muted)] uppercase">
+              Saved questions
+            </p>
+            <p className="mt-2 font-display text-3xl font-bold tabular-nums">
+              {stats.data?.questionBookmarks ?? 0}
+            </p>
+            <Link
+              href="/bookmarks"
+              className="mt-3 inline-block text-sm font-semibold underline-offset-2 hover:underline"
+            >
+              View saved
+            </Link>
+          </div>
+          <div className="bg-[var(--bg-elevated)] p-5">
+            <p className="text-xs font-semibold tracking-[0.12em] text-[var(--muted)] uppercase">
+              Saved PDFs
+            </p>
+            <p className="mt-2 font-display text-3xl font-bold tabular-nums">
+              {stats.data?.documentBookmarks ?? 0}
+            </p>
+            <Link
+              href="/bookmarks"
+              className="mt-3 inline-block text-sm font-semibold underline-offset-2 hover:underline"
+            >
+              View saved
+            </Link>
+          </div>
+          <div className="bg-[var(--bg-elevated)] p-5">
+            <p className="text-xs font-semibold tracking-[0.12em] text-[var(--muted)] uppercase">
+              Study time
+            </p>
+            <p className="mt-2 font-display text-3xl font-bold tabular-nums">
+              {Math.round((stats.data?.browsingSeconds ?? 0) / 60)} min
+            </p>
+            <p className="mt-3 text-xs text-[var(--muted)]">
+              Tracked while you study with this tab open.
+            </p>
+          </div>
         </div>
-        <div className="bg-[var(--bg-elevated)] p-5">
-          <p className="text-xs font-semibold tracking-[0.12em] text-[var(--muted)] uppercase">
-            Saved PDFs
-          </p>
-          <p className="mt-2 font-display text-3xl font-bold">
-            {stats.data?.documentBookmarks ?? 0}
-          </p>
-          <Link
-            href="/bookmarks"
-            className="mt-3 inline-block text-sm font-semibold underline-offset-2 hover:underline"
-          >
-            View saved
-          </Link>
-        </div>
-        <div className="bg-[var(--bg-elevated)] p-5">
-          <p className="text-xs font-semibold tracking-[0.12em] text-[var(--muted)] uppercase">
-            Browsing time
-          </p>
-          <p className="mt-2 font-display text-3xl font-bold">
-            {Math.round((stats.data?.browsingSeconds ?? 0) / 60)} min
-          </p>
-          <p className="mt-3 text-xs text-[var(--muted)]">Tracked while you study with this tab open.</p>
-        </div>
-      </div>
+      </section>
 
       {stats.data &&
       (stats.data.recentQuestions.length > 0 || stats.data.recentDocuments.length > 0) ? (

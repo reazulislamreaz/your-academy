@@ -50,7 +50,7 @@ export function QuestionFilters({ categories }: Props) {
 
   return (
     <form
-      className="grid gap-3 rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)]/90 p-4 shadow-[var(--shadow-sm)] sm:grid-cols-2 lg:grid-cols-5"
+      className="sticky top-16 z-10 grid gap-3 rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)]/95 p-4 shadow-[var(--shadow-sm)] backdrop-blur-md sm:grid-cols-2 lg:grid-cols-5"
       onSubmit={(e) => {
         e.preventDefault();
         apply();

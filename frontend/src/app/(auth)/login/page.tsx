@@ -34,8 +34,8 @@ function LoginForm() {
         skipRefresh: true,
       });
       qc.setQueryData(meQueryKey, result.user);
-      const next = searchParams.get('next') || '/questions';
-      router.push(next.startsWith('/') ? next : '/questions');
+      const next = searchParams.get('next') || '/home';
+      router.push(next.startsWith('/') ? next : '/home');
       router.refresh();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Login failed');

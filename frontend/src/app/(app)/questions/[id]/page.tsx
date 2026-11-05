@@ -3,22 +3,25 @@
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Suspense, useMemo, useState } from 'react';
-import { Alert } from '@/components/ui/alert';
+import { Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
+import { EntitlementCallout } from '@/components/access/entitlement-callout';
+import { OptionRow, type OptionRowState } from '@/components/questions/option-row';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Surface } from '@/components/ui/surface';
+import { Alert } from '@/components/ui/alert';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import type { QuestionDetail } from '@/lib/api/types';
-import { cn } from '@/lib/utils';
+import { setLastQuestion } from '@/lib/study-prefs';
 
 function QuestionDetailContent() {
   const params = useParams<{ id: string }>();
   const searchParams = useSearchParams();
   const qc = useQueryClient();
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [revealed, setRevealed] = useState(false);
+  const [checked, setChecked] = useState(false);
 
   const filterQs = useMemo(() => {
     const sp = new URLSearchParams();
@@ -43,6 +46,24 @@ function QuestionDetailContent() {
       ),
     enabled: Boolean(data),
   });
+
+  useEffect(() => {
+    setSelectedId(null);
+    setChecked(false);
+  }, [params.id]);
+
+  useEffect(() => {
+    if (!data) return;
+    setLastQuestion({
+      id: data.id,
+      title: data.title,
+      categoryId: data.category.id,
+      categoryName: data.subcategory
+        ? `${data.category.name} · ${data.subcategory.name}`
+        : data.category.name,
+      filterQs: filterQs || undefined,
+    });
+  }, [data, filterQs]);
 
   const bookmark = useMutation({
     mutationFn: async () => {
@@ -90,15 +111,28 @@ function QuestionDetailContent() {
     return <Alert variant="danger">Unable to load question.</Alert>;
   }
 
-  const showFeedback = revealed || data.answersVisible;
   const selected = data.options.find((o) => o.id === selectedId);
+  /** Feedback only after Check — never leak correctness before the learner commits. */
+  const showAnswerKeys = checked && data.answersVisible;
+
+  function optionState(option: QuestionDetail['options'][number]): OptionRowState {
+    const isSelected = selectedId === option.id;
+    if (!showAnswerKeys) {
+      return isSelected ? 'selected' : 'idle';
+    }
+    if (option.isCorrect === true) {
+      return isSelected ? 'correct' : 'missed';
+    }
+    if (isSelected && option.isCorrect === false) return 'incorrect';
+    return 'idle';
+  }
 
   function navHref(id: string) {
     return `/questions/${id}${filterQs ? `?${filterQs}` : ''}`;
   }
 
   return (
-    <article className="mx-auto max-w-3xl space-y-7">
+    <article className="mx-auto max-w-3xl space-y-7 pb-28">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2 text-sm text-[var(--muted)]">
           <Link href={`/questions${filterQs ? `?${filterQs}` : ''}`} className="hover:text-[var(--ink)]">
@@ -124,7 +158,7 @@ function QuestionDetailContent() {
         </Button>
       </div>
 
-      <header className="space-y-4 border-b border-[var(--line)] pb-6">
+      <header className="motion-rise space-y-4 border-b border-[var(--line)] pb-6">
         <h1 className="font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-bold tracking-tight">
           {data.title}
         </h1>
@@ -132,58 +166,44 @@ function QuestionDetailContent() {
       </header>
 
       <div className="grid gap-2.5" role="radiogroup" aria-label="Answer options">
-        {data.options.map((option) => {
-          const isSelected = selectedId === option.id;
-          const isCorrect = option.isCorrect === true;
-          const showCorrect = showFeedback && data.answersVisible && isCorrect;
-          const showWrong =
-            showFeedback && data.answersVisible && isSelected && option.isCorrect === false;
-
-          return (
-            <button
-              key={option.id}
-              type="button"
-              role="radio"
-              aria-checked={isSelected}
-              onClick={() => {
-                setSelectedId(option.id);
-                setRevealed(true);
-              }}
-              className={cn(
-                'motion-press rounded-[var(--radius)] border px-4 py-3.5 text-left transition-colors',
-                showCorrect && 'border-[var(--success)] bg-[var(--success-soft)]',
-                showWrong && 'border-[var(--danger)] bg-[var(--danger-soft)]',
-                !showCorrect &&
-                  !showWrong &&
-                  isSelected &&
-                  'border-[var(--ink)] bg-[var(--bg-muted)]',
-                !showCorrect &&
-                  !showWrong &&
-                  !isSelected &&
-                  'border-[var(--line)] bg-[var(--bg-elevated)] hover:border-[var(--line-strong)]',
-              )}
-            >
-              <span className="font-semibold">{option.label}.</span> {option.content}
-              {showCorrect ? (
-                <span className="ml-2 text-xs font-semibold text-[var(--success)]">Correct</span>
-              ) : null}
-              {showWrong ? (
-                <span className="ml-2 text-xs font-semibold text-[var(--danger)]">Your pick</span>
-              ) : null}
-            </button>
-          );
-        })}
+        {data.options.map((option) => (
+          <OptionRow
+            key={option.id}
+            label={option.label}
+            content={option.content}
+            state={optionState(option)}
+            disabled={showAnswerKeys}
+            onSelect={() => {
+              if (showAnswerKeys) return;
+              setSelectedId(option.id);
+              setChecked(false);
+            }}
+          />
+        ))}
       </div>
 
-      {revealed && !data.answersVisible ? (
-        <Alert variant="info">
-          You selected {selected?.label ?? 'an option'}. Correct answers and explanations unlock
-          during your trial or with a premium plan.
-        </Alert>
+      {!checked ? (
+        <EntitlementCallout
+          variant="practice"
+          title="Select, then check"
+          description={
+            data.answersVisible
+              ? 'Choose an option and press Check answer to reveal the key and explanation.'
+              : 'Choose an option and press Check answer. Correct keys stay hidden after your trial ends.'
+          }
+        />
       ) : null}
 
-      {data.explanation ? (
-        <Surface className="border-l-[3px] border-l-[var(--highlight)] p-5 sm:p-6">
+      {checked && !data.answersVisible ? (
+        <EntitlementCallout
+          variant="locked"
+          title={`You selected ${selected?.label ?? 'an option'}`}
+          description="Correct answers and explanations unlock during your trial or with a future premium plan. You can keep browsing the full question bank."
+        />
+      ) : null}
+
+      {checked && data.explanation ? (
+        <Surface className="motion-rise border-l-[3px] border-l-[var(--highlight)] p-5 sm:p-6">
           <h2 className="text-xs font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
             Explanation
           </h2>
@@ -193,23 +213,53 @@ function QuestionDetailContent() {
         </Surface>
       ) : null}
 
-      {!data.answersVisible && !revealed ? (
-        <Alert variant="default">
-          Choose an option to practice. Answer keys stay hidden after your trial ends.
-        </Alert>
-      ) : null}
+      <div
+        className="fixed inset-x-0 bottom-0 z-20 border-t border-[var(--line)] bg-[var(--bg-elevated)]/95 backdrop-blur-md"
+        role="navigation"
+        aria-label="Practice navigation"
+      >
+        <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center justify-between gap-3 px-6 py-3">
+          <div className="flex gap-2">
+            {nav?.prevId ? (
+              <Link href={navHref(nav.prevId)}>
+                <Button variant="ghost" size="sm">
+                  <ChevronLeft className="h-4 w-4" aria-hidden />
+                  Previous
+                </Button>
+              </Link>
+            ) : (
+              <Button variant="ghost" size="sm" disabled>
+                <ChevronLeft className="h-4 w-4" aria-hidden />
+                Previous
+              </Button>
+            )}
+          </div>
 
-      <div className="flex flex-wrap gap-3 border-t border-[var(--line)] pt-5">
-        {nav?.prevId ? (
-          <Link href={navHref(nav.prevId)}>
-            <Button variant="ghost">Previous</Button>
-          </Link>
-        ) : null}
-        {nav?.nextId ? (
-          <Link href={navHref(nav.nextId)}>
-            <Button variant="outline">Next</Button>
-          </Link>
-        ) : null}
+          <Button
+            size="sm"
+            disabled={!selectedId || showAnswerKeys}
+            onClick={() => setChecked(true)}
+          >
+            <Check className="h-4 w-4" aria-hidden />
+            {checked ? 'Checked' : 'Check answer'}
+          </Button>
+
+          <div className="flex gap-2">
+            {nav?.nextId ? (
+              <Link href={navHref(nav.nextId)}>
+                <Button variant="outline" size="sm">
+                  Next
+                  <ChevronRight className="h-4 w-4" aria-hidden />
+                </Button>
+              </Link>
+            ) : (
+              <Button variant="outline" size="sm" disabled>
+                Next
+                <ChevronRight className="h-4 w-4" aria-hidden />
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
     </article>
   );

@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { PageHeader } from '@/components/layout/page-header';
 import { Alert } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Surface } from '@/components/ui/surface';
 import { apiFetch } from '@/lib/api/client';
@@ -33,13 +35,32 @@ type Dashboard = {
   }>;
 };
 
-function Stat({ label, value }: { label: string; value: string | number }) {
+function Stat({
+  label,
+  value,
+  hint,
+  tone = 'default',
+}: {
+  label: string;
+  value: string | number;
+  hint?: string;
+  tone?: 'default' | 'action' | 'warn';
+}) {
   return (
-    <div className="bg-[var(--bg-elevated)] px-4 py-4">
+    <div
+      className={
+        tone === 'action'
+          ? 'bg-[var(--highlight-soft)] px-4 py-4'
+          : tone === 'warn'
+            ? 'bg-[var(--bg-muted)] px-4 py-4'
+            : 'bg-[var(--bg-elevated)] px-4 py-4'
+      }
+    >
       <p className="text-[10px] font-semibold tracking-[0.12em] text-[var(--muted)] uppercase">
         {label}
       </p>
       <p className="mt-1.5 font-display text-2xl font-bold tracking-tight tabular-nums">{value}</p>
+      {hint ? <p className="mt-1 text-xs text-[var(--muted)]">{hint}</p> : null}
     </div>
   );
 }
@@ -68,18 +89,83 @@ export default function AdminDashboardPage() {
       <PageHeader
         eyebrow="Operations"
         title="Overview"
-        description="Live counts, recent signups, and audit activity."
+        description="Work queue first — then live counts, signups, and audit activity."
       />
+
+      <section className="space-y-3">
+        <h2 className="font-display text-lg font-semibold tracking-tight">Work queue</h2>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Surface density="compact" className="flex flex-col justify-between gap-4 p-5">
+            <div>
+              <div className="flex items-center gap-2">
+                <Badge variant="highlight">Drafts</Badge>
+                <span className="font-display text-2xl font-bold tabular-nums">
+                  {data.questions.draft}
+                </span>
+              </div>
+              <p className="mt-2 text-sm text-[var(--muted)]">
+                Questions waiting to publish (need valid options).
+              </p>
+            </div>
+            <Link href="/admin/questions">
+              <Button size="sm" variant="soft">
+                Review questions
+              </Button>
+            </Link>
+          </Surface>
+          <Surface density="compact" className="flex flex-col justify-between gap-4 p-5">
+            <div>
+              <div className="flex items-center gap-2">
+                <Badge variant="success">Trials</Badge>
+                <span className="font-display text-2xl font-bold tabular-nums">
+                  {data.users.trialActive}
+                </span>
+              </div>
+              <p className="mt-2 text-sm text-[var(--muted)]">
+                Learners with an active seven-day trial right now.
+              </p>
+            </div>
+            <Link href="/admin/users">
+              <Button size="sm" variant="outline">
+                Manage users
+              </Button>
+            </Link>
+          </Surface>
+          <Surface density="compact" className="flex flex-col justify-between gap-4 p-5">
+            <div>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">Expired trials</Badge>
+                <span className="font-display text-2xl font-bold tabular-nums">
+                  {data.users.trialExpired}
+                </span>
+              </div>
+              <p className="mt-2 text-sm text-[var(--muted)]">
+                Still browsing — answers gated by entitlement.
+              </p>
+            </div>
+            <Link href="/admin/users">
+              <Button size="sm" variant="ghost">
+                Open users
+              </Button>
+            </Link>
+          </Surface>
+        </div>
+      </section>
 
       <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)]">
         <div className="grid gap-px bg-[var(--line)] sm:grid-cols-2 lg:grid-cols-4">
           <Stat label="Users" value={data.users.total} />
           <Stat label="Active users" value={data.users.active} />
-          <Stat label="Trial active" value={data.users.trialActive} />
-          <Stat label="Trial expired" value={data.users.trialExpired} />
+          <Stat
+            label="Trial active"
+            value={data.users.trialActive}
+            tone="action"
+            hint="Full answers unlocked"
+          />
+          <Stat label="Trial expired" value={data.users.trialExpired} tone="warn" />
           <Stat label="Questions" value={data.questions.total} />
           <Stat label="Published" value={data.questions.published} />
-          <Stat label="Drafts" value={data.questions.draft} />
+          <Stat label="Drafts" value={data.questions.draft} tone="action" />
           <Stat label="Archived" value={data.questions.archived} />
           <Stat label="Categories" value={data.categories} />
           <Stat label="News" value={data.news} />

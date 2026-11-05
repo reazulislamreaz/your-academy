@@ -10,8 +10,10 @@ import { Button } from '@/components/ui/button';
 export type NavItem = { href: string; label: string; match?: 'exact' | 'prefix' };
 
 function isActive(pathname: string, item: NavItem) {
-  if (item.match === 'exact') return pathname === item.href;
-  return pathname === item.href || pathname.startsWith(`${item.href}/`);
+  const href = item.href.split('#')[0] || '/';
+  if (!href || href === '/') return false;
+  if (item.match === 'exact') return pathname === href;
+  return pathname === href || pathname.startsWith(`${href}/`);
 }
 
 export function MobileNav({
