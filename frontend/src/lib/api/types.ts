@@ -68,6 +68,21 @@ export type AccessSnapshot = {
   entitlements: string[];
 };
 
+export type StudyLastQuestion = {
+  id: string;
+  title: string;
+  categoryId: string;
+  categoryName: string;
+  filterQs?: string;
+};
+
+export type StudyPrefs = {
+  preferredCategoryIds: string[];
+  onboardingCompleted: boolean;
+  onboardingCompletedAt: string | null;
+  lastQuestion: StudyLastQuestion | null;
+};
+
 export type MeUser = {
   id: string;
   name: string;
@@ -77,6 +92,7 @@ export type MeUser = {
   status: string;
   createdAt?: string;
   access: AccessSnapshot;
+  study: StudyPrefs;
 };
 
 export type UserStats = {

@@ -111,8 +111,9 @@ Profile picture: separate upload after auth or multipart field if approved.
 
 | Method | Endpoint | Description | Auth | Role |
 |--------|----------|-------------|------|------|
-| GET | `/users/me` | Own profile | User | USER/ADMIN |
+| GET | `/users/me` | Own profile (+ `study` prefs: interests, onboarding, last question) | User | USER/ADMIN |
 | PATCH | `/users/me` | Update profile | User | USER/ADMIN |
+| PATCH | `/users/me/study-prefs` | Update preferred categories / continue pointer / onboarding flag | User | USER/ADMIN |
 | POST | `/users/me/avatar` | Avatar upload init/complete | User | USER/ADMIN |
 | GET | `/users/me/stats` | Personal dashboard stats (bookmark counts, browsing seconds, recent saves) | User | USER/ADMIN |
 | GET | `/admin/users` | List users | User | ADMIN |

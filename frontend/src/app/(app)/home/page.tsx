@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, BookMarked, Clock3, Sparkles } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
@@ -14,22 +13,10 @@ import { TrialCountdown } from '@/features/auth/trial-countdown';
 import { isUnauthorized, useMe } from '@/features/auth/use-auth';
 import { apiFetch } from '@/lib/api/client';
 import type { CategoryNode, UserStats } from '@/lib/api/types';
-import {
-  formatStudyMinutes,
-  getLastQuestion,
-  getPreferredCategoryIds,
-  type LastQuestionPref,
-} from '@/lib/study-prefs';
+import { formatStudyMinutes } from '@/lib/study-prefs';
 
 export default function StudyHomePage() {
   const me = useMe();
-  const [last, setLast] = useState<LastQuestionPref | null>(null);
-  const [preferredIds, setPreferredIds] = useState<string[]>([]);
-
-  useEffect(() => {
-    setLast(getLastQuestion());
-    setPreferredIds(getPreferredCategoryIds());
-  }, []);
 
   const stats = useQuery({
     queryKey: ['stats'],
@@ -63,6 +50,8 @@ export default function StudyHomePage() {
     );
   }
 
+  const last = me.data.study?.lastQuestion ?? null;
+  const preferredIds = me.data.study?.preferredCategoryIds ?? [];
   const preferred =
     categories.data?.filter((c) => preferredIds.includes(c.id)).slice(0, 3) ?? [];
   const suggestions =
@@ -96,9 +85,7 @@ export default function StudyHomePage() {
               {last.categoryName ? (
                 <p className="text-sm text-[var(--muted)]">{last.categoryName}</p>
               ) : null}
-              <Link
-                href={`/questions/${last.id}${last.filterQs ? `?${last.filterQs}` : ''}`}
-              >
+              <Link href={`/questions/${last.id}${last.filterQs ? `?${last.filterQs}` : ''}`}>
                 <Button>Resume question</Button>
               </Link>
             </>
@@ -108,7 +95,7 @@ export default function StudyHomePage() {
                 Start a practice session
               </h2>
               <p className="text-sm leading-relaxed text-[var(--muted)]">
-                Open the bank, pick a topic, and we will remember your last question here.
+                Open a question and check an answer — we will remember it here across devices.
               </p>
               <Link href="/questions">
                 <Button>Browse questions</Button>
@@ -175,7 +162,7 @@ export default function StudyHomePage() {
             <h2 className="font-display text-xl font-semibold tracking-tight">Suggested topics</h2>
             <p className="mt-1 text-sm text-[var(--muted)]">
               {preferred.length > 0
-                ? 'Based on topics you picked during onboarding.'
+                ? 'Based on topics saved to your account during onboarding.'
                 : 'Popular categories from the live library.'}
             </p>
           </div>

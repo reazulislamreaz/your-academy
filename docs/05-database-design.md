@@ -60,6 +60,10 @@ erDiagram
 | avatarAssetId | UUID NULL FK → MediaAsset | |
 | trialStartedAt | TIMESTAMPTZ | Set at registration |
 | trialEndsAt | TIMESTAMPTZ | `trialStartedAt + 7 days` |
+| preferredCategoryIds | UUID[] | Root category interests from onboarding (max 3 in service) |
+| lastQuestionId | UUID NULL FK → Question | Continue-learning pointer (`ON DELETE SET NULL`) |
+| lastQuestionFilterQs | VARCHAR(512) NULL | Optional filter query string for resume |
+| onboardingCompletedAt | TIMESTAMPTZ NULL | Set when onboarding finishes |
 | createdAt / updatedAt | TIMESTAMPTZ | |
 | deletedAt | TIMESTAMPTZ NULL | Soft delete |
 

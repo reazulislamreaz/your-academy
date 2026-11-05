@@ -1,9 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { QuestionStatus } from '@prisma/client';
 import { createErrorResponse } from '@your-academy/shared';
 import type { RequestUser } from '../auth/auth.types';
 import { newRequestId } from '../common/request-id';
 import { PrismaService } from '../database/prisma.service';
 import { AccessControlService } from '../subscriptions/access-control.service';
+import type { UpdateStudyPrefsDto } from './dto/update-study-prefs.dto';
 
 @Injectable()
 export class UsersService {
@@ -12,14 +14,43 @@ export class UsersService {
     private readonly access: AccessControlService,
   ) {}
 
-  async getMe(user: RequestUser) {
-    const dbUser = await this.prisma.user.findUnique({ where: { id: user.userId } });
+  private async serializeMe(userId: string) {
+    const dbUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        lastQuestion: {
+          select: {
+            id: true,
+            title: true,
+            deletedAt: true,
+            status: true,
+            category: { select: { id: true, name: true } },
+            subcategory: { select: { id: true, name: true } },
+          },
+        },
+      },
+    });
     if (!dbUser || dbUser.deletedAt) {
       throw new NotFoundException(
         createErrorResponse('USER_NOT_FOUND', 'User not found', newRequestId()),
       );
     }
     const access = await this.access.getAccessSnapshot(dbUser);
+    const last =
+      dbUser.lastQuestion &&
+      !dbUser.lastQuestion.deletedAt &&
+      dbUser.lastQuestion.status === QuestionStatus.PUBLISHED
+        ? {
+            id: dbUser.lastQuestion.id,
+            title: dbUser.lastQuestion.title,
+            categoryId: dbUser.lastQuestion.category.id,
+            categoryName: dbUser.lastQuestion.subcategory
+              ? `${dbUser.lastQuestion.category.name} · ${dbUser.lastQuestion.subcategory.name}`
+              : dbUser.lastQuestion.category.name,
+            filterQs: dbUser.lastQuestionFilterQs ?? undefined,
+          }
+        : null;
+
     return {
       id: dbUser.id,
       name: dbUser.name,
@@ -29,11 +60,21 @@ export class UsersService {
       status: dbUser.status,
       createdAt: dbUser.createdAt.toISOString(),
       access,
+      study: {
+        preferredCategoryIds: dbUser.preferredCategoryIds,
+        onboardingCompleted: Boolean(dbUser.onboardingCompletedAt),
+        onboardingCompletedAt: dbUser.onboardingCompletedAt?.toISOString() ?? null,
+        lastQuestion: last,
+      },
     };
   }
 
+  async getMe(user: RequestUser) {
+    return this.serializeMe(user.userId);
+  }
+
   async updateMe(user: RequestUser, data: { name?: string; email?: string | null }) {
-    const updated = await this.prisma.user.update({
+    await this.prisma.user.update({
       where: { id: user.userId },
       data: {
         ...(data.name ? { name: data.name.trim() } : {}),
@@ -42,16 +83,75 @@ export class UsersService {
           : {}),
       },
     });
-    const access = await this.access.getAccessSnapshot(updated);
-    return {
-      id: updated.id,
-      name: updated.name,
-      whatsappNumber: updated.whatsappNumber,
-      email: updated.email,
-      role: updated.role,
-      status: updated.status,
-      access,
-    };
+    return this.getMe(user);
+  }
+
+  async updateStudyPrefs(user: RequestUser, dto: UpdateStudyPrefsDto) {
+    const data: {
+      preferredCategoryIds?: string[];
+      lastQuestionId?: string | null;
+      lastQuestionFilterQs?: string | null;
+      onboardingCompletedAt?: Date | null;
+    } = {};
+
+    if (dto.preferredCategoryIds !== undefined) {
+      const ids = [...new Set(dto.preferredCategoryIds)].slice(0, 3);
+      if (ids.length > 0) {
+        const roots = await this.prisma.category.findMany({
+          where: { id: { in: ids }, parentId: null, isActive: true },
+          select: { id: true },
+        });
+        if (roots.length !== ids.length) {
+          throw new BadRequestException(
+            createErrorResponse(
+              'INVALID_CATEGORY',
+              'preferredCategoryIds must be active root categories',
+              newRequestId(),
+            ),
+          );
+        }
+      }
+      data.preferredCategoryIds = ids;
+    }
+
+    if (dto.lastQuestionId !== undefined) {
+      if (dto.lastQuestionId === null) {
+        data.lastQuestionId = null;
+        data.lastQuestionFilterQs = null;
+      } else {
+        const question = await this.prisma.question.findFirst({
+          where: {
+            id: dto.lastQuestionId,
+            deletedAt: null,
+            status: QuestionStatus.PUBLISHED,
+          },
+          select: { id: true },
+        });
+        if (!question) {
+          throw new NotFoundException(
+            createErrorResponse('QUESTION_NOT_FOUND', 'Question not found', newRequestId()),
+          );
+        }
+        data.lastQuestionId = question.id;
+        if (dto.lastQuestionFilterQs !== undefined) {
+          data.lastQuestionFilterQs = dto.lastQuestionFilterQs || null;
+        }
+      }
+    } else if (dto.lastQuestionFilterQs !== undefined) {
+      data.lastQuestionFilterQs = dto.lastQuestionFilterQs || null;
+    }
+
+    if (dto.onboardingCompleted === true) {
+      data.onboardingCompletedAt = new Date();
+    } else if (dto.onboardingCompleted === false) {
+      data.onboardingCompletedAt = null;
+    }
+
+    await this.prisma.user.update({
+      where: { id: user.userId },
+      data,
+    });
+    return this.getMe(user);
   }
 
   async setAvatar(user: RequestUser, mediaAssetId: string) {
@@ -68,11 +168,11 @@ export class UsersService {
         createErrorResponse('MEDIA_NOT_FOUND', 'Avatar media not found', newRequestId()),
       );
     }
-    const updated = await this.prisma.user.update({
+    await this.prisma.user.update({
       where: { id: user.userId },
       data: { avatarAssetId: media.id },
     });
-    return this.getMe({ userId: updated.id, role: updated.role, sessionId: user.sessionId });
+    return this.getMe(user);
   }
 
   async getStats(user: RequestUser) {

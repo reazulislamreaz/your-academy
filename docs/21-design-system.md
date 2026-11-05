@@ -94,7 +94,7 @@ Bengali UI fonts are **out of scope** until i18n is approved.
 
 Layout: `BrandMark`, `MarketingHeader`, `AppHeader`, `AdminSidebar`, `AdminMobileNav`, `SiteFooter`, `PageHeader`, `MobileNav` / `DesktopNav`.
 
-Client prefs (non-authoritative): `lib/study-prefs.ts` — last question, preferred categories, onboarding flag (localStorage only).
+Study prefs (authoritative, DB): `PATCH /users/me/study-prefs` + `MeUser.study` — preferred root categories (max 3), onboarding completion, last opened/attempted question for Continue. `lib/study-prefs.ts` only has display helpers.
 
 List utility: `.list-row` in `globals.css` for hover/divider rhythm.
 

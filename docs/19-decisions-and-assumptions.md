@@ -223,6 +223,15 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Impact | Phase 1 scaffolding |
 | Status | **CONFIRMED** |
 
+### DEC-021 — Study preferences persistence
+
+| Field | Value |
+|-------|-------|
+| Question | Where are onboarding topic picks and Continue-learning pointers stored? |
+| Decision | **Postgres on `User`** via `preferredCategoryIds`, `lastQuestionId` (+ optional filter QS), `onboardingCompletedAt`. Exposed on `GET /users/me` and `PATCH /users/me/study-prefs` (auth + CSRF). Not localStorage. |
+| Impact | UsersModule, schema migration, study home / onboarding / practice player |
+| Status | **CONFIRMED** (audit 2026-11-05) |
+
 ---
 
 ## Assumption Log (Non-Decision Facts We Are Proceeding With)

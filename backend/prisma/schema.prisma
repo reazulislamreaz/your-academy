@@ -87,6 +87,11 @@ model User {
   avatarAssetId  String?    @unique @map("avatar_asset_id") @db.Uuid
   trialStartedAt DateTime   @map("trial_started_at") @db.Timestamptz(3)
   trialEndsAt    DateTime   @map("trial_ends_at") @db.Timestamptz(3)
+  /// Root category IDs chosen during onboarding (max 3 enforced in service).
+  preferredCategoryIds String[]  @default([]) @map("preferred_category_ids") @db.Uuid
+  lastQuestionId       String?   @map("last_question_id") @db.Uuid
+  lastQuestionFilterQs String?   @map("last_question_filter_qs") @db.VarChar(512)
+  onboardingCompletedAt DateTime? @map("onboarding_completed_at") @db.Timestamptz(3)
   createdAt      DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt      DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
   deletedAt      DateTime?  @map("deleted_at") @db.Timestamptz(3)
@@ -95,6 +100,7 @@ model User {
   uploadedAssets      MediaAsset[]        @relation("UploadedBy")
   authSessions        AuthSession[]
   createdQuestions    Question[]          @relation("QuestionCreator")
+  lastQuestion        Question?           @relation("UserLastQuestion", fields: [lastQuestionId], references: [id], onDelete: SetNull)
   questionBookmarks   QuestionBookmark[]
   documentBookmarks   DocumentBookmark[]
   browsingSessions    BrowsingSession[]
@@ -187,6 +193,7 @@ model Question {
   subcategory Category?         @relation("QuestionSubcategory", fields: [subcategoryId], references: [id], onDelete: SetNull)
   imageAsset  MediaAsset?       @relation("QuestionImage", fields: [imageAssetId], references: [id], onDelete: SetNull)
   createdBy   User?             @relation("QuestionCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  lastOpenedBy User[]           @relation("UserLastQuestion")
   options     QuestionOption[]
   bookmarks   QuestionBookmark[]
 

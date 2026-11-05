@@ -68,10 +68,10 @@ export function MobileNav({
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  'rounded-[var(--radius)] px-3 py-3 text-base font-medium',
+                  'rounded-[var(--radius)] px-3 py-3 text-base font-medium transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out)]',
                   isActive(pathname, item)
-                    ? 'bg-[var(--bg-inverse)] text-white'
-                    : 'text-[var(--ink-soft)] hover:bg-[var(--bg-muted)]',
+                    ? 'bg-[var(--bg-inverse)] text-[var(--accent-fg)]'
+                    : 'text-[var(--ink-soft)] hover:bg-[var(--bg-muted)] hover:text-[var(--ink)]',
                 )}
               >
                 {item.label}
@@ -89,20 +89,24 @@ export function DesktopNav({ items }: { items: NavItem[] }) {
   const pathname = usePathname();
   return (
     <nav className="hidden items-center gap-1 md:flex" aria-label="Primary">
-      {items.map((item) => (
-        <Link
-          key={item.href}
-          href={item.href}
-          className={cn(
-            'motion-nav-indicator rounded-[var(--radius-sm)] px-3 py-2 text-sm font-medium',
-            isActive(pathname, item)
-              ? 'bg-[var(--bg-inverse)] text-white'
-              : 'text-[var(--muted-strong)] hover:bg-[var(--bg-muted)] hover:text-[var(--ink)]',
-          )}
-        >
-          {item.label}
-        </Link>
-      ))}
+      {items.map((item) => {
+        const active = isActive(pathname, item);
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            aria-current={active ? 'page' : undefined}
+            className={cn(
+              'motion-nav-indicator rounded-[var(--radius-sm)] px-3 py-2 text-sm font-medium transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out)]',
+              active
+                ? 'bg-[var(--bg-inverse)] text-[var(--accent-fg)]'
+                : 'text-[var(--muted-strong)] hover:bg-[var(--bg-muted)] hover:text-[var(--ink)]',
+            )}
+          >
+            {item.label}
+          </Link>
+        );
+      })}
     </nav>
   );
 }

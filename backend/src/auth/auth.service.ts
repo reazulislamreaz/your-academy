@@ -6,7 +6,13 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { BrowsingSessionStatus, UserRole, UserStatus, type User } from '@prisma/client';
+import {
+  BrowsingSessionStatus,
+  QuestionStatus,
+  UserRole,
+  UserStatus,
+  type User,
+} from '@prisma/client';
 import { createErrorResponse } from '@your-academy/shared';
 import * as argon2 from 'argon2';
 import { randomUUID } from 'node:crypto';
@@ -248,14 +254,51 @@ export class AuthService {
 
   async toPublicUser(user: User) {
     const access = await this.access.getAccessSnapshot(user);
+    const withStudy = await this.prisma.user.findUnique({
+      where: { id: user.id },
+      include: {
+        lastQuestion: {
+          select: {
+            id: true,
+            title: true,
+            deletedAt: true,
+            status: true,
+            category: { select: { id: true, name: true } },
+            subcategory: { select: { id: true, name: true } },
+          },
+        },
+      },
+    });
+    const row = withStudy ?? user;
+    const lastQuestion =
+      withStudy?.lastQuestion &&
+      !withStudy.lastQuestion.deletedAt &&
+      withStudy.lastQuestion.status === QuestionStatus.PUBLISHED
+        ? {
+            id: withStudy.lastQuestion.id,
+            title: withStudy.lastQuestion.title,
+            categoryId: withStudy.lastQuestion.category.id,
+            categoryName: withStudy.lastQuestion.subcategory
+              ? `${withStudy.lastQuestion.category.name} · ${withStudy.lastQuestion.subcategory.name}`
+              : withStudy.lastQuestion.category.name,
+            filterQs: withStudy.lastQuestionFilterQs ?? undefined,
+          }
+        : null;
+
     return {
-      id: user.id,
-      name: user.name,
-      whatsappNumber: user.whatsappNumber,
-      email: user.email,
-      role: user.role,
-      status: user.status,
+      id: row.id,
+      name: row.name,
+      whatsappNumber: row.whatsappNumber,
+      email: row.email,
+      role: row.role,
+      status: row.status,
       access,
+      study: {
+        preferredCategoryIds: withStudy?.preferredCategoryIds ?? [],
+        onboardingCompleted: Boolean(withStudy?.onboardingCompletedAt),
+        onboardingCompletedAt: withStudy?.onboardingCompletedAt?.toISOString() ?? null,
+        lastQuestion,
+      },
     };
   }
 

@@ -3,27 +3,24 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { PageHeader } from '@/components/layout/page-header';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Surface } from '@/components/ui/surface';
-import { isUnauthorized, useMe } from '@/features/auth/use-auth';
-import { apiFetch } from '@/lib/api/client';
-import type { CategoryNode } from '@/lib/api/types';
-import {
-  getPreferredCategoryIds,
-  markOnboardingDone,
-  setPreferredCategoryIds,
-} from '@/lib/study-prefs';
+import { isUnauthorized, meQueryKey, useMe } from '@/features/auth/use-auth';
+import { ApiError, apiFetch } from '@/lib/api/client';
+import type { CategoryNode, MeUser } from '@/lib/api/types';
 import { cn } from '@/lib/utils';
 
 export default function OnboardingPage() {
   const me = useMe();
   const router = useRouter();
+  const qc = useQueryClient();
   const [step, setStep] = useState<1 | 2>(1);
   const [selected, setSelected] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   const categories = useQuery({
     queryKey: ['categories'],
@@ -32,8 +29,23 @@ export default function OnboardingPage() {
   });
 
   useEffect(() => {
-    setSelected(getPreferredCategoryIds());
-  }, []);
+    const ids = me.data?.study?.preferredCategoryIds;
+    if (ids) setSelected(ids);
+  }, [me.data?.study?.preferredCategoryIds]);
+
+  const savePrefs = useMutation({
+    mutationFn: (body: {
+      preferredCategoryIds: string[];
+      onboardingCompleted: boolean;
+    }) =>
+      apiFetch<MeUser>('/users/me/study-prefs', {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      }),
+    onSuccess: (user) => {
+      qc.setQueryData(meQueryKey, user);
+    },
+  });
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -43,10 +55,17 @@ export default function OnboardingPage() {
     });
   }
 
-  function finish(href: string) {
-    setPreferredCategoryIds(selected);
-    markOnboardingDone();
-    router.push(href);
+  async function finish(href: string) {
+    setError(null);
+    try {
+      await savePrefs.mutateAsync({
+        preferredCategoryIds: selected,
+        onboardingCompleted: true,
+      });
+      router.push(href);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not save preferences');
+    }
   }
 
   if (me.isLoading) {
@@ -76,7 +95,7 @@ export default function OnboardingPage() {
         title={step === 1 ? 'What do you want to practice?' : 'Your seven-day trial'}
         description={
           step === 1
-            ? 'Pick up to three topics. We use this only on your device to suggest a starting path.'
+            ? 'Pick up to three topics. We save these on your account to suggest a starting path.'
             : 'Full answers unlock for one week. After that, browsing stays open — answer keys stay premium.'
         }
       />
@@ -95,6 +114,8 @@ export default function OnboardingPage() {
           )}
         />
       </div>
+
+      {error ? <Alert variant="danger">{error}</Alert> : null}
 
       {step === 1 ? (
         <Surface className="space-y-4 p-6">
@@ -168,17 +189,22 @@ export default function OnboardingPage() {
           </ol>
           <div className="flex flex-wrap gap-2 border-t border-[var(--line)] pt-5">
             <Button
+              disabled={savePrefs.isPending}
               onClick={() => {
                 const first = selected[0];
-                finish(first ? `/questions?categoryId=${first}` : '/questions');
+                void finish(first ? `/questions?categoryId=${first}` : '/questions');
               }}
             >
-              Start practicing
+              {savePrefs.isPending ? 'Saving…' : 'Start practicing'}
             </Button>
-            <Button variant="outline" onClick={() => finish('/home')}>
+            <Button
+              variant="outline"
+              disabled={savePrefs.isPending}
+              onClick={() => void finish('/home')}
+            >
               Go to study home
             </Button>
-            <Button variant="ghost" onClick={() => setStep(1)}>
+            <Button variant="ghost" disabled={savePrefs.isPending} onClick={() => setStep(1)}>
               Back
             </Button>
           </div>

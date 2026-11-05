@@ -8,6 +8,7 @@ import { newRequestId } from '../common/request-id';
 import { AccessControlService } from '../subscriptions/access-control.service';
 import { PrismaService } from '../database/prisma.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { UpdateStudyPrefsDto } from './dto/update-study-prefs.dto';
 import { UsersService } from './users.service';
 
 @Controller('api/v1')
@@ -28,6 +29,12 @@ export class UsersController {
   @UseGuards(CsrfGuard)
   async updateMe(@CurrentUser() user: RequestUser, @Body() dto: UpdateProfileDto) {
     return createSuccessResponse(await this.users.updateMe(user, dto), newRequestId());
+  }
+
+  @Patch('users/me/study-prefs')
+  @UseGuards(CsrfGuard)
+  async updateStudyPrefs(@CurrentUser() user: RequestUser, @Body() dto: UpdateStudyPrefsDto) {
+    return createSuccessResponse(await this.users.updateStudyPrefs(user, dto), newRequestId());
   }
 
   @Post('users/me/avatar')

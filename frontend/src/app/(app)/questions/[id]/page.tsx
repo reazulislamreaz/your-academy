@@ -12,9 +12,9 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Surface } from '@/components/ui/surface';
 import { Alert } from '@/components/ui/alert';
+import { meQueryKey } from '@/features/auth/use-auth';
 import { ApiError, apiFetch } from '@/lib/api/client';
-import type { QuestionDetail } from '@/lib/api/types';
-import { setLastQuestion } from '@/lib/study-prefs';
+import type { MeUser, QuestionDetail } from '@/lib/api/types';
 
 function QuestionDetailContent() {
   const params = useParams<{ id: string }>();
@@ -52,18 +52,38 @@ function QuestionDetailContent() {
     setChecked(false);
   }, [params.id]);
 
+  const persistProgress = useMutation({
+    mutationFn: (body: { lastQuestionId: string; lastQuestionFilterQs: string | null }) =>
+      apiFetch<MeUser>('/users/me/study-prefs', {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      }),
+    onSuccess: (user) => {
+      qc.setQueryData(meQueryKey, user);
+    },
+  });
+
   useEffect(() => {
     if (!data) return;
-    setLastQuestion({
-      id: data.id,
-      title: data.title,
-      categoryId: data.category.id,
-      categoryName: data.subcategory
-        ? `${data.category.name} · ${data.subcategory.name}`
-        : data.category.name,
-      filterQs: filterQs || undefined,
-    });
-  }, [data, filterQs]);
+    let cancelled = false;
+    void (async () => {
+      try {
+        const user = await apiFetch<MeUser>('/users/me/study-prefs', {
+          method: 'PATCH',
+          body: JSON.stringify({
+            lastQuestionId: data.id,
+            lastQuestionFilterQs: filterQs || null,
+          }),
+        });
+        if (!cancelled) qc.setQueryData(meQueryKey, user);
+      } catch {
+        // Non-blocking: practice still works if resume pointer fails.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [data?.id, filterQs, qc]);
 
   const bookmark = useMutation({
     mutationFn: async () => {
@@ -238,7 +258,16 @@ function QuestionDetailContent() {
           <Button
             size="sm"
             disabled={!selectedId || showAnswerKeys}
-            onClick={() => setChecked(true)}
+            onClick={() => {
+              setChecked(true);
+              // Reinforce continue pointer on attempt (same fields; IDOR-safe via API).
+              if (data) {
+                persistProgress.mutate({
+                  lastQuestionId: data.id,
+                  lastQuestionFilterQs: filterQs || null,
+                });
+              }
+            }}
           >
             <Check className="h-4 w-4" aria-hidden />
             {checked ? 'Checked' : 'Check answer'}
