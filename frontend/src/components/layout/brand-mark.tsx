@@ -1,5 +1,5 @@
+import Image from 'next/image';
 import Link from 'next/link';
-import { BookOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -12,8 +12,9 @@ type Props = {
 };
 
 /**
- * Red open-book mark + stacked "YOUR / ACADEMY" wordmark.
- * On navy panels the mark and wordmark turn white.
+ * The site's own shield mark (graduation cap + open book) with the
+ * stacked "YOUR / ACADEMY" wordmark. On navy panels the wordmark turns
+ * white; the red shield works on both light and navy.
  */
 export function BrandMark({ className, href = '/', inverse, markOnly }: Props) {
   return (
@@ -25,10 +26,13 @@ export function BrandMark({ className, href = '/', inverse, markOnly }: Props) {
         className,
       )}
     >
-      <BookOpen
-        aria-hidden
-        className="h-8 w-8 shrink-0"
-        strokeWidth={2.25}
+      <Image
+        src="/images/logo-mark.png"
+        alt=""
+        width={256}
+        height={182}
+        className="h-8 w-auto shrink-0"
+        priority
       />
       {markOnly ? (
         <span className="sr-only">Your Academy</span>
