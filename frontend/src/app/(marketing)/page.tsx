@@ -221,7 +221,7 @@ export default async function HomePage() {
               <TrendingUp className="h-5 w-5 text-[var(--info)]" aria-hidden />
               Track Your Progress
             </h2>
-            <dl className="mt-5 grid grid-cols-4 gap-3 text-center">
+            <dl className="mt-5 grid grid-cols-2 gap-3 text-center sm:grid-cols-4">
               {[
                 { value: '750', label: 'Total Attempted', icon: CheckCircle2, tone: 'text-[var(--info)] bg-[var(--info-soft)]' },
                 { value: '620', label: 'Correct', icon: CheckCircle2, tone: 'text-[var(--success)] bg-[var(--success-soft)]' },

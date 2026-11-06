@@ -80,7 +80,7 @@ export function FilterChips({
         <Link
           key={chip.key}
           href={chip.href}
-          className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-[var(--line)] bg-[var(--bg-elevated)] px-2.5 py-1 text-xs font-semibold text-[var(--ink-soft)] transition-colors hover:border-[var(--line-strong)] hover:bg-[var(--bg-muted)]"
+          className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-[var(--line)] bg-[var(--bg-elevated)] px-3 py-2 text-xs font-semibold text-[var(--ink-soft)] transition-colors hover:border-[var(--line-strong)] hover:bg-[var(--bg-muted)]"
         >
           {chip.label}
           <X className="h-3 w-3 text-[var(--muted)]" aria-hidden />
@@ -89,7 +89,7 @@ export function FilterChips({
       ))}
       <Link
         href="/questions"
-        className="text-xs font-semibold text-[var(--muted)] underline-offset-2 hover:text-[var(--highlight)] hover:underline"
+        className="inline-block py-2 text-xs font-semibold text-[var(--muted)] underline-offset-2 hover:text-[var(--highlight)] hover:underline"
       >
         Clear all
       </Link>

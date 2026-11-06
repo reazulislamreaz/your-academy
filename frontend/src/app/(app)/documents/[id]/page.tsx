@@ -95,7 +95,7 @@ export default function DocumentDetailPage() {
           {data.title}
         </h1>
         {data.description ? (
-          <p className="text-[var(--muted-strong)] leading-relaxed">{data.description}</p>
+          <p className="text-[var(--muted-strong)] leading-relaxed break-words">{data.description}</p>
         ) : null}
       </header>
       <Surface className="space-y-4 p-5 sm:p-6">

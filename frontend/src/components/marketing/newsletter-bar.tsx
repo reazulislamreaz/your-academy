@@ -55,7 +55,7 @@ export function NewsletterBar() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your email address"
-              className="h-11 min-w-0 flex-1 rounded-full border border-white/20 bg-white px-4 text-sm text-[var(--ink)] outline-none placeholder:text-[var(--muted)] focus:border-[var(--highlight)] focus:shadow-[0_0_0_3px_rgba(230,57,70,0.35)]"
+              className="h-11 min-w-0 flex-1 rounded-full border border-white/20 bg-white px-4 text-base text-[var(--ink)] outline-none placeholder:text-[var(--muted)] focus:border-[var(--highlight)] focus:shadow-[0_0_0_3px_rgba(230,57,70,0.35)] sm:text-sm"
             />
             <Button type="submit" className="shrink-0 rounded-full px-6">
               Subscribe

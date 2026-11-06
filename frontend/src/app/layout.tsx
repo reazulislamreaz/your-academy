@@ -10,6 +10,9 @@ export const metadata: Metadata = {
     template: '%s · Your Academy',
   },
   description: 'Modern MCQ learning with a fair free trial',
+  icons: {
+    icon: '/images/logo-mark.png',
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

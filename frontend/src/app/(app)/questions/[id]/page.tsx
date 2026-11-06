@@ -182,7 +182,7 @@ function QuestionDetailContent() {
         <h1 className="font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-bold tracking-tight">
           {data.title}
         </h1>
-        <p className="font-reading text-lg leading-relaxed text-[var(--ink-soft)]">{data.content}</p>
+        <p className="font-reading text-lg leading-relaxed break-words text-[var(--ink-soft)]">{data.content}</p>
       </header>
 
       <div className="grid gap-2.5" role="radiogroup" aria-label="Answer options">
@@ -242,13 +242,13 @@ function QuestionDetailContent() {
           <div className="flex gap-2">
             {nav?.prevId ? (
               <Link href={navHref(nav.prevId)}>
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="md">
                   <ChevronLeft className="h-4 w-4" aria-hidden />
                   Previous
                 </Button>
               </Link>
             ) : (
-              <Button variant="ghost" size="sm" disabled>
+              <Button variant="ghost" size="md" disabled>
                 <ChevronLeft className="h-4 w-4" aria-hidden />
                 Previous
               </Button>
@@ -256,7 +256,7 @@ function QuestionDetailContent() {
           </div>
 
           <Button
-            size="sm"
+            size="md"
             disabled={!selectedId || showAnswerKeys}
             onClick={() => {
               setChecked(true);
@@ -276,13 +276,13 @@ function QuestionDetailContent() {
           <div className="flex gap-2">
             {nav?.nextId ? (
               <Link href={navHref(nav.nextId)}>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="md">
                   Next
                   <ChevronRight className="h-4 w-4" aria-hidden />
                 </Button>
               </Link>
             ) : (
-              <Button variant="outline" size="sm" disabled>
+              <Button variant="outline" size="md" disabled>
                 Next
                 <ChevronRight className="h-4 w-4" aria-hidden />
               </Button>

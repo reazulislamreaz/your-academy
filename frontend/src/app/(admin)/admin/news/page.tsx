@@ -156,7 +156,7 @@ export default function AdminNewsPage() {
               <Link href={`/admin/news/${item.id}`} className="font-semibold hover:underline">
                 {item.title}
               </Link>
-              <p className="text-sm text-[var(--muted)]">/{item.slug}</p>
+              <p className="text-sm break-all text-[var(--muted)]">/{item.slug}</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant={item.isPublished ? 'success' : 'outline'}>
