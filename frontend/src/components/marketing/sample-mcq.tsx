@@ -59,9 +59,7 @@ export function SampleMcq() {
                   >
                     {showCorrect ? <Check className="h-3.5 w-3.5" /> : showWrong ? <X className="h-3.5 w-3.5" /> : opt.key}
                   </span>
-                  <span>
-                    {opt.key}. {opt.label}
-                  </span>
+                  <span>{opt.label}</span>
                 </button>
               );
             })}
