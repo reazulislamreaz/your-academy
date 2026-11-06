@@ -60,7 +60,7 @@ export function MobileNav({
       {open ? (
         <div
           id={panelId}
-          className="fixed inset-x-0 top-[var(--header-h,64px)] bottom-0 z-40 border-t border-[var(--line)] bg-[var(--bg-elevated)] p-4 shadow-[var(--shadow-lg)] motion-fade-in"
+          className="fixed inset-x-0 top-[var(--header-h,64px)] bottom-0 z-40 overflow-y-auto border-t border-[var(--line)] bg-[var(--bg-elevated)] p-4 shadow-[var(--shadow-lg)] motion-fade-in"
         >
           <nav className="flex flex-col gap-1" aria-label="Mobile">
             {items.map((item) => (

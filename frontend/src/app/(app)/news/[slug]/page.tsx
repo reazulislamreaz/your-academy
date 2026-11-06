@@ -52,7 +52,7 @@ export default function NewsDetailPage() {
           </p>
         ) : null}
       </header>
-      <p className="font-reading whitespace-pre-wrap text-lg leading-relaxed text-[var(--ink-soft)]">
+      <p className="font-reading whitespace-pre-wrap break-words text-lg leading-relaxed text-[var(--ink-soft)]">
         {data.body}
       </p>
       {data.documents.length > 0 ? (

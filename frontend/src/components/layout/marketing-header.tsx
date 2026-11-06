@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState, type CSSProperties, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search } from 'lucide-react';
 import { BrandMark } from './brand-mark';
@@ -26,7 +26,10 @@ export function MarketingHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-30 border-b border-[var(--line)] bg-white/95 backdrop-blur-md">
+    <header
+      className="sticky top-0 z-30 border-b border-[var(--line)] bg-white/95 backdrop-blur-md"
+      style={{ '--header-h': '72px' } as CSSProperties}
+    >
       <div className="mx-auto flex h-[72px] w-full max-w-7xl items-center gap-4 px-6">
         <BrandMark />
         <DesktopNav items={links} />
@@ -45,7 +48,7 @@ export function MarketingHeader() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search exams..."
-              className="h-10 w-full rounded-full border border-[var(--line)] bg-[var(--bg-muted)] pr-10 pl-4 text-sm text-[var(--ink)] outline-none placeholder:text-[var(--muted)] focus:border-[var(--highlight)] focus:bg-white focus:shadow-[0_0_0_3px_var(--highlight-soft)]"
+              className="h-10 w-full rounded-full border border-[var(--line)] bg-[var(--bg-muted)] pr-10 pl-4 text-base text-[var(--ink)] outline-none placeholder:text-[var(--muted)] focus:border-[var(--highlight)] focus:bg-white focus:shadow-[0_0_0_3px_var(--highlight-soft)] sm:text-sm"
             />
             <button
               type="submit"
