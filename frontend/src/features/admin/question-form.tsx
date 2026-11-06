@@ -17,6 +17,8 @@ export type QuestionFormValues = {
   categoryId: string;
   subcategoryId: string;
   difficulty: 'EASY' | 'MEDIUM' | 'HARD';
+  kind: 'MCQ' | 'WRITTEN';
+  modelAnswer: string;
   options: string[];
   correct: string;
 };
@@ -38,6 +40,8 @@ export function emptyQuestionForm(categoryId = ''): QuestionFormValues {
     categoryId,
     subcategoryId: '',
     difficulty: 'MEDIUM',
+    kind: 'MCQ',
+    modelAnswer: '',
     options: ['', '', '', ''],
     correct: 'A',
   };
@@ -93,6 +97,19 @@ export function QuestionForm({
       </Field>
       <div className="grid gap-3 md:grid-cols-3">
         <Field>
+          <Label htmlFor="kind">Type</Label>
+          <Select
+            id="kind"
+            value={values.kind}
+            onChange={(e) =>
+              setValues((v) => ({ ...v, kind: e.target.value as QuestionFormValues['kind'] }))
+            }
+          >
+            <option value="MCQ">MCQ</option>
+            <option value="WRITTEN">Written</option>
+          </Select>
+        </Field>
+        <Field>
           <Label htmlFor="category">Category</Label>
           <Select
             id="category"
@@ -143,38 +160,53 @@ export function QuestionForm({
           </Select>
         </Field>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        {values.options.map((opt, i) => (
-          <Field key={i}>
-            <Label htmlFor={`opt-${i}`}>Option {['A', 'B', 'C', 'D'][i]}</Label>
-            <Input
-              id={`opt-${i}`}
-              required
-              value={opt}
-              onChange={(e) =>
-                setValues((v) => ({
-                  ...v,
-                  options: v.options.map((p, idx) => (idx === i ? e.target.value : p)),
-                }))
-              }
-            />
+      {values.kind === 'WRITTEN' ? (
+        <Field>
+          <Label htmlFor="modelAnswer">Model answer</Label>
+          <Textarea
+            id="modelAnswer"
+            required
+            value={values.modelAnswer}
+            onChange={(e) => setValues((v) => ({ ...v, modelAnswer: e.target.value }))}
+            placeholder="The full answer learners see once entitled."
+          />
+        </Field>
+      ) : (
+        <>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {values.options.map((opt, i) => (
+              <Field key={i}>
+                <Label htmlFor={`opt-${i}`}>Option {['A', 'B', 'C', 'D'][i]}</Label>
+                <Input
+                  id={`opt-${i}`}
+                  required
+                  value={opt}
+                  onChange={(e) =>
+                    setValues((v) => ({
+                      ...v,
+                      options: v.options.map((p, idx) => (idx === i ? e.target.value : p)),
+                    }))
+                  }
+                />
+              </Field>
+            ))}
+          </div>
+          <Field>
+            <Label htmlFor="correct">Correct option</Label>
+            <Select
+              id="correct"
+              value={values.correct}
+              onChange={(e) => setValues((v) => ({ ...v, correct: e.target.value }))}
+            >
+              {['A', 'B', 'C', 'D'].map((l) => (
+                <option key={l} value={l}>
+                  {l}
+                </option>
+              ))}
+            </Select>
           </Field>
-        ))}
-      </div>
-      <Field>
-        <Label htmlFor="correct">Correct option</Label>
-        <Select
-          id="correct"
-          value={values.correct}
-          onChange={(e) => setValues((v) => ({ ...v, correct: e.target.value }))}
-        >
-          {['A', 'B', 'C', 'D'].map((l) => (
-            <option key={l} value={l}>
-              {l}
-            </option>
-          ))}
-        </Select>
-      </Field>
+        </>
+      )}
       {error ? <Alert variant="danger">{error}</Alert> : null}
       <Button type="submit" disabled={pending}>
         {pending ? 'Saving…' : submitLabel}
@@ -185,13 +217,23 @@ export function QuestionForm({
 
 export function toQuestionPayload(values: QuestionFormValues) {
   const labels = ['A', 'B', 'C', 'D'];
-  return {
+  const base = {
     title: values.title,
     content: values.content,
     explanation: values.explanation || undefined,
     categoryId: values.categoryId,
     subcategoryId: values.subcategoryId || undefined,
     difficulty: values.difficulty,
+    kind: values.kind,
+  };
+  if (values.kind === 'WRITTEN') {
+    // Written questions carry no options; the backend drops stored ones.
+    return { ...base, modelAnswer: values.modelAnswer };
+  }
+  return {
+    ...base,
+    // Clear any model answer left over from a written version.
+    modelAnswer: null,
     options: values.options.map((text, i) => ({
       label: labels[i],
       content: text,

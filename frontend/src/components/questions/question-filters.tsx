@@ -22,12 +22,14 @@ export function QuestionFilters({ categories }: Props) {
   const [categoryId, setCategoryId] = useState(params.get('categoryId') ?? '');
   const [subcategoryId, setSubcategoryId] = useState(params.get('subcategoryId') ?? '');
   const [difficulty, setDifficulty] = useState(params.get('difficulty') ?? '');
+  const [kind, setKind] = useState(params.get('kind') ?? '');
 
   useEffect(() => {
     setQ(params.get('q') ?? '');
     setCategoryId(params.get('categoryId') ?? '');
     setSubcategoryId(params.get('subcategoryId') ?? '');
     setDifficulty(params.get('difficulty') ?? '');
+    setKind(params.get('kind') ?? '');
   }, [params]);
 
   const selected = useMemo(
@@ -42,6 +44,7 @@ export function QuestionFilters({ categories }: Props) {
       if (categoryId) sp.set('categoryId', categoryId);
       if (subcategoryId) sp.set('subcategoryId', subcategoryId);
       if (difficulty) sp.set('difficulty', difficulty);
+      if (kind) sp.set('kind', kind);
     }
     startTransition(() => {
       router.push(sp.toString() ? `/questions?${sp.toString()}` : '/questions');
@@ -50,7 +53,7 @@ export function QuestionFilters({ categories }: Props) {
 
   return (
     <form
-      className="z-10 grid gap-3 rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)]/95 p-4 shadow-[var(--shadow-sm)] backdrop-blur-md sm:grid-cols-2 lg:sticky lg:top-16 lg:grid-cols-5"
+      className="z-10 grid gap-3 rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)]/95 p-4 shadow-[var(--shadow-sm)] backdrop-blur-md sm:grid-cols-2 lg:sticky lg:top-16 lg:grid-cols-6"
       onSubmit={(e) => {
         e.preventDefault();
         apply();
@@ -112,7 +115,15 @@ export function QuestionFilters({ categories }: Props) {
           <option value="HARD">Hard</option>
         </Select>
       </Field>
-      <div className="flex flex-wrap items-end gap-2 sm:col-span-2 lg:col-span-5">
+      <Field>
+        <Label htmlFor="q-kind">Type</Label>
+        <Select id="q-kind" value={kind} onChange={(e) => setKind(e.target.value)}>
+          <option value="">All</option>
+          <option value="MCQ">MCQ</option>
+          <option value="WRITTEN">Written</option>
+        </Select>
+      </Field>
+      <div className="flex flex-wrap items-end gap-2 sm:col-span-2 lg:col-span-6">
         <Button type="submit" disabled={pending}>
           {pending ? 'Filtering…' : 'Apply filters'}
         </Button>

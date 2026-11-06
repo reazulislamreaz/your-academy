@@ -84,6 +84,7 @@ export class NewsService {
     const article = await this.prisma.news.findFirst({
       where: { slug, isPublished: true, deletedAt: null },
       include: {
+        createdBy: { select: { name: true } },
         documents: {
           where: {
             document: { isPublished: true, deletedAt: null },
@@ -114,6 +115,7 @@ export class NewsService {
       summary: article.summary,
       body: article.body,
       publishedAt: article.publishedAt,
+      authorName: article.createdBy?.name ?? null,
       documents: article.documents.map((row) => ({
         id: row.document.id,
         title: row.document.title,

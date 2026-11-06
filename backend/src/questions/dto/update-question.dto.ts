@@ -1,4 +1,4 @@
-import { Difficulty } from '@prisma/client';
+import { Difficulty, QuestionKind } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
@@ -42,6 +42,15 @@ export class UpdateQuestionDto {
   @IsOptional()
   @IsEnum(Difficulty)
   difficulty?: Difficulty;
+
+  @IsOptional()
+  @IsEnum(QuestionKind)
+  kind?: QuestionKind;
+
+  @IsOptional()
+  @ValidateIf((_, v) => v !== null && v !== undefined)
+  @IsString()
+  modelAnswer?: string | null;
 
   @IsOptional()
   @IsArray()

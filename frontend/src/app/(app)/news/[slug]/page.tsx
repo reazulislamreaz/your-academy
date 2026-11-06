@@ -12,6 +12,7 @@ type NewsDetail = {
   title: string;
   body: string;
   publishedAt?: string;
+  authorName?: string | null;
   documents: Array<{
     id: string;
     title: string;
@@ -37,6 +38,9 @@ export default function NewsDetailPage() {
   }
   if (error || !data) return <Alert variant="danger">Article not found.</Alert>;
 
+  const wordCount = data.body.trim().split(/\s+/).filter(Boolean).length;
+  const readMinutes = Math.max(1, Math.round(wordCount / 200));
+
   return (
     <article className="mx-auto max-w-3xl space-y-6">
       <Link href="/news" className="text-sm text-[var(--muted)] hover:text-[var(--highlight)]">
@@ -46,11 +50,11 @@ export default function NewsDetailPage() {
         <h1 className="font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-bold tracking-tight">
           {data.title}
         </h1>
-        {data.publishedAt ? (
-          <p className="text-sm text-[var(--muted)]">
-            {new Date(data.publishedAt).toLocaleDateString()}
-          </p>
-        ) : null}
+        <p className="text-sm text-[var(--muted)]">
+          {data.authorName ? `${data.authorName} · ` : ''}
+          {data.publishedAt ? `${new Date(data.publishedAt).toLocaleDateString()} · ` : ''}
+          {readMinutes} min read
+        </p>
       </header>
       <p className="font-reading whitespace-pre-wrap break-words text-lg leading-relaxed text-[var(--ink-soft)]">
         {data.body}

@@ -19,7 +19,7 @@ import type { CategoryNode, QuestionListItem } from '@/lib/api/types';
 
 function buildQuery(sp: URLSearchParams, cursor?: string) {
   const q = new URLSearchParams();
-  for (const key of ['q', 'categoryId', 'subcategoryId', 'difficulty'] as const) {
+  for (const key of ['q', 'categoryId', 'subcategoryId', 'difficulty', 'kind'] as const) {
     const v = sp.get(key);
     if (v) q.set(key, v);
   }
@@ -35,7 +35,8 @@ function QuestionsContent() {
   const categoryId = searchParams.get('categoryId') ?? undefined;
   const subcategoryId = searchParams.get('subcategoryId') ?? undefined;
   const difficulty = searchParams.get('difficulty') ?? undefined;
-  const hasFilters = Boolean(q || categoryId || subcategoryId || difficulty);
+  const kind = searchParams.get('kind') ?? undefined;
+  const hasFilters = Boolean(q || categoryId || subcategoryId || difficulty || kind);
 
   const categories = useQuery({
     queryKey: ['categories'],
@@ -74,6 +75,7 @@ function QuestionsContent() {
         categoryId={categoryId}
         subcategoryId={subcategoryId}
         difficulty={difficulty}
+        kind={kind}
       />
 
       {!list.isLoading && !list.isError ? (
@@ -149,6 +151,7 @@ function QuestionsContent() {
                   {item.subcategory ? ` · ${item.subcategory.name}` : ''}
                 </span>
                 <Badge variant="highlight">{item.difficulty}</Badge>
+                {item.kind === 'WRITTEN' ? <Badge variant="outline">Written</Badge> : null}
               </>
             }
             title={

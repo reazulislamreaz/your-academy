@@ -176,44 +176,87 @@ export class UsersService {
   }
 
   async getStats(user: RequestUser) {
-    const [questionBookmarks, documentBookmarks, browsing, recentQuestions, recentDocuments] =
-      await Promise.all([
-        this.prisma.questionBookmark.count({ where: { userId: user.userId } }),
-        this.prisma.documentBookmark.count({ where: { userId: user.userId } }),
-        this.prisma.browsingSession.aggregate({
-          where: { userId: user.userId },
-          _sum: { accruedSeconds: true },
-        }),
-        this.prisma.questionBookmark.findMany({
-          where: { userId: user.userId },
-          take: 5,
-          orderBy: { createdAt: 'desc' },
-          select: {
-            id: true,
-            createdAt: true,
-            question: {
-              select: { id: true, title: true, difficulty: true },
+    const [
+      questionBookmarks,
+      documentBookmarks,
+      browsing,
+      recentQuestions,
+      recentDocuments,
+      totalAttempted,
+      totalCorrect,
+      attemptRows,
+    ] = await Promise.all([
+      this.prisma.questionBookmark.count({ where: { userId: user.userId } }),
+      this.prisma.documentBookmark.count({ where: { userId: user.userId } }),
+      this.prisma.browsingSession.aggregate({
+        where: { userId: user.userId },
+        _sum: { accruedSeconds: true },
+      }),
+      this.prisma.questionBookmark.findMany({
+        where: { userId: user.userId },
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          createdAt: true,
+          question: {
+            select: { id: true, title: true, difficulty: true },
+          },
+        },
+      }),
+      this.prisma.documentBookmark.findMany({
+        where: { userId: user.userId },
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          createdAt: true,
+          document: {
+            select: { id: true, title: true },
+          },
+        },
+      }),
+      this.prisma.questionAttempt.count({ where: { userId: user.userId } }),
+      this.prisma.questionAttempt.count({ where: { userId: user.userId, isCorrect: true } }),
+      this.prisma.questionAttempt.findMany({
+        where: { userId: user.userId },
+        take: 5000,
+        select: {
+          isCorrect: true,
+          question: {
+            select: {
+              categoryId: true,
+              category: { select: { name: true } },
             },
           },
-        }),
-        this.prisma.documentBookmark.findMany({
-          where: { userId: user.userId },
-          take: 5,
-          orderBy: { createdAt: 'desc' },
-          select: {
-            id: true,
-            createdAt: true,
-            document: {
-              select: { id: true, title: true },
-            },
-          },
-        }),
-      ]);
+        },
+      }),
+    ]);
+
+    const perCategoryMap = new Map<string, { categoryId: string; name: string; attempted: number; correct: number }>();
+    for (const row of attemptRows) {
+      const entry = perCategoryMap.get(row.question.categoryId) ?? {
+        categoryId: row.question.categoryId,
+        name: row.question.category.name,
+        attempted: 0,
+        correct: 0,
+      };
+      entry.attempted += 1;
+      if (row.isCorrect) entry.correct += 1;
+      perCategoryMap.set(row.question.categoryId, entry);
+    }
+    const perCategory = [...perCategoryMap.values()]
+      .sort((a, b) => b.attempted - a.attempted)
+      .slice(0, 6);
 
     return {
       questionBookmarks,
       documentBookmarks,
       browsingSeconds: browsing._sum.accruedSeconds ?? 0,
+      totalAttempted,
+      totalCorrect,
+      accuracyPct: totalAttempted > 0 ? Math.round((totalCorrect / totalAttempted) * 100) : 0,
+      perCategory,
       recentQuestions: recentQuestions.map((row) => ({
         bookmarkId: row.id,
         savedAt: row.createdAt.toISOString(),

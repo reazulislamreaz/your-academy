@@ -9,6 +9,8 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { newRequestId } from '../common/request-id';
 import { AdminService } from './admin.service';
+import { ExtendTrialDto } from './dto/extend-trial.dto';
+import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 
 @Controller('api/v1/admin')
@@ -52,6 +54,32 @@ export class AdminController {
   ) {
     return createSuccessResponse(
       await this.admin.updateUserStatus(id, body.status, user.userId),
+      newRequestId(),
+    );
+  }
+
+  @Patch('users/:id/role')
+  @UseGuards(CsrfGuard)
+  async updateUserRole(
+    @CurrentUser() user: RequestUser,
+    @Param('id') id: string,
+    @Body() body: UpdateUserRoleDto,
+  ) {
+    return createSuccessResponse(
+      await this.admin.updateUserRole(id, body.role, user.userId),
+      newRequestId(),
+    );
+  }
+
+  @Patch('users/:id/trial')
+  @UseGuards(CsrfGuard)
+  async extendTrial(
+    @CurrentUser() user: RequestUser,
+    @Param('id') id: string,
+    @Body() body: ExtendTrialDto,
+  ) {
+    return createSuccessResponse(
+      await this.admin.extendTrial(id, body.extendDays, user.userId),
       newRequestId(),
     );
   }

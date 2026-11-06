@@ -16,6 +16,7 @@ type Dashboard = {
   categories: number;
   news: number;
   documents: number;
+  exams?: { papers: number; publishedPapers: number; attempts: number };
   browsingSecondsTotal: number;
   recentUsers: Array<{
     id: string;
@@ -170,6 +171,9 @@ export default function AdminDashboardPage() {
           <Stat label="Categories" value={data.categories} />
           <Stat label="News" value={data.news} />
           <Stat label="Documents" value={data.documents} />
+          <Stat label="Exam papers" value={data.exams?.papers ?? 0} />
+          <Stat label="Published papers" value={data.exams?.publishedPapers ?? 0} />
+          <Stat label="Exam attempts" value={data.exams?.attempts ?? 0} />
           <Stat label="Browsing hours" value={Math.round(data.browsingSecondsTotal / 3600)} />
         </div>
       </div>

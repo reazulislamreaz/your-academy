@@ -232,6 +232,15 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Impact | UsersModule, schema migration, study home / onboarding / practice player |
 | Status | **CONFIRMED** (audit 2026-11-05) |
 
+### DEC-022 — Exam result visibility
+
+| Field | Value |
+|-------|-------|
+| Question | What does an attempt owner see on a model-test result? |
+| Decision | **Result summaries (score + correct/wrong/unanswered counts) are always visible to the attempt owner**, including after the trial ends. **Per-question correctness** (which option was correct, whether the owner's pick was right, explanations, model answers) **is shown only when the user is entitled to see answers** (active 7-day trial or subscription, or admin) — consistent with the existing answer-privacy rule. While an attempt is IN_PROGRESS, per-question correctness is hidden even for entitled users, so the timed test cannot be cheated via the API. |
+| Impact | ExamsModule (`ExamAttempt`/`QuestionAttempt`), `GET /exam-attempts/:id`, result page, results history |
+| Status | **CONFIRMED** (qbookbd parity work 2026-11-07) |
+
 ---
 
 ## Assumption Log (Non-Decision Facts We Are Proceeding With)

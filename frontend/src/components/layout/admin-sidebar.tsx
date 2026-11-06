@@ -10,6 +10,7 @@ import {
   FileText,
   ArrowLeft,
   Users,
+  ClipboardList,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { BrandMark } from './brand-mark';
@@ -18,6 +19,7 @@ const items = [
   { href: '/admin/dashboard', label: 'Overview', icon: LayoutDashboard },
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/questions', label: 'Questions', icon: FileQuestion },
+  { href: '/admin/exam-papers', label: 'Exam papers', icon: ClipboardList },
   { href: '/admin/categories', label: 'Categories', icon: FolderTree },
   { href: '/admin/news', label: 'News', icon: Newspaper },
   { href: '/admin/documents', label: 'Documents', icon: FileText },

@@ -4,7 +4,7 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { Difficulty, Prisma, QuestionStatus } from '@prisma/client';
+import { Difficulty, Prisma, QuestionKind, QuestionStatus } from '@prisma/client';
 import { createErrorResponse } from '@your-academy/shared';
 import type { RequestUser } from '../auth/auth.types';
 import { newRequestId } from '../common/request-id';
@@ -24,7 +24,8 @@ export class QuestionsService {
 
   async createDraft(user: RequestUser, dto: CreateQuestionDto) {
     await this.assertCategoryPair(dto.categoryId, dto.subcategoryId);
-    this.assertOptionShape(dto.options, false);
+    const kind = dto.kind ?? QuestionKind.MCQ;
+    this.validateQuestionShape(kind, dto.options ?? [], dto.modelAnswer, false);
 
     return this.prisma.question.create({
       data: {
@@ -34,10 +35,12 @@ export class QuestionsService {
         categoryId: dto.categoryId,
         subcategoryId: dto.subcategoryId,
         difficulty: dto.difficulty ?? Difficulty.MEDIUM,
+        kind,
+        modelAnswer: dto.modelAnswer,
         status: QuestionStatus.DRAFT,
         createdById: user.userId,
         options: {
-          create: dto.options.map((o, index) => ({
+          create: (dto.options ?? []).map((o, index) => ({
             label: o.label,
             content: o.content,
             isCorrect: o.isCorrect,
@@ -64,9 +67,28 @@ export class QuestionsService {
       );
     }
 
+    const effectiveKind = dto.kind ?? existing.kind;
+    const effectiveModelAnswer =
+      dto.modelAnswer !== undefined ? dto.modelAnswer : existing.modelAnswer;
+    // Validate the incoming shape against the effective kind. When options are
+    // not being replaced, validate the stored options instead so a kind change
+    // cannot leave an invalid combination behind.
+    if (dto.options !== undefined) {
+      this.validateQuestionShape(effectiveKind, dto.options, effectiveModelAnswer, false);
+    } else if (
+      (dto.kind !== undefined || dto.modelAnswer !== undefined) &&
+      effectiveKind === QuestionKind.MCQ
+    ) {
+      // WRITTEN drops stored options on save, so only MCQ needs this check.
+      const storedOptions = await this.prisma.questionOption.findMany({
+        where: { questionId: id },
+        select: { isCorrect: true },
+      });
+      this.validateQuestionShape(effectiveKind, storedOptions, effectiveModelAnswer, false);
+    }
+
     return this.prisma.$transaction(async (tx) => {
       if (dto.options) {
-        this.assertOptionShape(dto.options, false);
         await tx.questionOption.deleteMany({ where: { questionId: id } });
         await tx.questionOption.createMany({
           data: dto.options.map((o, index) => ({
@@ -77,6 +99,9 @@ export class QuestionsService {
             sortOrder: index,
           })),
         });
+      } else if (effectiveKind === QuestionKind.WRITTEN) {
+        // Switching to WRITTEN drops any stored options.
+        await tx.questionOption.deleteMany({ where: { questionId: id } });
       }
 
       return tx.question.update({
@@ -88,6 +113,8 @@ export class QuestionsService {
           ...(dto.categoryId ? { categoryId: dto.categoryId } : {}),
           ...(dto.subcategoryId !== undefined ? { subcategoryId: dto.subcategoryId } : {}),
           ...(dto.difficulty ? { difficulty: dto.difficulty } : {}),
+          ...(dto.kind ? { kind: dto.kind } : {}),
+          ...(dto.modelAnswer !== undefined ? { modelAnswer: dto.modelAnswer } : {}),
         },
         include: { options: { orderBy: { sortOrder: 'asc' } } },
       });
@@ -104,7 +131,7 @@ export class QuestionsService {
         createErrorResponse('QUESTION_NOT_FOUND', 'Question not found', newRequestId()),
       );
     }
-    this.assertOptionShape(question.options, true);
+    this.validateQuestionShape(question.kind, question.options, question.modelAnswer, true);
 
     const updated = await this.prisma.question.update({
       where: { id },
@@ -165,6 +192,7 @@ export class QuestionsService {
       categoryId?: string;
       subcategoryId?: string;
       difficulty?: Difficulty;
+      kind?: QuestionKind;
       q?: string;
     },
   ) {
@@ -175,6 +203,7 @@ export class QuestionsService {
       ...(params.categoryId ? { categoryId: params.categoryId } : {}),
       ...(params.subcategoryId ? { subcategoryId: params.subcategoryId } : {}),
       ...(params.difficulty ? { difficulty: params.difficulty } : {}),
+      ...(params.kind ? { kind: params.kind } : {}),
       ...(params.q
         ? {
             OR: [
@@ -194,6 +223,7 @@ export class QuestionsService {
         id: true,
         title: true,
         difficulty: true,
+        kind: true,
         publishedAt: true,
         category: { select: { id: true, name: true, slug: true } },
         subcategory: { select: { id: true, name: true, slug: true } },
@@ -240,10 +270,13 @@ export class QuestionsService {
       title: question.title,
       content: question.content,
       difficulty: question.difficulty,
+      kind: question.kind,
       category: question.category,
       subcategory: question.subcategory,
       options,
       explanation: canView ? (question.explanation ?? undefined) : undefined,
+      // Model answers are restricted content, same rule as explanations.
+      modelAnswer: canView ? (question.modelAnswer ?? undefined) : undefined,
       publishedAt: question.publishedAt,
       bookmarked: Boolean(bookmark),
       answersVisible: canView,
@@ -252,7 +285,13 @@ export class QuestionsService {
 
   async navigation(
     id: string,
-    filters: { categoryId?: string; subcategoryId?: string; difficulty?: Difficulty; q?: string },
+    filters: {
+      categoryId?: string;
+      subcategoryId?: string;
+      difficulty?: Difficulty;
+      kind?: QuestionKind;
+      q?: string;
+    },
   ) {
     const current = await this.prisma.question.findFirst({
       where: { id, status: QuestionStatus.PUBLISHED, deletedAt: null },
@@ -269,6 +308,7 @@ export class QuestionsService {
       ...(filters.categoryId ? { categoryId: filters.categoryId } : {}),
       ...(filters.subcategoryId ? { subcategoryId: filters.subcategoryId } : {}),
       ...(filters.difficulty ? { difficulty: filters.difficulty } : {}),
+      ...(filters.kind ? { kind: filters.kind } : {}),
       ...(filters.q
         ? {
             OR: [
@@ -306,6 +346,68 @@ export class QuestionsService {
     return { prevId: older?.id ?? null, nextId: newer?.id ?? null };
   }
 
+  /**
+   * Record one free-practice attempt. The correctness boolean is returned
+   * only when the user is entitled to see answers; otherwise `correct` is
+   * null (absence, never a faked false) so the endpoint cannot leak keys.
+   */
+  async recordAttempt(
+    user: RequestUser,
+    questionId: string,
+    selectedOptionId?: string,
+  ): Promise<{ correct: boolean | null; questionId: string; selectedOptionId: string | null }> {
+    const question = await this.prisma.question.findFirst({
+      where: { id: questionId, status: QuestionStatus.PUBLISHED, deletedAt: null },
+      select: { id: true, kind: true },
+    });
+    if (!question) {
+      throw new NotFoundException(
+        createErrorResponse('QUESTION_NOT_FOUND', 'Question not found', newRequestId()),
+      );
+    }
+    if (question.kind === QuestionKind.WRITTEN) {
+      throw new BadRequestException(
+        createErrorResponse(
+          'WRITTEN_QUESTION',
+          'Written questions have no options to check',
+          newRequestId(),
+        ),
+      );
+    }
+    if (!selectedOptionId) {
+      throw new BadRequestException(
+        createErrorResponse('VALIDATION_ERROR', 'selectedOptionId is required', newRequestId()),
+      );
+    }
+    const option = await this.prisma.questionOption.findFirst({
+      where: { id: selectedOptionId, questionId },
+      select: { id: true, isCorrect: true },
+    });
+    if (!option) {
+      throw new NotFoundException(
+        createErrorResponse('OPTION_NOT_FOUND', 'Option not found for this question', newRequestId()),
+      );
+    }
+
+    await this.prisma.questionAttempt.create({
+      data: {
+        userId: user.userId,
+        questionId,
+        selectedOptionId: option.id,
+        isCorrect: option.isCorrect,
+        examAttemptId: null,
+      },
+    });
+
+    const dbUser = await this.prisma.user.findUniqueOrThrow({ where: { id: user.userId } });
+    const canView = await this.access.canViewAnswers(dbUser);
+    return {
+      correct: canView ? option.isCorrect : null,
+      questionId,
+      selectedOptionId: option.id,
+    };
+  }
+
   async adminGet(id: string) {
     const question = await this.prisma.question.findUnique({
       where: { id },
@@ -319,10 +421,38 @@ export class QuestionsService {
     return question;
   }
 
-  private assertOptionShape(
+  /**
+   * Kind-aware shape validation. MCQ needs 2–6 options with at most one
+   * correct at draft time (exactly one to publish); WRITTEN needs a model
+   * answer and zero options.
+   */
+  private validateQuestionShape(
+    kind: QuestionKind,
     options: Array<{ isCorrect: boolean }>,
+    modelAnswer: string | null | undefined,
     requireExactlyOne: boolean,
   ) {
+    if (kind === QuestionKind.WRITTEN) {
+      if (options.length > 0) {
+        throw new UnprocessableEntityException(
+          createErrorResponse(
+            'INVALID_OPTIONS',
+            'Written questions must not have options',
+            newRequestId(),
+          ),
+        );
+      }
+      if (!modelAnswer || !modelAnswer.trim()) {
+        throw new UnprocessableEntityException(
+          createErrorResponse(
+            'MODEL_ANSWER_REQUIRED',
+            'Written questions require a model answer',
+            newRequestId(),
+          ),
+        );
+      }
+      return;
+    }
     if (options.length < 2 || options.length > 6) {
       throw new UnprocessableEntityException(
         createErrorResponse(

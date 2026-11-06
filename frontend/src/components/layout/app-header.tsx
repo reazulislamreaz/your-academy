@@ -9,6 +9,8 @@ import { useMe } from '@/features/auth/use-auth';
 const baseLinks: NavItem[] = [
   { href: '/home', label: 'Home' },
   { href: '/questions', label: 'Questions' },
+  { href: '/exams', label: 'Model Tests' },
+  { href: '/exams/results', label: 'My Results', match: 'exact' },
   { href: '/documents', label: 'PDFs' },
   { href: '/bookmarks', label: 'Saved' },
   { href: '/news', label: 'News' },

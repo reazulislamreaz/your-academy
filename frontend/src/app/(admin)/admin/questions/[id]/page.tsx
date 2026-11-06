@@ -50,6 +50,8 @@ export default function EditQuestionPage() {
       categoryId: q.categoryId,
       subcategoryId: q.subcategoryId ?? '',
       difficulty: q.difficulty as QuestionFormValues['difficulty'],
+      kind: (q.kind ?? 'MCQ') as QuestionFormValues['kind'],
+      modelAnswer: q.modelAnswer ?? '',
       options,
       correct,
     };

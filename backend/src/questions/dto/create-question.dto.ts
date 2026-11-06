@@ -1,4 +1,4 @@
-import { Difficulty } from '@prisma/client';
+import { Difficulty, QuestionKind } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
@@ -51,9 +51,18 @@ export class CreateQuestionDto {
   @IsEnum(Difficulty)
   difficulty?: Difficulty;
 
+  @IsOptional()
+  @IsEnum(QuestionKind)
+  kind?: QuestionKind;
+
+  @IsOptional()
+  @IsString()
+  modelAnswer?: string;
+
+  @IsOptional()
   @IsArray()
   @ArrayMinSize(2)
   @ValidateNested({ each: true })
   @Type(() => QuestionOptionDto)
-  options!: QuestionOptionDto[];
+  options?: QuestionOptionDto[];
 }

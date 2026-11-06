@@ -14,8 +14,10 @@ export type AdminQuestionDetail = {
   title: string;
   content: string;
   explanation?: string | null;
+  modelAnswer?: string | null;
   status: string;
   difficulty: string;
+  kind?: string;
   categoryId: string;
   subcategoryId?: string | null;
   options: Array<{
@@ -65,4 +67,30 @@ export type AdminDocumentItem = {
   category?: { id: string; name: string } | null;
   mediaAsset?: { originalFilename?: string | null; mimeType: string; bytes: number } | null;
   updatedAt: string;
+};
+
+export type AdminExamPaperItem = {
+  id: string;
+  title: string;
+  slug: string;
+  examBody: string;
+  year?: number | null;
+  description?: string | null;
+  durationMinutes: number;
+  totalMarks?: number | null;
+  isPublished: boolean;
+  publishedAt?: string | null;
+  questionCount: number;
+};
+
+export type AdminExamPaperDetail = AdminExamPaperItem & {
+  questions: Array<{
+    id: string;
+    title: string;
+    kind: string;
+    difficulty: string;
+    status: string;
+    sortOrder: number;
+    category: { id: string; name: string };
+  }>;
 };

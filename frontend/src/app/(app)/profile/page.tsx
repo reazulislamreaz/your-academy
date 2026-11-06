@@ -214,6 +214,40 @@ export default function ProfilePage() {
               Tracked while you study with this tab open.
             </p>
           </div>
+          <div className="bg-[var(--bg-elevated)] p-5">
+            <p className="text-xs font-semibold tracking-[0.12em] text-[var(--muted)] uppercase">
+              Attempted
+            </p>
+            <p className="mt-2 font-display text-3xl font-bold tabular-nums">
+              {stats.data?.totalAttempted ?? 0}
+            </p>
+            <p className="mt-3 text-xs text-[var(--muted)]">Practice checks and exam answers.</p>
+          </div>
+          <div className="bg-[var(--bg-elevated)] p-5">
+            <p className="text-xs font-semibold tracking-[0.12em] text-[var(--muted)] uppercase">
+              Correct
+            </p>
+            <p className="mt-2 font-display text-3xl font-bold tabular-nums">
+              {stats.data?.totalCorrect ?? 0}
+            </p>
+            <Link
+              href="/exams/results"
+              className="mt-3 inline-block text-sm font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
+            >
+              View results
+            </Link>
+          </div>
+          <div className="bg-[var(--bg-elevated)] p-5">
+            <p className="text-xs font-semibold tracking-[0.12em] text-[var(--muted)] uppercase">
+              Accuracy
+            </p>
+            <p className="mt-2 font-display text-3xl font-bold tabular-nums">
+              {stats.data?.accuracyPct ?? 0}%
+            </p>
+            <p className="mt-3 text-xs text-[var(--muted)]">
+              Correct answers across all attempts.
+            </p>
+          </div>
         </div>
       </section>
 

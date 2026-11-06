@@ -8,6 +8,7 @@ const items = [
   { href: '/admin/dashboard', label: 'Overview' },
   { href: '/admin/users', label: 'Users' },
   { href: '/admin/questions', label: 'Questions' },
+  { href: '/admin/exam-papers', label: 'Papers' },
   { href: '/admin/categories', label: 'Categories' },
   { href: '/admin/news', label: 'News' },
   { href: '/admin/documents', label: 'Docs' },

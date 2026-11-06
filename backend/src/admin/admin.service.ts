@@ -26,6 +26,9 @@ export class AdminService {
       totalCategories,
       totalNews,
       totalDocuments,
+      totalExamPapers,
+      publishedExamPapers,
+      totalExamAttempts,
       browsingAgg,
       recentUsers,
       recentActivity,
@@ -53,6 +56,9 @@ export class AdminService {
       this.prisma.category.count({ where: { isActive: true } }),
       this.prisma.news.count({ where: { deletedAt: null } }),
       this.prisma.document.count({ where: { deletedAt: null } }),
+      this.prisma.examPaper.count(),
+      this.prisma.examPaper.count({ where: { isPublished: true } }),
+      this.prisma.examAttempt.count(),
       this.prisma.browsingSession.aggregate({ _sum: { accruedSeconds: true } }),
       this.prisma.user.findMany({
         where: { deletedAt: null },
@@ -101,6 +107,11 @@ export class AdminService {
       categories: totalCategories,
       news: totalNews,
       documents: totalDocuments,
+      exams: {
+        papers: totalExamPapers,
+        publishedPapers: publishedExamPapers,
+        attempts: totalExamAttempts,
+      },
       browsingSecondsTotal: browsingAgg._sum.accruedSeconds ?? 0,
       recentUsers,
       recentActivity: recentActivity.map((row) => ({
@@ -204,6 +215,77 @@ export class AdminService {
         entityType: 'user',
         entityId: id,
         metadata: { status },
+      },
+    });
+
+    return updated;
+  }
+
+  async updateUserRole(id: string, role: UserRole, actorUserId?: string) {
+    // An admin must never be able to change their own role — that would let
+    // them demote themselves out of (or lock themselves into) admin.
+    if (actorUserId && id === actorUserId) {
+      throw new ForbiddenException(
+        createErrorResponse('FORBIDDEN', 'You cannot change your own role', newRequestId()),
+      );
+    }
+    const user = await this.getUser(id);
+    const updated = await this.prisma.user.update({
+      where: { id },
+      data: { role },
+      select: {
+        id: true,
+        name: true,
+        whatsappNumber: true,
+        email: true,
+        role: true,
+        status: true,
+        trialEndsAt: true,
+        createdAt: true,
+      },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        actorUserId: actorUserId ?? null,
+        action: 'USER_ROLE_CHANGE',
+        entityType: 'user',
+        entityId: id,
+        metadata: { fromRole: user.role, toRole: role },
+      },
+    });
+
+    return updated;
+  }
+
+  async extendTrial(id: string, extendDays: number, actorUserId?: string) {
+    const user = await this.getUser(id);
+    const now = new Date();
+    // Never move the trial backwards: extend from whichever is later.
+    const base = user.trialEndsAt > now ? user.trialEndsAt : now;
+    const trialEndsAt = new Date(base.getTime() + extendDays * 24 * 60 * 60 * 1000);
+    const updated = await this.prisma.user.update({
+      where: { id },
+      data: { trialEndsAt },
+      select: {
+        id: true,
+        name: true,
+        whatsappNumber: true,
+        email: true,
+        role: true,
+        status: true,
+        trialEndsAt: true,
+        createdAt: true,
+      },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        actorUserId: actorUserId ?? null,
+        action: 'USER_TRIAL_EXTEND',
+        entityType: 'user',
+        entityId: id,
+        metadata: { extendDays, trialEndsAt: trialEndsAt.toISOString() },
       },
     });
 

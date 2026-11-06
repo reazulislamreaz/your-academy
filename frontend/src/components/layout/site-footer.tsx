@@ -25,11 +25,17 @@ export function SiteFooter() {
           <Link href="/questions" className="block text-white/75 hover:text-white">
             MCQ Practice
           </Link>
+          <Link href="/exams" className="block text-white/75 hover:text-white">
+            Model Tests
+          </Link>
           <Link href="/documents" className="block text-white/75 hover:text-white">
             PDF library
           </Link>
           <Link href="/news" className="block text-white/75 hover:text-white">
             News
+          </Link>
+          <Link href="/about" className="block text-white/75 hover:text-white">
+            About
           </Link>
         </div>
         <div className="space-y-2.5 text-sm">
@@ -41,6 +47,9 @@ export function SiteFooter() {
           </Link>
           <Link href="/register" className="block text-white/75 hover:text-white">
             Start trial
+          </Link>
+          <Link href="/faq" className="block text-white/75 hover:text-white">
+            FAQ
           </Link>
           <Link href="/#how-trial-works" className="block text-white/75 hover:text-white">
             How it works
@@ -75,7 +84,15 @@ export function SiteFooter() {
       <div className="border-t border-white/10">
         <div className="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-2 px-6 py-4 text-xs text-white/55 sm:flex-row">
           <p>© {new Date().getFullYear()} Your Academy. All rights reserved.</p>
-          <p>Bangladesh&apos;s Premier Job Exam Preparation Platform</p>
+          <p className="flex items-center gap-4">
+            <Link href="/privacy" className="hover:text-white">
+              Privacy
+            </Link>
+            <Link href="/terms" className="hover:text-white">
+              Terms
+            </Link>
+            <span>Bangladesh&apos;s Premier Job Exam Preparation Platform</span>
+          </p>
         </div>
       </div>
     </footer>

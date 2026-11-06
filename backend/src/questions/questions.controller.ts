@@ -8,7 +8,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { Difficulty, QuestionStatus, UserRole } from '@prisma/client';
+import { Difficulty, QuestionKind, QuestionStatus, UserRole } from '@prisma/client';
 import { createSuccessResponse } from '@your-academy/shared';
 import type { RequestUser } from '../auth/auth.types';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -18,6 +18,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { newRequestId } from '../common/request-id';
 import { CreateQuestionDto } from './dto/create-question.dto';
+import { RecordAttemptDto } from './dto/record-attempt.dto';
 import { UpdateQuestionDto } from './dto/update-question.dto';
 import { QuestionsService } from './questions.service';
 
@@ -34,6 +35,7 @@ export class QuestionsController {
     @Query('categoryId') categoryId?: string,
     @Query('subcategoryId') subcategoryId?: string,
     @Query('difficulty') difficulty?: Difficulty,
+    @Query('kind') kind?: QuestionKind,
     @Query('q') q?: string,
   ) {
     const data = await this.questions.listPublished(user, {
@@ -42,6 +44,7 @@ export class QuestionsController {
       categoryId,
       subcategoryId,
       difficulty,
+      kind,
       q,
     });
     return createSuccessResponse(data.items, newRequestId(), {
@@ -65,10 +68,24 @@ export class QuestionsController {
     @Query('categoryId') categoryId?: string,
     @Query('subcategoryId') subcategoryId?: string,
     @Query('difficulty') difficulty?: Difficulty,
+    @Query('kind') kind?: QuestionKind,
     @Query('q') q?: string,
   ) {
     return createSuccessResponse(
-      await this.questions.navigation(id, { categoryId, subcategoryId, difficulty, q }),
+      await this.questions.navigation(id, { categoryId, subcategoryId, difficulty, kind, q }),
+      newRequestId(),
+    );
+  }
+
+  @Post('questions/:id/attempts')
+  @UseGuards(JwtAuthGuard, CsrfGuard)
+  async recordAttempt(
+    @CurrentUser() user: RequestUser,
+    @Param('id') id: string,
+    @Body() dto: RecordAttemptDto,
+  ) {
+    return createSuccessResponse(
+      await this.questions.recordAttempt(user, id, dto.selectedOptionId),
       newRequestId(),
     );
   }

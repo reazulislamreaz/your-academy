@@ -9,6 +9,7 @@ type FilterState = {
   categoryId?: string;
   subcategoryId?: string;
   difficulty?: string;
+  kind?: string;
 };
 
 type Props = FilterState & {
@@ -31,6 +32,7 @@ function chipHref(remove: keyof FilterState, current: FilterState) {
     sp.set('subcategoryId', current.subcategoryId);
   }
   if (current.difficulty && remove !== 'difficulty') sp.set('difficulty', current.difficulty);
+  if (current.kind && remove !== 'kind') sp.set('kind', current.kind);
   const qs = sp.toString();
   return qs ? `/questions?${qs}` : '/questions';
 }
@@ -41,8 +43,9 @@ export function FilterChips({
   categoryId,
   subcategoryId,
   difficulty,
+  kind,
 }: Props) {
-  const current: FilterState = { q, categoryId, subcategoryId, difficulty };
+  const current: FilterState = { q, categoryId, subcategoryId, difficulty, kind };
   const category = categories.find((c) => c.id === categoryId);
   const subcategory = category?.children.find((c) => c.id === subcategoryId);
   const chips: Array<{ key: string; label: string; href: string }> = [];
@@ -69,6 +72,13 @@ export function FilterChips({
       key: 'difficulty',
       label: difficulty.charAt(0) + difficulty.slice(1).toLowerCase(),
       href: chipHref('difficulty', current),
+    });
+  }
+  if (kind) {
+    chips.push({
+      key: 'kind',
+      label: kind === 'WRITTEN' ? 'Written' : 'MCQ',
+      href: chipHref('kind', current),
     });
   }
 

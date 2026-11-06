@@ -10,6 +10,7 @@ import { CategoriesModule } from './categories/categories.module';
 import { ApiExceptionFilter } from './common/filters/api-exception.filter';
 import { DatabaseModule } from './database/database.module';
 import { DocumentsModule } from './documents/documents.module';
+import { ExamsModule } from './exams/exams.module';
 import { HealthModule } from './health/health.module';
 import { NewsModule } from './news/news.module';
 import { PublicModule } from './public/public.module';
@@ -35,6 +36,7 @@ import { UsersModule } from './users/users.module';
     UsersModule,
     CategoriesModule,
     QuestionsModule,
+    ExamsModule,
     BookmarksModule,
     NewsModule,
     DocumentsModule,
