@@ -11,8 +11,8 @@ export type NavItem = { href: string; label: string; match?: 'exact' | 'prefix' 
 
 function isActive(pathname: string, item: NavItem) {
   const href = item.href.split('#')[0] || '/';
-  if (!href || href === '/') return false;
   if (item.match === 'exact') return pathname === href;
+  if (href === '/') return pathname === '/';
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -70,7 +70,7 @@ export function MobileNav({
                 className={cn(
                   'rounded-[var(--radius)] px-3 py-3 text-base font-medium transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out)]',
                   isActive(pathname, item)
-                    ? 'bg-[var(--bg-inverse)] text-[var(--accent-fg)]'
+                    ? 'bg-[var(--highlight)] text-white'
                     : 'text-[var(--ink-soft)] hover:bg-[var(--bg-muted)] hover:text-[var(--ink)]',
                 )}
               >
@@ -99,7 +99,7 @@ export function DesktopNav({ items }: { items: NavItem[] }) {
             className={cn(
               'motion-nav-indicator rounded-[var(--radius-sm)] px-3 py-2 text-sm font-medium transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out)]',
               active
-                ? 'bg-[var(--bg-inverse)] text-[var(--accent-fg)]'
+                ? 'bg-[var(--highlight)] text-white'
                 : 'text-[var(--muted-strong)] hover:bg-[var(--bg-muted)] hover:text-[var(--ink)]',
             )}
           >

@@ -1,11 +1,12 @@
 'use client';
 
 import Link from 'next/link';
+import { LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIsAdmin, useLogout, useMe } from '@/features/auth/use-auth';
 import { Skeleton } from '@/components/ui/skeleton';
 
-export function UserMenu({ compact = false }: { compact?: boolean }) {
+export function UserMenu({ compact = false, loginOnly = false }: { compact?: boolean; loginOnly?: boolean }) {
   const me = useMe();
   const logout = useLogout();
   const isAdmin = useIsAdmin();
@@ -15,6 +16,16 @@ export function UserMenu({ compact = false }: { compact?: boolean }) {
   }
 
   if (!me.data) {
+    if (loginOnly) {
+      return (
+        <Link href="/login">
+          <Button size="sm" className="rounded-full px-5">
+            <LogIn className="h-4 w-4" />
+            Login
+          </Button>
+        </Link>
+      );
+    }
     return (
       <div className={compact ? 'flex flex-col gap-2' : 'flex items-center gap-2'}>
         <Link href="/login" className={compact ? 'w-full' : undefined}>

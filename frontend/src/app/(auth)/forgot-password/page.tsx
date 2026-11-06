@@ -71,7 +71,7 @@ export default function ForgotPasswordPage() {
       <p className="text-sm text-[var(--muted)]">
         <Link
           href="/login"
-          className="font-semibold text-[var(--ink)] underline-offset-2 hover:underline"
+          className="font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
         >
           Back to sign in
         </Link>

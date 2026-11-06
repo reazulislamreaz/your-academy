@@ -48,7 +48,7 @@ export default function NewQuestionPage() {
         title="New question"
         description="Saved as a draft. Publish from the edit screen when ready."
         actions={
-          <Link href="/admin/questions" className="text-sm font-medium text-[var(--muted)] hover:text-[var(--ink)]">
+          <Link href="/admin/questions" className="text-sm font-medium text-[var(--muted)] hover:text-[var(--highlight)]">
             Back to list
           </Link>
         }

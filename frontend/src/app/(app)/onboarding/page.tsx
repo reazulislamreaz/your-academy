@@ -135,7 +135,7 @@ export default function OnboardingPage() {
                     className={cn(
                       'motion-press w-full rounded-[var(--radius)] border px-4 py-3 text-left transition-colors',
                       on
-                        ? 'border-[var(--ink)] bg-[var(--bg-muted)]'
+                        ? 'border-[var(--highlight)] bg-[var(--highlight-soft)]'
                         : 'border-[var(--line)] bg-[var(--bg-elevated)] hover:border-[var(--line-strong)]',
                     )}
                   >

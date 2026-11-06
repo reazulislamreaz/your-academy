@@ -184,7 +184,7 @@ export default function ProfilePage() {
             </p>
             <Link
               href="/bookmarks"
-              className="mt-3 inline-block text-sm font-semibold underline-offset-2 hover:underline"
+              className="mt-3 inline-block text-sm font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
             >
               View saved
             </Link>
@@ -198,7 +198,7 @@ export default function ProfilePage() {
             </p>
             <Link
               href="/bookmarks"
-              className="mt-3 inline-block text-sm font-semibold underline-offset-2 hover:underline"
+              className="mt-3 inline-block text-sm font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
             >
               View saved
             </Link>
@@ -224,7 +224,7 @@ export default function ProfilePage() {
             <h2 className="font-display text-xl font-semibold">Recent saves</h2>
             <Link
               href="/bookmarks"
-              className="text-sm font-semibold underline-offset-2 hover:underline"
+              className="text-sm font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
             >
               All bookmarks
             </Link>

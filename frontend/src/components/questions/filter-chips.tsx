@@ -89,7 +89,7 @@ export function FilterChips({
       ))}
       <Link
         href="/questions"
-        className="text-xs font-semibold text-[var(--muted)] underline-offset-2 hover:text-[var(--ink)] hover:underline"
+        className="text-xs font-semibold text-[var(--muted)] underline-offset-2 hover:text-[var(--highlight)] hover:underline"
       >
         Clear all
       </Link>

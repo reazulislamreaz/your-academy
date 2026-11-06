@@ -39,7 +39,7 @@ export default function NewsDetailPage() {
 
   return (
     <article className="mx-auto max-w-3xl space-y-6">
-      <Link href="/news" className="text-sm text-[var(--muted)] hover:text-[var(--ink)]">
+      <Link href="/news" className="text-sm text-[var(--muted)] hover:text-[var(--highlight)]">
         ← News
       </Link>
       <header className="space-y-3 border-b border-[var(--line)] pb-6">
