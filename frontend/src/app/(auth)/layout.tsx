@@ -54,7 +54,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           <div className="hidden lg:block" />
           <Link
             href="/"
-            className="text-sm font-medium text-[var(--muted)] hover:text-[var(--ink)]"
+            className="text-sm font-medium text-[var(--muted)] hover:text-[var(--highlight)]"
           >
             Back home
           </Link>

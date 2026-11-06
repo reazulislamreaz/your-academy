@@ -164,7 +164,7 @@ export default function EditNewsPage() {
                     className={cn(
                       'flex cursor-pointer items-start gap-3 rounded-[var(--radius)] border p-3',
                       checked
-                        ? 'border-[var(--ink)] bg-[var(--bg)]'
+                        ? 'border-[var(--highlight)] bg-[var(--highlight-soft)]'
                         : 'border-[var(--line)] bg-[var(--bg-elevated)]',
                     )}
                   >

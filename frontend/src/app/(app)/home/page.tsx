@@ -119,7 +119,7 @@ export default function StudyHomePage() {
           </p>
           <Link
             href="/profile"
-            className="text-sm font-semibold underline-offset-2 hover:underline"
+            className="text-sm font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
           >
             Study report
           </Link>
@@ -168,7 +168,7 @@ export default function StudyHomePage() {
           </div>
           <Link
             href="/onboarding"
-            className="text-sm font-semibold underline-offset-2 hover:underline"
+            className="text-sm font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
           >
             Update interests
           </Link>
@@ -205,7 +205,7 @@ export default function StudyHomePage() {
             <h2 className="font-display text-xl font-semibold">Recent saves</h2>
             <Link
               href="/bookmarks"
-              className="text-sm font-semibold underline-offset-2 hover:underline"
+              className="text-sm font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
             >
               All bookmarks
             </Link>

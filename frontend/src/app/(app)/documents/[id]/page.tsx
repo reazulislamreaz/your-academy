@@ -74,7 +74,7 @@ export default function DocumentDetailPage() {
   return (
     <article className="mx-auto max-w-3xl space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link href="/documents" className="text-sm text-[var(--muted)] hover:text-[var(--ink)]">
+        <Link href="/documents" className="text-sm text-[var(--muted)] hover:text-[var(--highlight)]">
           ← PDF library
         </Link>
         <Button

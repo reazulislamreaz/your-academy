@@ -19,7 +19,8 @@ export function PageHeader({ title, description, actions, className, eyebrow }: 
     >
       <div className="space-y-2">
         {eyebrow ? (
-          <p className="text-xs font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
+          <p className="flex items-center gap-2 text-xs font-semibold tracking-[0.14em] text-[var(--highlight)] uppercase">
+            <span aria-hidden className="inline-block h-[3px] w-5 rounded-full bg-[var(--highlight)]" />
             {eyebrow}
           </p>
         ) : null}

@@ -69,7 +69,7 @@ function LoginForm() {
               <Label htmlFor="password">Password</Label>
               <Link
                 href="/forgot-password"
-                className="text-xs font-medium text-[var(--muted)] hover:text-[var(--ink)]"
+                className="text-xs font-medium text-[var(--muted)] hover:text-[var(--highlight)]"
               >
                 Forgot password?
               </Link>
@@ -93,7 +93,7 @@ function LoginForm() {
         New here?{' '}
         <Link
           href="/register"
-          className="font-semibold text-[var(--ink)] underline-offset-2 hover:underline"
+          className="font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
         >
           Create account
         </Link>

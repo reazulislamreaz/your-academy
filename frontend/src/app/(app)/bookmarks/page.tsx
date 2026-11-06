@@ -103,7 +103,7 @@ export default function BookmarksPage() {
             className={cn(
               'relative px-4 py-2.5 text-sm font-semibold transition-colors',
               tab === item.id
-                ? 'text-[var(--ink)]'
+                ? 'text-[var(--highlight)]'
                 : 'text-[var(--muted)] hover:text-[var(--ink)]',
             )}
           >
@@ -138,7 +138,7 @@ export default function BookmarksPage() {
           action={
             <Link
               href="/questions"
-              className="text-sm font-semibold text-[var(--ink)] underline-offset-2 hover:underline"
+              className="text-sm font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
             >
               Browse questions
             </Link>
@@ -153,7 +153,7 @@ export default function BookmarksPage() {
           action={
             <Link
               href="/documents"
-              className="text-sm font-semibold text-[var(--ink)] underline-offset-2 hover:underline"
+              className="text-sm font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
             >
               Browse PDFs
             </Link>

@@ -1,52 +1,53 @@
 @import 'tailwindcss';
 
 /*
-  Your Academy design tokens — "exam desk"
-  Cool paper surfaces, deep navy ink, amber highlighter CTA.
-  Avoid: purple SaaS gradients, cream+terracotta serif kits, neon dark mode.
+  Your Academy design tokens — "navy + red" refresh
+  Deep navy panels (#0A1F44), bright red CTAs (#E63946), clean white surfaces.
+  Avoid: amber highlighter, purple SaaS gradients, cream+terracotta serif kits,
+  neon dark mode.
 */
 
 :root {
   /* Surfaces */
-  --bg: #f1f4f8;
+  --bg: #ffffff;
   --bg-elevated: #ffffff;
-  --bg-muted: #e6ebf2;
-  --bg-inverse: #0b1f33;
-  --bg-desk: #e9eef5;
+  --bg-muted: #f1f5f9;
+  --bg-inverse: #0a1f44;
+  --bg-desk: #f6f8fb;
 
   /* Ink */
-  --ink: #0b1f33;
-  --ink-soft: #243447;
-  --muted: #5c6b7a;
+  --ink: #0a1f44;
+  --ink-soft: #1e3a5f;
+  --muted: #5b6b80;
   --muted-strong: #3d4d5c;
 
   /* Lines */
-  --line: #d5dce5;
-  --line-strong: #b8c2cf;
+  --line: #e2e8f0;
+  --line-strong: #cbd5e1;
 
   /* Brand */
-  --accent: #0b1f33;
+  --accent: #0a1f44;
   --accent-fg: #ffffff;
-  --highlight: #e5a008;
-  --highlight-fg: #1a1400;
-  --highlight-soft: #fff4d6;
-  --highlight-hover: #ffe9b0;
-  --brand-wash: rgba(11, 31, 51, 0.05);
-  --brand-wash-strong: rgba(11, 31, 51, 0.09);
+  --highlight: #e63946;
+  --highlight-fg: #ffffff;
+  --highlight-soft: #fdecec;
+  --highlight-hover: #fadcdc;
+  --brand-wash: rgba(10, 31, 68, 0.05);
+  --brand-wash-strong: rgba(10, 31, 68, 0.09);
 
   /* Semantic */
-  --success: #0f6b5c;
+  --success: #0f766e;
   --success-soft: #d8f3ee;
-  --danger: #b42318;
-  --danger-soft: #fde8e6;
+  --danger: #dc2626;
+  --danger-soft: #fee2e2;
   --warning: #b54708;
   --info: #175cd3;
   --info-soft: #e0eaff;
 
   /* Elevation */
-  --shadow-sm: 0 1px 2px rgba(11, 31, 51, 0.05);
-  --shadow: 0 10px 30px rgba(11, 31, 51, 0.08);
-  --shadow-lg: 0 24px 48px rgba(11, 31, 51, 0.12);
+  --shadow-sm: 0 1px 2px rgba(10, 31, 68, 0.06);
+  --shadow: 0 10px 30px rgba(10, 31, 68, 0.09);
+  --shadow-lg: 0 24px 48px rgba(10, 31, 68, 0.14);
 
   /* Radius scale */
   --radius-sm: 8px;
@@ -119,22 +120,6 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Exam-desk atmosphere: cool paper + faint ruled texture */
-body {
-  background-color: var(--bg);
-  background-image:
-    linear-gradient(rgba(11, 31, 51, 0.035) 1px, transparent 1px),
-    radial-gradient(ellipse 90% 55% at 8% -15%, var(--brand-wash-strong), transparent 55%),
-    radial-gradient(ellipse 55% 45% at 100% 0%, rgba(229, 160, 8, 0.07), transparent 48%),
-    linear-gradient(180deg, var(--bg-desk) 0%, var(--bg) 28%, var(--bg) 100%);
-  background-size:
-    100% 28px,
-    auto,
-    auto,
-    auto;
-  background-attachment: fixed;
-}
-
 /*
   Keep anchor resets in @layer base so Tailwind utilities (e.g. text-white on
   active nav) win over `color: inherit`. Unlayered `a {}` was making navy
@@ -184,6 +169,27 @@ select {
   padding-inline: var(--space-page);
 }
 
+/* Red section eyebrow — short red dash + red small-caps label (marketing). */
+.section-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--highlight);
+}
+
+.section-eyebrow::before {
+  content: '';
+  display: block;
+  width: 1.75rem;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--highlight);
+}
+
 /* Quiet list row — preferred over boxed cards for browse lists */
 .list-row {
   display: block;
@@ -227,10 +233,6 @@ select {
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
-  }
-
-  body {
-    background-attachment: scroll;
   }
 
   .motion-fade-in,

@@ -155,7 +155,7 @@ function QuestionDetailContent() {
     <article className="mx-auto max-w-3xl space-y-7 pb-28">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2 text-sm text-[var(--muted)]">
-          <Link href={`/questions${filterQs ? `?${filterQs}` : ''}`} className="hover:text-[var(--ink)]">
+          <Link href={`/questions${filterQs ? `?${filterQs}` : ''}`} className="hover:text-[var(--highlight)]">
             Question bank
           </Link>
           <span aria-hidden>/</span>
