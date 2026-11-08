@@ -9,10 +9,11 @@ import { UserMenu } from './user-menu';
 
 const links: NavItem[] = [
   { href: '/', label: 'Home', match: 'exact' },
-  { href: '/questions', label: 'MCQ Practice', match: 'prefix' },
-  { href: '/news', label: 'News', match: 'prefix' },
-  { href: '/documents', label: 'PDFs', match: 'prefix' },
-  { href: '/#how-trial-works', label: 'How it works' },
+  { href: '/questions?kind=MCQ', label: 'Prili Question Bank' },
+  { href: '/questions?kind=WRITTEN', label: 'Written Question Bank' },
+  { href: '/exams', label: 'Exam', match: 'prefix' },
+  { href: '/news', label: 'পত্রিকার গুরুত্বপূর্ণ কলাম', match: 'prefix' },
+  { href: '/news', label: 'চাকরি', match: 'prefix' },
 ];
 
 export function MarketingHeader() {
@@ -32,7 +33,7 @@ export function MarketingHeader() {
     >
       <div className="mx-auto flex h-[72px] w-full max-w-7xl items-center gap-4 px-6">
         <BrandMark />
-        <DesktopNav items={links} />
+        <DesktopNav items={links} className="hidden items-center gap-1 xl:flex" />
         <form
           onSubmit={onSearch}
           role="search"
@@ -62,7 +63,7 @@ export function MarketingHeader() {
         <div className="hidden shrink-0 md:block">
           <UserMenu loginOnly />
         </div>
-        <MobileNav items={links} trailing={<UserMenu compact />} />
+        <MobileNav items={links} className="xl:hidden" trailing={<UserMenu compact />} />
       </div>
     </header>
   );

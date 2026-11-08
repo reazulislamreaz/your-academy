@@ -19,9 +19,11 @@ function isActive(pathname: string, item: NavItem) {
 export function MobileNav({
   items,
   trailing,
+  className = 'md:hidden',
 }: {
   items: NavItem[];
   trailing?: ReactNode;
+  className?: string;
 }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
@@ -45,7 +47,7 @@ export function MobileNav({
   }, [open]);
 
   return (
-    <div className="md:hidden">
+    <div className={className}>
       <Button
         type="button"
         variant="ghost"
@@ -65,7 +67,7 @@ export function MobileNav({
           <nav className="flex flex-col gap-1" aria-label="Mobile">
             {items.map((item) => (
               <Link
-                key={item.href}
+                key={`${item.href}:${item.label}`}
                 href={item.href}
                 className={cn(
                   'rounded-[var(--radius)] px-3 py-3 text-base font-medium transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out)]',
@@ -85,19 +87,19 @@ export function MobileNav({
   );
 }
 
-export function DesktopNav({ items }: { items: NavItem[] }) {
+export function DesktopNav({ items, className = 'hidden md:flex' }: { items: NavItem[]; className?: string }) {
   const pathname = usePathname();
   return (
-    <nav className="hidden items-center gap-1 md:flex" aria-label="Primary">
+    <nav className={cn('items-center gap-1', className)} aria-label="Primary">
       {items.map((item) => {
         const active = isActive(pathname, item);
         return (
           <Link
-            key={item.href}
+            key={`${item.href}:${item.label}`}
             href={item.href}
             aria-current={active ? 'page' : undefined}
             className={cn(
-              'motion-nav-indicator rounded-[var(--radius-sm)] px-3 py-2 text-sm font-medium transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out)]',
+              'motion-nav-indicator rounded-full px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out)]',
               active
                 ? 'bg-[var(--highlight)] text-white'
                 : 'text-[var(--muted-strong)] hover:bg-[var(--bg-muted)] hover:text-[var(--ink)]',
