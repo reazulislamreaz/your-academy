@@ -11,6 +11,17 @@ export function UserMenu({ compact = false, loginOnly = false }: { compact?: boo
   const logout = useLogout();
   const isAdmin = useIsAdmin();
 
+  if (loginOnly && (me.isLoading || !me.data)) {
+    return (
+      <Link href="/login">
+        <Button size="sm" className="rounded-full px-5">
+          <LogIn className="h-4 w-4" />
+          Login
+        </Button>
+      </Link>
+    );
+  }
+
   if (me.isLoading) {
     return <Skeleton className={compact ? 'h-9 w-24' : 'h-10 w-28'} />;
   }
