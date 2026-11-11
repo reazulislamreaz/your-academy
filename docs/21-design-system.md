@@ -141,9 +141,14 @@ CSS-first system in `frontend/src/app/globals.css`. Shared helpers:
 | `.motion-nav-indicator` | Fast color/bg |
 | `.skeleton` | Soft L→R shimmer (theme wash) |
 | `SkeletonRegion` / `ContentIn` | Busy region + fade handoff |
-| `@/components/skeletons` | Content-matching layouts (dashboard, tables, questions, exams, bulk upload, forms) |
+| `@/components/skeletons` | **Page-specific** route skeletons under `components/skeletons/route/` |
 
-**Skeleton rules:** Match final component footprint to avoid CLS; use `isLoading` (no cached data), not `isFetching`; keep section-level placeholders so loaded panels stay put; announce with `aria-busy` + sr-only label. Respect `prefers-reduced-motion`.
+**Skeleton rules:**
+- One dedicated skeleton per route (e.g. `HomePageSkeleton`, `AdminUsersTableSkeleton`) composed from small primitives (`SkLine`, `SkBadge`, `PageHeaderSkeleton`).
+- Match grids, table columns, card radii, sticky bars, and responsive breakpoints of the real page.
+- Prefer `omitHeader` / section skeletons when the live `PageHeader` already paints.
+- Use `isLoading` (no cached data), not `isFetching`; announce with `aria-busy` + sr-only label.
+- Soft L→R shimmer; respect `prefers-reduced-motion`.
 
 Tokens: `--duration-fast` / `--duration` / `--duration-slow` + `--ease-out`. Prefer transform/opacity. All entrance/hover motion is disabled under `prefers-reduced-motion: reduce`. Do not add Framer Motion unless a feature truly needs it.
 

@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Surface } from '@/components/ui/surface';
 import { ApiError, apiFetch } from '@/lib/api/client';
+import { ResetPasswordPageSkeleton } from '@/components/skeletons';
 
 function ResetForm() {
   const router = useRouter();
@@ -104,7 +105,7 @@ function ResetForm() {
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<p className="py-10 text-sm text-[var(--muted-strong)]">Loading…</p>}>
+    <Suspense fallback={<ResetPasswordPageSkeleton />}>
       <ResetForm />
     </Suspense>
   );

@@ -10,12 +10,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { FormSkeleton, ListRowsSkeleton } from '@/components/skeletons';
 import { Surface } from '@/components/ui/surface';
 import { Textarea } from '@/components/ui/textarea';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import type { AdminDocumentItem, AdminNewsDetail } from '@/lib/api/admin-types';
 import { cn } from '@/lib/utils';
+import { AdminNewsEditPageSkeleton } from '@/components/skeletons';
 
 export default function EditNewsPage() {
   const params = useParams<{ id: string }>();
@@ -88,7 +88,7 @@ export default function EditNewsPage() {
     );
   }
 
-  if (detail.isLoading) return <FormSkeleton fields={6} />;
+  if (detail.isLoading) return <AdminNewsEditPageSkeleton />;
   if (detail.error || !detail.data) return <Alert variant="danger">Article not found.</Alert>;
 
   return (
@@ -154,7 +154,16 @@ export default function EditNewsPage() {
             <p className="text-sm text-[var(--muted-strong)]">
               Select documents to show on the public article. Only published PDFs appear to learners.
             </p>
-            {documents.isLoading ? <ListRowsSkeleton rows={3} /> : null}
+            {documents.isLoading ? (
+              <div className="space-y-2">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="flex items-center justify-between gap-3 rounded-[10px] border border-[var(--line)] p-3">
+                    <div className="skeleton h-3.5 w-48 rounded-md" />
+                    <div className="skeleton h-8 w-20 rounded-full" />
+                  </div>
+                ))}
+              </div>
+            ) : null}
             <div className="grid max-h-64 gap-2 overflow-y-auto">
               {documents.data?.map((doc) => {
                 const checked = documentIds.includes(doc.id);

@@ -7,12 +7,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { PageHeader } from '@/components/layout/page-header';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { FormSkeleton, ListRowsSkeleton } from '@/components/skeletons';
 import { Surface } from '@/components/ui/surface';
 import { isUnauthorized, meQueryKey, useMe } from '@/features/auth/use-auth';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import type { CategoryNode, MeUser } from '@/lib/api/types';
 import { cn } from '@/lib/utils';
+import { OnboardingPageSkeleton, HomeActivityListSkeleton } from '@/components/skeletons';
 
 export default function OnboardingPage() {
   const me = useMe();
@@ -69,7 +69,7 @@ export default function OnboardingPage() {
   }
 
   if (me.isLoading) {
-    return <FormSkeleton fields={4} />;
+    return <OnboardingPageSkeleton />;
   }
 
   if (isUnauthorized(me.error) || !me.data) {
@@ -114,7 +114,7 @@ export default function OnboardingPage() {
 
       {step === 1 ? (
         <Surface className="space-y-4 p-6">
-          {categories.isLoading ? <ListRowsSkeleton rows={4} /> : null}
+          {categories.isLoading ? <HomeActivityListSkeleton rows={4} /> : null}
           {categories.data && categories.data.length === 0 ? (
             <p className="text-sm text-[var(--muted-strong)]">No categories yet — you can skip this step.</p>
           ) : null}

@@ -9,12 +9,12 @@ import { EntitlementCallout } from '@/components/access/entitlement-callout';
 import { OptionRow, type OptionRowState } from '@/components/questions/option-row';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { QuestionPreviewSkeleton } from '@/components/skeletons';
 import { Surface } from '@/components/ui/surface';
 import { Alert } from '@/components/ui/alert';
 import { meQueryKey } from '@/features/auth/use-auth';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import type { MeUser, QuestionDetail } from '@/lib/api/types';
+import { QuestionDetailPageSkeleton } from '@/components/skeletons';
 
 function QuestionDetailContent() {
   const params = useParams<{ id: string }>();
@@ -107,7 +107,7 @@ function QuestionDetailContent() {
   });
 
   if (isLoading) {
-    return <QuestionPreviewSkeleton className="py-4" />;
+    return <QuestionDetailPageSkeleton />;
   }
 
   if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
@@ -301,7 +301,7 @@ function QuestionDetailContent() {
 
 export default function QuestionDetailPage() {
   return (
-    <Suspense fallback={<QuestionPreviewSkeleton />}>
+    <Suspense fallback={<QuestionDetailPageSkeleton />}>
       <QuestionDetailContent />
     </Suspense>
   );

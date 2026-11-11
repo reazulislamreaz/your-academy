@@ -9,12 +9,12 @@ import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
-import { ExamSkeleton } from '@/components/skeletons';
 import { Surface } from '@/components/ui/surface';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import type { PracticeAttemptResult, PracticeSetDetail } from '@/lib/api/types';
 import { examLabel, practiceKindLabel } from '@/lib/exam-tags';
 import { cn } from '@/lib/utils';
+import { PracticePlayerPageSkeleton } from '@/components/skeletons';
 
 export default function PracticePlayerPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -90,7 +90,7 @@ export default function PracticePlayerPage() {
   const answeredCount = useMemo(() => Object.keys(answers).length, [answers]);
 
   if (detail.isLoading) {
-    return <ExamSkeleton />;
+    return <PracticePlayerPageSkeleton />;
   }
 
   if (detail.error instanceof ApiError && detail.error.status === 404) {

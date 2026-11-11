@@ -13,7 +13,6 @@ import { Surface } from '@/components/ui/surface';
 import { meQueryKey } from '@/features/auth/use-auth';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import type { MeUser } from '@/lib/api/types';
-
 export default function RegisterPage() {
   const router = useRouter();
   const qc = useQueryClient();

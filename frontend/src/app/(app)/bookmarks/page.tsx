@@ -8,10 +8,10 @@ import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
-import { ListRowsSkeleton } from '@/components/skeletons';
 import { isUnauthorized } from '@/features/auth/use-auth';
 import { apiFetch, apiFetchResult } from '@/lib/api/client';
 import { cn } from '@/lib/utils';
+import { BookmarksPageSkeleton } from '@/components/skeletons';
 
 type Tab = 'questions' | 'documents';
 
@@ -115,7 +115,7 @@ export default function BookmarksPage() {
         ))}
       </div>
 
-      {active.isLoading ? <ListRowsSkeleton rows={4} /> : null}
+      {active.isLoading ? <BookmarksPageSkeleton omitChrome /> : null}
 
       {isUnauthorized(active.error) ? (
         <Alert variant="warning">

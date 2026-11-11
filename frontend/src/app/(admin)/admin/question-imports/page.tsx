@@ -28,7 +28,6 @@ import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
-import { ListRowsSkeleton, StatCardSkeleton } from '@/components/skeletons';
 import { Surface } from '@/components/ui/surface';
 import {
   type ImportStats,
@@ -40,6 +39,7 @@ import { adminDownloadUrl } from '@/lib/api/upload';
 import { EXAM_TRACKS } from '@/lib/exam-tags';
 import type { CategoryNode } from '@/lib/api/types';
 import { cn } from '@/lib/utils';
+import { AdminBulkUploadPageSkeleton, AdminBulkUploadTableSkeleton, StatCardSkeleton } from '@/components/skeletons';
 
 export default function QuestionImportsHubPage() {
   const qc = useQueryClient();
@@ -284,7 +284,7 @@ export default function QuestionImportsHubPage() {
           </Field>
         </div>
 
-        {list.isLoading ? <ListRowsSkeleton rows={5} /> : null}
+        {list.isLoading ? <AdminBulkUploadTableSkeleton /> : null}
 
         {list.isError ? (
           <Alert variant="danger">

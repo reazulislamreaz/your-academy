@@ -7,9 +7,9 @@ import { PageHeader } from '@/components/layout/page-header';
 import { Alert } from '@/components/ui/alert';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ListRow } from '@/components/ui/list-row';
-import { ListRowsSkeleton } from '@/components/skeletons';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import type { DocumentListItem } from '@/lib/api/types';
+import { DocumentsPageSkeleton } from '@/components/skeletons';
 
 export default function DocumentsPage() {
   const { data, isLoading, error } = useQuery({
@@ -29,7 +29,7 @@ export default function DocumentsPage() {
         description="Published study documents. Downloads require configured cloud storage."
       />
 
-      {isLoading ? <ListRowsSkeleton rows={4} /> : null}
+      {isLoading ? <DocumentsPageSkeleton omitHeader /> : null}
 
       {unauthorized ? (
         <Alert variant="warning">

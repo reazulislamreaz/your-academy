@@ -4,9 +4,9 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { Alert } from '@/components/ui/alert';
-import { ContentCardSkeleton, FormSkeleton } from '@/components/skeletons';
 import { Surface } from '@/components/ui/surface';
 import { apiFetch } from '@/lib/api/client';
+import { NewsDetailPageSkeleton } from '@/components/skeletons';
 
 type NewsDetail = {
   title: string;
@@ -28,18 +28,7 @@ export default function NewsDetailPage() {
   });
 
   if (isLoading) {
-    return (
-      <div
-        className="mx-auto max-w-3xl space-y-4"
-        role="status"
-        aria-busy="true"
-        aria-live="polite"
-      >
-        <span className="sr-only">Loading article…</span>
-        <FormSkeleton fields={2} />
-        <ContentCardSkeleton />
-      </div>
-    );
+    return <NewsDetailPageSkeleton />;
   }
   if (error || !data) return <Alert variant="danger">Article not found.</Alert>;
 

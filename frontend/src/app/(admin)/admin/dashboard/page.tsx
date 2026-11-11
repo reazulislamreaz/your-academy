@@ -19,9 +19,9 @@ import { PageHeader } from '@/components/layout/page-header';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { AdminDashboardSkeleton } from '@/components/skeletons';
 import { Surface } from '@/components/ui/surface';
 import { apiFetch } from '@/lib/api/client';
+import { AdminDashboardPageSkeleton } from '@/components/skeletons';
 
 type Dashboard = {
   users: { total: number; active: number; trialActive: number; trialExpired: number };
@@ -55,7 +55,7 @@ export default function AdminDashboardPage() {
   });
 
   if (isLoading) {
-    return <AdminDashboardSkeleton />;
+    return <AdminDashboardPageSkeleton />;
   }
   if (error || !data) {
     return <Alert variant="danger">Admin access required.</Alert>;

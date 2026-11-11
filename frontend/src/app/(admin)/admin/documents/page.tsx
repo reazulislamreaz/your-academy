@@ -11,13 +11,13 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
-import { ListRowsSkeleton } from '@/components/skeletons';
 import { Surface } from '@/components/ui/surface';
 import { Textarea } from '@/components/ui/textarea';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import type { AdminDocumentItem } from '@/lib/api/admin-types';
 import type { CategoryNode } from '@/lib/api/types';
 import { getStorageStatus, uploadViaSignedRequest } from '@/lib/cloudinary-upload';
+import { AdminDocumentsPageSkeleton } from '@/components/skeletons';
 
 export default function AdminDocumentsPage() {
   const qc = useQueryClient();
@@ -184,7 +184,7 @@ export default function AdminDocumentsPage() {
         </form>
       </Surface>
 
-      {list.isLoading ? <ListRowsSkeleton rows={5} /> : null}
+      {list.isLoading ? <AdminDocumentsPageSkeleton omitHeader /> : null}
       {!list.isLoading && (list.data?.length ?? 0) === 0 ? (
         <EmptyState title="No documents" description="Create an entry above." />
       ) : null}

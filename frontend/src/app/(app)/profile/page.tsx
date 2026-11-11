@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { FormSkeleton, SubscriptionSkeleton } from '@/components/skeletons';
 import { Surface } from '@/components/ui/surface';
 import { TrialCountdown } from '@/features/auth/trial-countdown';
 import { isUnauthorized, meQueryKey, useLogout, useMe } from '@/features/auth/use-auth';
@@ -19,6 +18,7 @@ import { ApiError, apiFetch } from '@/lib/api/client';
 import type { MeUser, UserStats } from '@/lib/api/types';
 import { getStorageStatus, uploadViaSignedRequest } from '@/lib/cloudinary-upload';
 import { formatStudyMinutes } from '@/lib/study-prefs';
+import { ProfilePageSkeleton } from '@/components/skeletons';
 
 export default function ProfilePage() {
   const me = useMe();
@@ -130,14 +130,7 @@ export default function ProfilePage() {
   });
 
   if (me.isLoading) {
-    return (
-      <div className="space-y-4" role="status" aria-busy="true" aria-live="polite">
-        <span className="sr-only">Loading profile…</span>
-        <SubscriptionSkeleton />
-        <FormSkeleton fields={4} />
-        <FormSkeleton fields={3} />
-      </div>
-    );
+    return <ProfilePageSkeleton />;
   }
 
   if (isUnauthorized(me.error) || !me.data) {

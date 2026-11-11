@@ -10,15 +10,15 @@ import { Button } from '@/components/ui/button';
 import { ConfirmButton } from '@/components/ui/confirm-button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Select } from '@/components/ui/select';
-import { ListRowsSkeleton, QuestionBankSkeleton } from '@/components/skeletons';
 import { Surface } from '@/components/ui/surface';
 import { apiFetch, apiFetchResult } from '@/lib/api/client';
 import type { AdminQuestionListItem } from '@/lib/api/admin-types';
+import { AdminQuestionsPageSkeleton } from '@/components/skeletons';
 
 export default function AdminQuestionsPage() {
   return (
     <Suspense
-      fallback={<QuestionBankSkeleton />}
+      fallback={<AdminQuestionsPageSkeleton />}
     >
       <AdminQuestionsContent />
     </Suspense>
@@ -95,7 +95,7 @@ function AdminQuestionsContent() {
         </p>
       </Surface>
 
-      {list.isLoading ? <ListRowsSkeleton rows={6} /> : null}
+      {list.isLoading ? <AdminQuestionsPageSkeleton omitHeader /> : null}
 
       {!list.isLoading && items.length === 0 ? (
         <EmptyState

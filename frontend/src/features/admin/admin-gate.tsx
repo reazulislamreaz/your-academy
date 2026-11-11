@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, type ReactNode } from 'react';
-import { AdminDashboardSkeleton } from '@/components/skeletons';
+import { AdminDashboardPageSkeleton } from '@/components/skeletons';
 import { isUnauthorized, useMe } from '@/features/auth/use-auth';
 
 /**
@@ -27,7 +27,7 @@ export function AdminGate({ children }: { children: ReactNode }) {
   if (me.isLoading) {
     return (
       <div className="p-6">
-        <AdminDashboardSkeleton />
+        <AdminDashboardPageSkeleton />
       </div>
     );
   }
@@ -35,7 +35,7 @@ export function AdminGate({ children }: { children: ReactNode }) {
   if (isUnauthorized(me.error) || !me.data || me.data.role !== 'ADMIN') {
     return (
       <div className="p-6">
-        <AdminDashboardSkeleton />
+        <AdminDashboardPageSkeleton />
       </div>
     );
   }

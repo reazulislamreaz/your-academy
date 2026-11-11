@@ -10,11 +10,11 @@ import { ConfirmButton } from '@/components/ui/confirm-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
-import { ListRowsSkeleton } from '@/components/skeletons';
 import { Surface } from '@/components/ui/surface';
 import { Textarea } from '@/components/ui/textarea';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import type { CategoryNode } from '@/lib/api/types';
+import { AdminCategoriesPageSkeleton } from '@/components/skeletons';
 
 function slugify(value: string) {
   return value
@@ -133,7 +133,7 @@ export default function AdminCategoriesPage() {
         </form>
       </Surface>
 
-      {categories.isLoading ? <ListRowsSkeleton rows={6} /> : null}
+      {categories.isLoading ? <AdminCategoriesPageSkeleton omitHeader /> : null}
 
       <div className="space-y-4">
         {categories.data?.map((root) => (

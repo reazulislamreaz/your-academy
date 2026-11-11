@@ -9,7 +9,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Surface } from '@/components/ui/surface';
 import { ApiError, apiFetch } from '@/lib/api/client';
-
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);

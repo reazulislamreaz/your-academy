@@ -21,7 +21,6 @@ import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
-import { BulkQuestionPreviewSkeleton, BulkUploadDetailSkeleton } from '@/components/skeletons';
 import { Surface } from '@/components/ui/surface';
 import {
   type ImportRow,
@@ -32,6 +31,7 @@ import { ApiError, apiFetch, apiFetchResult } from '@/lib/api/client';
 import { adminDownloadUrl } from '@/lib/api/upload';
 import { EXAM_TRACKS } from '@/lib/exam-tags';
 import { cn } from '@/lib/utils';
+import { AdminBulkPreviewTableSkeleton, AdminBulkUploadDetailPageSkeleton } from '@/components/skeletons';
 
 function QuestionImportDetailContent() {
   const { id } = useParams<{ id: string }>();
@@ -156,7 +156,7 @@ function QuestionImportDetailContent() {
   }, [batch.data]);
 
   if (batch.isLoading) {
-    return <BulkUploadDetailSkeleton />;
+    return <AdminBulkUploadDetailPageSkeleton />;
   }
 
   if (batch.isError || !batch.data) {
@@ -445,7 +445,7 @@ function QuestionImportDetailContent() {
           </Select>
         </div>
 
-        {rows.isLoading ? <BulkQuestionPreviewSkeleton rows={4} /> : null}
+        {rows.isLoading ? <AdminBulkPreviewTableSkeleton rows={4} /> : null}
 
         {!rows.isLoading && rowItems.length === 0 ? (
           <EmptyState title="No rows" description="No rows match this filter." />
@@ -538,7 +538,7 @@ function QuestionImportDetailContent() {
 export default function QuestionImportDetailPage() {
   return (
     <Suspense
-      fallback={<BulkUploadDetailSkeleton />}
+      fallback={<AdminBulkUploadDetailPageSkeleton />}
     >
       <QuestionImportDetailContent />
     </Suspense>

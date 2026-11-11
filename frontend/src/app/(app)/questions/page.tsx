@@ -13,9 +13,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ListRow } from '@/components/ui/list-row';
-import { QuestionBankSkeleton } from '@/components/skeletons';
 import { ApiError, apiFetch, apiFetchResult } from '@/lib/api/client';
 import type { CategoryNode, QuestionListItem } from '@/lib/api/types';
+import { QuestionsListBodySkeleton, QuestionsPageSkeleton } from '@/components/skeletons';
 
 function buildQuery(sp: URLSearchParams, cursor?: string) {
   const q = new URLSearchParams();
@@ -87,7 +87,7 @@ function QuestionsContent() {
         </p>
       ) : null}
 
-      {list.isLoading ? <QuestionBankSkeleton /> : null}
+      {list.isLoading ? <QuestionsListBodySkeleton /> : null}
 
       {unauthorized ? (
         <EmptyState
@@ -171,7 +171,7 @@ function QuestionsContent() {
 export default function QuestionsPage() {
   return (
     <Suspense
-      fallback={<QuestionBankSkeleton />}
+      fallback={<QuestionsPageSkeleton />}
     >
       <QuestionsContent />
     </Suspense>

@@ -9,7 +9,6 @@ import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ConfirmButton } from '@/components/ui/confirm-button';
-import { FormSkeleton } from '@/components/skeletons';
 import { Surface } from '@/components/ui/surface';
 import {
   QuestionForm,
@@ -19,6 +18,7 @@ import {
 import { ApiError, apiFetch } from '@/lib/api/client';
 import type { AdminQuestionDetail } from '@/lib/api/admin-types';
 import type { CategoryNode } from '@/lib/api/types';
+import { AdminQuestionFormPageSkeleton } from '@/components/skeletons';
 
 export default function EditQuestionPage() {
   const params = useParams<{ id: string }>();
@@ -94,7 +94,7 @@ export default function EditQuestionPage() {
   });
 
   if (detail.isLoading || !initial) {
-    return <FormSkeleton fields={6} />;
+    return <AdminQuestionFormPageSkeleton />;
   }
 
   if (detail.error || !detail.data) {

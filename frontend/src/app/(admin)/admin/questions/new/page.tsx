@@ -14,7 +14,6 @@ import {
 } from '@/features/admin/question-form';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import type { CategoryNode } from '@/lib/api/types';
-
 export default function NewQuestionPage() {
   const router = useRouter();
   const qc = useQueryClient();
@@ -55,7 +54,15 @@ export default function NewQuestionPage() {
       />
       <Surface className="p-6">
         {categories.isLoading ? (
-          <p className="text-sm text-[var(--muted-strong)]">Loading categories…</p>
+          <div className="space-y-4" role="status" aria-busy="true" aria-live="polite">
+            <span className="sr-only">Loading question form…</span>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="space-y-2">
+                <div className="skeleton h-3.5 w-24 rounded-md" />
+                <div className="skeleton h-11 w-full rounded-[var(--radius)]" />
+              </div>
+            ))}
+          </div>
         ) : (
           <QuestionForm
             key={categories.data?.[0]?.id ?? 'empty'}

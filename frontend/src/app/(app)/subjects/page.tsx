@@ -5,7 +5,6 @@ import { useQuery } from '@tanstack/react-query';
 import { PageHeader } from '@/components/layout/page-header';
 import { Alert } from '@/components/ui/alert';
 import { EmptyState } from '@/components/ui/empty-state';
-import { ContentCardSkeleton } from '@/components/skeletons';
 import { Surface } from '@/components/ui/surface';
 import { apiFetch } from '@/lib/api/client';
 import type { CategoryNode } from '@/lib/api/types';
@@ -25,16 +24,16 @@ export default function SubjectsPage() {
       />
 
       {categories.isLoading ? (
-        <div
-          className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
-          role="status"
-          aria-busy="true"
-          aria-live="polite"
-        >
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" role="status" aria-busy="true" aria-live="polite">
           <span className="sr-only">Loading subjects…</span>
-          <ContentCardSkeleton />
-          <ContentCardSkeleton />
-          <ContentCardSkeleton />
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="space-y-2 rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] p-4 shadow-[var(--shadow-sm)]">
+              <div className="skeleton h-5 w-2/3 rounded-md" />
+              <div className="skeleton h-3.5 w-full rounded-md" />
+              <div className="skeleton h-3.5 w-[80%] rounded-md" />
+              <div className="skeleton mt-2 h-3 w-24 rounded-md" />
+            </div>
+          ))}
         </div>
       ) : null}
 

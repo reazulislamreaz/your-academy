@@ -6,11 +6,11 @@ import { PageHeader } from '@/components/layout/page-header';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
-import { ListRowsSkeleton } from '@/components/skeletons';
 import { Surface } from '@/components/ui/surface';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import type { PracticeAttemptSummary } from '@/lib/api/types';
 import { examLabel, practiceKindLabel } from '@/lib/exam-tags';
+import { ResultsPageSkeleton } from '@/components/skeletons';
 
 export default function ResultsPage() {
   const list = useQuery({
@@ -27,7 +27,7 @@ export default function ResultsPage() {
         description="Submitted quizzes and model tests with scores from your account history."
       />
 
-      {list.isLoading ? <ListRowsSkeleton rows={4} /> : null}
+      {list.isLoading ? <ResultsPageSkeleton omitHeader /> : null}
 
       {list.error instanceof ApiError && (list.error.status === 401 || list.error.status === 403) ? (
         <EmptyState

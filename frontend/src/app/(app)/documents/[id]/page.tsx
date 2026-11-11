@@ -6,9 +6,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ContentCardSkeleton } from '@/components/skeletons';
 import { Surface } from '@/components/ui/surface';
 import { ApiError, apiFetch } from '@/lib/api/client';
+import { DocumentDetailPageSkeleton } from '@/components/skeletons';
 
 type DocumentDetail = {
   id: string;
@@ -57,12 +57,7 @@ export default function DocumentDetailPage() {
   });
 
   if (isLoading) {
-    return (
-      <div className="mx-auto w-full max-w-3xl" role="status" aria-busy="true">
-        <span className="sr-only">Loading document…</span>
-        <ContentCardSkeleton />
-      </div>
-    );
+    return <DocumentDetailPageSkeleton />;
   }
 
   if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {

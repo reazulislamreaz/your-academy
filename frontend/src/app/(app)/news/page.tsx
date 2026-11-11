@@ -4,9 +4,9 @@ import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { PageHeader } from '@/components/layout/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
-import { ListRowsSkeleton } from '@/components/skeletons';
 import { apiFetch } from '@/lib/api/client';
 import type { NewsListItem } from '@/lib/api/types';
+import { NewsPageSkeleton } from '@/components/skeletons';
 
 export default function NewsPage() {
   const { data, isLoading, error } = useQuery({
@@ -21,7 +21,7 @@ export default function NewsPage() {
         title="News"
         description="Platform updates and study tips. Public — no login required."
       />
-      {isLoading ? <ListRowsSkeleton rows={5} /> : null}
+      {isLoading ? <NewsPageSkeleton omitHeader /> : null}
       {error ? <p className="text-sm text-[var(--danger)]">Could not load news.</p> : null}
       {!isLoading && !error && data?.length === 0 ? (
         <EmptyState title="No published articles yet" description="New posts will appear here." />

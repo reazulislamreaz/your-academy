@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Alert } from '@/components/ui/alert';
 import { EmptyState } from '@/components/ui/empty-state';
-import { ContentCardSkeleton } from '@/components/skeletons';
+import { PracticeSetGridSkeleton } from '@/components/skeletons';
 import { PracticeSetCard } from '@/components/practice/practice-set-card';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import type { PracticeSetListItem } from '@/lib/api/types';
@@ -41,13 +41,7 @@ export function PracticeSetList({
   });
 
   if (list.isLoading) {
-    return (
-      <div className="grid gap-3 sm:grid-cols-2" role="status" aria-busy="true" aria-live="polite">
-        <span className="sr-only">Loading practice sets…</span>
-        <ContentCardSkeleton />
-        <ContentCardSkeleton />
-      </div>
-    );
+    return <PracticeSetGridSkeleton count={4} />;
   }
 
   if (list.error instanceof ApiError && (list.error.status === 401 || list.error.status === 403)) {

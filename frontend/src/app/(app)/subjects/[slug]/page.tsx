@@ -7,10 +7,10 @@ import { PageHeader } from '@/components/layout/page-header';
 import { PracticeSetList } from '@/components/practice/practice-set-list';
 import { Alert } from '@/components/ui/alert';
 import { EmptyState } from '@/components/ui/empty-state';
-import { ContentCardSkeleton, ListRowsSkeleton } from '@/components/skeletons';
 import { Surface } from '@/components/ui/surface';
 import { apiFetch } from '@/lib/api/client';
 import type { CategoryNode } from '@/lib/api/types';
+import { SubjectDetailPageSkeleton } from '@/components/skeletons';
 
 export default function SubjectDetailPage() {
   const params = useParams<{ slug: string }>();
@@ -24,13 +24,7 @@ export default function SubjectDetailPage() {
   const subject = categories.data?.find((c) => c.slug === slug);
 
   if (categories.isLoading) {
-    return (
-      <div className="space-y-4" role="status" aria-busy="true" aria-live="polite">
-        <span className="sr-only">Loading subject…</span>
-        <ContentCardSkeleton />
-        <ListRowsSkeleton rows={4} />
-      </div>
-    );
+    return <SubjectDetailPageSkeleton />;
   }
 
   if (categories.isError) {

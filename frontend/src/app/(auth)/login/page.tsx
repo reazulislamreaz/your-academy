@@ -14,6 +14,7 @@ import { postLoginPath } from '@/features/auth/post-login-path';
 import { meQueryKey } from '@/features/auth/use-auth';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import type { MeUser } from '@/lib/api/types';
+import { LoginPageSkeleton } from '@/components/skeletons';
 
 function LoginForm() {
   const router = useRouter();
@@ -104,7 +105,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<p className="py-10 text-sm text-[var(--muted-strong)]">Loading…</p>}>
+    <Suspense fallback={<LoginPageSkeleton />}>
       <LoginForm />
     </Suspense>
   );

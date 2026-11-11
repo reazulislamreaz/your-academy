@@ -8,10 +8,10 @@ import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { UserListSkeleton } from '@/components/skeletons';
-import { ContentIn } from '@/components/ui/skeleton';
 import { Surface } from '@/components/ui/surface';
 import { ApiError, apiFetch } from '@/lib/api/client';
+import { AdminUsersTableSkeleton } from '@/components/skeletons';
+import { ContentIn } from '@/components/ui/skeleton';
 
 type AdminUser = {
   id: string;
@@ -86,7 +86,7 @@ export default function AdminUsersPage() {
       </Surface>
 
       {error ? <Alert variant="danger">{error}</Alert> : null}
-      {list.isLoading ? <UserListSkeleton /> : null}
+      {list.isLoading ? <AdminUsersTableSkeleton /> : null}
       {list.error ? <Alert variant="danger">Could not load users.</Alert> : null}
 
       {list.data ? (

@@ -7,12 +7,12 @@ import { PageHeader } from '@/components/layout/page-header';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
-import { ExamSkeleton } from '@/components/skeletons';
 import { Surface } from '@/components/ui/surface';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import type { PracticeAttemptResult } from '@/lib/api/types';
 import { examLabel, practiceKindLabel } from '@/lib/exam-tags';
 import { cn } from '@/lib/utils';
+import { ResultDetailPageSkeleton } from '@/components/skeletons';
 
 export default function ResultDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -23,7 +23,7 @@ export default function ResultDetailPage() {
   });
 
   if (result.isLoading) {
-    return <ExamSkeleton />;
+    return <ResultDetailPageSkeleton />;
   }
 
   if (result.error instanceof ApiError && result.error.status === 404) {
