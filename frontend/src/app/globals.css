@@ -509,12 +509,16 @@ input:disabled {
   }
 }
 
-/* Skeleton shimmer — left → right */
+/*
+  Skeleton shimmer — soft L→R wash matching navy desk theme.
+  Prefer content-matching skeleton layouts over bare .skeleton blocks.
+*/
 .skeleton {
   position: relative;
   overflow: hidden;
-  background: var(--bg-muted);
+  background: color-mix(in srgb, var(--bg-muted) 88%, var(--brand-wash-strong));
   border-radius: var(--radius-sm);
+  isolation: isolate;
 }
 
 .skeleton::after {
@@ -523,17 +527,44 @@ input:disabled {
   inset: 0;
   transform: translateX(-100%);
   background: linear-gradient(
-    90deg,
+    100deg,
     transparent 0%,
-    rgba(255, 255, 255, 0.35) 40%,
-    rgba(255, 255, 255, 0.7) 50%,
-    rgba(255, 255, 255, 0.35) 60%,
+    transparent 35%,
+    color-mix(in srgb, #ffffff 55%, transparent) 50%,
+    transparent 65%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+.skeleton-on-inverse {
+  background: color-mix(in srgb, #ffffff 12%, transparent);
+}
+
+.skeleton-on-inverse::after {
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    transparent 35%,
+    color-mix(in srgb, #ffffff 28%, transparent) 50%,
+    transparent 65%,
     transparent 100%
   );
 }
 
 @media (prefers-reduced-motion: no-preference) {
   .skeleton::after {
-    animation: ya-shimmer 1.35s ease-in-out infinite;
+    animation: ya-shimmer 1.6s ease-in-out infinite;
+  }
+}
+
+/* Soft handoff when real content replaces a skeleton region */
+.skeleton-swap {
+  animation: ya-fade-in var(--duration) var(--ease-out) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-swap {
+    animation: none !important;
   }
 }

@@ -11,7 +11,7 @@ import { ConfirmButton } from '@/components/ui/confirm-button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ListRowsSkeleton } from '@/components/skeletons';
 import { Surface } from '@/components/ui/surface';
 import { Textarea } from '@/components/ui/textarea';
 import { ApiError, apiFetch } from '@/lib/api/client';
@@ -141,7 +141,7 @@ export default function AdminNewsPage() {
         </form>
       </Surface>
 
-      {list.isLoading ? <Skeleton className="h-32 w-full" /> : null}
+      {list.isLoading ? <ListRowsSkeleton rows={5} /> : null}
       {!list.isLoading && (list.data?.length ?? 0) === 0 ? (
         <EmptyState title="No articles" description="Create a draft above." />
       ) : null}

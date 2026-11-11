@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Skeleton } from '@/components/ui/skeleton';
+import { FormSkeleton, SubscriptionSkeleton } from '@/components/skeletons';
 import { Surface } from '@/components/ui/surface';
 import { TrialCountdown } from '@/features/auth/trial-countdown';
 import { isUnauthorized, meQueryKey, useLogout, useMe } from '@/features/auth/use-auth';
@@ -131,9 +131,11 @@ export default function ProfilePage() {
 
   if (me.isLoading) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-10 w-48" />
-        <Skeleton className="h-40 w-full" />
+      <div className="space-y-4" role="status" aria-busy="true" aria-live="polite">
+        <span className="sr-only">Loading profile…</span>
+        <SubscriptionSkeleton />
+        <FormSkeleton fields={4} />
+        <FormSkeleton fields={3} />
       </div>
     );
   }

@@ -7,7 +7,7 @@ import { PageHeader } from '@/components/layout/page-header';
 import { Alert } from '@/components/ui/alert';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ListRow } from '@/components/ui/list-row';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ListRowsSkeleton } from '@/components/skeletons';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import type { DocumentListItem } from '@/lib/api/types';
 
@@ -29,12 +29,7 @@ export default function DocumentsPage() {
         description="Published study documents. Downloads require configured cloud storage."
       />
 
-      {isLoading ? (
-        <div className="space-y-3">
-          <Skeleton className="h-14 w-full" />
-          <Skeleton className="h-14 w-full" />
-        </div>
-      ) : null}
+      {isLoading ? <ListRowsSkeleton rows={4} /> : null}
 
       {unauthorized ? (
         <Alert variant="warning">

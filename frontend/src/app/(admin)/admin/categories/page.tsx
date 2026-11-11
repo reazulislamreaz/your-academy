@@ -10,7 +10,7 @@ import { ConfirmButton } from '@/components/ui/confirm-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ListRowsSkeleton } from '@/components/skeletons';
 import { Surface } from '@/components/ui/surface';
 import { Textarea } from '@/components/ui/textarea';
 import { ApiError, apiFetch } from '@/lib/api/client';
@@ -133,7 +133,7 @@ export default function AdminCategoriesPage() {
         </form>
       </Surface>
 
-      {categories.isLoading ? <Skeleton className="h-40 w-full" /> : null}
+      {categories.isLoading ? <ListRowsSkeleton rows={6} /> : null}
 
       <div className="space-y-4">
         {categories.data?.map((root) => (

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ConfirmButton } from '@/components/ui/confirm-button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Select } from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ListRowsSkeleton } from '@/components/skeletons';
 import { Surface } from '@/components/ui/surface';
 import { apiFetch, apiFetchResult } from '@/lib/api/client';
 import { examLabel, practiceKindLabel } from '@/lib/exam-tags';
@@ -100,12 +100,7 @@ export default function AdminPracticeSetsPage() {
         </Select>
       </Surface>
 
-      {list.isLoading ? (
-        <div className="space-y-3">
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-16 w-full" />
-        </div>
-      ) : null}
+      {list.isLoading ? <ListRowsSkeleton rows={5} /> : null}
 
       {!list.isLoading && items.length === 0 ? (
         <EmptyState

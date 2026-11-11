@@ -28,7 +28,7 @@ import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ListRowsSkeleton, StatCardSkeleton } from '@/components/skeletons';
 import { Surface } from '@/components/ui/surface';
 import {
   type ImportStats,
@@ -134,7 +134,7 @@ export default function QuestionImportsHubPage() {
       {stats.isLoading ? (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
           {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-28 w-full" />
+            <StatCardSkeleton key={i} />
           ))}
         </div>
       ) : stats.isError ? (
@@ -284,12 +284,7 @@ export default function QuestionImportsHubPage() {
           </Field>
         </div>
 
-        {list.isLoading ? (
-          <div className="space-y-2">
-            <Skeleton className="h-14 w-full" />
-            <Skeleton className="h-14 w-full" />
-          </div>
-        ) : null}
+        {list.isLoading ? <ListRowsSkeleton rows={5} /> : null}
 
         {list.isError ? (
           <Alert variant="danger">

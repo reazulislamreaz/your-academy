@@ -7,7 +7,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { PageHeader } from '@/components/layout/page-header';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
+import { FormSkeleton, ListRowsSkeleton } from '@/components/skeletons';
 import { Surface } from '@/components/ui/surface';
 import { isUnauthorized, meQueryKey, useMe } from '@/features/auth/use-auth';
 import { ApiError, apiFetch } from '@/lib/api/client';
@@ -69,12 +69,7 @@ export default function OnboardingPage() {
   }
 
   if (me.isLoading) {
-    return (
-      <div className="space-y-4">
-        <Skeleton className="h-10 w-64" />
-        <Skeleton className="h-40 w-full" />
-      </div>
-    );
+    return <FormSkeleton fields={4} />;
   }
 
   if (isUnauthorized(me.error) || !me.data) {
@@ -119,7 +114,7 @@ export default function OnboardingPage() {
 
       {step === 1 ? (
         <Surface className="space-y-4 p-6">
-          {categories.isLoading ? <Skeleton className="h-40 w-full" /> : null}
+          {categories.isLoading ? <ListRowsSkeleton rows={4} /> : null}
           {categories.data && categories.data.length === 0 ? (
             <p className="text-sm text-[var(--muted-strong)]">No categories yet — you can skip this step.</p>
           ) : null}

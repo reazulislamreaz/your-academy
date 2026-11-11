@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Skeleton } from '@/components/ui/skeleton';
+import { FormSkeleton, ListRowsSkeleton } from '@/components/skeletons';
 import { Surface } from '@/components/ui/surface';
 import { Textarea } from '@/components/ui/textarea';
 import { ApiError, apiFetch } from '@/lib/api/client';
@@ -88,7 +88,7 @@ export default function EditNewsPage() {
     );
   }
 
-  if (detail.isLoading) return <Skeleton className="h-64 w-full" />;
+  if (detail.isLoading) return <FormSkeleton fields={6} />;
   if (detail.error || !detail.data) return <Alert variant="danger">Article not found.</Alert>;
 
   return (
@@ -154,7 +154,7 @@ export default function EditNewsPage() {
             <p className="text-sm text-[var(--muted-strong)]">
               Select documents to show on the public article. Only published PDFs appear to learners.
             </p>
-            {documents.isLoading ? <Skeleton className="h-24 w-full" /> : null}
+            {documents.isLoading ? <ListRowsSkeleton rows={3} /> : null}
             <div className="grid max-h-64 gap-2 overflow-y-auto">
               {documents.data?.map((doc) => {
                 const checked = documentIds.includes(doc.id);

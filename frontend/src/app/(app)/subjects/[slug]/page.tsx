@@ -7,7 +7,7 @@ import { PageHeader } from '@/components/layout/page-header';
 import { PracticeSetList } from '@/components/practice/practice-set-list';
 import { Alert } from '@/components/ui/alert';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ContentCardSkeleton, ListRowsSkeleton } from '@/components/skeletons';
 import { Surface } from '@/components/ui/surface';
 import { apiFetch } from '@/lib/api/client';
 import type { CategoryNode } from '@/lib/api/types';
@@ -25,9 +25,10 @@ export default function SubjectDetailPage() {
 
   if (categories.isLoading) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-10 w-64" />
-        <Skeleton className="h-40 w-full" />
+      <div className="space-y-4" role="status" aria-busy="true" aria-live="polite">
+        <span className="sr-only">Loading subject…</span>
+        <ContentCardSkeleton />
+        <ListRowsSkeleton rows={4} />
       </div>
     );
   }

@@ -24,7 +24,14 @@ import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Skeleton } from '@/components/ui/skeleton';
+import {
+  BarChartSkeleton,
+  ChartSkeleton,
+  DashboardSkeleton,
+  ListRowsSkeleton,
+  SubjectProgressSkeleton,
+} from '@/components/skeletons';
+import { ContentIn } from '@/components/ui/skeleton';
 import { Surface } from '@/components/ui/surface';
 import { TrialCountdown } from '@/features/auth/trial-countdown';
 import { isUnauthorized, useMe } from '@/features/auth/use-auth';
@@ -125,17 +132,7 @@ export default function StudyHomePage() {
   }, [me.data?.id, stats.dataUpdatedAt]);
 
   if (me.isLoading) {
-    return (
-      <div className="space-y-4">
-        <Skeleton className="h-24 w-full rounded-[var(--radius-lg)]" />
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-20 w-full" />
-          ))}
-        </div>
-        <Skeleton className="h-56 w-full" />
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   if (isUnauthorized(me.error) || !me.data) {
@@ -350,9 +347,11 @@ export default function StudyHomePage() {
         <Surface className="space-y-3 p-4 sm:p-5 lg:col-span-2">
           <SectionTitle title="Answer mix" />
           {stats.isLoading ? (
-            <Skeleton className="h-48 w-full" />
+            <ChartSkeleton />
           ) : (
-            <AccuracyDonut correct={perf.correct} incorrect={perf.incorrect} />
+            <ContentIn>
+              <AccuracyDonut correct={perf.correct} incorrect={perf.incorrect} />
+            </ContentIn>
           )}
         </Surface>
       </div>
@@ -362,26 +361,30 @@ export default function StudyHomePage() {
         <Surface className="space-y-3 p-4 sm:p-5">
           <SectionTitle title="Subject performance" href="/onboarding" linkLabel="My topics" />
           {stats.isLoading ? (
-            <Skeleton className="h-40 w-full" />
+            <SubjectProgressSkeleton />
           ) : (
-            <SubjectProgress items={perf.byCategory} />
+            <ContentIn>
+              <SubjectProgress items={perf.byCategory} />
+            </ContentIn>
           )}
         </Surface>
 
         <Surface className="space-y-3 p-4 sm:p-5">
           <SectionTitle title="Study time" />
           {analytics.isLoading ? (
-            <Skeleton className="h-40 w-full" />
+            <BarChartSkeleton />
           ) : (
-            <BarChart
-              formatValue={formatStudyMinutes}
-              emptyLabel="Study time appears while you browse with this account signed in."
-              data={[
-                { label: 'Today', value: daySec, color: 'var(--highlight)' },
-                { label: 'This week', value: weekSec, color: 'var(--info)' },
-                { label: 'All time', value: totalSec, color: 'var(--bg-inverse)' },
-              ]}
-            />
+            <ContentIn>
+              <BarChart
+                formatValue={formatStudyMinutes}
+                emptyLabel="Study time appears while you browse with this account signed in."
+                data={[
+                  { label: 'Today', value: daySec, color: 'var(--highlight)' },
+                  { label: 'This week', value: weekSec, color: 'var(--info)' },
+                  { label: 'All time', value: totalSec, color: 'var(--bg-inverse)' },
+                ]}
+              />
+            </ContentIn>
           )}
         </Surface>
       </div>
@@ -397,7 +400,7 @@ export default function StudyHomePage() {
               {perf.recentAttempts.length} shown
             </Badge>
           </div>
-          {stats.isLoading ? <Skeleton className="h-40 w-full" /> : null}
+          {stats.isLoading ? <ListRowsSkeleton rows={4} /> : null}
           {!stats.isLoading && perf.recentAttempts.length === 0 ? (
             <EmptyState
               className="py-8"
@@ -459,7 +462,7 @@ export default function StudyHomePage() {
             href="/onboarding"
             linkLabel="Update"
           />
-          {categories.isLoading ? <Skeleton className="h-40 w-full" /> : null}
+          {categories.isLoading ? <ListRowsSkeleton rows={4} /> : null}
           {!categories.isLoading && suggestions.length === 0 ? (
             <EmptyState
               className="py-8"
@@ -497,7 +500,7 @@ export default function StudyHomePage() {
       <div className="grid gap-4 lg:grid-cols-2">
         <Surface className="space-y-3 overflow-hidden p-4 sm:p-5">
           <SectionTitle title="Updates & circulars" href="/news" linkLabel="All news" />
-          {news.isLoading ? <Skeleton className="h-32 w-full" /> : null}
+          {news.isLoading ? <ListRowsSkeleton rows={3} /> : null}
           {!news.isLoading && newsItems.length === 0 ? (
             <EmptyState
               className="py-8"
@@ -527,7 +530,7 @@ export default function StudyHomePage() {
 
         <Surface className="space-y-3 overflow-hidden p-4 sm:p-5">
           <SectionTitle title="Saved for later" href="/bookmarks" linkLabel="View all" />
-          {stats.isLoading ? <Skeleton className="h-32 w-full" /> : null}
+          {stats.isLoading ? <ListRowsSkeleton rows={3} /> : null}
           {!stats.isLoading &&
           (!stats.data ||
             (stats.data.recentQuestions.length === 0 &&

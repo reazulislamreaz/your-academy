@@ -21,7 +21,7 @@ import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
+import { BulkQuestionPreviewSkeleton, BulkUploadDetailSkeleton } from '@/components/skeletons';
 import { Surface } from '@/components/ui/surface';
 import {
   type ImportRow,
@@ -156,12 +156,7 @@ function QuestionImportDetailContent() {
   }, [batch.data]);
 
   if (batch.isLoading) {
-    return (
-      <div className="space-y-4">
-        <Skeleton className="h-10 w-72" />
-        <Skeleton className="h-40 w-full" />
-      </div>
-    );
+    return <BulkUploadDetailSkeleton />;
   }
 
   if (batch.isError || !batch.data) {
@@ -450,7 +445,7 @@ function QuestionImportDetailContent() {
           </Select>
         </div>
 
-        {rows.isLoading ? <Skeleton className="h-40 w-full" /> : null}
+        {rows.isLoading ? <BulkQuestionPreviewSkeleton rows={4} /> : null}
 
         {!rows.isLoading && rowItems.length === 0 ? (
           <EmptyState title="No rows" description="No rows match this filter." />
@@ -543,12 +538,7 @@ function QuestionImportDetailContent() {
 export default function QuestionImportDetailPage() {
   return (
     <Suspense
-      fallback={
-        <div className="space-y-4">
-          <Skeleton className="h-10 w-72" />
-          <Skeleton className="h-40 w-full" />
-        </div>
-      }
+      fallback={<BulkUploadDetailSkeleton />}
     >
       <QuestionImportDetailContent />
     </Suspense>

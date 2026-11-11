@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { PageHeader } from '@/components/layout/page-header';
 import { Alert } from '@/components/ui/alert';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ContentCardSkeleton } from '@/components/skeletons';
 import { Surface } from '@/components/ui/surface';
 import { apiFetch } from '@/lib/api/client';
 import type { CategoryNode } from '@/lib/api/types';
@@ -25,10 +25,16 @@ export default function SubjectsPage() {
       />
 
       {categories.isLoading ? (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <Skeleton className="h-28 w-full" />
-          <Skeleton className="h-28 w-full" />
-          <Skeleton className="h-28 w-full" />
+        <div
+          className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+          role="status"
+          aria-busy="true"
+          aria-live="polite"
+        >
+          <span className="sr-only">Loading subjects…</span>
+          <ContentCardSkeleton />
+          <ContentCardSkeleton />
+          <ContentCardSkeleton />
         </div>
       ) : null}
 

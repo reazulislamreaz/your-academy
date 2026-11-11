@@ -8,7 +8,8 @@ import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/skeleton';
+import { UserListSkeleton } from '@/components/skeletons';
+import { ContentIn } from '@/components/ui/skeleton';
 import { Surface } from '@/components/ui/surface';
 import { ApiError, apiFetch } from '@/lib/api/client';
 
@@ -85,10 +86,11 @@ export default function AdminUsersPage() {
       </Surface>
 
       {error ? <Alert variant="danger">{error}</Alert> : null}
-      {list.isLoading ? <Skeleton className="h-48 w-full" /> : null}
+      {list.isLoading ? <UserListSkeleton /> : null}
       {list.error ? <Alert variant="danger">Could not load users.</Alert> : null}
 
       {list.data ? (
+        <ContentIn>
         <Surface className="overflow-hidden p-0">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[36rem] text-left text-sm">
@@ -175,6 +177,7 @@ export default function AdminUsersPage() {
             {q.trim() ? ` for “${q.trim()}”` : ''}
           </div>
         </Surface>
+        </ContentIn>
       ) : null}
     </div>
   );

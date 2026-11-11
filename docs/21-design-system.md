@@ -139,7 +139,11 @@ CSS-first system in `frontend/src/app/globals.css`. Shared helpers:
 | `.motion-hover-lift` | Hover lift + shadow (cards) |
 | `.motion-press` | Active press |
 | `.motion-nav-indicator` | Fast color/bg |
-| `.skeleton` | L→R shimmer |
+| `.skeleton` | Soft L→R shimmer (theme wash) |
+| `SkeletonRegion` / `ContentIn` | Busy region + fade handoff |
+| `@/components/skeletons` | Content-matching layouts (dashboard, tables, questions, exams, bulk upload, forms) |
+
+**Skeleton rules:** Match final component footprint to avoid CLS; use `isLoading` (no cached data), not `isFetching`; keep section-level placeholders so loaded panels stay put; announce with `aria-busy` + sr-only label. Respect `prefers-reduced-motion`.
 
 Tokens: `--duration-fast` / `--duration` / `--duration-slow` + `--ease-out`. Prefer transform/opacity. All entrance/hover motion is disabled under `prefers-reduced-motion: reduce`. Do not add Framer Motion unless a feature truly needs it.
 

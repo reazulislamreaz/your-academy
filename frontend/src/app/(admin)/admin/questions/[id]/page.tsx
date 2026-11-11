@@ -9,7 +9,7 @@ import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ConfirmButton } from '@/components/ui/confirm-button';
-import { Skeleton } from '@/components/ui/skeleton';
+import { FormSkeleton } from '@/components/skeletons';
 import { Surface } from '@/components/ui/surface';
 import {
   QuestionForm,
@@ -94,7 +94,7 @@ export default function EditQuestionPage() {
   });
 
   if (detail.isLoading || !initial) {
-    return <Skeleton className="h-64 w-full" />;
+    return <FormSkeleton fields={6} />;
   }
 
   if (detail.error || !detail.data) {

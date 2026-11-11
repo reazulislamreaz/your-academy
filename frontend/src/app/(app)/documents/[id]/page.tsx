@@ -6,7 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ContentCardSkeleton } from '@/components/skeletons';
 import { Surface } from '@/components/ui/surface';
 import { ApiError, apiFetch } from '@/lib/api/client';
 
@@ -56,7 +56,14 @@ export default function DocumentDetailPage() {
     },
   });
 
-  if (isLoading) return <Skeleton className="mx-auto h-40 w-full max-w-3xl" />;
+  if (isLoading) {
+    return (
+      <div className="mx-auto w-full max-w-3xl" role="status" aria-busy="true">
+        <span className="sr-only">Loading document…</span>
+        <ContentCardSkeleton />
+      </div>
+    );
+  }
 
   if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
     return (

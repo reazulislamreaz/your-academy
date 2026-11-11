@@ -8,7 +8,7 @@ import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ListRowsSkeleton } from '@/components/skeletons';
 import { isUnauthorized } from '@/features/auth/use-auth';
 import { apiFetch, apiFetchResult } from '@/lib/api/client';
 import { cn } from '@/lib/utils';
@@ -115,12 +115,7 @@ export default function BookmarksPage() {
         ))}
       </div>
 
-      {active.isLoading ? (
-        <div className="space-y-3">
-          <Skeleton className="h-14 w-full" />
-          <Skeleton className="h-14 w-full" />
-        </div>
-      ) : null}
+      {active.isLoading ? <ListRowsSkeleton rows={4} /> : null}
 
       {isUnauthorized(active.error) ? (
         <Alert variant="warning">

@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { PageHeader } from '@/components/layout/page-header';
 import { PracticeSetList } from '@/components/practice/practice-set-list';
 import { Alert } from '@/components/ui/alert';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ContentCardSkeleton } from '@/components/skeletons';
 import { examLabel } from '@/lib/exam-tags';
 
 function PreviousYearContent() {
@@ -36,7 +36,14 @@ function PreviousYearContent() {
 
 export default function PreviousYearPage() {
   return (
-    <Suspense fallback={<Skeleton className="h-40 w-full" />}>
+    <Suspense
+      fallback={
+        <div className="grid gap-3 sm:grid-cols-2">
+          <ContentCardSkeleton />
+          <ContentCardSkeleton />
+        </div>
+      }
+    >
       <PreviousYearContent />
     </Suspense>
   );

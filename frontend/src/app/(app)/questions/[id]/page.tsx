@@ -9,7 +9,7 @@ import { EntitlementCallout } from '@/components/access/entitlement-callout';
 import { OptionRow, type OptionRowState } from '@/components/questions/option-row';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
+import { QuestionPreviewSkeleton } from '@/components/skeletons';
 import { Surface } from '@/components/ui/surface';
 import { Alert } from '@/components/ui/alert';
 import { meQueryKey } from '@/features/auth/use-auth';
@@ -107,13 +107,7 @@ function QuestionDetailContent() {
   });
 
   if (isLoading) {
-    return (
-      <div className="space-y-4 py-4">
-        <Skeleton className="h-6 w-40" />
-        <Skeleton className="h-10 w-3/4" />
-        <Skeleton className="h-28 w-full" />
-      </div>
-    );
+    return <QuestionPreviewSkeleton className="py-4" />;
   }
 
   if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
@@ -307,7 +301,7 @@ function QuestionDetailContent() {
 
 export default function QuestionDetailPage() {
   return (
-    <Suspense fallback={<Skeleton className="h-40 w-full" />}>
+    <Suspense fallback={<QuestionPreviewSkeleton />}>
       <QuestionDetailContent />
     </Suspense>
   );

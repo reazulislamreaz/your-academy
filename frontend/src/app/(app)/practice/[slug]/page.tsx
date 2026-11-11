@@ -9,7 +9,7 @@ import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ExamSkeleton } from '@/components/skeletons';
 import { Surface } from '@/components/ui/surface';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import type { PracticeAttemptResult, PracticeSetDetail } from '@/lib/api/types';
@@ -90,12 +90,7 @@ export default function PracticePlayerPage() {
   const answeredCount = useMemo(() => Object.keys(answers).length, [answers]);
 
   if (detail.isLoading) {
-    return (
-      <div className="space-y-4">
-        <Skeleton className="h-10 w-72" />
-        <Skeleton className="h-64 w-full" />
-      </div>
-    );
+    return <ExamSkeleton />;
   }
 
   if (detail.error instanceof ApiError && detail.error.status === 404) {

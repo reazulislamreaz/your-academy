@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { ConfirmButton } from '@/components/ui/confirm-button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Select } from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ListRowsSkeleton, QuestionBankSkeleton } from '@/components/skeletons';
 import { Surface } from '@/components/ui/surface';
 import { apiFetch, apiFetchResult } from '@/lib/api/client';
 import type { AdminQuestionListItem } from '@/lib/api/admin-types';
@@ -18,12 +18,7 @@ import type { AdminQuestionListItem } from '@/lib/api/admin-types';
 export default function AdminQuestionsPage() {
   return (
     <Suspense
-      fallback={
-        <div className="space-y-4">
-          <Skeleton className="h-10 w-56" />
-          <Skeleton className="h-40 w-full" />
-        </div>
-      }
+      fallback={<QuestionBankSkeleton />}
     >
       <AdminQuestionsContent />
     </Suspense>
@@ -100,12 +95,7 @@ function AdminQuestionsContent() {
         </p>
       </Surface>
 
-      {list.isLoading ? (
-        <div className="space-y-2">
-          <Skeleton className="h-14 w-full" />
-          <Skeleton className="h-14 w-full" />
-        </div>
-      ) : null}
+      {list.isLoading ? <ListRowsSkeleton rows={6} /> : null}
 
       {!list.isLoading && items.length === 0 ? (
         <EmptyState

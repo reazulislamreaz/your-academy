@@ -6,7 +6,7 @@ import { PageHeader } from '@/components/layout/page-header';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ListRowsSkeleton } from '@/components/skeletons';
 import { Surface } from '@/components/ui/surface';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import type { PracticeAttemptSummary } from '@/lib/api/types';
@@ -27,12 +27,7 @@ export default function ResultsPage() {
         description="Submitted quizzes and model tests with scores from your account history."
       />
 
-      {list.isLoading ? (
-        <div className="space-y-3">
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
-        </div>
-      ) : null}
+      {list.isLoading ? <ListRowsSkeleton rows={4} /> : null}
 
       {list.error instanceof ApiError && (list.error.status === 401 || list.error.status === 403) ? (
         <EmptyState

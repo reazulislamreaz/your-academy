@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ListRow } from '@/components/ui/list-row';
-import { Skeleton } from '@/components/ui/skeleton';
+import { QuestionBankSkeleton } from '@/components/skeletons';
 import { ApiError, apiFetch, apiFetchResult } from '@/lib/api/client';
 import type { CategoryNode, QuestionListItem } from '@/lib/api/types';
 
@@ -87,13 +87,7 @@ function QuestionsContent() {
         </p>
       ) : null}
 
-      {list.isLoading ? (
-        <div className="space-y-3">
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-16 w-full" />
-        </div>
-      ) : null}
+      {list.isLoading ? <QuestionBankSkeleton /> : null}
 
       {unauthorized ? (
         <EmptyState
@@ -177,12 +171,7 @@ function QuestionsContent() {
 export default function QuestionsPage() {
   return (
     <Suspense
-      fallback={
-        <div className="space-y-4">
-          <Skeleton className="h-10 w-64" />
-          <Skeleton className="h-32 w-full" />
-        </div>
-      }
+      fallback={<QuestionBankSkeleton />}
     >
       <QuestionsContent />
     </Suspense>

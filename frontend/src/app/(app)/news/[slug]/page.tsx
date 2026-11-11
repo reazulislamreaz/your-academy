@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { Alert } from '@/components/ui/alert';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ContentCardSkeleton, FormSkeleton } from '@/components/skeletons';
 import { Surface } from '@/components/ui/surface';
 import { apiFetch } from '@/lib/api/client';
 
@@ -29,9 +29,15 @@ export default function NewsDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-3xl space-y-4">
-        <Skeleton className="h-10 w-2/3" />
-        <Skeleton className="h-40 w-full" />
+      <div
+        className="mx-auto max-w-3xl space-y-4"
+        role="status"
+        aria-busy="true"
+        aria-live="polite"
+      >
+        <span className="sr-only">Loading article…</span>
+        <FormSkeleton fields={2} />
+        <ContentCardSkeleton />
       </div>
     );
   }

@@ -4,7 +4,7 @@ import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { PageHeader } from '@/components/layout/page-header';
 import { PracticeSetList } from '@/components/practice/practice-set-list';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ContentCardSkeleton } from '@/components/skeletons';
 
 function QuizzesContent() {
   const sp = useSearchParams();
@@ -50,7 +50,14 @@ function QuizzesContent() {
 
 export default function QuizzesPage() {
   return (
-    <Suspense fallback={<Skeleton className="h-40 w-full" />}>
+    <Suspense
+      fallback={
+        <div className="grid gap-3 sm:grid-cols-2">
+          <ContentCardSkeleton />
+          <ContentCardSkeleton />
+        </div>
+      }
+    >
       <QuizzesContent />
     </Suspense>
   );
