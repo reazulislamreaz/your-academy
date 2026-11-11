@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import {
   ClipboardList,
   FileQuestion,
+  FileSpreadsheet,
   LayoutDashboard,
   LogOut,
   Newspaper,
@@ -21,6 +22,7 @@ const items = [
   { href: '/admin/dashboard', label: 'Overview', icon: LayoutDashboard },
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/questions', label: 'Questions', icon: FileQuestion },
+  { href: '/admin/question-imports', label: 'Bulk upload', icon: FileSpreadsheet },
   { href: '/admin/practice-sets', label: 'Practice sets', icon: ClipboardList },
   { href: '/admin/categories', label: 'Categories', icon: FolderTree },
   { href: '/admin/news', label: 'News', icon: Newspaper },

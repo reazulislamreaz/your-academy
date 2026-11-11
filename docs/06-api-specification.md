@@ -189,6 +189,26 @@ Query params for list: `cursor`, `limit`, `categoryId`, `subcategoryId`, `diffic
 
 ---
 
+### 2.5a Question imports (Admin, DEC-024)
+
+| Method | Endpoint | Description | Auth | Role |
+|--------|----------|-------------|------|------|
+| GET | `/admin/question-imports/template` | Download `.xlsx` template | User | ADMIN |
+| GET | `/admin/question-imports` | List batches (`status`, `q`, cursor) | User | ADMIN |
+| POST | `/admin/question-imports/upload` | Multipart `file` + optional `batchCode`/`displayName` | User | ADMIN |
+| GET | `/admin/question-imports/:id` | Batch summary + duplicate-file warning | User | ADMIN |
+| GET | `/admin/question-imports/:id/rows` | Preview rows (`status` filter) | User | ADMIN |
+| POST | `/admin/question-imports/:id/confirm` | `{ skipDuplicates?: true }` import valid rows | User | ADMIN |
+| GET | `/admin/question-imports/:id/file` | Download original upload | User | ADMIN |
+| GET | `/admin/question-imports/:id/report` | Excel validation/import report | User | ADMIN |
+| GET | `/admin/question-imports/:id/export` | Export imported questions to Excel | User | ADMIN |
+| PATCH | `/admin/question-imports/:id/archive` | Archive batch (questions kept) | User | ADMIN |
+| DELETE | `/admin/question-imports/:id` | Delete non-completed batch | User | ADMIN |
+
+Duplicate file (`409 DUPLICATE_FILE`) when the same SHA-256 was already **completed**. Row-level duplicates use normalized `contentHash`.
+
+---
+
 ### 2.5b Practice sets (DEC-023)
 
 Timed/untimed quizzes and model tests built from published questions. Review payloads still strip answers/explanations when the learner is not entitled.

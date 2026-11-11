@@ -33,6 +33,10 @@ secrets/
 # DB dumps (pnpm db:backup)
 backups/
 
+# Local admin Excel import originals (DEC-024)
+backend/storage/
+storage/
+
 # Logs / coverage
 logs/
 *.log

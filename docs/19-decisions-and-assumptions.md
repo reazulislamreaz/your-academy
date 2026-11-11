@@ -250,6 +250,15 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Impact | Prisma models, PracticeModule APIs, learner prep hubs, admin practice-set management, seed catalog |
 | Status | **CONFIRMED** (product request 2026-11-11) |
 
+### DEC-024 — Excel bulk question upload
+
+| Field | Value |
+|-------|-------|
+| Question | How should admins bulk-upload MCQs without duplicating content or re-importing the same file? |
+| Decision | **Yes** — add `QuestionUploadBatch` + `QuestionImportRow` with unique `batchCode`, SHA-256 `fileSha256` (block re-import of identical completed files), and `Question.contentHash` (normalized text SHA-256, partial unique index) for cross-file duplicate detection. Upload → validate/preview → confirm import (skip duplicates). Original files stored under local `QUESTION_IMPORT_DIR` / `backend/storage/question-imports` (admin operational artifacts; Cloudinary remains for learner media). Imports run in chunked API transactions; BullMQ can be added later for multi-thousand-row jobs if request timeouts become an issue. |
+| Impact | Prisma migration, QuestionImportModule, admin Bulk upload UI, question bank associations via Subject/Topic/examTags |
+| Status | **CONFIRMED** (product request 2026-11-11) |
+
 ---
 
 ## Assumption Log (Non-Decision Facts We Are Proceeding With)
