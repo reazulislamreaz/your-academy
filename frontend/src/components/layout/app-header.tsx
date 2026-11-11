@@ -1,53 +1,74 @@
 'use client';
 
+import { usePathname } from 'next/navigation';
 import { TrialStatusChip } from '@/components/access/trial-status-chip';
 import { BrandMark } from './brand-mark';
 import { MobileNav, type NavItem } from './mobile-nav';
+import { UpdatesMenu } from './updates-menu';
 import { UserMenu } from './user-menu';
 import { useMe } from '@/features/auth/use-auth';
 
 const baseLinks: NavItem[] = [
   { href: '/home', label: 'Dashboard', match: 'exact' },
-  { href: '/questions', label: 'Questions', match: 'prefix' },
-  { href: '/documents', label: 'PDFs', match: 'prefix' },
+  { href: '/questions', label: 'Practice', match: 'prefix' },
+  { href: '/documents', label: 'Papers', match: 'prefix' },
   { href: '/bookmarks', label: 'Saved', match: 'prefix' },
   { href: '/news', label: 'News', match: 'prefix' },
+  { href: '/onboarding', label: 'Topics', match: 'prefix' },
   { href: '/profile', label: 'Profile', match: 'prefix' },
 ];
 
-/** Compact top bar — sidebar carries primary nav on desktop. */
+const titles: Record<string, string> = {
+  '/home': 'Dashboard',
+  '/questions': 'Practice',
+  '/documents': 'Previous papers',
+  '/bookmarks': 'My saved',
+  '/news': 'News & circulars',
+  '/onboarding': 'My topics',
+  '/profile': 'Profile',
+};
+
+function pageTitle(pathname: string) {
+  if (pathname.startsWith('/questions/')) return 'Practice';
+  if (pathname.startsWith('/documents/')) return 'Document';
+  if (pathname.startsWith('/news/')) return 'News';
+  for (const [path, title] of Object.entries(titles)) {
+    if (pathname === path || pathname.startsWith(`${path}/`)) return title;
+  }
+  return 'Dashboard';
+}
+
+/** Compact top bar inspired by QBookBD — title left, utilities right. */
 export function AppHeader() {
   const me = useMe();
+  const pathname = usePathname();
   const links =
     me.data?.role === 'ADMIN'
       ? [...baseLinks, { href: '/admin/dashboard', label: 'Admin' }]
       : baseLinks;
 
   return (
-    <header className="sticky top-0 z-30 border-b border-[var(--line)] bg-white/90 backdrop-blur-md">
-      <div className="flex h-14 w-full items-center justify-between gap-3 px-4 sm:px-6">
-        <div className="flex min-w-0 items-center gap-3 lg:hidden">
-          <BrandMark href="/home" />
+    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between gap-2 border-b border-[var(--line)] bg-[var(--bg-muted)]/80 px-3 backdrop-blur-md sm:h-16 sm:gap-3 sm:px-6">
+      <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+        <div className="lg:hidden">
+          <BrandMark href="/home" markOnly />
         </div>
-        <div className="hidden min-w-0 items-center gap-3 lg:flex">
-          <p className="truncate text-sm font-medium text-[var(--muted)]">
-            {me.data ? `Signed in as ${me.data.name}` : 'Your Academy'}
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-[var(--ink)]">{pageTitle(pathname)}</p>
+          <p className="hidden truncate text-xs text-[var(--muted)] md:block">
+            Your progress, exam results, and quick practice options in one place.
           </p>
+        </div>
+      </div>
+      <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
+        <div className="hidden min-[400px]:block">
           <TrialStatusChip />
         </div>
-        <div className="flex items-center gap-2">
-          <div className="hidden sm:block lg:hidden">
-            <TrialStatusChip />
-          </div>
-          <div className="hidden md:block">
-            <UserMenu />
-          </div>
-          <MobileNav
-            items={links}
-            trailing={<UserMenu compact />}
-            breakpointClassName="lg:hidden"
-          />
+        <UpdatesMenu />
+        <div className="hidden md:block">
+          <UserMenu />
         </div>
+        <MobileNav items={links} trailing={<UserMenu compact />} breakpointClassName="lg:hidden" />
       </div>
     </header>
   );

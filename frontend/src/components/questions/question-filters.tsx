@@ -50,13 +50,13 @@ export function QuestionFilters({ categories }: Props) {
 
   return (
     <form
-      className="z-10 grid gap-3 rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)]/95 p-4 shadow-[var(--shadow-sm)] backdrop-blur-md sm:grid-cols-2 lg:sticky lg:top-16 lg:grid-cols-5"
+      className="z-10 grid min-w-0 gap-3 rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)]/95 p-3 shadow-[var(--shadow-sm)] backdrop-blur-md sm:grid-cols-2 sm:p-4 xl:sticky xl:top-16 xl:grid-cols-5 [&>*]:min-w-0"
       onSubmit={(e) => {
         e.preventDefault();
         apply();
       }}
     >
-      <Field className="lg:col-span-2">
+      <Field className="xl:col-span-2">
         <Label htmlFor="q-search">Search</Label>
         <Input
           id="q-search"
@@ -112,7 +112,7 @@ export function QuestionFilters({ categories }: Props) {
           <option value="HARD">Hard</option>
         </Select>
       </Field>
-      <div className="flex flex-wrap items-end gap-2 sm:col-span-2 lg:col-span-5">
+      <div className="flex flex-wrap items-end gap-2 sm:col-span-2 xl:col-span-5">
         <Button type="submit" disabled={pending}>
           {pending ? 'Filtering…' : 'Apply filters'}
         </Button>

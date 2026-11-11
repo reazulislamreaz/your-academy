@@ -24,10 +24,10 @@ const SOCIAL = [
 export function SiteFooter() {
   return (
     <footer id="contact" className="mt-auto bg-[var(--bg-inverse)] text-white">
-      <div className="mx-auto w-full max-w-[1280px] px-6 py-10">
+      <div className="mx-auto w-full max-w-[1280px] px-4 py-10 sm:px-6">
         <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
-          <div className="space-y-2">
-            <BrandMark inverse />
+          <div className="space-y-2 text-center sm:text-left">
+            <BrandMark inverse className="justify-center sm:justify-start" />
             <p className="text-sm font-medium tracking-wide text-white/70">
               Learn - Practice - Get Success
             </p>
@@ -51,7 +51,7 @@ export function SiteFooter() {
             ))}
           </nav>
 
-          <div className="flex items-center gap-3 lg:justify-end">
+          <div className="flex items-center justify-center gap-3 lg:justify-end">
             <p className="text-sm text-white/75">Follow Us:</p>
             <div className="flex items-center gap-2.5">
               {SOCIAL.map(({ label, Icon }) => (

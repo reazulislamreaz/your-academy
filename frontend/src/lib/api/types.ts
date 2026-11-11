@@ -95,6 +95,36 @@ export type MeUser = {
   study: StudyPrefs;
 };
 
+export type PerformanceByCategory = {
+  categoryId: string;
+  name: string;
+  attempts: number;
+  correct: number;
+  accuracyPercent: number;
+};
+
+export type RecentAttempt = {
+  id: string;
+  questionId: string;
+  title: string;
+  isCorrect: boolean;
+  categoryName: string;
+  createdAt: string;
+};
+
+export type UserPerformance = {
+  totalAttempts: number;
+  uniqueQuestions: number;
+  correct: number;
+  incorrect: number;
+  accuracyPercent: number;
+  weekAttempts: number;
+  weekCorrect: number;
+  weekAccuracyPercent: number;
+  byCategory: PerformanceByCategory[];
+  recentAttempts: RecentAttempt[];
+};
+
 export type UserStats = {
   questionBookmarks: number;
   documentBookmarks: number;
@@ -112,6 +142,7 @@ export type UserStats = {
     id: string;
     title: string;
   }>;
+  performance: UserPerformance;
 };
 
 /** GET /analytics/me/summary */

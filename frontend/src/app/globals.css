@@ -140,6 +140,19 @@ select {
   font: inherit;
 }
 
+/* Prefer comfortable touch targets on coarse pointers without bloating desktop. */
+@media (pointer: coarse) {
+  button:not([data-compact]),
+  a[role='button'],
+  input[type='search'],
+  input[type='email'],
+  input[type='text'],
+  input[type='password'],
+  select {
+    min-height: 2.75rem;
+  }
+}
+
 ::selection {
   background: var(--highlight-soft);
   color: var(--ink);

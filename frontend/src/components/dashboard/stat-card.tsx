@@ -27,22 +27,29 @@ export function StatCard({ label, value, hint, icon: Icon, tone = 'navy', classN
   return (
     <div
       className={cn(
-        'relative overflow-hidden rounded-[16px] border border-[var(--line)] bg-white p-5 shadow-[var(--shadow-sm)]',
+        'relative min-w-0 max-w-full overflow-hidden rounded-[16px] border border-[var(--line)] bg-white p-4 shadow-[var(--shadow-sm)] sm:p-5',
         className,
       )}
     >
       <div className={cn('absolute -right-6 -bottom-6 h-24 w-24 rounded-full opacity-60', t.wash)} />
       <div className="relative flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold tracking-[0.12em] text-[var(--muted)] uppercase">
+          <p className="truncate text-[11px] font-semibold tracking-[0.12em] text-[var(--muted)] uppercase">
             {label}
           </p>
-          <p className="mt-2 font-display text-3xl leading-none font-bold tracking-tight tabular-nums text-[var(--ink)]">
+          <p className="mt-2 font-display text-2xl leading-none font-bold tracking-tight tabular-nums text-[var(--ink)] sm:text-3xl">
             {value}
           </p>
-          {hint ? <p className="mt-2 text-xs leading-snug text-[var(--muted)]">{hint}</p> : null}
+          {hint ? (
+            <p className="mt-2 truncate text-xs leading-snug text-[var(--muted)]">{hint}</p>
+          ) : null}
         </div>
-        <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', t.icon)}>
+        <span
+          className={cn(
+            'flex size-9 shrink-0 items-center justify-center rounded-xl sm:size-10',
+            t.icon,
+          )}
+        >
           <Icon className="h-5 w-5" aria-hidden />
         </span>
       </div>

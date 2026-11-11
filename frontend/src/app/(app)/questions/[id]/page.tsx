@@ -152,18 +152,18 @@ function QuestionDetailContent() {
   }
 
   return (
-    <article className="mx-auto max-w-3xl space-y-7 pb-28">
+    <article className="mx-auto max-w-3xl space-y-7 pb-40 sm:pb-32">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2 text-sm text-[var(--muted)]">
+        <div className="flex min-w-0 flex-wrap items-center gap-2 text-sm text-[var(--muted)]">
           <Link href={`/questions${filterQs ? `?${filterQs}` : ''}`} className="hover:text-[var(--highlight)]">
             Question bank
           </Link>
           <span aria-hidden>/</span>
-          <span>{data.category.name}</span>
+          <span className="truncate">{data.category.name}</span>
           {data.subcategory ? (
             <>
               <span aria-hidden>/</span>
-              <span>{data.subcategory.name}</span>
+              <span className="truncate">{data.subcategory.name}</span>
             </>
           ) : null}
           <Badge variant="highlight">{data.difficulty}</Badge>
@@ -171,6 +171,7 @@ function QuestionDetailContent() {
         <Button
           variant="outline"
           size="sm"
+          className="min-h-10 shrink-0"
           onClick={() => bookmark.mutate()}
           disabled={bookmark.isPending}
         >
@@ -234,56 +235,66 @@ function QuestionDetailContent() {
       ) : null}
 
       <div
-        className="fixed inset-x-0 bottom-0 z-20 border-t border-[var(--line)] bg-[var(--bg-elevated)]/95 backdrop-blur-md"
+        className="fixed inset-x-0 bottom-0 z-20 border-t border-[var(--line)] bg-[var(--bg-elevated)]/95 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-md lg:left-[16rem]"
         role="navigation"
         aria-label="Practice navigation"
       >
-        <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center justify-between gap-3 px-6 py-3">
-          <div className="flex gap-2">
+        <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-2 px-4 py-3 sm:gap-3 sm:px-6">
+          <div className="flex shrink-0 gap-1 sm:gap-2">
             {nav?.prevId ? (
               <Link href={navHref(nav.prevId)}>
-                <Button variant="ghost" size="md">
+                <Button variant="ghost" size="md" className="min-h-11 px-2.5 sm:px-4">
                   <ChevronLeft className="h-4 w-4" aria-hidden />
-                  Previous
+                  <span className="hidden sm:inline">Previous</span>
                 </Button>
               </Link>
             ) : (
-              <Button variant="ghost" size="md" disabled>
+              <Button variant="ghost" size="md" className="min-h-11 px-2.5 sm:px-4" disabled>
                 <ChevronLeft className="h-4 w-4" aria-hidden />
-                Previous
+                <span className="hidden sm:inline">Previous</span>
               </Button>
             )}
           </div>
 
           <Button
             size="md"
+            className="min-h-11 min-w-0 flex-1 px-3 sm:max-w-xs sm:flex-none sm:px-5"
             disabled={!selectedId || showAnswerKeys}
             onClick={() => {
+              if (!selectedId || !data) return;
               setChecked(true);
-              // Reinforce continue pointer on attempt (same fields; IDOR-safe via API).
-              if (data) {
-                persistProgress.mutate({
-                  lastQuestionId: data.id,
-                  lastQuestionFilterQs: filterQs || null,
+              persistProgress.mutate({
+                lastQuestionId: data.id,
+                lastQuestionFilterQs: filterQs || null,
+              });
+              // Persist attempt for personal performance analytics (server computes correctness).
+              void apiFetch(`/questions/${data.id}/attempts`, {
+                method: 'POST',
+                body: JSON.stringify({ selectedOptionId: selectedId }),
+              })
+                .then(() => {
+                  void qc.invalidateQueries({ queryKey: ['stats'] });
+                })
+                .catch(() => {
+                  // Non-blocking: practice UI still works if analytics write fails.
                 });
-              }
             }}
           >
             <Check className="h-4 w-4" aria-hidden />
-            {checked ? 'Checked' : 'Check answer'}
+            <span className="truncate">{checked ? 'Checked' : 'Check answer'}</span>
           </Button>
 
-          <div className="flex gap-2">
+          <div className="flex shrink-0 gap-1 sm:gap-2">
             {nav?.nextId ? (
               <Link href={navHref(nav.nextId)}>
-                <Button variant="outline" size="md">
-                  Next
+                <Button variant="outline" size="md" className="min-h-11 px-2.5 sm:px-4">
+                  <span className="hidden sm:inline">Next</span>
                   <ChevronRight className="h-4 w-4" aria-hidden />
                 </Button>
               </Link>
             ) : (
-              <Button variant="outline" size="md" disabled>
-                Next
+              <Button variant="outline" size="md" className="min-h-11 px-2.5 sm:px-4" disabled>
+                <span className="hidden sm:inline">Next</span>
                 <ChevronRight className="h-4 w-4" aria-hidden />
               </Button>
             )}

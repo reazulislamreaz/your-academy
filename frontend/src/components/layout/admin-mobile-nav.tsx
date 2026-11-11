@@ -17,7 +17,7 @@ export function AdminMobileNav() {
   const pathname = usePathname();
   return (
     <nav
-      className="flex gap-1 overflow-x-auto border-b border-[var(--line)] bg-[var(--bg-elevated)] px-3 py-2 lg:hidden"
+      className="flex gap-1 overflow-x-auto overscroll-x-contain border-b border-[var(--line)] bg-[var(--bg-elevated)] px-3 py-2 [-ms-overflow-style:none] [scrollbar-width:none] lg:hidden [&::-webkit-scrollbar]:hidden"
       aria-label="Admin sections"
     >
       {items.map((item) => {

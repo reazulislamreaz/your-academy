@@ -16,7 +16,8 @@ export function Surface({ className, density = 'default', quiet, ...props }: Sur
   return (
     <div
       className={cn(
-        'rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)]',
+        // min-w-0 + max-w-full: stay inside flex/grid tracks on narrow viewports
+        'min-w-0 max-w-full rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)]',
         quiet ? '' : 'shadow-[var(--shadow-sm)]',
         density === 'compact' && 'rounded-[var(--radius)]',
         className,

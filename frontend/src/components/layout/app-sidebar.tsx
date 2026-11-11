@@ -5,28 +5,49 @@ import { usePathname } from 'next/navigation';
 import {
   BookMarked,
   BookOpen,
+  ClipboardList,
   FileText,
-  Home,
+  History,
   LayoutDashboard,
+  Library,
   Newspaper,
+  Sparkles,
   UserRound,
 } from 'lucide-react';
 import { BrandMark } from './brand-mark';
 import { cn } from '@/lib/utils';
 import { useMe } from '@/features/auth/use-auth';
 
-const items = [
-  { href: '/home', label: 'Dashboard', icon: Home, match: 'exact' as const },
-  { href: '/questions', label: 'Question bank', icon: BookOpen, match: 'prefix' as const },
-  { href: '/documents', label: 'PDFs', icon: FileText, match: 'prefix' as const },
-  { href: '/bookmarks', label: 'Saved', icon: BookMarked, match: 'prefix' as const },
-  { href: '/news', label: 'News', icon: Newspaper, match: 'prefix' as const },
-  { href: '/profile', label: 'Profile', icon: UserRound, match: 'prefix' as const },
+type NavLink = {
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  match?: 'exact' | 'prefix';
+};
+
+/** QBookBD-inspired nav, mapped to Your Academy routes/features. */
+const primaryNav: NavLink[] = [
+  { href: '/home', label: 'Dashboard', icon: LayoutDashboard, match: 'exact' },
+  { href: '/questions', label: 'Practice', icon: BookOpen, match: 'prefix' },
+  { href: '/questions', label: 'Question bank', icon: Library, match: 'prefix' },
+  { href: '/documents', label: 'Previous papers', icon: FileText, match: 'prefix' },
+  { href: '/questions?q=Model', label: 'Model exams', icon: ClipboardList },
+  { href: '/home#exam-history', label: 'Exam history', icon: History, match: 'exact' },
+  { href: '/bookmarks', label: 'My saved', icon: BookMarked, match: 'prefix' },
+  { href: '/news', label: 'News & circulars', icon: Newspaper, match: 'prefix' },
+  { href: '/onboarding', label: 'My topics', icon: Sparkles, match: 'prefix' },
+  { href: '/profile', label: 'Profile', icon: UserRound, match: 'prefix' },
 ];
 
-function isActive(pathname: string, href: string, match: 'exact' | 'prefix') {
-  if (match === 'exact') return pathname === href;
-  return pathname === href || pathname.startsWith(`${href}/`);
+function isActive(pathname: string, href: string, match: 'exact' | 'prefix' = 'prefix') {
+  const pathOnly = href.split('?')[0].split('#')[0] || '/';
+  if (href.includes('#')) {
+    return pathname === pathOnly;
+  }
+  if (match === 'exact') return pathname === pathOnly;
+  // Avoid highlighting both Practice and Question bank the same way when possible —
+  // both point at /questions; treat both as active on question routes (reference does similar).
+  return pathname === pathOnly || pathname.startsWith(`${pathOnly}/`);
 }
 
 export function AppSidebar() {
@@ -35,43 +56,50 @@ export function AppSidebar() {
   const isAdmin = me.data?.role === 'ADMIN';
 
   return (
-    <aside className="flex h-full w-60 shrink-0 flex-col border-r border-[var(--line)] bg-white">
-      <div className="border-b border-[var(--line)] px-5 py-5">
+    <aside className="flex h-full w-[16rem] shrink-0 flex-col border-r border-[var(--line)] bg-white">
+      <div className="flex h-16 shrink-0 items-center border-b border-[var(--line)] px-4">
         <BrandMark href="/home" />
-        <p className="mt-2 text-[10px] font-semibold tracking-[0.16em] text-[var(--muted)] uppercase">
-          Study desk
-        </p>
       </div>
-      <nav className="flex flex-1 flex-col gap-0.5 p-3" aria-label="Study">
-        {items.map((item) => {
+
+      <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-2" aria-label="Study">
+        <p className="px-2 pt-2 pb-1 text-[10px] font-semibold tracking-wider text-[var(--muted)] uppercase">
+          Menu
+        </p>
+        {primaryNav.map((item) => {
           const Icon = item.icon;
+          // Distinguish Practice vs Question bank active state visually only by path —
+          // both valid entry points to the bank.
           const active = isActive(pathname, item.href, item.match);
+          const key = `${item.label}-${item.href}`;
           return (
             <Link
-              key={item.href}
+              key={key}
               href={item.href}
               className={cn(
-                'motion-nav-indicator flex items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-sm font-medium',
+                'flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
                 active
-                  ? 'bg-[var(--highlight)] text-white'
+                  ? 'bg-[var(--highlight-soft)] text-[var(--highlight)]'
                   : 'text-[var(--ink-soft)] hover:bg-[var(--bg-muted)] hover:text-[var(--ink)]',
               )}
             >
-              <Icon className="h-4 w-4 shrink-0 opacity-90" />
-              {item.label}
+              <Icon className="size-4 shrink-0 opacity-90" />
+              <span className="truncate">{item.label}</span>
             </Link>
           );
         })}
-        {isAdmin ? (
+      </nav>
+
+      {isAdmin ? (
+        <div className="border-t border-[var(--line)] p-2">
           <Link
             href="/admin/dashboard"
-            className="mt-2 flex items-center gap-2.5 rounded-[10px] border border-[var(--line)] px-3 py-2.5 text-sm font-medium text-[var(--ink-soft)] hover:bg-[var(--bg-muted)] hover:text-[var(--ink)]"
+            className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-[var(--ink-soft)] hover:bg-[var(--bg-muted)] hover:text-[var(--ink)]"
           >
-            <LayoutDashboard className="h-4 w-4 shrink-0" />
+            <LayoutDashboard className="size-4 shrink-0" />
             Admin console
           </Link>
-        ) : null}
-      </nav>
+        </div>
+      ) : null}
     </aside>
   );
 }

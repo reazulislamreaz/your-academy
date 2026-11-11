@@ -176,39 +176,131 @@ export class UsersService {
   }
 
   async getStats(user: RequestUser) {
-    const [questionBookmarks, documentBookmarks, browsing, recentQuestions, recentDocuments] =
-      await Promise.all([
-        this.prisma.questionBookmark.count({ where: { userId: user.userId } }),
-        this.prisma.documentBookmark.count({ where: { userId: user.userId } }),
-        this.prisma.browsingSession.aggregate({
-          where: { userId: user.userId },
-          _sum: { accruedSeconds: true },
-        }),
-        this.prisma.questionBookmark.findMany({
-          where: { userId: user.userId },
-          take: 5,
-          orderBy: { createdAt: 'desc' },
-          select: {
-            id: true,
-            createdAt: true,
-            question: {
-              select: { id: true, title: true, difficulty: true },
-            },
+    const weekStart = new Date();
+    weekStart.setUTCDate(weekStart.getUTCDate() - weekStart.getUTCDay());
+    weekStart.setUTCHours(0, 0, 0, 0);
+
+    const [
+      questionBookmarks,
+      documentBookmarks,
+      browsing,
+      recentQuestions,
+      recentDocuments,
+      attemptAgg,
+      uniqueQuestions,
+      weekAgg,
+      recentAttempts,
+      byCategoryRaw,
+    ] = await Promise.all([
+      this.prisma.questionBookmark.count({ where: { userId: user.userId } }),
+      this.prisma.documentBookmark.count({ where: { userId: user.userId } }),
+      this.prisma.browsingSession.aggregate({
+        where: { userId: user.userId },
+        _sum: { accruedSeconds: true },
+      }),
+      this.prisma.questionBookmark.findMany({
+        where: { userId: user.userId },
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          createdAt: true,
+          question: {
+            select: { id: true, title: true, difficulty: true },
           },
-        }),
-        this.prisma.documentBookmark.findMany({
-          where: { userId: user.userId },
-          take: 5,
-          orderBy: { createdAt: 'desc' },
-          select: {
-            id: true,
-            createdAt: true,
-            document: {
-              select: { id: true, title: true },
-            },
+        },
+      }),
+      this.prisma.documentBookmark.findMany({
+        where: { userId: user.userId },
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          createdAt: true,
+          document: {
+            select: { id: true, title: true },
           },
-        }),
-      ]);
+        },
+      }),
+      this.prisma.questionAttempt.groupBy({
+        by: ['isCorrect'],
+        where: { userId: user.userId },
+        _count: { _all: true },
+      }),
+      this.prisma.questionAttempt.findMany({
+        where: { userId: user.userId },
+        distinct: ['questionId'],
+        select: { questionId: true },
+      }),
+      this.prisma.questionAttempt.groupBy({
+        by: ['isCorrect'],
+        where: { userId: user.userId, createdAt: { gte: weekStart } },
+        _count: { _all: true },
+      }),
+      this.prisma.questionAttempt.findMany({
+        where: { userId: user.userId },
+        take: 8,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          isCorrect: true,
+          createdAt: true,
+          question: { select: { id: true, title: true } },
+          category: { select: { id: true, name: true } },
+        },
+      }),
+      this.prisma.questionAttempt.groupBy({
+        by: ['categoryId', 'isCorrect'],
+        where: { userId: user.userId },
+        _count: { _all: true },
+      }),
+    ]);
+
+    const correct =
+      attemptAgg.find((row) => row.isCorrect === true)?._count._all ?? 0;
+    const incorrect =
+      attemptAgg.find((row) => row.isCorrect === false)?._count._all ?? 0;
+    const totalAttempts = correct + incorrect;
+    const weekCorrect =
+      weekAgg.find((row) => row.isCorrect === true)?._count._all ?? 0;
+    const weekIncorrect =
+      weekAgg.find((row) => row.isCorrect === false)?._count._all ?? 0;
+    const weekAttempts = weekCorrect + weekIncorrect;
+
+    const categoryIds = [...new Set(byCategoryRaw.map((row) => row.categoryId))];
+    const categories =
+      categoryIds.length === 0
+        ? []
+        : await this.prisma.category.findMany({
+            where: { id: { in: categoryIds } },
+            select: { id: true, name: true },
+          });
+    const categoryName = new Map(categories.map((c) => [c.id, c.name]));
+
+    const byCategoryMap = new Map<
+      string,
+      { categoryId: string; name: string; attempts: number; correct: number }
+    >();
+    for (const row of byCategoryRaw) {
+      const current = byCategoryMap.get(row.categoryId) ?? {
+        categoryId: row.categoryId,
+        name: categoryName.get(row.categoryId) ?? 'Unknown',
+        attempts: 0,
+        correct: 0,
+      };
+      current.attempts += row._count._all;
+      if (row.isCorrect) current.correct += row._count._all;
+      byCategoryMap.set(row.categoryId, current);
+    }
+
+    const byCategory = [...byCategoryMap.values()]
+      .map((row) => ({
+        ...row,
+        accuracyPercent:
+          row.attempts === 0 ? 0 : Math.round((row.correct / row.attempts) * 1000) / 10,
+      }))
+      .sort((a, b) => b.attempts - a.attempts)
+      .slice(0, 6);
 
     return {
       questionBookmarks,
@@ -227,6 +319,27 @@ export class UsersService {
         id: row.document.id,
         title: row.document.title,
       })),
+      performance: {
+        totalAttempts,
+        uniqueQuestions: uniqueQuestions.length,
+        correct,
+        incorrect,
+        accuracyPercent:
+          totalAttempts === 0 ? 0 : Math.round((correct / totalAttempts) * 1000) / 10,
+        weekAttempts,
+        weekCorrect,
+        weekAccuracyPercent:
+          weekAttempts === 0 ? 0 : Math.round((weekCorrect / weekAttempts) * 1000) / 10,
+        byCategory,
+        recentAttempts: recentAttempts.map((row) => ({
+          id: row.id,
+          questionId: row.question.id,
+          title: row.question.title,
+          isCorrect: row.isCorrect,
+          categoryName: row.category.name,
+          createdAt: row.createdAt.toISOString(),
+        })),
+      },
     };
   }
 }

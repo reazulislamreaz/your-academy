@@ -47,7 +47,10 @@ export function NewsletterBar() {
             to stay updated.
           </p>
         ) : (
-          <form onSubmit={onSubmit} className="flex w-full max-w-md">
+          <form
+            onSubmit={onSubmit}
+            className="flex w-full max-w-md flex-col gap-2 sm:flex-row sm:gap-0"
+          >
             <label htmlFor="newsletter-email" className="sr-only">
               Email address
             </label>
@@ -58,9 +61,12 @@ export function NewsletterBar() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your email address"
-              className="h-11 min-w-0 flex-1 rounded-l-full border border-white/15 border-r-0 bg-white px-4 text-base text-[var(--ink)] outline-none placeholder:text-[var(--muted)] focus:shadow-[0_0_0_3px_rgba(227,30,36,0.35)] sm:text-sm"
+              className="h-11 min-w-0 w-full flex-1 rounded-full border border-white/15 bg-white px-4 text-base text-[var(--ink)] outline-none placeholder:text-[var(--muted)] focus:shadow-[0_0_0_3px_rgba(227,30,36,0.35)] sm:rounded-l-full sm:rounded-r-none sm:border-r-0 sm:text-sm"
             />
-            <Button type="submit" className="h-11 shrink-0 rounded-l-none rounded-r-full px-6">
+            <Button
+              type="submit"
+              className="h-11 w-full shrink-0 rounded-full px-6 sm:w-auto sm:rounded-l-none sm:rounded-r-full"
+            >
               Subscribe
             </Button>
           </form>

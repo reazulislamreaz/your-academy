@@ -19,11 +19,14 @@ function isActive(pathname: string, item: NavItem) {
 export function MobileNav({
   items,
   trailing,
+  leading,
   /** Tailwind breakpoint class when the hamburger is shown (default: below xl for marketing). */
   breakpointClassName = 'xl:hidden',
 }: {
   items: NavItem[];
   trailing?: ReactNode;
+  /** Optional block above links (e.g. mobile search). */
+  leading?: ReactNode;
   breakpointClassName?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -63,8 +66,9 @@ export function MobileNav({
       {open ? (
         <div
           id={panelId}
-          className="fixed inset-x-0 top-[var(--header-h,64px)] bottom-0 z-40 overflow-y-auto border-t border-[var(--line)] bg-[var(--bg-elevated)] p-4 shadow-[var(--shadow-lg)] motion-fade-in"
+          className="fixed inset-x-0 top-[var(--header-h,64px)] bottom-0 z-40 overflow-y-auto overscroll-contain border-t border-[var(--line)] bg-[var(--bg-elevated)] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[var(--shadow-lg)] motion-fade-in"
         >
+          {leading ? <div className="mb-4">{leading}</div> : null}
           <nav className="flex flex-col gap-1" aria-label="Mobile">
             {items.map((item) => {
               const active =

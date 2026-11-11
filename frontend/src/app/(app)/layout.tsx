@@ -12,7 +12,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       </div>
       <div className="flex min-w-0 flex-1 flex-col">
         <AppHeader />
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 motion-fade-in sm:px-6 sm:py-8">
+        <main className="mx-auto w-full max-w-[1280px] min-w-0 flex-1 px-3 py-5 motion-fade-in sm:px-6 sm:py-8">
           {children}
         </main>
       </div>

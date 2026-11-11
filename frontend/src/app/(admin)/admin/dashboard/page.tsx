@@ -253,11 +253,13 @@ export default function AdminDashboardPage() {
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Surface className="overflow-hidden p-0">
-          <div className="flex items-center justify-between border-b border-[var(--line)] px-5 py-4">
-            <h2 className="font-display text-lg font-bold tracking-tight">Recent registrations</h2>
+          <div className="flex items-center justify-between gap-2 border-b border-[var(--line)] px-3 py-4 sm:px-5">
+            <h2 className="min-w-0 truncate font-display text-base font-bold tracking-tight sm:text-lg">
+              Recent registrations
+            </h2>
             <Link
               href="/admin/users"
-              className="text-sm font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
+              className="shrink-0 text-sm font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
             >
               View all
             </Link>
@@ -266,18 +268,18 @@ export default function AdminDashboardPage() {
             <table className="w-full min-w-[28rem] text-left text-sm">
               <thead className="bg-[var(--bg-desk)] text-[11px] tracking-[0.08em] text-[var(--muted)] uppercase">
                 <tr>
-                  <th className="px-5 py-3 font-semibold">User</th>
+                  <th className="px-3 py-3 font-semibold sm:px-5">User</th>
                   <th className="px-3 py-3 font-semibold">Role</th>
                   <th className="px-3 py-3 font-semibold">Status</th>
-                  <th className="px-5 py-3 font-semibold">Joined</th>
+                  <th className="px-3 py-3 font-semibold sm:px-5">Joined</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--line)]">
                 {data.recentUsers.map((user) => (
                   <tr key={user.id} className="hover:bg-[var(--brand-wash)]">
-                    <td className="px-5 py-3">
-                      <p className="font-semibold text-[var(--ink)]">{user.name}</p>
-                      <p className="text-xs text-[var(--muted)]">{user.whatsappNumber}</p>
+                    <td className="max-w-[10rem] px-3 py-3 sm:max-w-none sm:px-5">
+                      <p className="truncate font-semibold text-[var(--ink)]">{user.name}</p>
+                      <p className="truncate text-xs text-[var(--muted)]">{user.whatsappNumber}</p>
                     </td>
                     <td className="px-3 py-3">
                       <Badge variant="outline">{user.role}</Badge>

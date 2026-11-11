@@ -91,30 +91,30 @@ export default function AdminUsersPage() {
       {list.data ? (
         <Surface className="overflow-hidden p-0">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[40rem] text-left text-sm">
+            <table className="w-full min-w-[36rem] text-left text-sm">
               <thead className="bg-[var(--bg-desk)] text-[11px] tracking-[0.08em] text-[var(--muted)] uppercase">
                 <tr>
-                  <th className="px-5 py-3 font-semibold">User</th>
+                  <th className="px-3 py-3 font-semibold sm:px-5">User</th>
                   <th className="px-3 py-3 font-semibold">Role</th>
                   <th className="px-3 py-3 font-semibold">Status</th>
                   <th className="px-3 py-3 font-semibold">Trial ends</th>
-                  <th className="px-5 py-3 font-semibold">Joined</th>
-                  <th className="px-5 py-3 text-right font-semibold">Actions</th>
+                  <th className="px-3 py-3 font-semibold sm:px-5">Joined</th>
+                  <th className="px-3 py-3 text-right font-semibold sm:px-5">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--line)]">
                 {list.data.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-5 py-10 text-center text-[var(--muted)]">
+                    <td colSpan={6} className="px-3 py-10 text-center text-[var(--muted)] sm:px-5">
                       No users match this search.
                     </td>
                   </tr>
                 ) : (
                   list.data.map((user) => (
                     <tr key={user.id} className="hover:bg-[var(--brand-wash)]">
-                      <td className="px-5 py-3.5">
-                        <p className="font-semibold text-[var(--ink)]">{user.name}</p>
-                        <p className="text-xs text-[var(--muted)]">
+                      <td className="max-w-[12rem] px-3 py-3.5 sm:max-w-none sm:px-5">
+                        <p className="truncate font-semibold text-[var(--ink)]">{user.name}</p>
+                        <p className="truncate text-xs text-[var(--muted)]">
                           {user.whatsappNumber}
                           {user.email ? ` · ${user.email}` : ''}
                         </p>

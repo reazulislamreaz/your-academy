@@ -75,15 +75,15 @@ export function FilterChips({
   if (chips.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap items-center gap-2" aria-label="Active filters">
+    <div className="flex max-w-full flex-wrap items-center gap-2" aria-label="Active filters">
       {chips.map((chip) => (
         <Link
           key={chip.key}
           href={chip.href}
-          className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-[var(--line)] bg-[var(--bg-elevated)] px-3 py-2 text-xs font-semibold text-[var(--ink-soft)] transition-colors hover:border-[var(--line-strong)] hover:bg-[var(--bg-muted)]"
+          className="inline-flex max-w-full items-center gap-1.5 rounded-[var(--radius-sm)] border border-[var(--line)] bg-[var(--bg-elevated)] px-3 py-2 text-xs font-semibold text-[var(--ink-soft)] transition-colors hover:border-[var(--line-strong)] hover:bg-[var(--bg-muted)]"
         >
-          {chip.label}
-          <X className="h-3 w-3 text-[var(--muted)]" aria-hidden />
+          <span className="min-w-0 truncate">{chip.label}</span>
+          <X className="h-3 w-3 shrink-0 text-[var(--muted)]" aria-hidden />
           <span className="sr-only">Remove filter</span>
         </Link>
       ))}

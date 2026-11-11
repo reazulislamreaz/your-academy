@@ -17,14 +17,14 @@ export function PageHeader({ title, description, actions, className, eyebrow }: 
         className,
       )}
     >
-      <div className="space-y-2">
+      <div className="min-w-0 space-y-2">
         {eyebrow ? (
           <p className="flex items-center gap-2 text-xs font-semibold tracking-[0.14em] text-[var(--highlight)] uppercase">
-            <span aria-hidden className="inline-block h-[3px] w-5 rounded-full bg-[var(--highlight)]" />
+            <span aria-hidden className="inline-block h-[3px] w-5 shrink-0 rounded-full bg-[var(--highlight)]" />
             {eyebrow}
           </p>
         ) : null}
-        <h1 className="font-display text-[clamp(1.75rem,3vw,2.25rem)] font-bold tracking-tight text-[var(--ink)]">
+        <h1 className="break-words font-display text-[clamp(1.5rem,4.5vw,2.25rem)] font-bold tracking-tight text-[var(--ink)]">
           {title}
         </h1>
         {description ? (
@@ -33,7 +33,11 @@ export function PageHeader({ title, description, actions, className, eyebrow }: 
           </p>
         ) : null}
       </div>
-      {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+      {actions ? (
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:shrink-0">
+          {actions}
+        </div>
+      ) : null}
     </div>
   );
 }

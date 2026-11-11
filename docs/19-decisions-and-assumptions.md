@@ -237,10 +237,9 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Field | Value |
 |-------|-------|
 | Question | Should the learner dashboard show exams attempted, correct/wrong counts, accuracy %, and subject-wise performance? |
-| Current assumption | v1 practice checks are **ephemeral client-side**; no `QuestionAttempt` (or equivalent) store. Dashboards therefore use real bookmark + browsing-session analytics only — not fabricated accuracy KPIs. |
-| Recommended option | Add attempt persistence + aggregate APIs if product wants performance dashboards. |
-| Impact | Schema, Questions/Analytics modules, practice player, learner dashboard |
-| Status | **NEEDS APPROVAL** |
+| Decision | **Yes** — persist `QuestionAttempt` on Check answer (`POST /questions/:id/attempts`). Correctness is computed server-side (still omitted from GET detail when not entitled). Aggregates exposed on `GET /users/me/stats.performance`. Dedicated mock-exam products remain out of scope. |
+| Impact | Schema migration, QuestionsModule, practice player, learner dashboard |
+| Status | **CONFIRMED** (product request 2026-11-11) |
 
 ---
 

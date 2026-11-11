@@ -4,19 +4,22 @@ import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import {
   ArrowRight,
-  Bell,
   BookMarked,
   BookOpen,
+  CheckCircle2,
+  ClipboardList,
   Clock3,
   FileText,
-  Sparkles,
+  Library,
+  Percent,
   Target,
+  Trophy,
+  XCircle,
 } from 'lucide-react';
+import { AccuracyDonut } from '@/components/dashboard/accuracy-donut';
 import { BarChart } from '@/components/dashboard/bar-chart';
-import { ProgressRing } from '@/components/dashboard/progress-ring';
-import { QuickLink } from '@/components/dashboard/quick-link';
-import { StatCard } from '@/components/dashboard/stat-card';
-import { PageHeader } from '@/components/layout/page-header';
+import { MetricTile } from '@/components/dashboard/metric-tile';
+import { SubjectProgress } from '@/components/dashboard/subject-progress';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,15 +28,27 @@ import { Surface } from '@/components/ui/surface';
 import { TrialCountdown } from '@/features/auth/trial-countdown';
 import { isUnauthorized, useMe } from '@/features/auth/use-auth';
 import { apiFetch } from '@/lib/api/client';
-import type { AnalyticsSummary, CategoryNode, UserStats } from '@/lib/api/types';
+import type {
+  AnalyticsSummary,
+  CategoryNode,
+  NewsListItem,
+  UserStats,
+} from '@/lib/api/types';
 import { formatStudyMinutes } from '@/lib/study-prefs';
 
-function trialProgress(trialStartedAt: string, trialEndsAt: string, now = Date.now()) {
-  const start = new Date(trialStartedAt).getTime();
-  const end = new Date(trialEndsAt).getTime();
-  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return 0;
-  const remaining = Math.max(0, end - now);
-  return Math.round((remaining / (end - start)) * 100);
+function emptyPerformance(): UserStats['performance'] {
+  return {
+    totalAttempts: 0,
+    uniqueQuestions: 0,
+    correct: 0,
+    incorrect: 0,
+    accuracyPercent: 0,
+    weekAttempts: 0,
+    weekCorrect: 0,
+    weekAccuracyPercent: 0,
+    byCategory: [],
+    recentAttempts: [],
+  };
 }
 
 export default function StudyHomePage() {
@@ -57,16 +72,22 @@ export default function StudyHomePage() {
     enabled: Boolean(me.data),
   });
 
+  const news = useQuery({
+    queryKey: ['news-home'],
+    queryFn: () => apiFetch<NewsListItem[]>('/news'),
+    enabled: Boolean(me.data),
+  });
+
   if (me.isLoading) {
     return (
       <div className="space-y-4">
-        <Skeleton className="h-10 w-64" />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Skeleton className="h-8 w-64" />
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-28 w-full" />
+            <Skeleton key={i} className="h-20 w-full" />
           ))}
         </div>
-        <Skeleton className="h-48 w-full" />
+        <Skeleton className="h-56 w-full" />
       </div>
     );
   }
@@ -74,7 +95,7 @@ export default function StudyHomePage() {
   if (isUnauthorized(me.error) || !me.data) {
     return (
       <Alert variant="warning">
-        Sign in to open your study home.{' '}
+        Sign in to open your dashboard.{' '}
         <Link href="/login" className="font-semibold underline-offset-2 hover:underline">
           Sign in
         </Link>
@@ -89,217 +110,228 @@ export default function StudyHomePage() {
     categories.data?.filter((c) => preferredIds.includes(c.id)).slice(0, 6) ?? [];
   const suggestions =
     preferred.length > 0 ? preferred : (categories.data?.slice(0, 6) ?? []);
-  const ring = trialProgress(me.data.access.trialStartedAt, me.data.access.trialEndsAt);
+  const perf = stats.data?.performance ?? emptyPerformance();
   const daySec = analytics.data?.daySeconds ?? 0;
   const weekSec = analytics.data?.weekSeconds ?? 0;
   const totalSec = analytics.data?.totalSeconds ?? stats.data?.browsingSeconds ?? 0;
-  const sessions = analytics.data?.sessions ?? 0;
+  const newsItems = (news.data ?? []).slice(0, 4);
 
   return (
-    <div className="space-y-8">
-      <PageHeader
-        eyebrow="Dashboard"
-        title={`Welcome back, ${firstName}`}
-        description="Track your study time, continue practice, and jump into topics you care about."
-        actions={
-          <Link href="/questions">
-            <Button size="sm" className="rounded-full px-5">
-              Practice MCQs
-              <ArrowRight className="h-4 w-4" aria-hidden />
-            </Button>
-          </Link>
-        }
-      />
+    <div className="flex w-full flex-col gap-6 pb-8">
+      {/* Welcome */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="font-display text-xl font-bold tracking-tight text-[var(--ink)] sm:text-2xl md:text-3xl">
+            Welcome back, {firstName}
+          </h1>
+          <p className="mt-1 max-w-xl text-sm text-[var(--muted)]">
+            Your progress, exam results, and quick practice options in one place.
+          </p>
+        </div>
+        <Link href="/questions" className="w-full sm:w-auto">
+          <Button className="w-full rounded-full px-5 sm:w-auto">
+            Start practice
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        </Link>
+      </div>
 
-      {/* Overview metrics — real bookmark + browsing data */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label="Saved questions"
-          value={stats.data?.questionBookmarks ?? 0}
-          hint="Bookmarked MCQs"
-          icon={BookMarked}
-          tone="red"
+      {/* Membership strip */}
+      <Surface className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+        <TrialCountdown
+          trialEndsAt={me.data.access.trialEndsAt}
+          isTrialActive={me.data.access.isTrialActive}
         />
-        <StatCard
-          label="Saved PDFs"
-          value={stats.data?.documentBookmarks ?? 0}
-          hint="Study documents"
-          icon={FileText}
+        <p className="text-xs text-[var(--muted)] sm:text-sm">
+          {me.data.access.isTrialActive
+            ? 'Answers unlocked for your remaining trial.'
+            : 'Browsing stays open — correct answers remain premium.'}
+        </p>
+        <Link href="/profile" className="text-sm font-semibold text-[var(--highlight)] hover:underline">
+          Account settings
+        </Link>
+      </Surface>
+
+      {/* Metric tiles — QBook style */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <MetricTile
+          label="Questions answered"
+          value={perf.uniqueQuestions}
+          icon={Target}
           tone="blue"
         />
-        <StatCard
-          label="Study time"
-          value={formatStudyMinutes(totalSec)}
-          hint="All sessions"
-          icon={Clock3}
-          tone="navy"
+        <MetricTile
+          label="Accuracy"
+          value={perf.accuracyPercent}
+          suffix="%"
+          icon={Percent}
+          tone="green"
         />
-        <StatCard
-          label="Sessions"
-          value={sessions}
-          hint="Browsing sessions recorded"
-          icon={Target}
-          tone="teal"
+        <MetricTile
+          label="Checks taken"
+          value={perf.totalAttempts}
+          icon={ClipboardList}
+          tone="purple"
+        />
+        <MetricTile
+          label="Week accuracy"
+          value={perf.weekAccuracyPercent}
+          suffix="%"
+          icon={Trophy}
+          tone="amber"
         />
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
-        {/* Continue + quick actions */}
-        <Surface className="motion-rise space-y-5 p-6">
-          <div className="flex items-center gap-2 text-xs font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
-            <Sparkles className="h-3.5 w-3.5 text-[var(--highlight)]" aria-hidden />
-            Continue studying
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <MetricTile
+          label="Correct"
+          value={perf.correct}
+          icon={CheckCircle2}
+          tone="green"
+        />
+        <MetricTile label="Incorrect" value={perf.incorrect} icon={XCircle} tone="red" />
+        <MetricTile
+          label="Saved items"
+          value={(stats.data?.questionBookmarks ?? 0) + (stats.data?.documentBookmarks ?? 0)}
+          icon={BookMarked}
+          tone="navy"
+        />
+        <MetricTile
+          label="Study time"
+          value={formatStudyMinutes(totalSec)}
+          icon={Clock3}
+          tone="blue"
+        />
+      </div>
+
+      {/* Continue + quick practice */}
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <Surface className="space-y-4 p-4 sm:p-5 md:col-span-2 xl:col-span-2">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="min-w-0 truncate text-sm font-semibold text-[var(--ink)]">
+              Continue practice
+            </h2>
+            <Link
+              href="/questions"
+              className="shrink-0 text-xs font-semibold text-[var(--highlight)] hover:underline"
+            >
+              Question bank
+            </Link>
           </div>
           {last ? (
-            <div className="rounded-[14px] border border-[var(--line)] bg-[var(--bg-desk)] p-5">
-              <p className="text-xs font-semibold tracking-wide text-[var(--muted)] uppercase">
-                Last opened
-              </p>
-              <h2 className="mt-2 font-display text-xl font-bold tracking-tight text-[var(--ink)] sm:text-2xl">
+            <div className="min-w-0 rounded-lg border border-[var(--line)] bg-[var(--bg-desk)] p-4">
+              <p className="text-xs text-[var(--muted)]">Last opened</p>
+              <p className="mt-1 break-words font-display text-lg font-bold tracking-tight">
                 {last.title}
-              </h2>
+              </p>
               {last.categoryName ? (
-                <p className="mt-1 text-sm text-[var(--muted)]">{last.categoryName}</p>
+                <p className="mt-0.5 truncate text-sm text-[var(--muted)]">{last.categoryName}</p>
               ) : null}
               <Link
                 href={`/questions/${last.id}${last.filterQs ? `?${last.filterQs}` : ''}`}
-                className="mt-4 inline-flex"
+                className="mt-3 inline-flex"
               >
-                <Button className="rounded-full px-5">
-                  Resume question
+                <Button size="sm" className="rounded-full">
+                  Resume
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
             </div>
           ) : (
-            <div className="rounded-[14px] border border-dashed border-[var(--line-strong)] bg-[var(--bg-desk)] p-5">
-              <h2 className="font-display text-xl font-bold tracking-tight">
-                Start a practice session
-              </h2>
-              <p className="mt-2 text-sm leading-relaxed text-[var(--muted)]">
-                Open any question — we remember it here across devices so you can continue later.
-              </p>
-              <Link href="/questions" className="mt-4 inline-flex">
-                <Button className="rounded-full px-5">Browse question bank</Button>
-              </Link>
+            <div className="rounded-lg border border-dashed border-[var(--line-strong)] p-4 text-sm text-[var(--muted)]">
+              Open any MCQ and press Check answer to build history and accuracy here.
+              <div className="mt-3">
+                <Link href="/questions">
+                  <Button size="sm" className="rounded-full">
+                    Browse questions
+                  </Button>
+                </Link>
+              </div>
             </div>
           )}
 
           <div>
-            <h3 className="mb-3 font-display text-sm font-bold tracking-tight text-[var(--ink)]">
-              Quick access
+            <h3 className="mb-2 text-xs font-semibold tracking-wide text-[var(--muted)] uppercase">
+              Quick practice
             </h3>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <QuickLink
-                href="/questions"
-                title="MCQ practice"
-                description="Browse and filter the question bank"
-                icon={BookOpen}
-              />
-              <QuickLink
-                href="/bookmarks"
-                title="Saved items"
-                description="Questions and PDFs you bookmarked"
-                icon={BookMarked}
-              />
-              <QuickLink
-                href="/documents"
-                title="PDF library"
-                description="Published study documents"
-                icon={FileText}
-              />
-              <QuickLink
-                href="/profile"
-                title="Account settings"
-                description="Profile, avatar, and password"
-                icon={Target}
-              />
+            <div className="grid gap-2 sm:grid-cols-2">
+              {[
+                {
+                  href: '/questions',
+                  title: 'MCQ practice',
+                  desc: 'Timed self-check in the bank',
+                  icon: BookOpen,
+                },
+                {
+                  href: '/questions',
+                  title: 'Question bank',
+                  desc: 'Subject & topic filters',
+                  icon: Library,
+                },
+                {
+                  href: '/documents',
+                  title: 'Previous papers',
+                  desc: 'Published PDF library',
+                  icon: FileText,
+                },
+                {
+                  href: '/questions?q=Model',
+                  title: 'Model exam practice',
+                  desc: 'Search model / exam sets',
+                  icon: ClipboardList,
+                },
+              ].map((item) => (
+                <Link
+                  key={item.title}
+                  href={item.href}
+                  className="flex items-center gap-3 rounded-md px-2 py-2 transition-colors hover:bg-[var(--bg-muted)]"
+                >
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-[var(--highlight-soft)] text-[var(--highlight)]">
+                    <item.icon className="size-4" aria-hidden />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-medium text-[var(--ink)]">
+                      {item.title}
+                    </span>
+                    <span className="block truncate text-xs text-[var(--muted)]">{item.desc}</span>
+                  </span>
+                </Link>
+              ))}
             </div>
           </div>
         </Surface>
 
-        {/* Access + updates */}
-        <div className="space-y-5">
-          <Surface className="motion-rise space-y-4 p-6" style={{ animationDelay: '60ms' }}>
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="font-display text-lg font-bold tracking-tight">Access status</h2>
-                <p className="mt-1 text-sm text-[var(--muted)]">Trial entitlement from your account</p>
-              </div>
-              <ProgressRing
-                value={me.data.access.isTrialActive ? ring : 0}
-                label={me.data.access.isTrialActive ? `${ring}%` : '0%'}
-                sublabel="remaining"
-                size={96}
-                stroke={9}
-              />
-            </div>
-            <TrialCountdown
-              trialEndsAt={me.data.access.trialEndsAt}
-              isTrialActive={me.data.access.isTrialActive}
-            />
-            <p className="text-sm leading-relaxed text-[var(--muted)]">
-              {me.data.access.isTrialActive
-                ? 'Answers and explanations are unlocked for the rest of your trial.'
-                : 'You can still browse questions, options, PDFs, and news. Correct answers stay premium.'}
-            </p>
-            <Link href="/profile">
-              <Button variant="outline" size="sm" className="rounded-full">
-                Open profile
-              </Button>
-            </Link>
-          </Surface>
-
-          <Surface className="space-y-3 p-5">
-            <div className="flex items-center gap-2">
-              <Bell className="h-4 w-4 text-[var(--highlight)]" aria-hidden />
-              <h2 className="font-display text-base font-bold tracking-tight">Important updates</h2>
-            </div>
-            <ul className="space-y-2.5">
-              <li className="rounded-[12px] border border-[var(--line)] bg-[var(--bg-desk)] px-3.5 py-3 text-sm">
-                <p className="font-semibold text-[var(--ink)]">
-                  {me.data.access.isTrialActive ? 'Trial answers unlocked' : 'Trial ended'}
-                </p>
-                <p className="mt-0.5 text-xs text-[var(--muted)]">
-                  {me.data.access.isTrialActive
-                    ? `Ends ${new Date(me.data.access.trialEndsAt).toLocaleString()}`
-                    : 'Premium answers stay gated until subscription ships.'}
-                </p>
-              </li>
-              {!me.data.study?.onboardingCompleted ? (
-                <li className="rounded-[12px] border border-[var(--highlight)]/30 bg-[var(--highlight-soft)] px-3.5 py-3 text-sm">
-                  <p className="font-semibold text-[var(--ink)]">Finish topic setup</p>
-                  <p className="mt-0.5 text-xs text-[var(--muted)]">
-                    Pick interests so we can suggest practice topics.
-                  </p>
-                  <Link
-                    href="/onboarding"
-                    className="mt-2 inline-flex text-xs font-bold text-[var(--highlight)] underline-offset-2 hover:underline"
-                  >
-                    Complete onboarding
-                  </Link>
-                </li>
-              ) : null}
-            </ul>
-          </Surface>
-        </div>
+        <Surface className="space-y-3 p-4 sm:p-5">
+          <h2 className="text-sm font-semibold text-[var(--ink)]">Answer mix</h2>
+          <AccuracyDonut correct={perf.correct} incorrect={perf.incorrect} />
+        </Surface>
       </div>
 
-      {/* Study analytics */}
-      <div className="grid gap-5 lg:grid-cols-2">
-        <Surface className="space-y-4 p-6">
-          <div>
-            <h2 className="font-display text-lg font-bold tracking-tight">Study time analytics</h2>
-            <p className="mt-1 text-sm text-[var(--muted)]">
-              From your browsing sessions (today, this week, all time).
-            </p>
+      {/* Subject progress + study time */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Surface className="space-y-3 p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="min-w-0 truncate text-sm font-semibold text-[var(--ink)]">
+              Subject performance
+            </h2>
+            <Link
+              href="/onboarding"
+              className="shrink-0 text-xs font-semibold text-[var(--highlight)] hover:underline"
+            >
+              My topics
+            </Link>
           </div>
+          {stats.isLoading ? <Skeleton className="h-40 w-full" /> : <SubjectProgress items={perf.byCategory} />}
+        </Surface>
+
+        <Surface className="space-y-3 p-4 sm:p-5">
+          <h2 className="text-sm font-semibold text-[var(--ink)]">Study time</h2>
           {analytics.isLoading ? (
-            <Skeleton className="h-36 w-full" />
+            <Skeleton className="h-40 w-full" />
           ) : (
             <BarChart
               formatValue={formatStudyMinutes}
-              emptyLabel="Start practicing to record study time."
+              emptyLabel="Study time appears while you browse with this account."
               data={[
                 { label: 'Today', value: daySec, color: 'var(--highlight)' },
                 { label: 'This week', value: weekSec, color: 'var(--info)' },
@@ -308,45 +340,97 @@ export default function StudyHomePage() {
             />
           )}
         </Surface>
+      </div>
 
-        <Surface className="space-y-4 p-6">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <h2 className="font-display text-lg font-bold tracking-tight">Your topics</h2>
-              <p className="mt-1 text-sm text-[var(--muted)]">
-                {preferred.length > 0
-                  ? 'Interests saved on your account.'
-                  : 'Live categories from the library.'}
-              </p>
-            </div>
+      {/* Exam history + topics */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Surface id="exam-history" className="scroll-mt-24 space-y-3 p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="min-w-0 truncate text-sm font-semibold text-[var(--ink)]">
+              Exam history & results
+            </h2>
+            <Badge variant="outline" className="shrink-0">
+              {perf.recentAttempts.length} recent
+            </Badge>
+          </div>
+          {stats.isLoading ? <Skeleton className="h-40 w-full" /> : null}
+          {!stats.isLoading && perf.recentAttempts.length === 0 ? (
+            <p className="py-10 text-center text-sm text-[var(--muted)]">
+              No checks yet. Results appear after you press Check answer.
+            </p>
+          ) : (
+            <ul className="divide-y divide-[var(--line)]">
+              {perf.recentAttempts.map((item) => (
+                <li key={item.id}>
+                  <Link
+                    href={`/questions/${item.questionId}`}
+                    className="flex items-center justify-between gap-3 rounded-md px-2 py-2.5 hover:bg-[var(--bg-muted)]"
+                  >
+                    <span className="flex min-w-0 items-center gap-3">
+                      <span
+                        className={`flex size-8 shrink-0 items-center justify-center rounded-md ${
+                          item.isCorrect
+                            ? 'bg-[var(--success-soft)] text-[var(--success)]'
+                            : 'bg-[var(--highlight-soft)] text-[var(--highlight)]'
+                        }`}
+                      >
+                        {item.isCorrect ? (
+                          <CheckCircle2 className="size-4" aria-hidden />
+                        ) : (
+                          <XCircle className="size-4" aria-hidden />
+                        )}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-medium">{item.title}</span>
+                        <span className="block truncate text-xs text-[var(--muted)]">
+                          {item.categoryName} · {new Date(item.createdAt).toLocaleString()}
+                        </span>
+                      </span>
+                    </span>
+                    <Badge variant={item.isCorrect ? 'success' : 'danger'} className="shrink-0">
+                      {item.isCorrect ? 'Correct' : 'Wrong'}
+                    </Badge>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Surface>
+
+        <Surface className="space-y-3 p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="min-w-0 truncate text-sm font-semibold text-[var(--ink)]">
+              Recommended topics
+            </h2>
             <Link
               href="/onboarding"
-              className="text-sm font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
+              className="shrink-0 text-xs font-semibold text-[var(--highlight)] hover:underline"
             >
-              Update interests
+              Update
             </Link>
           </div>
-          {categories.isLoading ? (
-            <Skeleton className="h-36 w-full" />
-          ) : suggestions.length === 0 ? (
-            <p className="text-sm text-[var(--muted)]">Categories will appear after seeding.</p>
+          {categories.isLoading ? <Skeleton className="h-40 w-full" /> : null}
+          {!categories.isLoading && suggestions.length === 0 ? (
+            <p className="py-10 text-center text-sm text-[var(--muted)]">No categories yet.</p>
           ) : (
-            <ul className="grid gap-2 sm:grid-cols-2">
+            <ul className="space-y-1">
               {suggestions.map((cat) => (
                 <li key={cat.id}>
                   <Link
                     href={`/questions?categoryId=${cat.id}`}
-                    className="flex items-center justify-between gap-3 rounded-[12px] border border-[var(--line)] bg-[var(--bg-desk)] px-3.5 py-3 transition-colors hover:border-[var(--highlight)] hover:bg-white"
+                    className="flex items-center justify-between gap-3 rounded-md px-2 py-2 hover:bg-[var(--bg-muted)]"
                   >
                     <span className="min-w-0">
-                      <span className="block truncate font-display text-sm font-bold tracking-tight">
+                      <span className="block truncate text-sm font-medium text-[var(--ink)]">
                         {cat.name}
                       </span>
                       <span className="text-xs text-[var(--muted)]">
                         {cat.children.length} subtopics
                       </span>
                     </span>
-                    <Badge variant="outline">Practice</Badge>
+                    <Badge variant="outline" className="shrink-0">
+                      Practice
+                    </Badge>
                   </Link>
                 </li>
               ))}
@@ -355,81 +439,93 @@ export default function StudyHomePage() {
         </Surface>
       </div>
 
-      {/* Recent activity from bookmarks */}
-      <Surface className="space-y-5 p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="font-display text-lg font-bold tracking-tight">Recent saves</h2>
-            <p className="mt-1 text-sm text-[var(--muted)]">
-              Latest bookmarked questions and documents.
+      {/* News + bookmarks */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Surface className="space-y-3 overflow-hidden p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="min-w-0 truncate text-sm font-semibold text-[var(--ink)]">
+              Notifications & updates
+            </h2>
+            <Link
+              href="/news"
+              className="shrink-0 text-xs font-semibold text-[var(--highlight)] hover:underline"
+            >
+              All news
+            </Link>
+          </div>
+          {news.isLoading ? <Skeleton className="h-32 w-full" /> : null}
+          {!news.isLoading && newsItems.length === 0 ? (
+            <p className="py-8 text-center text-sm text-[var(--muted)]">No published news yet.</p>
+          ) : (
+            <ul className="divide-y divide-[var(--line)]">
+              {newsItems.map((item) => (
+                <li key={item.id}>
+                  <Link
+                    href={`/news/${item.slug}`}
+                    className="block min-w-0 rounded-md px-2 py-2.5 hover:bg-[var(--bg-muted)]"
+                  >
+                    <p className="truncate text-sm font-medium text-[var(--ink)]">{item.title}</p>
+                    {item.summary ? (
+                      <p className="mt-0.5 line-clamp-2 break-words text-xs text-[var(--muted)]">
+                        {item.summary}
+                      </p>
+                    ) : null}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Surface>
+
+        <Surface className="space-y-3 overflow-hidden p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="min-w-0 truncate text-sm font-semibold text-[var(--ink)]">
+              Saved / bookmarked
+            </h2>
+            <Link
+              href="/bookmarks"
+              className="shrink-0 text-xs font-semibold text-[var(--highlight)] hover:underline"
+            >
+              View all
+            </Link>
+          </div>
+          {stats.isLoading ? <Skeleton className="h-32 w-full" /> : null}
+          {!stats.isLoading &&
+          (!stats.data ||
+            (stats.data.recentQuestions.length === 0 &&
+              stats.data.recentDocuments.length === 0)) ? (
+            <p className="py-8 text-center text-sm text-[var(--muted)]">
+              Save questions or PDFs while practicing.
             </p>
-          </div>
-          <Link href="/bookmarks">
-            <Button variant="outline" size="sm" className="rounded-full">
-              All bookmarks
-            </Button>
-          </Link>
-        </div>
-
-        {stats.isLoading ? <Skeleton className="h-24 w-full" /> : null}
-
-        {!stats.isLoading &&
-        (!stats.data ||
-          (stats.data.recentQuestions.length === 0 && stats.data.recentDocuments.length === 0)) ? (
-          <p className="rounded-[12px] border border-dashed border-[var(--line-strong)] bg-[var(--bg-desk)] px-4 py-8 text-center text-sm text-[var(--muted)]">
-            No bookmarks yet — save questions or PDFs while you practice.
-          </p>
-        ) : null}
-
-        {stats.data &&
-        (stats.data.recentQuestions.length > 0 || stats.data.recentDocuments.length > 0) ? (
-          <div className="grid gap-6 md:grid-cols-2">
-            <div>
-              <h3 className="mb-2 text-xs font-semibold tracking-[0.12em] text-[var(--muted)] uppercase">
-                Questions
-              </h3>
-              <ul className="divide-y divide-[var(--line)] rounded-[12px] border border-[var(--line)]">
-                {stats.data.recentQuestions.length === 0 ? (
-                  <li className="px-4 py-3 text-sm text-[var(--muted)]">None yet</li>
-                ) : (
-                  stats.data.recentQuestions.slice(0, 5).map((item) => (
-                    <li key={item.bookmarkId}>
-                      <Link
-                        href={`/questions/${item.id}`}
-                        className="flex items-center justify-between gap-3 px-4 py-3 text-sm hover:bg-[var(--brand-wash)]"
-                      >
-                        <span className="min-w-0 truncate font-semibold">{item.title}</span>
-                        <Badge variant="outline">{item.difficulty}</Badge>
-                      </Link>
-                    </li>
-                  ))
-                )}
-              </ul>
-            </div>
-            <div>
-              <h3 className="mb-2 text-xs font-semibold tracking-[0.12em] text-[var(--muted)] uppercase">
-                Documents
-              </h3>
-              <ul className="divide-y divide-[var(--line)] rounded-[12px] border border-[var(--line)]">
-                {stats.data.recentDocuments.length === 0 ? (
-                  <li className="px-4 py-3 text-sm text-[var(--muted)]">None yet</li>
-                ) : (
-                  stats.data.recentDocuments.slice(0, 5).map((item) => (
-                    <li key={item.bookmarkId}>
-                      <Link
-                        href={`/documents/${item.id}`}
-                        className="block truncate px-4 py-3 text-sm font-semibold hover:bg-[var(--brand-wash)]"
-                      >
-                        {item.title}
-                      </Link>
-                    </li>
-                  ))
-                )}
-              </ul>
-            </div>
-          </div>
-        ) : null}
-      </Surface>
+          ) : (
+            <ul className="divide-y divide-[var(--line)]">
+              {(stats.data?.recentQuestions ?? []).slice(0, 4).map((item) => (
+                <li key={item.bookmarkId}>
+                  <Link
+                    href={`/questions/${item.id}`}
+                    className="flex min-w-0 items-center justify-between gap-3 px-2 py-2.5 hover:bg-[var(--bg-muted)]"
+                  >
+                    <span className="min-w-0 truncate text-sm font-medium">{item.title}</span>
+                    <Badge variant="outline" className="shrink-0">
+                      {item.difficulty}
+                    </Badge>
+                  </Link>
+                </li>
+              ))}
+              {(stats.data?.recentDocuments ?? []).slice(0, 3).map((item) => (
+                <li key={item.bookmarkId}>
+                  <Link
+                    href={`/documents/${item.id}`}
+                    className="block truncate px-2 py-2.5 text-sm font-medium hover:bg-[var(--bg-muted)]"
+                  >
+                    {item.title}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Surface>
+      </div>
     </div>
   );
 }
