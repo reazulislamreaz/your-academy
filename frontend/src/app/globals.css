@@ -15,11 +15,11 @@
   --bg-inverse: #002050;
   --bg-desk: #f5f7fb;
 
-  /* Ink */
+  /* Ink — keep secondary text above AA on white (~4.5:1+) */
   --ink: #002050;
-  --ink-soft: #1e3a5f;
-  --muted: #5b6b80;
-  --muted-strong: #3d4d5c;
+  --ink-soft: #163458;
+  --muted: #46566b;
+  --muted-strong: #334155;
 
   /* Lines */
   --line: #e2e8f0;
@@ -35,14 +35,19 @@
   --brand-wash: rgba(0, 32, 80, 0.05);
   --brand-wash-strong: rgba(0, 32, 80, 0.09);
 
-  /* Semantic */
+  /* Semantic — soft surfaces pair with dark foregrounds (never white-on-soft) */
   --success: #0f766e;
   --success-soft: #d8f3ee;
-  --danger: #dc2626;
+  --success-fg: #0b4f4a;
+  --danger: #b91c1c;
   --danger-soft: #fee2e2;
+  --danger-fg: #991b1b;
   --warning: #b54708;
+  --warning-soft: #fff4e5;
+  --warning-fg: #93370d;
   --info: #175cd3;
   --info-soft: #e0eaff;
+  --info-fg: #1849a9;
 
   /* Elevation */
   --shadow-sm: 0 1px 2px rgba(10, 31, 68, 0.06);
@@ -119,6 +124,12 @@ body {
   font-size: var(--text-base);
   line-height: var(--leading-normal);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Prefer these for secondary copy instead of ultra-faint muted colors */
+.text-secondary {
+  color: var(--muted-strong);
 }
 
 /*
@@ -253,7 +264,8 @@ input:disabled {
   padding: 1rem 0.15rem;
   transition:
     background-color var(--duration-fast) var(--ease-out),
-    padding-inline var(--duration-fast) var(--ease-out);
+    padding-inline var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
 }
 
 .list-row:hover {
@@ -265,40 +277,11 @@ input:disabled {
   outline-offset: -2px;
 }
 
-/* Motion utilities — respect reduced motion */
-@media (prefers-reduced-motion: no-preference) {
-  .motion-fade-in {
-    animation: ya-fade-in var(--duration-slow) var(--ease-out) both;
-  }
-
-  .motion-rise {
-    animation: ya-rise var(--duration-slow) var(--ease-out) both;
-  }
-
-  .motion-nav-indicator {
-    transition:
-      color var(--duration-fast) var(--ease-out),
-      background-color var(--duration-fast) var(--ease-out);
-  }
-
-  .motion-press:active {
-    transform: translateY(1px);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
-
-  .motion-fade-in,
-  .motion-rise,
-  .motion-press {
-    animation: none !important;
-    transition: none !important;
-    transform: none !important;
-  }
-}
+/*
+  Motion design system (CSS-first)
+  Tokens: --duration-fast | --duration | --duration-slow | --ease-out
+  Prefer transform/opacity. All entrance/hover motion is gated by prefers-reduced-motion.
+*/
 
 @keyframes ya-fade-in {
   from {
@@ -320,13 +303,213 @@ input:disabled {
   }
 }
 
-/* Skeleton shimmer */
+@keyframes ya-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ya-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes ya-drawer-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ya-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 @keyframes ya-shimmer {
   100% {
     transform: translateX(100%);
   }
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  .motion-fade-in {
+    animation: ya-fade-in var(--duration-slow) var(--ease-out) both;
+  }
+
+  .motion-rise {
+    animation: ya-rise var(--duration-slow) var(--ease-out) both;
+  }
+
+  /* Route-change shell — short so navigation never feels delayed */
+  .motion-page {
+    animation: ya-page-in var(--duration) var(--ease-out) both;
+  }
+
+  .motion-pop {
+    animation: ya-pop var(--duration) var(--ease-out) both;
+    transform-origin: top center;
+  }
+
+  .motion-drawer-in {
+    animation: ya-drawer-in var(--duration) var(--ease-out) both;
+  }
+
+  .motion-scale-in {
+    animation: ya-scale-in var(--duration) var(--ease-out) both;
+  }
+
+  .motion-content-in {
+    animation: ya-fade-in var(--duration) var(--ease-out) both;
+  }
+
+  .motion-nav-indicator {
+    transition:
+      color var(--duration-fast) var(--ease-out),
+      background-color var(--duration-fast) var(--ease-out),
+      border-color var(--duration-fast) var(--ease-out),
+      box-shadow var(--duration-fast) var(--ease-out);
+  }
+
+  .motion-press {
+    transition: transform var(--duration-fast) var(--ease-out);
+  }
+
+  .motion-press:active {
+    transform: translateY(1px);
+  }
+
+  /* Interactive panels / stats — GPU-friendly lift */
+  .motion-hover-lift {
+    transition:
+      transform var(--duration-fast) var(--ease-out),
+      box-shadow var(--duration-fast) var(--ease-out),
+      border-color var(--duration-fast) var(--ease-out);
+  }
+
+  .motion-hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+  }
+
+  .motion-hover-lift:active {
+    transform: translateY(0);
+  }
+
+  /* Scroll reveal — toggled by .is-visible from Reveal */
+  .motion-reveal {
+    opacity: 0;
+    transform: translateY(14px);
+    transition:
+      opacity var(--duration-slow) var(--ease-out),
+      transform var(--duration-slow) var(--ease-out);
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+
+  .motion-reveal.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /*
+    Stagger children enter. Pause while nested under a pending .motion-reveal so
+    delays start when the section becomes .is-visible (not on first paint).
+  */
+  .motion-stagger > * {
+    animation: ya-rise var(--duration-slow) var(--ease-out) both;
+  }
+
+  .motion-reveal:not(.is-visible) .motion-stagger > *,
+  .motion-reveal.motion-stagger:not(.is-visible) > * {
+    animation: none !important;
+    opacity: 0;
+  }
+
+  .motion-stagger > *:nth-child(1) {
+    animation-delay: calc(var(--stagger-step, 45ms) * 0);
+  }
+  .motion-stagger > *:nth-child(2) {
+    animation-delay: calc(var(--stagger-step, 45ms) * 1);
+  }
+  .motion-stagger > *:nth-child(3) {
+    animation-delay: calc(var(--stagger-step, 45ms) * 2);
+  }
+  .motion-stagger > *:nth-child(4) {
+    animation-delay: calc(var(--stagger-step, 45ms) * 3);
+  }
+  .motion-stagger > *:nth-child(5) {
+    animation-delay: calc(var(--stagger-step, 45ms) * 4);
+  }
+  .motion-stagger > *:nth-child(6) {
+    animation-delay: calc(var(--stagger-step, 45ms) * 5);
+  }
+  .motion-stagger > *:nth-child(7) {
+    animation-delay: calc(var(--stagger-step, 45ms) * 6);
+  }
+  .motion-stagger > *:nth-child(8) {
+    animation-delay: calc(var(--stagger-step, 45ms) * 7);
+  }
+  .motion-stagger > *:nth-child(9) {
+    animation-delay: calc(var(--stagger-step, 45ms) * 8);
+  }
+  .motion-stagger > *:nth-child(10) {
+    animation-delay: calc(var(--stagger-step, 45ms) * 9);
+  }
+  .motion-stagger > *:nth-child(n + 11) {
+    animation-delay: calc(var(--stagger-step, 45ms) * 10);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .motion-fade-in,
+  .motion-rise,
+  .motion-page,
+  .motion-pop,
+  .motion-drawer-in,
+  .motion-scale-in,
+  .motion-content-in,
+  .motion-press,
+  .motion-hover-lift,
+  .motion-reveal,
+  .motion-stagger > * {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+
+  .motion-reveal {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Skeleton shimmer — left → right */
 .skeleton {
   position: relative;
   overflow: hidden;
@@ -339,11 +522,18 @@ input:disabled {
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.35) 40%,
+    rgba(255, 255, 255, 0.7) 50%,
+    rgba(255, 255, 255, 0.35) 60%,
+    transparent 100%
+  );
 }
 
 @media (prefers-reduced-motion: no-preference) {
   .skeleton::after {
-    animation: ya-shimmer 1.2s infinite;
+    animation: ya-shimmer 1.35s ease-in-out infinite;
   }
 }

@@ -121,7 +121,7 @@ export default function OnboardingPage() {
         <Surface className="space-y-4 p-6">
           {categories.isLoading ? <Skeleton className="h-40 w-full" /> : null}
           {categories.data && categories.data.length === 0 ? (
-            <p className="text-sm text-[var(--muted)]">No categories yet — you can skip this step.</p>
+            <p className="text-sm text-[var(--muted-strong)]">No categories yet — you can skip this step.</p>
           ) : null}
           <ul className="grid gap-2 sm:grid-cols-2">
             {(categories.data ?? []).map((cat) => {
@@ -140,7 +140,7 @@ export default function OnboardingPage() {
                     )}
                   >
                     <span className="font-display font-semibold tracking-tight">{cat.name}</span>
-                    <span className="mt-1 block text-xs text-[var(--muted)]">
+                    <span className="mt-1 block text-xs text-[var(--muted-strong)]">
                       {cat.children.length} subtopics
                     </span>
                   </button>
@@ -148,7 +148,7 @@ export default function OnboardingPage() {
               );
             })}
           </ul>
-          <p className="text-xs text-[var(--muted)]">{selected.length}/3 selected</p>
+          <p className="text-xs text-[var(--muted-strong)]">{selected.length}/3 selected</p>
           <div className="flex flex-wrap gap-2 pt-2">
             <Button onClick={() => setStep(2)}>Continue</Button>
             <Button variant="ghost" onClick={() => setStep(2)}>
@@ -163,7 +163,7 @@ export default function OnboardingPage() {
               <span className="font-display text-sm font-bold text-[var(--highlight)]">01</span>
               <div>
                 <p className="font-semibold">Trial starts now</p>
-                <p className="text-sm text-[var(--muted)]">
+                <p className="text-sm text-[var(--muted-strong)]">
                   Ends {new Date(me.data.access.trialEndsAt).toLocaleString()}.
                 </p>
               </div>
@@ -172,7 +172,7 @@ export default function OnboardingPage() {
               <span className="font-display text-sm font-bold text-[var(--highlight)]">02</span>
               <div>
                 <p className="font-semibold">Practice with explanations</p>
-                <p className="text-sm text-[var(--muted)]">
+                <p className="text-sm text-[var(--muted-strong)]">
                   Correct answers are shown only while your trial (or a future plan) is active.
                 </p>
               </div>
@@ -181,7 +181,7 @@ export default function OnboardingPage() {
               <span className="font-display text-sm font-bold text-[var(--highlight)]">03</span>
               <div>
                 <p className="font-semibold">Nothing vanishes after day seven</p>
-                <p className="text-sm text-[var(--muted)]">
+                <p className="text-sm text-[var(--muted-strong)]">
                   Keep browsing questions, options, PDFs, and news for free.
                 </p>
               </div>

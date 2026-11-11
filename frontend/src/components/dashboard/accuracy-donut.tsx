@@ -8,7 +8,7 @@ export function AccuracyDonut({ correct, incorrect }: Props) {
   const total = correct + incorrect;
   if (total === 0) {
     return (
-      <div className="flex h-48 items-center justify-center text-sm text-[var(--muted)]">
+      <div className="flex h-48 items-center justify-center text-sm text-[var(--muted-strong)]">
         No practice checks yet
       </div>
     );
@@ -58,10 +58,10 @@ export function AccuracyDonut({ correct, incorrect }: Props) {
         </svg>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
           <span className="text-2xl font-bold tabular-nums text-[var(--ink)]">{accuracy}%</span>
-          <span className="text-xs text-[var(--muted)]">Accuracy</span>
+          <span className="text-xs font-medium text-[var(--muted-strong)]">Accuracy</span>
         </div>
       </div>
-      <div className="mt-3 flex items-center justify-center gap-4 text-xs text-[var(--muted)]">
+      <div className="mt-3 flex items-center justify-center gap-4 text-xs font-medium text-[var(--muted-strong)]">
         <span className="flex items-center gap-1.5">
           <span className="size-2.5 rounded-full bg-[var(--success)]" />
           Correct {correct}

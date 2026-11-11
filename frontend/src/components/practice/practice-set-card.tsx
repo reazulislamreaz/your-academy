@@ -10,7 +10,7 @@ export function PracticeSetCard({ set }: { set: PracticeSetListItem }) {
     set.durationSeconds != null ? Math.max(1, Math.round(set.durationSeconds / 60)) : null;
 
   return (
-    <Surface className="p-4 transition-colors hover:border-[var(--highlight)]/40">
+    <Surface interactive className="p-4 hover:border-[var(--highlight)]/40">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0 space-y-1">
           <div className="flex flex-wrap gap-1.5">
@@ -23,7 +23,7 @@ export function PracticeSetCard({ set }: { set: PracticeSetListItem }) {
             </Link>
           </h3>
           {set.description ? (
-            <p className="line-clamp-2 text-sm text-[var(--muted)]">{set.description}</p>
+            <p className="line-clamp-2 text-sm leading-relaxed text-[var(--muted-strong)]">{set.description}</p>
           ) : null}
         </div>
       </div>

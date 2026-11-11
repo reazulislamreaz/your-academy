@@ -177,13 +177,13 @@ export default function StudyHomePage() {
       <Surface className="overflow-hidden border-l-[3px] border-l-[var(--highlight)] p-4 sm:p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
-            <p className="text-xs font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
+            <p className="text-xs font-semibold tracking-[0.14em] text-[var(--muted-strong)] uppercase">
               Study desk
             </p>
             <h1 className="mt-1 font-display text-2xl font-bold tracking-tight text-[var(--ink)] sm:text-3xl">
               {greetingForHour(hour)}, {firstName}
             </h1>
-            <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-[var(--muted)]">{insight}</p>
+            <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-[var(--muted-strong)]">{insight}</p>
             <div className="mt-3">
               <TrialCountdown
                 trialEndsAt={me.data.access.trialEndsAt}
@@ -205,7 +205,7 @@ export default function StudyHomePage() {
             </Link>
           </div>
         </div>
-        <p className="mt-3 text-xs text-[var(--muted)] sm:text-sm">
+        <p className="mt-3 text-xs text-[var(--muted-strong)] sm:text-sm">
           {me.data.access.isTrialActive
             ? 'Answers and explanations stay unlocked for the rest of your trial.'
             : 'You can still browse, save, and practice — correct answers remain premium.'}
@@ -213,7 +213,7 @@ export default function StudyHomePage() {
       </Surface>
 
       {/* Primary KPIs */}
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <div className="motion-stagger grid grid-cols-2 gap-3 xl:grid-cols-4">
         <MetricTile
           label="Questions answered"
           value={perf.uniqueQuestions}
@@ -231,7 +231,7 @@ export default function StudyHomePage() {
         <MetricTile label="Incorrect" value={perf.incorrect} icon={XCircle} tone="red" />
       </div>
 
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <div className="motion-stagger grid grid-cols-2 gap-3 xl:grid-cols-4">
         <MetricTile
           label="Checks taken"
           value={perf.totalAttempts}
@@ -260,14 +260,14 @@ export default function StudyHomePage() {
           <SectionTitle title="Continue where you left off" href="/questions" linkLabel="Question bank" />
           {last ? (
             <div className="rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-desk)] p-4">
-              <p className="text-xs font-medium tracking-wide text-[var(--muted)] uppercase">
+              <p className="text-xs font-medium tracking-wide text-[var(--muted-strong)] uppercase">
                 Last opened
               </p>
               <p className="mt-1 font-display text-lg font-bold tracking-tight text-[var(--ink)] break-words">
                 {last.title}
               </p>
               {last.categoryName ? (
-                <p className="mt-0.5 text-sm text-[var(--muted)]">{last.categoryName}</p>
+                <p className="mt-0.5 text-sm text-[var(--muted-strong)]">{last.categoryName}</p>
               ) : null}
               <Link
                 href={`/questions/${last.id}${last.filterQs ? `?${last.filterQs}` : ''}`}
@@ -295,7 +295,7 @@ export default function StudyHomePage() {
           )}
 
           <div>
-            <h3 className="mb-2 text-xs font-semibold tracking-[0.12em] text-[var(--muted)] uppercase">
+            <h3 className="mb-2 text-xs font-semibold tracking-[0.12em] text-[var(--muted-strong)] uppercase">
               Quick actions
             </h3>
             <div className="grid gap-2 sm:grid-cols-2">
@@ -339,7 +339,7 @@ export default function StudyHomePage() {
                     <span className="block truncate text-sm font-semibold text-[var(--ink)]">
                       {item.title}
                     </span>
-                    <span className="block truncate text-xs text-[var(--muted)]">{item.desc}</span>
+                    <span className="block truncate text-xs text-[var(--muted-strong)]">{item.desc}</span>
                   </span>
                 </Link>
               ))}
@@ -438,7 +438,7 @@ export default function StudyHomePage() {
                         <span className="block truncate text-sm font-medium text-[var(--ink)]">
                           {item.title}
                         </span>
-                        <span className="block truncate text-xs text-[var(--muted)]">
+                        <span className="block truncate text-xs text-[var(--muted-strong)]">
                           {item.categoryName} · {new Date(item.createdAt).toLocaleString()}
                         </span>
                       </span>
@@ -478,7 +478,7 @@ export default function StudyHomePage() {
                       <span className="block truncate text-sm font-medium text-[var(--ink)]">
                         {cat.name}
                       </span>
-                      <span className="text-xs text-[var(--muted)]">
+                      <span className="text-xs text-[var(--muted-strong)]">
                         {cat.children.length} subtopics
                       </span>
                     </span>
@@ -514,7 +514,7 @@ export default function StudyHomePage() {
                   >
                     <p className="truncate text-sm font-medium text-[var(--ink)]">{item.title}</p>
                     {item.summary ? (
-                      <p className="mt-0.5 line-clamp-2 break-words text-xs text-[var(--muted)]">
+                      <p className="mt-0.5 line-clamp-2 break-words text-xs text-[var(--muted-strong)]">
                         {item.summary}
                       </p>
                     ) : null}

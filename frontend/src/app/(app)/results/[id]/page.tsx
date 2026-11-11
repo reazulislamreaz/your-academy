@@ -61,26 +61,26 @@ export default function ResultDetailPage() {
 
       <Surface className="grid gap-4 p-5 sm:grid-cols-4">
         <div>
-          <p className="text-xs text-[var(--muted)]">Score</p>
+          <p className="text-xs text-[var(--muted-strong)]">Score</p>
           <p className="font-display text-2xl font-bold tabular-nums">
             {data.score ?? 0}
-            <span className="text-base text-[var(--muted)]">/{data.maxScore ?? 0}</span>
+            <span className="text-base text-[var(--muted-strong)]">/{data.maxScore ?? 0}</span>
           </p>
         </div>
         <div>
-          <p className="text-xs text-[var(--muted)]">Correct</p>
+          <p className="text-xs text-[var(--muted-strong)]">Correct</p>
           <p className="font-display text-2xl font-bold tabular-nums text-[var(--success)]">
             {data.correctCount ?? 0}
           </p>
         </div>
         <div>
-          <p className="text-xs text-[var(--muted)]">Wrong</p>
+          <p className="text-xs text-[var(--muted-strong)]">Wrong</p>
           <p className="font-display text-2xl font-bold tabular-nums text-[var(--danger)]">
             {data.wrongCount ?? 0}
           </p>
         </div>
         <div>
-          <p className="text-xs text-[var(--muted)]">Skipped</p>
+          <p className="text-xs text-[var(--muted-strong)]">Skipped</p>
           <p className="font-display text-2xl font-bold tabular-nums">{data.skippedCount ?? 0}</p>
         </div>
       </Surface>
@@ -103,7 +103,7 @@ export default function ResultDetailPage() {
           <Surface key={item.questionId} className="space-y-3 p-4">
             <div className="flex flex-wrap items-start justify-between gap-2">
               <h3 className="font-medium">
-                <span className="text-[var(--muted)]">{index + 1}.</span> {item.title}
+                <span className="text-[var(--muted-strong)]">{index + 1}.</span> {item.title}
               </h3>
               {data.answersVisible && item.isCorrect != null ? (
                 <Badge variant={item.isCorrect ? 'success' : item.selectedOptionId ? 'danger' : 'outline'}>
@@ -131,7 +131,7 @@ export default function ResultDetailPage() {
                     <span className="mr-2 font-semibold">{opt.label}.</span>
                     {opt.content}
                     {selected ? (
-                      <span className="ml-2 text-xs text-[var(--muted)]">(your answer)</span>
+                      <span className="ml-2 text-xs text-[var(--muted-strong)]">(your answer)</span>
                     ) : null}
                   </div>
                 );

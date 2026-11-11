@@ -74,7 +74,7 @@ export function FileDropzone({ file, onFileChange, disabled, progress }: Props) 
           <p className="text-sm font-semibold text-[var(--ink)]">
             Drag & drop your Excel file here
           </p>
-          <p className="mt-1 text-xs text-[var(--muted)]">
+          <p className="mt-1 text-sm text-[var(--muted-strong)]">
             or click to browse · .xlsx / .csv · up to 15MB
           </p>
         </div>
@@ -89,7 +89,7 @@ export function FileDropzone({ file, onFileChange, disabled, progress }: Props) 
       </label>
 
       {localError ? (
-        <p className="text-sm text-[var(--danger)]" role="alert">
+        <p className="text-sm font-medium text-[var(--danger-fg)]" role="alert">
           {localError}
         </p>
       ) : null}
@@ -101,7 +101,7 @@ export function FileDropzone({ file, onFileChange, disabled, progress }: Props) 
           </span>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold text-[var(--ink)]">{file.name}</p>
-            <p className="text-xs text-[var(--muted)]">
+            <p className="text-sm text-[var(--muted-strong)]">
               {formatBytes(file.size)} · {file.name.toLowerCase().endsWith('.csv') ? 'CSV' : 'XLSX'}
               {progress == null ? ' · Ready to validate' : null}
             </p>

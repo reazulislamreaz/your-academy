@@ -29,11 +29,11 @@ export function EntitlementCallout({
         )}
         role="status"
       >
-        <p className="text-xs font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
+        <p className="text-xs font-semibold tracking-[0.14em] text-[var(--muted-strong)] uppercase">
           Premium answers
         </p>
         <h2 className="font-display text-lg font-semibold tracking-tight">{title}</h2>
-        <p className="text-sm leading-relaxed text-[var(--muted)]">{description}</p>
+        <p className="text-sm leading-relaxed text-[var(--muted-strong)]">{description}</p>
         {actions ?? (
           <div className="flex flex-wrap gap-2 pt-1">
             <Link href="/home">

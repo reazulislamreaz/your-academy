@@ -68,7 +68,7 @@ export default function AdminUsersPage() {
         >
           <div className="relative min-w-0 flex-1">
             <Search
-              className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--muted)]"
+              className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--muted-strong)]"
               aria-hidden
             />
             <Input
@@ -92,7 +92,7 @@ export default function AdminUsersPage() {
         <Surface className="overflow-hidden p-0">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[36rem] text-left text-sm">
-              <thead className="bg-[var(--bg-desk)] text-[11px] tracking-[0.08em] text-[var(--muted)] uppercase">
+              <thead className="bg-[var(--bg-desk)] text-xs font-semibold tracking-[0.08em] text-[var(--muted-strong)] uppercase">
                 <tr>
                   <th className="px-3 py-3 font-semibold sm:px-5">User</th>
                   <th className="px-3 py-3 font-semibold">Role</th>
@@ -105,7 +105,7 @@ export default function AdminUsersPage() {
               <tbody className="divide-y divide-[var(--line)]">
                 {list.data.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-3 py-10 text-center text-[var(--muted)] sm:px-5">
+                    <td colSpan={6} className="px-3 py-10 text-center text-[var(--muted-strong)] sm:px-5">
                       No users match this search.
                     </td>
                   </tr>
@@ -114,7 +114,7 @@ export default function AdminUsersPage() {
                     <tr key={user.id} className="hover:bg-[var(--brand-wash)]">
                       <td className="max-w-[12rem] px-3 py-3.5 sm:max-w-none sm:px-5">
                         <p className="truncate font-semibold text-[var(--ink)]">{user.name}</p>
-                        <p className="truncate text-xs text-[var(--muted)]">
+                        <p className="truncate text-xs text-[var(--muted-strong)]">
                           {user.whatsappNumber}
                           {user.email ? ` · ${user.email}` : ''}
                         </p>
@@ -127,10 +127,10 @@ export default function AdminUsersPage() {
                           {user.status}
                         </Badge>
                       </td>
-                      <td className="px-3 py-3.5 text-xs text-[var(--muted)]">
+                      <td className="px-3 py-3.5 text-xs text-[var(--muted-strong)]">
                         {new Date(user.trialEndsAt).toLocaleDateString()}
                       </td>
-                      <td className="px-5 py-3.5 text-xs text-[var(--muted)]">
+                      <td className="px-5 py-3.5 text-xs text-[var(--muted-strong)]">
                         {new Date(user.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-5 py-3.5 text-right">
@@ -161,7 +161,7 @@ export default function AdminUsersPage() {
                             </Button>
                           )
                         ) : (
-                          <span className="text-xs text-[var(--muted)]">Protected</span>
+                          <span className="text-xs text-[var(--muted-strong)]">Protected</span>
                         )}
                       </td>
                     </tr>
@@ -170,7 +170,7 @@ export default function AdminUsersPage() {
               </tbody>
             </table>
           </div>
-          <div className="border-t border-[var(--line)] px-5 py-3 text-xs text-[var(--muted)]">
+          <div className="border-t border-[var(--line)] px-5 py-3 text-xs text-[var(--muted-strong)]">
             Showing {list.data.length} user{list.data.length === 1 ? '' : 's'}
             {q.trim() ? ` for “${q.trim()}”` : ''}
           </div>

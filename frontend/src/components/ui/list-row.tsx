@@ -16,11 +16,15 @@ export function ListRow({ href, title, meta, description, trailing, className }:
     <div className={cn('flex items-start justify-between gap-4', className)}>
       <div className="min-w-0 flex-1 space-y-1.5">
         {meta ? (
-          <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--muted)]">{meta}</div>
+          <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-[var(--muted-strong)]">
+            {meta}
+          </div>
         ) : null}
         <div className="font-medium text-[var(--ink)]">{title}</div>
         {description ? (
-          <div className="line-clamp-2 text-sm leading-relaxed text-[var(--muted)]">{description}</div>
+          <div className="line-clamp-2 text-sm leading-relaxed text-[var(--muted-strong)]">
+            {description}
+          </div>
         ) : null}
       </div>
       {trailing ? <div className="shrink-0 pt-0.5">{trailing}</div> : null}

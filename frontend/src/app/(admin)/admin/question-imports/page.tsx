@@ -186,10 +186,12 @@ export default function QuestionImportsHubPage() {
               >
                 <div className="mb-1 flex items-center gap-2">
                   <Badge variant={statusTone(item.status)}>{item.status}</Badge>
-                  <span className="truncate text-[10px] text-[var(--muted)]">{item.batchCode}</span>
+                  <span className="truncate font-mono text-xs text-[var(--muted-strong)]">
+                    {item.batchCode}
+                  </span>
                 </div>
                 <p className="truncate text-sm font-semibold text-[var(--ink)]">{item.displayName}</p>
-                <p className="mt-1 text-xs text-[var(--muted)]">
+                <p className="mt-1 text-sm text-[var(--muted-strong)]">
                   {item.importedCount}/{item.totalRows} imported ·{' '}
                   {new Date(item.createdAt).toLocaleDateString()}
                 </p>
@@ -205,7 +207,7 @@ export default function QuestionImportsHubPage() {
             <h2 className="font-display text-base font-bold text-[var(--ink)]">
               Question collections
             </h2>
-            <p className="text-xs text-[var(--muted)]">
+            <p className="text-sm text-[var(--muted-strong)]">
               Search, filter, and manage every uploaded batch.
             </p>
           </div>
@@ -313,7 +315,7 @@ export default function QuestionImportsHubPage() {
         {items.length > 0 ? (
           <div className="overflow-x-auto rounded-[12px] border border-[var(--line)]">
             <table className="min-w-full text-left text-sm">
-              <thead className="bg-[var(--bg-desk)] text-[11px] tracking-wide text-[var(--muted)] uppercase">
+              <thead className="bg-[var(--bg-desk)] text-xs tracking-wide text-[var(--muted-strong)] uppercase">
                 <tr>
                   <th className="px-3 py-3 font-semibold">Collection</th>
                   <th className="px-3 py-3 font-semibold">Subject / Exam</th>
@@ -333,29 +335,29 @@ export default function QuestionImportsHubPage() {
                       >
                         {item.displayName}
                       </Link>
-                      <p className="mt-0.5 font-mono text-[11px] text-[var(--muted)]">
+                      <p className="mt-0.5 font-mono text-xs text-[var(--muted-strong)]">
                         {item.batchCode}
                       </p>
-                      <p className="truncate text-[11px] text-[var(--muted)]">
+                      <p className="truncate text-sm text-[var(--muted-strong)]">
                         {item.originalFilename}
                       </p>
                     </td>
-                    <td className="px-3 py-3 align-top text-[var(--ink-soft)]">
-                      <p>{item.subjectHint ?? '—'}</p>
-                      <p className="text-xs text-[var(--muted)]">
+                    <td className="px-3 py-3 align-top text-sm text-[var(--ink-soft)]">
+                      <p className="font-medium">{item.subjectHint ?? '—'}</p>
+                      <p className="text-sm text-[var(--muted-strong)]">
                         {item.examCategoryHint ?? '—'}
                       </p>
                     </td>
-                    <td className="px-3 py-3 align-top tabular-nums text-[var(--ink-soft)]">
-                      <p>{item.totalRows} total</p>
-                      <p className="text-xs text-[var(--muted)]">
+                    <td className="px-3 py-3 align-top text-sm tabular-nums text-[var(--ink-soft)]">
+                      <p className="font-medium">{item.totalRows} total</p>
+                      <p className="text-sm text-[var(--muted-strong)]">
                         {item.importedCount} in · {item.duplicateCount} dup · {item.invalidCount}{' '}
                         bad
                       </p>
                     </td>
-                    <td className="px-3 py-3 align-top text-[var(--ink-soft)]">
-                      <p>{new Date(item.createdAt).toLocaleString()}</p>
-                      <p className="text-xs text-[var(--muted)]">{item.uploadedBy.name}</p>
+                    <td className="px-3 py-3 align-top text-sm text-[var(--ink-soft)]">
+                      <p className="font-medium">{new Date(item.createdAt).toLocaleString()}</p>
+                      <p className="text-sm text-[var(--muted-strong)]">{item.uploadedBy.name}</p>
                     </td>
                     <td className="px-3 py-3 align-top">
                       <Badge variant={statusTone(item.status)}>{item.status}</Badge>

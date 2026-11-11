@@ -119,7 +119,7 @@ export function AppHeader() {
         </div>
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-[var(--ink)]">{meta.title}</p>
-          <p className="hidden truncate text-xs text-[var(--muted)] md:block">{meta.subtitle}</p>
+          <p className="hidden truncate text-xs text-[var(--muted-strong)] md:block">{meta.subtitle}</p>
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">

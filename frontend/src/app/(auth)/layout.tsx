@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { BrandMark } from '@/components/layout/brand-mark';
+import { PageShell } from '@/components/motion/page-shell';
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
@@ -54,13 +55,13 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           <div className="hidden lg:block" />
           <Link
             href="/"
-            className="text-sm font-medium text-[var(--muted)] hover:text-[var(--highlight)]"
+            className="text-sm font-medium text-[var(--muted-strong)] hover:text-[var(--highlight)]"
           >
             Back home
           </Link>
         </header>
         <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-6 pb-16 lg:max-w-lg lg:px-10">
-          {children}
+          <PageShell>{children}</PageShell>
         </main>
       </div>
     </div>

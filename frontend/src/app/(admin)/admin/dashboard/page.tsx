@@ -89,7 +89,7 @@ export default function AdminDashboardPage() {
       />
 
       {/* Primary KPIs */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="motion-stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Registered users" value={data.users.total} icon={Users} tone="navy" />
         <StatCard
           label="Active users"
@@ -142,7 +142,7 @@ export default function AdminDashboardPage() {
                   {data.questions.draft}
                 </span>
               </div>
-              <p className="mt-2 text-sm text-[var(--muted)]">
+              <p className="mt-2 text-sm text-[var(--muted-strong)]">
                 Questions waiting to publish (need valid options).
               </p>
             </div>
@@ -161,7 +161,7 @@ export default function AdminDashboardPage() {
                   {data.users.trialActive}
                 </span>
               </div>
-              <p className="mt-2 text-sm text-[var(--muted)]">
+              <p className="mt-2 text-sm text-[var(--muted-strong)]">
                 Learners with an active seven-day trial right now.
               </p>
             </div>
@@ -179,7 +179,7 @@ export default function AdminDashboardPage() {
                   {data.users.trialExpired}
                 </span>
               </div>
-              <p className="mt-2 text-sm text-[var(--muted)]">
+              <p className="mt-2 text-sm text-[var(--muted-strong)]">
                 Post-trial browsers — answers gated by entitlement.
               </p>
             </div>
@@ -196,7 +196,7 @@ export default function AdminDashboardPage() {
         <Surface className="space-y-4 p-6">
           <div>
             <h2 className="font-display text-lg font-bold tracking-tight">Question bank health</h2>
-            <p className="mt-1 text-sm text-[var(--muted)]">Status mix from live question counts.</p>
+            <p className="mt-1 text-sm text-[var(--muted-strong)]">Status mix from live question counts.</p>
           </div>
           <BarChart
             emptyLabel="No questions yet."
@@ -266,7 +266,7 @@ export default function AdminDashboardPage() {
           </div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[28rem] text-left text-sm">
-              <thead className="bg-[var(--bg-desk)] text-[11px] tracking-[0.08em] text-[var(--muted)] uppercase">
+              <thead className="bg-[var(--bg-desk)] text-xs font-semibold tracking-[0.08em] text-[var(--muted-strong)] uppercase">
                 <tr>
                   <th className="px-3 py-3 font-semibold sm:px-5">User</th>
                   <th className="px-3 py-3 font-semibold">Role</th>
@@ -279,7 +279,7 @@ export default function AdminDashboardPage() {
                   <tr key={user.id} className="hover:bg-[var(--brand-wash)]">
                     <td className="max-w-[10rem] px-3 py-3 sm:max-w-none sm:px-5">
                       <p className="truncate font-semibold text-[var(--ink)]">{user.name}</p>
-                      <p className="truncate text-xs text-[var(--muted)]">{user.whatsappNumber}</p>
+                      <p className="truncate text-xs text-[var(--muted-strong)]">{user.whatsappNumber}</p>
                     </td>
                     <td className="px-3 py-3">
                       <Badge variant="outline">{user.role}</Badge>
@@ -289,7 +289,7 @@ export default function AdminDashboardPage() {
                         {user.status}
                       </Badge>
                     </td>
-                    <td className="px-5 py-3 text-xs text-[var(--muted)]">
+                    <td className="px-5 py-3 text-xs text-[var(--muted-strong)]">
                       {new Date(user.createdAt).toLocaleDateString()}
                     </td>
                   </tr>
@@ -304,18 +304,18 @@ export default function AdminDashboardPage() {
             <h2 className="font-display text-lg font-bold tracking-tight">System activity</h2>
           </div>
           {data.recentActivity.length === 0 ? (
-            <p className="px-5 py-8 text-sm text-[var(--muted)]">No audit events yet.</p>
+            <p className="px-5 py-8 text-sm text-[var(--muted-strong)]">No audit events yet.</p>
           ) : (
             <ul className="divide-y divide-[var(--line)]">
               {data.recentActivity.map((item) => (
                 <li key={item.id} className="px-5 py-3.5">
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge variant="default">{item.action}</Badge>
-                    <span className="text-xs text-[var(--muted)]">{item.entityType}</span>
+                    <span className="text-xs text-[var(--muted-strong)]">{item.entityType}</span>
                   </div>
                   <p className="mt-1.5 text-sm text-[var(--ink-soft)]">
                     {item.actor ? item.actor.name : 'System'}
-                    <span className="text-[var(--muted)]">
+                    <span className="text-[var(--muted-strong)]">
                       {' '}
                       · {new Date(item.createdAt).toLocaleString()}
                     </span>

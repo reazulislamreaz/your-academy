@@ -79,7 +79,7 @@ function QuestionsContent() {
       />
 
       {!list.isLoading && !list.isError ? (
-        <p className="text-sm text-[var(--muted)]" aria-live="polite">
+        <p className="text-sm text-[var(--muted-strong)]" aria-live="polite">
           Showing{' '}
           <span className="font-semibold text-[var(--ink-soft)] tabular-nums">{items.length}</span>
           {hasMore ? '+' : ''} question{items.length === 1 ? '' : 's'}
@@ -156,7 +156,7 @@ function QuestionsContent() {
             title={
               <span className="font-display text-lg font-semibold tracking-tight">{item.title}</span>
             }
-            trailing={<ChevronRight className="h-4 w-4 text-[var(--muted)]" aria-hidden />}
+            trailing={<ChevronRight className="h-4 w-4 text-[var(--muted-strong)]" aria-hidden />}
           />
         ))}
       </div>

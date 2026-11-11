@@ -154,7 +154,7 @@ function QuestionDetailContent() {
   return (
     <article className="mx-auto max-w-3xl space-y-7 pb-40 sm:pb-32">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex min-w-0 flex-wrap items-center gap-2 text-sm text-[var(--muted)]">
+        <div className="flex min-w-0 flex-wrap items-center gap-2 text-sm text-[var(--muted-strong)]">
           <Link href={`/questions${filterQs ? `?${filterQs}` : ''}`} className="hover:text-[var(--highlight)]">
             Question bank
           </Link>
@@ -225,7 +225,7 @@ function QuestionDetailContent() {
 
       {checked && data.explanation ? (
         <Surface className="motion-rise border-l-[3px] border-l-[var(--highlight)] p-5 sm:p-6">
-          <h2 className="text-xs font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
+          <h2 className="text-xs font-semibold tracking-[0.14em] text-[var(--muted-strong)] uppercase">
             Explanation
           </h2>
           <p className="font-reading mt-3 leading-relaxed text-[var(--muted-strong)]">

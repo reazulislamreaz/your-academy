@@ -9,7 +9,7 @@ type Props = {
 export function SubjectProgress({ items }: Props) {
   if (items.length === 0) {
     return (
-      <p className="rounded-[var(--radius)] border border-dashed border-[var(--line-strong)] px-4 py-8 text-center text-sm text-[var(--muted)]">
+      <p className="rounded-[var(--radius)] border border-dashed border-[var(--line-strong)] px-4 py-8 text-center text-sm text-[var(--muted-strong)]">
         Subject accuracy appears after you check answers in practice.
       </p>
     );
@@ -28,7 +28,7 @@ export function SubjectProgress({ items }: Props) {
                 <p className="truncate text-sm font-medium text-[var(--ink)] group-hover:underline">
                   {row.name}
                 </p>
-                <p className="shrink-0 text-xs tabular-nums text-[var(--muted)]">
+                <p className="shrink-0 text-xs font-medium tabular-nums text-[var(--muted-strong)]">
                   {row.accuracyPercent}%
                 </p>
               </div>
@@ -45,7 +45,7 @@ export function SubjectProgress({ items }: Props) {
                   style={{ width: `${Math.max(4, row.accuracyPercent)}%` }}
                 />
               </div>
-              <p className="mt-1 text-[11px] text-[var(--muted)]">
+              <p className="mt-1 text-xs text-[var(--muted-strong)]">
                 {row.correct}/{row.attempts} correct
               </p>
             </div>

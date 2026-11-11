@@ -74,7 +74,7 @@ export function MobileNav({
             role="dialog"
             aria-modal="true"
             aria-label="Navigation menu"
-            className="fixed inset-x-0 top-[var(--header-h,4.5rem)] bottom-0 z-[60] overflow-y-auto overscroll-contain border-t border-[var(--line)] bg-[var(--bg-elevated)] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[var(--shadow-lg)] motion-fade-in"
+            className="motion-drawer-in fixed inset-x-0 top-[var(--header-h,4.5rem)] bottom-0 z-[60] overflow-y-auto overscroll-contain border-t border-[var(--line)] bg-[var(--bg-elevated)] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[var(--shadow-lg)]"
           >
             {leading ? <div className="mb-4">{leading}</div> : null}
             <nav className="flex flex-col gap-1" aria-label="Mobile">

@@ -52,12 +52,12 @@ function SearchField({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search exams..."
-          className="h-11 w-full rounded-full border border-[var(--line)] bg-[var(--bg-muted)] pr-11 pl-4 text-base text-[var(--ink)] outline-none placeholder:text-[var(--muted)] focus:border-[var(--highlight)] focus:bg-white focus:shadow-[0_0_0_3px_var(--highlight-soft)] sm:h-10 sm:text-sm"
+          className="h-11 w-full rounded-full border border-[var(--line)] bg-[var(--bg-muted)] pr-11 pl-4 text-base text-[var(--ink)] outline-none placeholder:text-[var(--muted-strong)] focus:border-[var(--highlight)] focus:bg-white focus:shadow-[0_0_0_3px_var(--highlight-soft)] sm:h-10 sm:text-sm"
         />
         <button
           type="submit"
           aria-label="Search"
-          className="absolute top-1/2 right-1 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-[var(--muted)] transition-colors hover:bg-[var(--highlight-soft)] hover:text-[var(--highlight)]"
+          className="absolute top-1/2 right-1 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-[var(--muted-strong)] transition-colors hover:bg-[var(--highlight-soft)] hover:text-[var(--highlight)]"
         >
           <Search className="h-4 w-4" />
         </button>

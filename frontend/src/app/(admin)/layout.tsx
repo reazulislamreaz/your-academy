@@ -6,6 +6,7 @@ import { AdminMobileNav } from '@/components/layout/admin-mobile-nav';
 import { AdminSidebar } from '@/components/layout/admin-sidebar';
 import { BrandMark } from '@/components/layout/brand-mark';
 import { Button } from '@/components/ui/button';
+import { PageShell } from '@/components/motion/page-shell';
 import { AdminGate } from '@/features/admin/admin-gate';
 import { useLogout, useMe } from '@/features/auth/use-auth';
 
@@ -44,7 +45,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             </div>
             <header className="sticky top-0 z-20 hidden border-b border-[var(--line)] bg-white/90 px-6 py-3 backdrop-blur-md lg:block">
               <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3">
-                <p className="text-sm font-medium text-[var(--muted)]">
+                <p className="text-sm font-medium text-[var(--muted-strong)]">
                   Your Academy · Platform management
                 </p>
                 <p className="truncate text-sm font-semibold text-[var(--ink-soft)]">
@@ -54,8 +55,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             </header>
             <AdminMobileNav />
           </div>
-          <main className="mx-auto w-full min-w-0 max-w-6xl flex-1 px-3 py-5 motion-fade-in sm:px-6 sm:py-8">
-            {children}
+          <main className="mx-auto w-full min-w-0 max-w-6xl flex-1 px-3 py-5 sm:px-6 sm:py-8">
+            <PageShell>{children}</PageShell>
           </main>
         </div>
       </div>

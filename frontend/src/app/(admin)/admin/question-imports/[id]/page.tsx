@@ -147,9 +147,9 @@ function QuestionImportDetailContent() {
     if (!data) return [];
     return [
       { label: 'Total rows', value: data.totalRows },
-      { label: 'Valid', value: data.validCount, tone: 'text-[var(--success)]' },
-      { label: 'Duplicates', value: data.duplicateCount, tone: 'text-[var(--warning)]' },
-      { label: 'Invalid', value: data.invalidCount, tone: 'text-[var(--danger)]' },
+      { label: 'Valid', value: data.validCount, tone: 'text-[var(--success-fg)]' },
+      { label: 'Duplicates', value: data.duplicateCount, tone: 'text-[var(--warning-fg)]' },
+      { label: 'Invalid', value: data.invalidCount, tone: 'text-[var(--danger-fg)]' },
       { label: 'Imported', value: data.importedCount },
       { label: 'Skipped', value: data.skippedCount ?? 0 },
     ];
@@ -233,10 +233,10 @@ function QuestionImportDetailContent() {
 
       {data.errorMessage ? <Alert variant="danger">{data.errorMessage}</Alert> : null}
 
-      <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="motion-stagger grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {summary.map((item) => (
-          <Surface key={item.label} className="p-4">
-            <p className="text-[11px] font-semibold tracking-wide text-[var(--muted)] uppercase">
+          <Surface key={item.label} interactive className="p-4">
+            <p className="text-xs font-semibold tracking-wide text-[var(--muted-strong)] uppercase">
               {item.label}
             </p>
             <p
@@ -359,7 +359,7 @@ function QuestionImportDetailContent() {
                 {saveMeta.isPending ? 'Saving…' : 'Save changes'}
               </Button>
               {saveMeta.isError ? (
-                <p className="mt-2 text-sm text-[var(--danger)]">
+                <p className="mt-2 text-sm font-medium text-[var(--danger-fg)]">
                   {saveMeta.error instanceof ApiError
                     ? saveMeta.error.message
                     : 'Could not save'}
@@ -372,9 +372,11 @@ function QuestionImportDetailContent() {
         ) : null}
 
         {canImport ? (
-          <div className="rounded-[14px] border border-[var(--highlight)]/30 bg-[var(--highlight-soft)]/40 p-4">
-            <h3 className="font-display text-base font-bold text-[var(--ink)]">Import questions</h3>
-            <p className="mt-1 text-sm text-[var(--muted)]">
+          <div className="rounded-[14px] border border-[var(--info)]/30 bg-[var(--info-soft)] p-4">
+            <h3 className="font-display text-base font-bold text-[var(--info-fg)]">
+              Import questions
+            </h3>
+            <p className="mt-1 text-sm leading-relaxed text-[var(--ink-soft)]">
               Import {data.validCount} valid question{data.validCount === 1 ? '' : 's'}. Duplicates
               and invalid rows are never inserted as new questions.
             </p>
@@ -389,9 +391,9 @@ function QuestionImportDetailContent() {
             </label>
             {importProgress != null ? (
               <div className="mt-3">
-                <div className="mb-1 flex justify-between text-xs text-[var(--muted)]">
+                <div className="mb-1 flex justify-between text-sm font-medium text-[var(--ink-soft)]">
                   <span>Importing…</span>
-                  <span>{importProgress}%</span>
+                  <span className="tabular-nums">{importProgress}%</span>
                 </div>
                 <div className="h-2 overflow-hidden rounded-full bg-white/80">
                   <div
@@ -430,7 +432,7 @@ function QuestionImportDetailContent() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="font-display text-base font-bold">Question preview</h2>
-            <p className="text-xs text-[var(--muted)]">
+            <p className="text-sm text-[var(--muted-strong)]">
               Row-level validation with options and duplicate highlights.
             </p>
           </div>
@@ -456,7 +458,7 @@ function QuestionImportDetailContent() {
 
         <div className="overflow-x-auto rounded-[12px] border border-[var(--line)]">
           <table className="min-w-[960px] w-full text-left text-sm">
-            <thead className="bg-[var(--bg-desk)] text-[11px] tracking-wide text-[var(--muted)] uppercase">
+            <thead className="bg-[var(--bg-desk)] text-xs font-semibold tracking-wide text-[var(--muted-strong)] uppercase">
               <tr>
                 <th className="px-3 py-3">Row</th>
                 <th className="px-3 py-3">Question</th>
@@ -480,27 +482,35 @@ function QuestionImportDetailContent() {
                         : 'bg-white',
                   )}
                 >
-                  <td className="px-3 py-3 tabular-nums text-[var(--muted)]">{row.rowNumber}</td>
+                  <td className="px-3 py-3 tabular-nums text-sm font-medium text-[var(--muted-strong)]">
+                    {row.rowNumber}
+                  </td>
                   <td className="px-3 py-3">
-                    <p className="line-clamp-3 max-w-sm font-medium text-[var(--ink)]">
+                    <p className="line-clamp-4 max-w-md text-sm leading-relaxed font-medium text-[var(--ink)]">
                       {row.questionText}
                     </p>
                     {row.errorMessage ? (
-                      <p className="mt-1 text-xs text-[var(--danger)]">{row.errorMessage}</p>
+                      <p className="mt-1 text-sm font-medium text-[var(--danger-fg)]">
+                        {row.errorMessage}
+                      </p>
                     ) : null}
                   </td>
-                  <td className="px-3 py-3 text-xs text-[var(--ink-soft)]">
+                  <td className="px-3 py-3 text-sm leading-relaxed text-[var(--ink-soft)]">
                     <p>A. {row.optionA}</p>
                     <p>B. {row.optionB}</p>
                     <p>C. {row.optionC}</p>
                     <p>D. {row.optionD}</p>
                   </td>
-                  <td className="px-3 py-3 font-semibold">{row.correctAnswer ?? '—'}</td>
-                  <td className="px-3 py-3 text-[var(--ink-soft)]">
-                    <p>{row.subjectName ?? '—'}</p>
-                    <p className="text-xs text-[var(--muted)]">{row.topicName ?? '—'}</p>
+                  <td className="px-3 py-3 text-sm font-semibold text-[var(--ink)]">
+                    {row.correctAnswer ?? '—'}
                   </td>
-                  <td className="px-3 py-3 text-[var(--ink-soft)]">{row.difficulty ?? '—'}</td>
+                  <td className="px-3 py-3 text-sm text-[var(--ink-soft)]">
+                    <p className="font-medium">{row.subjectName ?? '—'}</p>
+                    <p className="text-sm text-[var(--muted-strong)]">{row.topicName ?? '—'}</p>
+                  </td>
+                  <td className="px-3 py-3 text-sm font-medium text-[var(--ink-soft)]">
+                    {row.difficulty ?? '—'}
+                  </td>
                   <td className="px-3 py-3">
                     <Badge variant={statusTone(row.status)}>{row.status}</Badge>
                   </td>

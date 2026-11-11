@@ -62,7 +62,7 @@ export default function DocumentsPage() {
             meta={doc.category ? <span>{doc.category.name}</span> : undefined}
             title={<span className="font-display text-lg font-semibold tracking-tight">{doc.title}</span>}
             description={doc.description}
-            trailing={<ChevronRight className="h-4 w-4 text-[var(--muted)]" aria-hidden />}
+            trailing={<ChevronRight className="h-4 w-4 text-[var(--muted-strong)]" aria-hidden />}
           />
         ))}
       </div>

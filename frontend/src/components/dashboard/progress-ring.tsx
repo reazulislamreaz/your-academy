@@ -55,7 +55,7 @@ export function ProgressRing({
         {label ? (
           <p className="font-display text-xl font-bold tabular-nums text-[var(--ink)]">{label}</p>
         ) : null}
-        {sublabel ? <p className="text-[10px] font-medium text-[var(--muted)]">{sublabel}</p> : null}
+        {sublabel ? <p className="text-xs font-medium text-[var(--muted-strong)]">{sublabel}</p> : null}
       </div>
     </div>
   );

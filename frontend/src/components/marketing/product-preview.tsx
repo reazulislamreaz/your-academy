@@ -13,7 +13,7 @@ export function ProductPreview({ className }: { className?: string }) {
       <div className="border-b border-[var(--line)] bg-[var(--bg-desk)] px-5 py-3">
         <div className="flex items-center justify-between gap-3">
           <div className="h-2 w-24 rounded-full bg-[var(--line-strong)]/70" />
-          <div className="rounded-[var(--radius-sm)] bg-[var(--highlight-soft)] px-2 py-0.5 text-[10px] font-bold tracking-wide text-[var(--highlight-fg)] uppercase">
+          <div className="rounded-[var(--radius-sm)] bg-[var(--highlight-soft)] px-2 py-0.5 text-xs font-bold tracking-wide text-[var(--danger-fg)] uppercase">
             Medium
           </div>
         </div>
@@ -43,8 +43,10 @@ export function ProductPreview({ className }: { className?: string }) {
             >
               <span
                 className={cn(
-                  'flex h-6 w-6 items-center justify-center rounded-[var(--radius-sm)] text-[10px] font-bold',
-                  opt.active ? 'bg-[var(--highlight)] text-white' : 'bg-[var(--bg-muted)] text-[var(--muted)]',
+                  'flex h-6 w-6 items-center justify-center rounded-[var(--radius-sm)] text-xs font-bold',
+                  opt.active
+                    ? 'bg-[var(--highlight)] text-white'
+                    : 'bg-[var(--bg-muted)] text-[var(--muted-strong)]',
                 )}
               >
                 {opt.label}

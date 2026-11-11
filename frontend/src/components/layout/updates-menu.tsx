@@ -67,28 +67,28 @@ export function UpdatesMenu() {
       {open ? (
         <div
           id={panelId}
-          className="absolute right-0 z-40 mt-2 w-[min(20rem,calc(100vw-1.5rem))] overflow-hidden rounded-[16px] border border-[var(--line)] bg-white shadow-[var(--shadow-lg)] motion-fade-in"
+          className="motion-pop absolute right-0 z-40 mt-2 w-[min(20rem,calc(100vw-1.5rem))] overflow-hidden rounded-[16px] border border-[var(--line)] bg-white shadow-[var(--shadow-lg)]"
         >
           <div className="border-b border-[var(--line)] px-4 py-3">
             <p className="font-display text-sm font-bold tracking-tight">Updates</p>
-            <p className="text-xs text-[var(--muted)]">News and account notices</p>
+            <p className="text-xs text-[var(--muted-strong)]">News and account notices</p>
           </div>
           <ul className="max-h-80 divide-y divide-[var(--line)] overflow-y-auto">
             <li className="px-4 py-3 text-sm">
               <p className="font-semibold text-[var(--ink)]">
                 {trialActive ? 'Trial answers unlocked' : 'Trial ended'}
               </p>
-              <p className="mt-0.5 text-xs text-[var(--muted)]">
+              <p className="mt-0.5 text-xs leading-relaxed text-[var(--muted-strong)]">
                 {trialActive
                   ? `Ends ${new Date(me.data.access.trialEndsAt).toLocaleString()}`
                   : 'Correct answers stay premium; browsing stays open.'}
               </p>
             </li>
             {news.isLoading ? (
-              <li className="px-4 py-3 text-sm text-[var(--muted)]">Loading news…</li>
+              <li className="px-4 py-3 text-sm text-[var(--muted-strong)]">Loading news…</li>
             ) : null}
             {!news.isLoading && items.length === 0 ? (
-              <li className="px-4 py-3 text-sm text-[var(--muted)]">No published news yet.</li>
+              <li className="px-4 py-3 text-sm text-[var(--muted-strong)]">No published news yet.</li>
             ) : null}
             {items.map((item) => (
               <li key={item.id}>
@@ -99,7 +99,7 @@ export function UpdatesMenu() {
                 >
                   <p className="line-clamp-2 text-sm font-semibold text-[var(--ink)]">{item.title}</p>
                   {item.publishedAt ? (
-                    <p className="mt-0.5 text-xs text-[var(--muted)]">
+                    <p className="mt-0.5 text-xs text-[var(--muted-strong)]">
                       {new Date(item.publishedAt).toLocaleDateString()}
                     </p>
                   ) : null}

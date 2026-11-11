@@ -150,7 +150,7 @@ export default function PracticePlayerPage() {
 
       {!attemptId ? (
         <Surface className="space-y-4 p-5">
-          <p className="text-sm text-[var(--muted)]">
+          <p className="text-sm text-[var(--muted-strong)]">
             Start the attempt to answer questions
             {set.durationSeconds
               ? ` within ${Math.round(set.durationSeconds / 60)} minutes`
@@ -176,7 +176,7 @@ export default function PracticePlayerPage() {
               <Surface key={q.id} className="space-y-3 p-4">
                 <div className="flex items-start justify-between gap-2">
                   <h3 className="font-medium text-[var(--ink)]">
-                    <span className="text-[var(--muted)]">{index + 1}.</span> {q.title}
+                    <span className="text-[var(--muted-strong)]">{index + 1}.</span> {q.title}
                   </h3>
                   <Badge variant="outline">{q.difficulty}</Badge>
                 </div>
@@ -220,7 +220,7 @@ export default function PracticePlayerPage() {
             >
               {submit.isPending ? 'Submitting…' : 'Submit answers'}
             </Button>
-            <p className="text-xs text-[var(--muted)]">
+            <p className="text-xs text-[var(--muted-strong)]">
               You can leave questions blank; they count as skipped.
             </p>
             {submit.isError ? <Alert variant="danger">Submit failed. Try again.</Alert> : null}

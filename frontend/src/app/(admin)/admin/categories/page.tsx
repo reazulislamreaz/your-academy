@@ -141,7 +141,7 @@ export default function AdminCategoriesPage() {
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h3 className="font-semibold">{root.name}</h3>
-                <p className="text-sm text-[var(--muted)]">{root.slug}</p>
+                <p className="text-sm text-[var(--muted-strong)]">{root.slug}</p>
                 {root.description ? (
                   <p className="mt-2 text-sm text-[var(--muted-strong)]">{root.description}</p>
                 ) : null}
@@ -174,7 +174,7 @@ export default function AdminCategoriesPage() {
                 </div>
               ))}
               {root.children.length === 0 ? (
-                <p className="text-sm text-[var(--muted)]">No subcategories</p>
+                <p className="text-sm text-[var(--muted-strong)]">No subcategories</p>
               ) : null}
             </div>
           </Surface>

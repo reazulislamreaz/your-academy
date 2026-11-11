@@ -48,14 +48,14 @@ export default function NewQuestionPage() {
         title="New question"
         description="Saved as a draft. Publish from the edit screen when ready."
         actions={
-          <Link href="/admin/questions" className="text-sm font-medium text-[var(--muted)] hover:text-[var(--highlight)]">
+          <Link href="/admin/questions" className="text-sm font-medium text-[var(--muted-strong)] hover:text-[var(--highlight)]">
             Back to list
           </Link>
         }
       />
       <Surface className="p-6">
         {categories.isLoading ? (
-          <p className="text-sm text-[var(--muted)]">Loading categories…</p>
+          <p className="text-sm text-[var(--muted-strong)]">Loading categories…</p>
         ) : (
           <QuestionForm
             key={categories.data?.[0]?.id ?? 'empty'}

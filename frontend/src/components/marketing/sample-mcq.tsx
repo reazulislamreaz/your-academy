@@ -55,7 +55,7 @@ export function SampleMcq() {
                       'flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-bold',
                       showCorrect && 'border-[var(--success)] bg-[var(--success)] text-white',
                       showWrong && 'border-[var(--danger)] bg-[var(--danger)] text-white',
-                      !showCorrect && !showWrong && 'border-[var(--line-strong)] text-[var(--muted)]',
+                      !showCorrect && !showWrong && 'border-[var(--line-strong)] text-[var(--muted-strong)]',
                     )}
                   >
                     {showCorrect ? (
@@ -74,7 +74,7 @@ export function SampleMcq() {
             })}
           </div>
           {selected !== null ? (
-            <p className="mt-4 text-sm leading-relaxed text-[var(--muted)] motion-fade-in" role="status">
+            <p className="mt-4 text-sm leading-relaxed text-[var(--muted-strong)] motion-fade-in" role="status">
               {selected === CORRECT_KEY
                 ? 'Correct! The Bangladesh Public Service Commission conducts the BCS examination.'
                 : 'Not quite — the correct answer is B. Public Service Commission.'}

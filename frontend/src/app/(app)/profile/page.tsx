@@ -199,7 +199,7 @@ export default function ProfilePage() {
               <h2 className="font-display text-xl font-bold tracking-tight text-[var(--ink)]">
                 {user.name}
               </h2>
-              <p className="mt-1 text-sm text-[var(--muted)]">
+              <p className="mt-1 text-sm text-[var(--muted-strong)]">
                 {user.whatsappNumber}
                 {user.email ? ` · ${user.email}` : ''}
               </p>
@@ -210,7 +210,7 @@ export default function ProfilePage() {
             isTrialActive={user.access.isTrialActive}
           />
         </div>
-        <p className="text-sm leading-relaxed text-[var(--muted)]">
+        <p className="text-sm leading-relaxed text-[var(--muted-strong)]">
           {user.access.isTrialActive
             ? 'Answers and explanations are unlocked for the rest of your trial.'
             : 'You can still browse and bookmark. Correct answers stay premium after trial.'}
@@ -272,7 +272,7 @@ export default function ProfilePage() {
           </div>
           {stats.data.recentQuestions.length > 0 ? (
             <div className="space-y-2">
-              <p className="text-xs font-semibold tracking-wide text-[var(--muted)] uppercase">
+              <p className="text-xs font-semibold tracking-wide text-[var(--muted-strong)] uppercase">
                 Questions
               </p>
               <ul className="divide-y divide-[var(--line)]">
@@ -291,7 +291,7 @@ export default function ProfilePage() {
           ) : null}
           {stats.data.recentDocuments.length > 0 ? (
             <div className="space-y-2">
-              <p className="text-xs font-semibold tracking-wide text-[var(--muted)] uppercase">
+              <p className="text-xs font-semibold tracking-wide text-[var(--muted-strong)] uppercase">
                 PDFs
               </p>
               <ul className="divide-y divide-[var(--line)]">
@@ -313,7 +313,7 @@ export default function ProfilePage() {
 
       <Surface className="p-5 sm:p-6">
         <h2 className="font-display text-lg font-bold tracking-tight">Profile details</h2>
-        <p className="mt-1 text-sm text-[var(--muted)]">
+        <p className="mt-1 text-sm text-[var(--muted-strong)]">
           WhatsApp login is fixed at{' '}
           <span className="font-medium text-[var(--ink)]">{user.whatsappNumber}</span>. Add an email
           if you want password reset.
@@ -372,14 +372,14 @@ export default function ProfilePage() {
           {avatarMsg ? <Alert variant="success">{avatarMsg}</Alert> : null}
           {avatarErr ? <Alert variant="danger">{avatarErr}</Alert> : null}
           {uploadAvatar.isPending ? (
-            <p className="text-sm text-[var(--muted)]">Uploading…</p>
+            <p className="text-sm text-[var(--muted-strong)]">Uploading…</p>
           ) : null}
         </div>
       </Surface>
 
       <Surface className="p-5 sm:p-6">
         <h2 className="font-display text-lg font-bold tracking-tight">Change password</h2>
-        <p className="mt-1 text-sm text-[var(--muted)]">
+        <p className="mt-1 text-sm text-[var(--muted-strong)]">
           Use at least 8 characters. You stay signed in after a successful change.
         </p>
         <form

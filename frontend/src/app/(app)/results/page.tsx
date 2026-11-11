@@ -77,7 +77,7 @@ export default function ResultsPage() {
                     {attempt.practiceSet.title}
                   </Link>
                 </h3>
-                <p className="mt-1 text-xs text-[var(--muted)]">
+                <p className="mt-1 text-xs text-[var(--muted-strong)]">
                   {attempt.submittedAt
                     ? new Date(attempt.submittedAt).toLocaleString()
                     : 'Not submitted'}
@@ -86,7 +86,7 @@ export default function ResultsPage() {
               <div className="text-right">
                 <p className="font-display text-lg font-bold tabular-nums text-[var(--ink)]">
                   {attempt.score ?? 0}
-                  <span className="text-sm font-medium text-[var(--muted)]">
+                  <span className="text-sm font-medium text-[var(--muted-strong)]">
                     /{attempt.maxScore ?? 0}
                   </span>
                 </p>

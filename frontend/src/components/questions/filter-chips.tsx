@@ -95,13 +95,13 @@ export function FilterChips({
           className="inline-flex max-w-full items-center gap-1.5 rounded-[var(--radius-sm)] border border-[var(--line)] bg-[var(--bg-elevated)] px-3 py-2 text-xs font-semibold text-[var(--ink-soft)] transition-colors hover:border-[var(--line-strong)] hover:bg-[var(--bg-muted)]"
         >
           <span className="min-w-0 truncate">{chip.label}</span>
-          <X className="h-3 w-3 shrink-0 text-[var(--muted)]" aria-hidden />
+          <X className="h-3.5 w-3.5 shrink-0 text-[var(--muted-strong)]" aria-hidden />
           <span className="sr-only">Remove filter</span>
         </Link>
       ))}
       <Link
         href="/questions"
-        className="inline-block py-2 text-xs font-semibold text-[var(--muted)] underline-offset-2 hover:text-[var(--highlight)] hover:underline"
+        className="inline-block py-2 text-xs font-semibold text-[var(--muted-strong)] underline-offset-2 hover:text-[var(--highlight)] hover:underline"
       >
         Clear all
       </Link>

@@ -52,7 +52,7 @@ export default function SubjectsPage() {
               </Link>
             </h2>
             {subject.description ? (
-              <p className="mt-1 line-clamp-2 text-sm text-[var(--muted)]">{subject.description}</p>
+              <p className="mt-1 line-clamp-2 text-sm text-[var(--muted-strong)]">{subject.description}</p>
             ) : null}
             <p className="mt-3 text-xs text-[var(--muted-strong)]">
               {subject.children.length} topic{subject.children.length === 1 ? '' : 's'}

@@ -3,16 +3,18 @@ import type { HTMLAttributes } from 'react';
 import { cn } from '@/lib/utils';
 
 const badgeVariants = cva(
-  'inline-flex items-center rounded-[var(--radius-sm)] px-2 py-0.5 text-xs font-semibold tracking-wide',
+  'inline-flex items-center rounded-[var(--radius-sm)] px-2.5 py-1 text-[13px] leading-none font-semibold tracking-wide',
   {
     variants: {
       variant: {
         default: 'bg-[var(--bg-muted)] text-[var(--ink-soft)]',
-        highlight: 'bg-[var(--highlight-soft)] text-[var(--highlight)]',
-        success: 'bg-[var(--success-soft)] text-[var(--success)]',
-        danger: 'bg-[var(--danger-soft)] text-[var(--danger)]',
+        highlight: 'bg-[var(--highlight-soft)] text-[var(--danger-fg)]',
+        success: 'bg-[var(--success-soft)] text-[var(--success-fg)]',
+        danger: 'bg-[var(--danger-soft)] text-[var(--danger-fg)]',
+        warning: 'bg-[var(--warning-soft)] text-[var(--warning-fg)]',
+        info: 'bg-[var(--info-soft)] text-[var(--info-fg)]',
         inverse: 'bg-[var(--bg-inverse)] text-white',
-        outline: 'border border-[var(--line)] text-[var(--muted-strong)]',
+        outline: 'border border-[var(--line-strong)] bg-white text-[var(--muted-strong)]',
       },
     },
     defaultVariants: { variant: 'default' },

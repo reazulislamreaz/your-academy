@@ -27,7 +27,7 @@ export function MetricTile({ label, value, suffix, icon: Icon, tone = 'blue', cl
   return (
     <div
       className={cn(
-        'flex min-w-0 items-center gap-2.5 rounded-[14px] border border-[var(--line)] bg-white p-3 shadow-[var(--shadow-sm)] sm:gap-3 sm:p-4',
+        'motion-hover-lift flex min-w-0 items-center gap-2.5 rounded-[14px] border border-[var(--line)] bg-white p-3 shadow-[var(--shadow-sm)] sm:gap-3 sm:p-4',
         className,
       )}
     >
@@ -43,10 +43,10 @@ export function MetricTile({ label, value, suffix, icon: Icon, tone = 'blue', cl
         <p className="text-xl font-bold tabular-nums text-[var(--ink)] sm:text-2xl">
           {value}
           {suffix ? (
-            <span className="text-xs font-normal text-[var(--muted)] sm:text-sm">{suffix}</span>
+            <span className="text-sm font-normal text-[var(--muted-strong)]">{suffix}</span>
           ) : null}
         </p>
-        <p className="truncate text-[11px] text-[var(--muted)] sm:text-xs">{label}</p>
+        <p className="truncate text-xs font-medium text-[var(--muted-strong)] sm:text-sm">{label}</p>
       </div>
     </div>
   );

@@ -38,7 +38,7 @@ export function AdminSidebar() {
     <aside className="flex h-full w-60 shrink-0 flex-col bg-[var(--bg-inverse)] text-white shadow-[var(--shadow)]">
       <div className="border-b border-white/10 px-5 py-5">
         <BrandMark inverse href="/admin/dashboard" />
-        <p className="mt-2 text-[10px] font-semibold tracking-[0.16em] text-white/45 uppercase">
+        <p className="mt-2 text-xs font-semibold tracking-[0.14em] text-white/75 uppercase">
           Admin console
         </p>
       </div>

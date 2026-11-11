@@ -16,5 +16,9 @@ type FieldHintProps = {
 };
 
 export function FieldHint({ children, className }: FieldHintProps) {
-  return <p className={cn('text-xs text-[var(--muted)]', className)}>{children}</p>;
+  return (
+    <p className={cn('text-sm leading-relaxed text-[var(--muted-strong)]', className)}>
+      {children}
+    </p>
+  );
 }

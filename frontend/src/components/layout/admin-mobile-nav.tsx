@@ -29,7 +29,7 @@ export function AdminMobileNav() {
             key={item.href}
             href={item.href}
             className={cn(
-              'shrink-0 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-medium',
+              'motion-nav-indicator shrink-0 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-medium',
               active
                 ? 'bg-[var(--highlight)] text-white'
                 : 'text-[var(--muted-strong)] hover:bg-[var(--bg-muted)]',

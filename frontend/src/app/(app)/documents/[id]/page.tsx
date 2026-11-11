@@ -74,7 +74,7 @@ export default function DocumentDetailPage() {
   return (
     <article className="mx-auto max-w-3xl space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link href="/documents" className="text-sm text-[var(--muted)] hover:text-[var(--highlight)]">
+        <Link href="/documents" className="text-sm text-[var(--muted-strong)] hover:text-[var(--highlight)]">
           ← PDF library
         </Link>
         <Button
@@ -99,7 +99,7 @@ export default function DocumentDetailPage() {
         ) : null}
       </header>
       <Surface className="space-y-4 p-5 sm:p-6">
-        <p className="text-sm text-[var(--muted)]">
+        <p className="text-sm text-[var(--muted-strong)]">
           File: {data.mediaAsset.originalFilename ?? 'document'} · {data.mediaAsset.mimeType} ·{' '}
           {Math.max(1, Math.round(data.mediaAsset.bytes / 1024))} KB
         </p>

@@ -35,10 +35,10 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="motion-rise space-y-6">
+    <div className="space-y-6">
       <div>
         <h1 className="font-display text-3xl font-bold tracking-tight">Reset password</h1>
-        <p className="mt-2 text-sm leading-relaxed text-[var(--muted)] sm:text-base">
+        <p className="mt-2 text-sm leading-relaxed text-[var(--muted-strong)] sm:text-base">
           Enter the email on your account. If it matches, we send a reset link.
         </p>
       </div>
@@ -68,7 +68,7 @@ export default function ForgotPasswordPage() {
           </form>
         )}
       </Surface>
-      <p className="text-sm text-[var(--muted)]">
+      <p className="text-sm text-[var(--muted-strong)]">
         <Link
           href="/login"
           className="font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"

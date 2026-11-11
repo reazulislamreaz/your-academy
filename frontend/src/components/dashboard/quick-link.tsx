@@ -16,7 +16,7 @@ export function QuickLink({ href, title, description, icon: Icon, className }: P
     <Link
       href={href}
       className={cn(
-        'group flex items-start gap-3 rounded-[14px] border border-[var(--line)] bg-white p-4 shadow-[var(--shadow-sm)] transition-all duration-[var(--duration-fast)] hover:-translate-y-0.5 hover:border-[var(--highlight)] hover:shadow-[var(--shadow)]',
+        'motion-hover-lift group flex items-start gap-3 rounded-[14px] border border-[var(--line)] bg-white p-4 shadow-[var(--shadow-sm)] hover:border-[var(--highlight)]',
         className,
       )}
     >
@@ -33,7 +33,7 @@ export function QuickLink({ href, title, description, icon: Icon, className }: P
             aria-hidden
           />
         </span>
-        <span className="mt-1 block text-xs leading-relaxed text-[var(--muted)]">{description}</span>
+        <span className="mt-1 block text-sm leading-relaxed text-[var(--muted-strong)]">{description}</span>
       </span>
     </Link>
   );

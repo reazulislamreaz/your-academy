@@ -151,7 +151,7 @@ export default function EditNewsPage() {
 
           <div className="space-y-3 border-t border-[var(--line)] pt-4">
             <Label>Attached PDFs</Label>
-            <p className="text-sm text-[var(--muted)]">
+            <p className="text-sm text-[var(--muted-strong)]">
               Select documents to show on the public article. Only published PDFs appear to learners.
             </p>
             {documents.isLoading ? <Skeleton className="h-24 w-full" /> : null}
@@ -176,7 +176,7 @@ export default function EditNewsPage() {
                     />
                     <span className="min-w-0">
                       <span className="block font-medium">{doc.title}</span>
-                      <span className="text-xs text-[var(--muted)]">
+                      <span className="text-xs text-[var(--muted-strong)]">
                         {doc.isPublished ? 'Published' : 'Draft'} · {doc.visibility}
                       </span>
                     </span>
@@ -185,7 +185,7 @@ export default function EditNewsPage() {
               })}
             </div>
             {!documents.isLoading && (documents.data?.length ?? 0) === 0 ? (
-              <p className="text-sm text-[var(--muted)]">
+              <p className="text-sm text-[var(--muted-strong)]">
                 No documents yet.{' '}
                 <Link href="/admin/documents" className="font-semibold underline-offset-2 hover:underline">
                   Create one

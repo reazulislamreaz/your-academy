@@ -24,7 +24,9 @@ export function BarChart({
   const max = Math.max(...data.map((d) => d.value), 0);
   if (data.length === 0 || max === 0) {
     return (
-      <p className={cn('py-8 text-center text-sm text-[var(--muted)]', className)}>{emptyLabel}</p>
+      <p className={cn('py-8 text-center text-sm text-[var(--muted-strong)]', className)}>
+        {emptyLabel}
+      </p>
     );
   }
 
@@ -36,7 +38,9 @@ export function BarChart({
           <li key={item.label} className="space-y-1.5">
             <div className="flex items-center justify-between gap-3 text-sm">
               <span className="font-medium text-[var(--ink-soft)]">{item.label}</span>
-              <span className="tabular-nums text-[var(--muted)]">{formatValue(item.value)}</span>
+              <span className="font-medium tabular-nums text-[var(--muted-strong)]">
+                {formatValue(item.value)}
+              </span>
             </div>
             <div className="h-2.5 overflow-hidden rounded-full bg-[var(--bg-muted)]">
               <div

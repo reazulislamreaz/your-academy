@@ -28,7 +28,7 @@ export function PageHeader({ title, description, actions, className, eyebrow }: 
           {title}
         </h1>
         {description ? (
-          <p className="max-w-2xl text-sm leading-relaxed text-[var(--muted)] sm:text-base">
+          <p className="max-w-2xl text-sm leading-relaxed text-[var(--muted-strong)] sm:text-base">
             {description}
           </p>
         ) : null}

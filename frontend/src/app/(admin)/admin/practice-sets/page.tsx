@@ -68,7 +68,7 @@ export default function AdminPracticeSetsPage() {
       />
 
       <Surface className="flex flex-wrap items-center gap-3 p-4">
-        <label className="text-sm font-medium text-[var(--muted)]" htmlFor="ps-status">
+        <label className="text-sm font-medium text-[var(--muted-strong)]" htmlFor="ps-status">
           Status
         </label>
         <Select
@@ -82,7 +82,7 @@ export default function AdminPracticeSetsPage() {
           <option value="PUBLISHED">Published</option>
           <option value="ARCHIVED">Archived</option>
         </Select>
-        <label className="text-sm font-medium text-[var(--muted)]" htmlFor="ps-kind">
+        <label className="text-sm font-medium text-[var(--muted-strong)]" htmlFor="ps-kind">
           Kind
         </label>
         <Select
@@ -124,7 +124,7 @@ export default function AdminPracticeSetsPage() {
                 {item.examTag ? <Badge variant="outline">{examLabel(item.examTag)}</Badge> : null}
               </div>
               <h3 className="truncate font-display text-base font-semibold">{item.title}</h3>
-              <p className="text-xs text-[var(--muted)]">
+              <p className="text-xs text-[var(--muted-strong)]">
                 {item.questionCount} questions · {item.attemptCount} attempts
                 {item.category ? ` · ${item.category.name}` : ''}
               </p>

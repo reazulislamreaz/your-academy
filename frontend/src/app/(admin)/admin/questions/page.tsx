@@ -81,7 +81,7 @@ function AdminQuestionsContent() {
       />
 
       <Surface className="flex flex-wrap items-center gap-3 p-4">
-        <label className="text-sm font-medium text-[var(--muted)]" htmlFor="status">
+        <label className="text-sm font-medium text-[var(--muted-strong)]" htmlFor="status">
           Filter status
         </label>
         <Select
@@ -95,7 +95,7 @@ function AdminQuestionsContent() {
           <option value="PUBLISHED">Published</option>
           <option value="ARCHIVED">Archived</option>
         </Select>
-        <p className="text-xs text-[var(--muted)] sm:ml-auto">
+        <p className="text-xs text-[var(--muted-strong)] sm:ml-auto">
           Showing up to 50 results{status ? ` · ${status}` : ''}
         </p>
       </Surface>
@@ -125,7 +125,7 @@ function AdminQuestionsContent() {
         <Surface className="overflow-hidden p-0">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[44rem] text-left text-sm">
-              <thead className="bg-[var(--bg-desk)] text-[11px] tracking-[0.08em] text-[var(--muted)] uppercase">
+              <thead className="bg-[var(--bg-desk)] text-xs font-semibold tracking-[0.08em] text-[var(--muted-strong)] uppercase">
                 <tr>
                   <th className="px-5 py-3 font-semibold">Question</th>
                   <th className="px-3 py-3 font-semibold">Category</th>
@@ -145,7 +145,7 @@ function AdminQuestionsContent() {
                         {q.title}
                       </Link>
                     </td>
-                    <td className="px-3 py-3.5 text-[var(--muted)]">
+                    <td className="px-3 py-3.5 text-[var(--muted-strong)]">
                       {q.category.name}
                       {q.subcategory ? ` · ${q.subcategory.name}` : ''}
                     </td>

@@ -86,7 +86,7 @@ function SidebarNav() {
       <nav className="flex flex-1 flex-col gap-4 overflow-y-auto p-3" aria-label="Study">
         {navGroups.map((group) => (
           <div key={group.title}>
-            <p className="px-2.5 pb-1.5 text-[10px] font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
+            <p className="px-2.5 pb-1.5 text-xs font-semibold tracking-[0.12em] text-[var(--muted-strong)] uppercase">
               {group.title}
             </p>
             <div className="flex flex-col gap-0.5">
@@ -98,7 +98,7 @@ function SidebarNav() {
                     key={`${item.label}-${item.href}`}
                     href={item.href}
                     className={cn(
-                      'flex items-center gap-2.5 rounded-[10px] px-2.5 py-2 text-sm font-medium transition-colors duration-[var(--duration-fast)]',
+                      'motion-nav-indicator flex items-center gap-2.5 rounded-[10px] px-2.5 py-2 text-sm font-medium',
                       active
                         ? 'bg-[var(--highlight-soft)] text-[var(--highlight)]'
                         : 'text-[var(--ink-soft)] hover:bg-[var(--bg-muted)] hover:text-[var(--ink)]',
@@ -118,7 +118,7 @@ function SidebarNav() {
         <div className="border-t border-[var(--line)] p-3">
           <Link
             href="/admin/dashboard"
-            className="flex items-center gap-2.5 rounded-[10px] px-2.5 py-2 text-sm font-medium text-[var(--ink-soft)] hover:bg-[var(--bg-muted)] hover:text-[var(--ink)]"
+            className="motion-nav-indicator flex items-center gap-2.5 rounded-[10px] px-2.5 py-2 text-sm font-medium text-[var(--ink-soft)] hover:bg-[var(--bg-muted)] hover:text-[var(--ink)]"
           >
             <Shield className="size-4 shrink-0" aria-hidden />
             Admin console

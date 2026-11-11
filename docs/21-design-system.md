@@ -123,14 +123,25 @@ Admin overview: work queue (drafts, trials, expired) above KPI grid.
 
 ## 7. Motion
 
-| Class | Behavior |
-|-------|----------|
+CSS-first system in `frontend/src/app/globals.css`. Shared helpers:
+
+| Utility / component | Behavior |
+|---------------------|----------|
+| `PageShell` | Short fade+rise on client route change (`motion-page`) |
+| `Reveal` | One-shot viewport enter (`.motion-reveal` → `.is-visible`) |
+| `Stagger` / `.motion-stagger` | Staggered child rise (`--stagger-step`) |
 | `.motion-fade-in` | Opacity enter |
 | `.motion-rise` | Fade + 10px rise |
+| `.motion-pop` | Dropdown / menu pop |
+| `.motion-drawer-in` | Mobile drawer enter |
+| `.motion-scale-in` | Soft scale for alerts |
+| `.motion-content-in` | Swap-in after skeleton |
+| `.motion-hover-lift` | Hover lift + shadow (cards) |
 | `.motion-press` | Active press |
 | `.motion-nav-indicator` | Fast color/bg |
+| `.skeleton` | L→R shimmer |
 
-Disabled under `prefers-reduced-motion: reduce`.
+Tokens: `--duration-fast` / `--duration` / `--duration-slow` + `--ease-out`. Prefer transform/opacity. All entrance/hover motion is disabled under `prefers-reduced-motion: reduce`. Do not add Framer Motion unless a feature truly needs it.
 
 ---
 

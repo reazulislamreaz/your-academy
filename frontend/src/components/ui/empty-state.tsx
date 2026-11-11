@@ -12,12 +12,14 @@ export function EmptyState({ title, description, action, className }: Props) {
   return (
     <div
       className={cn(
-        'flex flex-col items-start gap-3 rounded-[var(--radius-lg)] border border-dashed border-[var(--line-strong)] bg-[var(--bg-elevated)] px-6 py-10',
+        'motion-fade-in flex flex-col items-start gap-3 rounded-[var(--radius-lg)] border border-dashed border-[var(--line-strong)] bg-[var(--bg-elevated)] px-6 py-10',
         className,
       )}
     >
       <h3 className="font-display text-lg font-semibold text-[var(--ink)]">{title}</h3>
-      {description ? <p className="max-w-md text-sm text-[var(--muted)]">{description}</p> : null}
+      {description ? (
+        <p className="max-w-md text-sm leading-relaxed text-[var(--muted-strong)]">{description}</p>
+      ) : null}
       {action}
     </div>
   );

@@ -74,7 +74,9 @@ export function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function statusTone(status: string): 'success' | 'danger' | 'outline' | 'highlight' {
+export function statusTone(
+  status: string,
+): 'success' | 'danger' | 'outline' | 'highlight' | 'warning' | 'info' {
   switch (status) {
     case 'COMPLETED':
     case 'VALID':
@@ -83,9 +85,15 @@ export function statusTone(status: string): 'success' | 'danger' | 'outline' | '
     case 'FAILED':
     case 'INVALID':
       return 'danger';
+    case 'DUPLICATE':
+    case 'SKIPPED':
+    case 'ARCHIVED':
+      return 'warning';
     case 'VALIDATED':
+      return 'info';
     case 'IMPORTING':
-      return 'highlight';
+    case 'PENDING':
+      return 'info';
     default:
       return 'outline';
   }

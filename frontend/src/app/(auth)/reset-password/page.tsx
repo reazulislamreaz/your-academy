@@ -47,10 +47,10 @@ function ResetForm() {
   }
 
   return (
-    <div className="motion-rise space-y-6">
+    <div className="space-y-6">
       <div>
         <h1 className="font-display text-3xl font-bold tracking-tight">Choose a new password</h1>
-        <p className="mt-2 text-sm leading-relaxed text-[var(--muted)] sm:text-base">
+        <p className="mt-2 text-sm leading-relaxed text-[var(--muted-strong)] sm:text-base">
           Use at least 8 characters with a letter and a number.
         </p>
       </div>
@@ -104,7 +104,7 @@ function ResetForm() {
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<p className="py-10 text-sm text-[var(--muted)]">Loading…</p>}>
+    <Suspense fallback={<p className="py-10 text-sm text-[var(--muted-strong)]">Loading…</p>}>
       <ResetForm />
     </Suspense>
   );

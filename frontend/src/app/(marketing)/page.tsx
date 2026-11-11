@@ -28,6 +28,7 @@ import {
   GradCapIcon,
   MathSymbolsIcon,
 } from '@/components/marketing/homepage-icons';
+import { Reveal } from '@/components/motion/reveal';
 import { cn } from '@/lib/utils';
 
 export const metadata: Metadata = {
@@ -154,7 +155,7 @@ export default function HomePage() {
                       <dd className="font-display text-lg leading-none font-bold sm:text-xl">
                         {value}
                       </dd>
-                      <dd className="mt-1 text-[11px] text-white/60 sm:text-xs">{label}</dd>
+                      <dd className="mt-1 text-xs text-white/85 sm:text-sm">{label}</dd>
                     </div>
                   </div>
                 </div>
@@ -198,7 +199,7 @@ export default function HomePage() {
 
       {/* Question bank categories — left intro + right cards */}
       <section className="section-pad">
-        <div className="mx-auto grid w-full max-w-[1280px] items-center gap-8 px-4 sm:px-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,2.2fr)] lg:gap-10">
+        <Reveal className="mx-auto grid w-full max-w-[1280px] items-center gap-8 px-4 sm:px-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,2.2fr)] lg:gap-10">
           <div className="space-y-4">
             <span
               className="mb-1 block h-[3px] w-7 rounded-full bg-[var(--highlight)]"
@@ -207,7 +208,7 @@ export default function HomePage() {
             <h2 className="font-display text-2xl font-bold tracking-tight text-[var(--ink)] sm:text-[2rem]">
               Our Question Bank Categories
             </h2>
-            <p className="text-[var(--muted)]">
+            <p className="text-[var(--muted-strong)]">
               Choose your target exam and start your preparation
             </p>
             <Link href="/questions" className="inline-flex pt-1">
@@ -217,7 +218,7 @@ export default function HomePage() {
               </Button>
             </Link>
           </div>
-          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 lg:gap-4">
+          <ul className="motion-stagger grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 lg:gap-4">
             {CATEGORIES.map(({ name, subtitle, href, Icon }) => (
               <li key={name}>
                 <Link
@@ -230,7 +231,7 @@ export default function HomePage() {
                       {name}
                     </span>
                     {subtitle ? (
-                      <span className="mt-0.5 block text-[11px] leading-tight text-[var(--muted)]">
+                      <span className="mt-0.5 block text-xs leading-snug text-[var(--muted-strong)]">
                         {subtitle}
                       </span>
                     ) : null}
@@ -239,12 +240,12 @@ export default function HomePage() {
               </li>
             ))}
           </ul>
-        </div>
+        </Reveal>
       </section>
 
       {/* Topic base question analysis */}
       <section className="pb-[var(--space-section)]">
-        <div className="mx-auto w-full max-w-[1280px] px-4 sm:px-6">
+        <Reveal className="mx-auto w-full max-w-[1280px] px-4 sm:px-6">
           <div className="rounded-[20px] bg-[#eaf1fb] px-5 py-7 sm:px-8 sm:py-8">
             <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,2.2fr)] lg:gap-10">
               <div className="space-y-4">
@@ -262,7 +263,7 @@ export default function HomePage() {
                   </Button>
                 </Link>
               </div>
-              <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 lg:gap-4">
+              <ul className="motion-stagger grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 lg:gap-4">
                 {TOPICS.map(({ name, href, Icon, selected }) => (
                   <li key={name}>
                     <Link
@@ -285,12 +286,12 @@ export default function HomePage() {
               </ul>
             </div>
           </div>
-        </div>
+        </Reveal>
       </section>
 
       {/* Why + Progress + CTA */}
       <section className="pb-[var(--space-section)]">
-        <div className="mx-auto grid w-full max-w-[1280px] gap-5 px-4 sm:px-6 lg:grid-cols-3 lg:gap-6">
+        <Reveal className="motion-stagger mx-auto grid w-full max-w-[1280px] gap-5 px-4 sm:px-6 lg:grid-cols-3 lg:gap-6">
           <div className="rounded-[18px] bg-[#e8f0fe] p-6 shadow-[var(--shadow-sm)] sm:p-7">
             <h2 className="font-display text-xl font-bold tracking-tight text-[var(--ink)] sm:text-2xl">
               Why Choose Your Academy?
@@ -365,7 +366,7 @@ export default function HomePage() {
                     <dd className={`font-display text-base leading-none font-bold ${valueClass}`}>
                       {value}
                     </dd>
-                    <dt className={`text-[10px] leading-tight ${labelClass}`}>{label}</dt>
+                    <dt className={`text-xs leading-snug font-medium ${labelClass}`}>{label}</dt>
                   </div>
                 ))}
               </dl>
@@ -414,7 +415,7 @@ export default function HomePage() {
                     />
                   ))}
                 </svg>
-                <p className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-[var(--success-soft)] px-2.5 py-1.5 text-[11px] font-semibold text-[var(--success)] shadow-sm sm:absolute sm:right-0 sm:bottom-0 sm:mt-0">
+                <p className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-[var(--success-soft)] px-2.5 py-1.5 text-xs font-semibold text-[var(--success-fg)] shadow-sm sm:absolute sm:right-0 sm:bottom-0 sm:mt-0">
                   <TrendingUp className="h-3.5 w-3.5" aria-hidden />
                   Your Performance is improving!
                 </p>
@@ -446,12 +447,12 @@ export default function HomePage() {
               </Link>
             </div>
           </div>
-        </div>
+        </Reveal>
       </section>
 
       {/* Sample MCQ — left intro + card */}
       <section className="pb-[var(--space-section)]">
-        <div className="mx-auto grid w-full max-w-[1280px] items-center gap-8 px-4 sm:px-6 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,2.15fr)] lg:gap-10">
+        <Reveal className="mx-auto grid w-full max-w-[1280px] items-center gap-8 px-4 sm:px-6 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,2.15fr)] lg:gap-10">
           <div className="space-y-4">
             <span
               className="mb-1 block h-[3px] w-7 rounded-full bg-[var(--highlight)]"
@@ -460,7 +461,7 @@ export default function HomePage() {
             <h2 className="font-display text-3xl font-bold tracking-tight text-[var(--ink)] sm:text-[2rem]">
               Try a Sample MCQ
             </h2>
-            <p className="text-[var(--muted)]">Test your knowledge with our free MCQ</p>
+            <p className="text-[var(--muted-strong)]">Test your knowledge with our free MCQ</p>
             <Link href="/questions" className="inline-flex pt-1">
               <Button className="rounded-full px-6 shadow-sm">
                 Practice Now
@@ -469,14 +470,14 @@ export default function HomePage() {
             </Link>
           </div>
           <SampleMcq />
-        </div>
+        </Reveal>
       </section>
 
       {/* Newsletter */}
       <section className="pb-[var(--space-section)]">
-        <div className="mx-auto w-full max-w-[1280px] px-4 sm:px-6">
+        <Reveal className="mx-auto w-full max-w-[1280px] px-4 sm:px-6">
           <NewsletterBar />
-        </div>
+        </Reveal>
       </section>
     </div>
   );

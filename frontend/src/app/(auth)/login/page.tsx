@@ -45,10 +45,10 @@ function LoginForm() {
   }
 
   return (
-    <div className="motion-rise space-y-6">
+    <div className="space-y-6">
       <div>
         <h1 className="font-display text-3xl font-bold tracking-tight">Welcome back</h1>
-        <p className="mt-2 text-sm leading-relaxed text-[var(--muted)] sm:text-base">
+        <p className="mt-2 text-sm leading-relaxed text-[var(--muted-strong)] sm:text-base">
           Sign in with your WhatsApp number.
         </p>
       </div>
@@ -69,7 +69,7 @@ function LoginForm() {
               <Label htmlFor="password">Password</Label>
               <Link
                 href="/forgot-password"
-                className="text-xs font-medium text-[var(--muted)] hover:text-[var(--highlight)]"
+                className="text-xs font-medium text-[var(--muted-strong)] hover:text-[var(--highlight)]"
               >
                 Forgot password?
               </Link>
@@ -89,7 +89,7 @@ function LoginForm() {
           </Button>
         </form>
       </Surface>
-      <p className="text-sm text-[var(--muted)]">
+      <p className="text-sm text-[var(--muted-strong)]">
         New here?{' '}
         <Link
           href="/register"
@@ -104,7 +104,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<p className="py-10 text-sm text-[var(--muted)]">Loading…</p>}>
+    <Suspense fallback={<p className="py-10 text-sm text-[var(--muted-strong)]">Loading…</p>}>
       <LoginForm />
     </Suspense>
   );

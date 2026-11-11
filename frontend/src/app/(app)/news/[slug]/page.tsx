@@ -39,7 +39,7 @@ export default function NewsDetailPage() {
 
   return (
     <article className="mx-auto max-w-3xl space-y-6">
-      <Link href="/news" className="text-sm text-[var(--muted)] hover:text-[var(--highlight)]">
+      <Link href="/news" className="text-sm text-[var(--muted-strong)] hover:text-[var(--highlight)]">
         ← News
       </Link>
       <header className="space-y-3 border-b border-[var(--line)] pb-6">
@@ -47,7 +47,7 @@ export default function NewsDetailPage() {
           {data.title}
         </h1>
         {data.publishedAt ? (
-          <p className="text-sm text-[var(--muted)]">
+          <p className="text-sm text-[var(--muted-strong)]">
             {new Date(data.publishedAt).toLocaleDateString()}
           </p>
         ) : null}
@@ -57,7 +57,7 @@ export default function NewsDetailPage() {
       </p>
       {data.documents.length > 0 ? (
         <Surface className="p-5">
-          <h2 className="text-xs font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
+          <h2 className="text-xs font-semibold tracking-[0.14em] text-[var(--muted-strong)] uppercase">
             Attached PDFs
           </h2>
           <ul className="mt-4 divide-y divide-[var(--line)]">
@@ -70,12 +70,12 @@ export default function NewsDetailPage() {
                   {doc.title}
                 </Link>
                 {doc.visibility === 'PREMIUM' ? (
-                  <span className="ml-2 text-xs text-[var(--muted)]">Premium</span>
+                  <span className="ml-2 text-xs text-[var(--muted-strong)]">Premium</span>
                 ) : null}
               </li>
             ))}
           </ul>
-          <p className="mt-3 text-xs text-[var(--muted)]">
+          <p className="mt-3 text-xs text-[var(--muted-strong)]">
             Sign in to open authenticated PDFs. Downloads use short-lived signed URLs when Cloudinary
             is configured.
           </p>

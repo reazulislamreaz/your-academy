@@ -40,13 +40,13 @@ export default function NewsPage() {
                   {item.title}
                 </h2>
                 {item.publishedAt ? (
-                  <time className="text-xs text-[var(--muted)]">
+                  <time className="text-xs text-[var(--muted-strong)]">
                     {new Date(item.publishedAt).toLocaleDateString()}
                   </time>
                 ) : null}
               </div>
               {item.summary ? (
-                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--muted)]">
+                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--muted-strong)]">
                   {item.summary}
                 </p>
               ) : null}

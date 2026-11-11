@@ -197,7 +197,7 @@ export default function AdminDocumentsPage() {
           >
             <div>
               <p className="font-semibold">{doc.title}</p>
-              <p className="text-sm text-[var(--muted)]">
+              <p className="text-sm text-[var(--muted-strong)]">
                 {doc.mediaAsset?.originalFilename ?? 'file'} ·{' '}
                 {doc.category?.name ?? 'Uncategorized'}
               </p>

@@ -27,21 +27,21 @@ export function StatCard({ label, value, hint, icon: Icon, tone = 'navy', classN
   return (
     <div
       className={cn(
-        'relative min-w-0 max-w-full overflow-hidden rounded-[16px] border border-[var(--line)] bg-white p-4 shadow-[var(--shadow-sm)] sm:p-5',
+        'motion-hover-lift relative min-w-0 max-w-full overflow-hidden rounded-[16px] border border-[var(--line)] bg-white p-4 shadow-[var(--shadow-sm)] sm:p-5',
         className,
       )}
     >
       <div className={cn('absolute -right-6 -bottom-6 h-24 w-24 rounded-full opacity-60', t.wash)} />
       <div className="relative flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate text-[11px] font-semibold tracking-[0.12em] text-[var(--muted)] uppercase">
+          <p className="truncate text-xs font-semibold tracking-[0.12em] text-[var(--muted-strong)] uppercase">
             {label}
           </p>
           <p className="mt-2 font-display text-2xl leading-none font-bold tracking-tight tabular-nums text-[var(--ink)] sm:text-3xl">
             {value}
           </p>
           {hint ? (
-            <p className="mt-2 truncate text-xs leading-snug text-[var(--muted)]">{hint}</p>
+            <p className="mt-2 truncate text-sm leading-snug text-[var(--muted-strong)]">{hint}</p>
           ) : null}
         </div>
         <span
