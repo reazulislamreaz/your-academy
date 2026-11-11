@@ -595,6 +595,7 @@ model QuestionUploadBatch {
   id                 String               @id @default(uuid()) @db.Uuid
   batchCode          String               @unique @map("batch_code") @db.VarChar(80)
   displayName        String               @map("display_name") @db.VarChar(200)
+  description        String?
   originalFilename   String               @map("original_filename") @db.VarChar(255)
   mimeType           String               @map("mime_type") @db.VarChar(127)
   fileSha256         String               @map("file_sha256") @db.VarChar(64)
@@ -608,6 +609,7 @@ model QuestionUploadBatch {
   skippedCount       Int                  @default(0) @map("skipped_count")
   failedCount        Int                  @default(0) @map("failed_count")
   subjectHint        String?              @map("subject_hint") @db.VarChar(120)
+  topicHint          String?              @map("topic_hint") @db.VarChar(120)
   examCategoryHint   String?              @map("exam_category_hint") @db.VarChar(120)
   duplicateFileBatchId String?            @map("duplicate_file_batch_id") @db.Uuid
   errorMessage       String?              @map("error_message")

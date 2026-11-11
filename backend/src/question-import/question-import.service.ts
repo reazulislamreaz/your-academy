@@ -48,16 +48,94 @@ export class QuestionImportService {
     return buildTemplateBuffer();
   }
 
+  async getStats() {
+    const [totalCollections, aggregates, recentUploads] = await Promise.all([
+      this.prisma.questionUploadBatch.count(),
+      this.prisma.questionUploadBatch.aggregate({
+        _sum: {
+          importedCount: true,
+          duplicateCount: true,
+          invalidCount: true,
+          failedCount: true,
+          skippedCount: true,
+          totalRows: true,
+        },
+      }),
+      this.prisma.questionUploadBatch.findMany({
+        take: 6,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          batchCode: true,
+          displayName: true,
+          status: true,
+          importedCount: true,
+          totalRows: true,
+          createdAt: true,
+          uploadedBy: { select: { id: true, name: true } },
+        },
+      }),
+    ]);
+
+    const sum = aggregates._sum;
+    return {
+      totalCollections,
+      totalRowsProcessed: sum.totalRows ?? 0,
+      successfullyImported: sum.importedCount ?? 0,
+      duplicateQuestions: (sum.duplicateCount ?? 0) + (sum.skippedCount ?? 0),
+      failedImports: (sum.invalidCount ?? 0) + (sum.failedCount ?? 0),
+      recentUploads,
+    };
+  }
+
   async listBatches(params: {
     cursor?: string;
     limit?: number;
     status?: QuestionUploadStatus;
     q?: string;
+    subject?: string;
+    examCategory?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    sort?: string;
   }) {
     const limit = Math.min(params.limit ?? 20, 100);
+    const createdAtFilter: Prisma.DateTimeFilter = {};
+    if (params.dateFrom) {
+      const from = new Date(params.dateFrom);
+      if (!Number.isNaN(from.getTime())) createdAtFilter.gte = from;
+    }
+    if (params.dateTo) {
+      const to = new Date(params.dateTo);
+      if (!Number.isNaN(to.getTime())) {
+        to.setHours(23, 59, 59, 999);
+        createdAtFilter.lte = to;
+      }
+    }
+
+    const orderBy: Prisma.QuestionUploadBatchOrderByWithRelationInput[] = (() => {
+      switch (params.sort) {
+        case 'createdAt_asc':
+          return [{ createdAt: 'asc' }, { id: 'asc' }];
+        case 'importedCount_desc':
+          return [{ importedCount: 'desc' }, { createdAt: 'desc' }];
+        case 'totalRows_desc':
+          return [{ totalRows: 'desc' }, { createdAt: 'desc' }];
+        default:
+          return [{ createdAt: 'desc' }, { id: 'desc' }];
+      }
+    })();
+
     const items = await this.prisma.questionUploadBatch.findMany({
       where: {
         ...(params.status ? { status: params.status } : {}),
+        ...(params.subject
+          ? { subjectHint: { contains: params.subject, mode: 'insensitive' } }
+          : {}),
+        ...(params.examCategory
+          ? { examCategoryHint: { contains: params.examCategory, mode: 'insensitive' } }
+          : {}),
+        ...(Object.keys(createdAtFilter).length ? { createdAt: createdAtFilter } : {}),
         ...(params.q
           ? {
               OR: [
@@ -70,13 +148,47 @@ export class QuestionImportService {
       },
       take: limit + 1,
       ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {}),
-      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      orderBy,
       include: {
         uploadedBy: { select: { id: true, name: true } },
       },
     });
     const nextCursor = items.length > limit ? items.pop()!.id : null;
     return { items, nextCursor };
+  }
+
+  async updateBatch(
+    id: string,
+    dto: {
+      displayName?: string;
+      description?: string | null;
+      subjectHint?: string | null;
+      topicHint?: string | null;
+      examCategoryHint?: string | null;
+    },
+  ) {
+    await this.getBatch(id);
+    return this.prisma.questionUploadBatch.update({
+      where: { id },
+      data: {
+        ...(dto.displayName !== undefined ? { displayName: dto.displayName.trim().slice(0, 200) } : {}),
+        ...(dto.description !== undefined
+          ? { description: dto.description?.trim() || null }
+          : {}),
+        ...(dto.subjectHint !== undefined
+          ? { subjectHint: dto.subjectHint?.trim().slice(0, 120) || null }
+          : {}),
+        ...(dto.topicHint !== undefined
+          ? { topicHint: dto.topicHint?.trim().slice(0, 120) || null }
+          : {}),
+        ...(dto.examCategoryHint !== undefined
+          ? { examCategoryHint: dto.examCategoryHint?.trim().slice(0, 120) || null }
+          : {}),
+      },
+      include: {
+        uploadedBy: { select: { id: true, name: true } },
+      },
+    });
   }
 
   async getBatch(id: string) {
@@ -123,7 +235,14 @@ export class QuestionImportService {
   async upload(
     user: RequestUser,
     file: Express.Multer.File,
-    input: { batchCode?: string; displayName?: string },
+    input: {
+      batchCode?: string;
+      displayName?: string;
+      description?: string;
+      subjectHint?: string;
+      topicHint?: string;
+      examCategoryHint?: string;
+    },
   ) {
     if (!file?.buffer?.length) {
       throw new BadRequestException(
@@ -224,17 +343,20 @@ export class QuestionImportService {
       parsed.map((r) => hashQuestionContent(r.question)),
     );
 
+    const collectionSubject = input.subjectHint?.trim() || '';
+    const collectionTopic = input.topicHint?.trim() || '';
+    const collectionExam = input.examCategoryHint?.trim() || '';
+
     const rowCreates: Prisma.QuestionImportRowCreateManyInput[] = [];
     let validCount = 0;
     let invalidCount = 0;
     let duplicateCount = 0;
     const seenInFile = new Map<string, number>();
-    let subjectHint: string | null = null;
-    let examHint: string | null = null;
 
     for (const row of parsed) {
-      subjectHint ??= row.subject || null;
-      examHint ??= row.examCategory || null;
+      const subjectName = row.subject || collectionSubject;
+      const topicName = row.topic || collectionTopic;
+      const examCategory = row.examCategory || collectionExam;
 
       const hash = row.question ? hashQuestionContent(row.question) : null;
       const errors: string[] = [];
@@ -249,17 +371,19 @@ export class QuestionImportService {
       }
       const difficulty = parseDifficulty(row.difficulty);
       if (!difficulty) errors.push('Difficulty must be Easy, Medium, or Hard');
-      if (!row.subject) errors.push('Subject is required');
-      if (!row.topic) errors.push('Topic is required');
+      if (!subjectName) errors.push('Subject is required');
+      if (!topicName) errors.push('Topic is required');
 
-      const subject = row.subject ? categoryIndex.rootsByName.get(this.nameKey(row.subject)) : null;
-      if (row.subject && !subject) {
-        errors.push(`Subject not found: ${row.subject}`);
+      const subject = subjectName
+        ? categoryIndex.rootsByName.get(this.nameKey(subjectName))
+        : null;
+      if (subjectName && !subject) {
+        errors.push(`Subject not found: ${subjectName}`);
       }
       let topicId: string | undefined;
-      if (subject && row.topic) {
+      if (subject && topicName) {
         topicId = categoryIndex.topicsByParentAndName.get(
-          `${subject.id}::${this.nameKey(row.topic)}`,
+          `${subject.id}::${this.nameKey(topicName)}`,
         );
         // Topic may be created on import if subject exists — allow VALID without topic id.
       }
@@ -279,10 +403,10 @@ export class QuestionImportService {
           optionD: row.optionD || null,
           correctAnswer: correct?.[0] || null,
           explanation: row.explanation || null,
-          subjectName: row.subject || null,
-          topicName: row.topic || null,
+          subjectName: subjectName || null,
+          topicName: topicName || null,
           difficulty: row.difficulty || null,
-          examCategory: row.examCategory || null,
+          examCategory: examCategory || null,
           examYear: row.examYear || null,
           source: row.source || null,
           errorMessage: errors.join('; ').slice(0, 500),
@@ -306,10 +430,10 @@ export class QuestionImportService {
           optionD: row.optionD,
           correctAnswer: correct,
           explanation: row.explanation || null,
-          subjectName: row.subject,
-          topicName: row.topic,
+          subjectName,
+          topicName,
           difficulty: difficulty!,
-          examCategory: row.examCategory || null,
+          examCategory: examCategory || null,
           examYear: row.examYear || null,
           source: row.source || null,
           errorMessage: `Duplicate of row ${priorInFile} in this file`,
@@ -333,10 +457,10 @@ export class QuestionImportService {
           optionD: row.optionD,
           correctAnswer: correct,
           explanation: row.explanation || null,
-          subjectName: row.subject,
-          topicName: row.topic,
+          subjectName,
+          topicName,
           difficulty: difficulty!,
-          examCategory: row.examCategory || null,
+          examCategory: examCategory || null,
           examYear: row.examYear || null,
           source: row.source || null,
           existingQuestionId: existing.id,
@@ -360,10 +484,10 @@ export class QuestionImportService {
         optionD: row.optionD,
         correctAnswer: correct,
         explanation: row.explanation || null,
-        subjectName: row.subject,
-        topicName: row.topic,
+        subjectName,
+        topicName,
         difficulty: difficulty!,
-        examCategory: row.examCategory || null,
+        examCategory: examCategory || null,
         examYear: row.examYear || null,
         source: row.source || null,
       });
@@ -376,6 +500,7 @@ export class QuestionImportService {
           id: batchId,
           batchCode,
           displayName,
+          description: input.description?.trim() || null,
           originalFilename,
           mimeType: file.mimetype || 'application/octet-stream',
           fileSha256,
@@ -385,8 +510,9 @@ export class QuestionImportService {
           validCount,
           invalidCount,
           duplicateCount,
-          subjectHint,
-          examCategoryHint: examHint,
+          subjectHint: collectionSubject || null,
+          topicHint: collectionTopic || null,
+          examCategoryHint: collectionExam || null,
           duplicateFileBatchId: existingFile?.id ?? null,
           uploadedById: user.userId,
         },

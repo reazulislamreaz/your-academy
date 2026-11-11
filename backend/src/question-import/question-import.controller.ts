@@ -25,6 +25,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { newRequestId } from '../common/request-id';
 import { ConfirmImportDto } from './dto/confirm-import.dto';
+import { UpdateBatchDto } from './dto/update-batch.dto';
 import { QuestionImportService } from './question-import.service';
 
 @Controller('api/v1/admin/question-imports')
@@ -47,18 +48,33 @@ export class QuestionImportController {
     res.send(buffer);
   }
 
+  @Get('stats')
+  async stats() {
+    return createSuccessResponse(await this.imports.getStats(), newRequestId());
+  }
+
   @Get()
   async list(
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
     @Query('status') status?: QuestionUploadStatus,
     @Query('q') q?: string,
+    @Query('subject') subject?: string,
+    @Query('examCategory') examCategory?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+    @Query('sort') sort?: string,
   ) {
     const data = await this.imports.listBatches({
       cursor,
       limit: limit ? Number(limit) : undefined,
       status,
       q,
+      subject,
+      examCategory,
+      dateFrom,
+      dateTo,
+      sort,
     });
     return createSuccessResponse(data.items, newRequestId(), {
       nextCursor: data.nextCursor,
@@ -81,9 +97,20 @@ export class QuestionImportController {
     @UploadedFile() file: Express.Multer.File,
     @Body('batchCode') batchCode?: string,
     @Body('displayName') displayName?: string,
+    @Body('description') description?: string,
+    @Body('subjectHint') subjectHint?: string,
+    @Body('topicHint') topicHint?: string,
+    @Body('examCategoryHint') examCategoryHint?: string,
   ) {
     return createSuccessResponse(
-      await this.imports.upload(user, file, { batchCode, displayName }),
+      await this.imports.upload(user, file, {
+        batchCode,
+        displayName,
+        description,
+        subjectHint,
+        topicHint,
+        examCategoryHint,
+      }),
       newRequestId(),
     );
   }
@@ -91,6 +118,12 @@ export class QuestionImportController {
   @Get(':id')
   async detail(@Param('id') id: string) {
     return createSuccessResponse(await this.imports.getBatch(id), newRequestId());
+  }
+
+  @Patch(':id')
+  @UseGuards(CsrfGuard)
+  async update(@Param('id') id: string, @Body() dto: UpdateBatchDto) {
+    return createSuccessResponse(await this.imports.updateBatch(id, dto), newRequestId());
   }
 
   @Get(':id/rows')
