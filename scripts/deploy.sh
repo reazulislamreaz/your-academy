@@ -18,7 +18,7 @@ echo "==> Building and starting production stack"
 
 echo "==> Waiting for API health (in-container; API is not published to the host)"
 for i in $(seq 1 60); do
-  if "${COMPOSE[@]}" exec -T api node -e "fetch('http://127.0.0.1:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))" >/dev/null 2>&1; then
+  if "${COMPOSE[@]}" exec -T api node -e "fetch('http://127.0.0.1:5000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))" >/dev/null 2>&1; then
     echo "Health OK"
     break
   fi
@@ -32,7 +32,7 @@ for i in $(seq 1 60); do
 done
 
 echo "==> Ready check"
-"${COMPOSE[@]}" exec -T api node -e "fetch('http://127.0.0.1:3001/ready').then(async r=>{const j=await r.json(); if(!r.ok||!j.success) process.exit(1); console.log(JSON.stringify(j.data.checks));}).catch(e=>{console.error(e); process.exit(1);})"
+"${COMPOSE[@]}" exec -T api node -e "fetch('http://127.0.0.1:5000/ready').then(async r=>{const j=await r.json(); if(!r.ok||!j.success) process.exit(1); console.log(JSON.stringify(j.data.checks));}).catch(e=>{console.error(e); process.exit(1);})"
 
 echo "==> Deploy complete"
 "${COMPOSE[@]}" ps

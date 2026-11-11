@@ -1,60 +1,51 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
 type Props = {
   className?: string;
   href?: string;
-  /** Inverse (on navy panels) */
+  /** Light logo for navy / dark panels */
   inverse?: boolean;
-  /** Hide wordmark on very tight headers */
+  /** Compact YA mark only (tight headers) */
   markOnly?: boolean;
 };
 
-/** Red open-book mark + YOUR ACADEMY wordmark (matches homepage design). */
+const FULL = {
+  src: '/images/logo.png',
+  inverseSrc: '/images/logo-inverse.png',
+  width: 354,
+  height: 284,
+  className: 'h-12 w-auto sm:h-14',
+} as const;
+
+const MARK = {
+  src: '/images/logo-mark.png',
+  inverseSrc: '/images/logo-mark-inverse.png',
+  width: 345,
+  height: 225,
+  className: 'h-9 w-auto sm:h-10',
+} as const;
+
+/** Official YA lockup — one logo across marketing, app, admin, and auth. */
 export function BrandMark({ className, href = '/', inverse, markOnly }: Props) {
+  const asset = markOnly ? MARK : FULL;
+  const src = inverse ? asset.inverseSrc : asset.src;
+
   return (
     <Link
       href={href}
-      className={cn('group inline-flex items-center gap-2.5 font-display tracking-tight', className)}
+      className={cn('group inline-flex shrink-0 items-center', className)}
+      aria-label="Your Academy home"
     >
-      <span
-        aria-hidden
-        className={cn(
-          'inline-flex h-9 w-9 shrink-0 items-center justify-center',
-          inverse ? 'text-white' : 'text-[var(--highlight)]',
-        )}
-      >
-        <svg viewBox="0 0 36 32" className="h-8 w-8" fill="none">
-          <path
-            d="M3 6.5C7.2 4.2 11.2 3.8 15 5.2V24.5C10.8 22.7 6.6 22.9 3 25V6.5Z"
-            fill="currentColor"
-          />
-          <path
-            d="M33 6.5C28.8 4.2 24.8 3.8 21 5.2V24.5C25.2 22.7 29.4 22.9 33 25V6.5Z"
-            fill="currentColor"
-          />
-          <path
-            d="M15 5.2C16.2 5.7 17.8 5.7 21 5.2"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-          <path d="M17.2 5.5V24.2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-        </svg>
-      </span>
-      {markOnly ? (
-        <span className="sr-only">Your Academy</span>
-      ) : (
-        <span
-          className={cn(
-            'flex flex-col text-[0.95rem] leading-[0.92] font-extrabold tracking-tight uppercase sm:text-[1.05rem]',
-            inverse ? 'text-white' : 'text-[var(--highlight)]',
-          )}
-        >
-          <span>Your</span>
-          <span>Academy</span>
-        </span>
-      )}
+      <Image
+        src={src}
+        alt="Your Academy"
+        width={asset.width}
+        height={asset.height}
+        className={cn(asset.className, 'object-contain object-left')}
+        priority
+      />
     </Link>
   );
 }

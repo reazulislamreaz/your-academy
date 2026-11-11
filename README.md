@@ -41,7 +41,7 @@ cp .env.example .env   # database: your_academy / your_academy_dev_password
 pnpm setup             # install, start Postgres+Redis, migrate, seed
 
 # Run (loads root .env via dotenv-cli)
-pnpm dev:backend    # :3001
+pnpm dev:backend    # :5000
 pnpm dev:frontend   # :3000 (proxies /api/v1 → backend)
 pnpm dev:worker     # BullMQ
 ```
@@ -53,8 +53,8 @@ Seeded admin: WhatsApp from `BOOTSTRAP_ADMIN_WHATSAPP` / password `BOOTSTRAP_ADM
 | URL | What |
 |-----|------|
 | http://localhost:3000 | App UI |
-| http://localhost:3001/health | API health |
-| http://localhost:3001/ready | API + DB readiness |
+| http://localhost:5000/health | API health |
+| http://localhost:5000/ready | API + DB readiness |
 
 ## Docs
 

@@ -140,6 +140,30 @@ select {
   font: inherit;
 }
 
+/* Pointer cursor on clickable controls (browsers default buttons to arrow). */
+button:not(:disabled),
+[role='button']:not([aria-disabled='true']),
+a[href],
+label[for],
+summary,
+select:not(:disabled),
+input[type='checkbox']:not(:disabled),
+input[type='radio']:not(:disabled),
+input[type='file']:not(:disabled),
+input[type='submit']:not(:disabled),
+input[type='reset']:not(:disabled),
+input[type='button']:not(:disabled),
+input[type='image']:not(:disabled) {
+  cursor: pointer;
+}
+
+button:disabled,
+[aria-disabled='true'],
+select:disabled,
+input:disabled {
+  cursor: not-allowed;
+}
+
 /* Prefer comfortable touch targets on coarse pointers without bloating desktop. */
 @media (pointer: coarse) {
   button:not([data-compact]),

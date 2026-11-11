@@ -11,7 +11,8 @@ export const metadata: Metadata = {
   },
   description: 'Modern MCQ learning with a fair free trial',
   icons: {
-    icon: '/images/logo-mark.png',
+    icon: [{ url: '/images/favicon.png', type: 'image/png' }],
+    apple: '/images/apple-touch-icon.png',
   },
 };
 

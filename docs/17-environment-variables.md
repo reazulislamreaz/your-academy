@@ -34,8 +34,8 @@ Docker Compose overrides `DATABASE_URL` host to `postgres` for `api` / `worker` 
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `API_PORT` | yes | Default `3001` |
-| `API_PUBLIC_URL` | yes | e.g. `http://localhost:3001` |
+| `API_PORT` | yes | Default `5000` |
+| `API_PUBLIC_URL` | yes | e.g. `http://localhost:5000` |
 | `WEB_ORIGIN` | yes | CORS origin (`http://localhost:3000`). Comma-separated multi-origin also accepted via `WEB_ORIGINS` or `WEB_ORIGIN`. |
 | `WEB_ORIGINS` | no | Optional alias for multi-origin allowlist |
 | `JWT_ACCESS_SECRET` | yes | Strong random secret (≥32 chars) |
@@ -56,7 +56,7 @@ Docker Compose overrides `DATABASE_URL` host to `postgres` for `api` / `worker` 
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `NEXT_PUBLIC_API_BASE_URL` | yes | Prefer `/api/v1` (Next rewrite) |
-| `API_INTERNAL_URL` | yes | Backend origin for rewrite (`http://localhost:3001` or `http://api:3001` in Docker) |
+| `API_INTERNAL_URL` | yes | Backend origin for rewrite (`http://localhost:5000` or `http://api:5000` in Docker) |
 | `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | yes | Public cloud name only |
 | `PORT` | no | Next listen port |
 

@@ -125,7 +125,7 @@ export async function apiFetch<T>(path: string, init: FetchOptions = {}): Promis
 
 /** Absolute API origin for Server Components (bypasses browser cookies). */
 export function serverApiBase(): string {
-  const internal = process.env.API_INTERNAL_URL ?? 'http://localhost:3001';
+  const internal = process.env.API_INTERNAL_URL ?? 'http://localhost:5000';
   return `${internal.replace(/\/$/, '')}/api/v1`;
 }
 
