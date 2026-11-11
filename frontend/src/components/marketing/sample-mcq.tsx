@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, Lightbulb, X } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { LightbulbGearIcon } from '@/components/marketing/homepage-icons';
 
 const OPTIONS = [
   { key: 'A', label: 'Bangladesh Bank' },
@@ -18,10 +19,10 @@ export function SampleMcq() {
   const [selected, setSelected] = useState<string | null>(null);
 
   return (
-    <div className="overflow-hidden rounded-[var(--radius-xl)] border border-[var(--line)] bg-white shadow-[var(--shadow)]">
-      <div className="flex flex-col gap-6 p-6 sm:p-8 lg:flex-row">
-        <div className="min-w-0 flex-1">
-          <p className="flex items-start gap-3 font-display text-lg leading-snug font-semibold tracking-tight text-[var(--ink)] sm:text-xl">
+    <div className="overflow-hidden rounded-[18px] border border-[var(--line)] bg-white shadow-[var(--shadow)]">
+      <div className="flex flex-col lg:flex-row">
+        <div className="min-w-0 flex-1 p-6 sm:p-7">
+          <p className="flex items-start gap-2.5 font-display text-lg leading-snug font-bold tracking-tight text-[var(--ink)] sm:text-xl">
             <span aria-hidden className="shrink-0 text-[var(--highlight)]">
               Q.
             </span>
@@ -40,7 +41,7 @@ export function SampleMcq() {
                   onClick={() => setSelected(opt.key)}
                   aria-pressed={isSelected}
                   className={cn(
-                    'flex items-center gap-3 rounded-[var(--radius)] border px-4 py-3 text-left text-sm font-medium transition-colors duration-[var(--duration-fast)]',
+                    'flex items-center gap-3 rounded-[12px] border px-4 py-3 text-left text-sm font-medium transition-colors duration-[var(--duration-fast)]',
                     showCorrect &&
                       'border-[var(--success)] bg-[var(--success-soft)] text-[var(--success)]',
                     showWrong && 'border-[var(--danger)] bg-[var(--danger-soft)] text-[var(--danger)]',
@@ -57,9 +58,17 @@ export function SampleMcq() {
                       !showCorrect && !showWrong && 'border-[var(--line-strong)] text-[var(--muted)]',
                     )}
                   >
-                    {showCorrect ? <Check className="h-3.5 w-3.5" /> : showWrong ? <X className="h-3.5 w-3.5" /> : opt.key}
+                    {showCorrect ? (
+                      <Check className="h-3.5 w-3.5" />
+                    ) : showWrong ? (
+                      <X className="h-3.5 w-3.5" />
+                    ) : (
+                      opt.key
+                    )}
                   </span>
-                  <span>{opt.label}</span>
+                  <span>
+                    {opt.key}. {opt.label}
+                  </span>
                 </button>
               );
             })}
@@ -72,8 +81,8 @@ export function SampleMcq() {
             </p>
           ) : null}
         </div>
-        <div className="flex shrink-0 flex-col items-center justify-center gap-3 rounded-[var(--radius-lg)] bg-[var(--bg-muted)] px-6 py-6 text-center lg:w-44">
-          <Lightbulb className="h-8 w-8 text-[var(--highlight)]" aria-hidden />
+        <div className="flex shrink-0 flex-col items-center justify-center gap-3 bg-[#e8eef8] px-6 py-8 text-center lg:w-[11.5rem]">
+          <LightbulbGearIcon className="h-12 w-12 text-[var(--highlight)]" />
           <p className="text-sm leading-snug font-semibold text-[var(--ink)]">
             Get detailed solution with explanation
           </p>

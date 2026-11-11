@@ -12,11 +12,11 @@
   --bg: #ffffff;
   --bg-elevated: #ffffff;
   --bg-muted: #f1f5f9;
-  --bg-inverse: #0a1f44;
-  --bg-desk: #f6f8fb;
+  --bg-inverse: #002050;
+  --bg-desk: #f5f7fb;
 
   /* Ink */
-  --ink: #0a1f44;
+  --ink: #002050;
   --ink-soft: #1e3a5f;
   --muted: #5b6b80;
   --muted-strong: #3d4d5c;
@@ -26,14 +26,14 @@
   --line-strong: #cbd5e1;
 
   /* Brand */
-  --accent: #0a1f44;
+  --accent: #002050;
   --accent-fg: #ffffff;
-  --highlight: #e63946;
+  --highlight: #e31e24;
   --highlight-fg: #ffffff;
   --highlight-soft: #fdecec;
   --highlight-hover: #fadcdc;
-  --brand-wash: rgba(10, 31, 68, 0.05);
-  --brand-wash-strong: rgba(10, 31, 68, 0.09);
+  --brand-wash: rgba(0, 32, 80, 0.05);
+  --brand-wash-strong: rgba(0, 32, 80, 0.09);
 
   /* Semantic */
   --success: #0f766e;
@@ -164,6 +164,24 @@ select {
 
 .section-pad {
   padding-block: var(--space-section);
+}
+
+/* Marketing hero photo — soft left wave on desktop to match reference */
+@media (min-width: 1024px) {
+  .hero-photo-mask {
+    clip-path: polygon(
+      6% 0%,
+      100% 0%,
+      100% 100%,
+      5% 100%,
+      0% 82%,
+      8% 64%,
+      1% 46%,
+      9% 28%,
+      2% 12%,
+      6% 0%
+    );
+  }
 }
 
 .page-pad {

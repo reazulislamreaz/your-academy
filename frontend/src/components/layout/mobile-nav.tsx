@@ -45,7 +45,7 @@ export function MobileNav({
   }, [open]);
 
   return (
-    <div className="md:hidden">
+    <div className="xl:hidden">
       <Button
         type="button"
         variant="ghost"
@@ -63,20 +63,24 @@ export function MobileNav({
           className="fixed inset-x-0 top-[var(--header-h,64px)] bottom-0 z-40 overflow-y-auto border-t border-[var(--line)] bg-[var(--bg-elevated)] p-4 shadow-[var(--shadow-lg)] motion-fade-in"
         >
           <nav className="flex flex-col gap-1" aria-label="Mobile">
-            {items.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  'rounded-[var(--radius)] px-3 py-3 text-base font-medium transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out)]',
-                  isActive(pathname, item)
-                    ? 'bg-[var(--highlight)] text-white'
-                    : 'text-[var(--ink-soft)] hover:bg-[var(--bg-muted)] hover:text-[var(--ink)]',
-                )}
-              >
-                {item.label}
-              </Link>
-            ))}
+            {items.map((item) => {
+              const active =
+                item.label === 'Home' ? pathname === '/' : isActive(pathname, item);
+              return (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className={cn(
+                    'rounded-[var(--radius)] px-3 py-3 text-base font-medium transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out)]',
+                    active
+                      ? 'bg-[var(--highlight)] text-white'
+                      : 'text-[var(--ink-soft)] hover:bg-[var(--bg-muted)] hover:text-[var(--ink)]',
+                  )}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
           </nav>
           {trailing ? <div className="mt-6 flex flex-col gap-2">{trailing}</div> : null}
         </div>

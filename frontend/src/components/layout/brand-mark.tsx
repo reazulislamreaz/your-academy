@@ -45,9 +45,14 @@ export function BrandMark({ className, href = '/', inverse, markOnly }: Props) {
       {markOnly ? (
         <span className="sr-only">Your Academy</span>
       ) : (
-        <span className="flex flex-col text-[0.95rem] leading-[0.92] font-extrabold tracking-tight uppercase sm:text-[1.05rem]">
-          <span className={inverse ? 'text-white' : 'text-[var(--ink)]'}>Your</span>
-          <span className={inverse ? 'text-white' : 'text-[var(--highlight)]'}>Academy</span>
+        <span
+          className={cn(
+            'flex flex-col text-[0.95rem] leading-[0.92] font-extrabold tracking-tight uppercase sm:text-[1.05rem]',
+            inverse ? 'text-white' : 'text-[var(--highlight)]',
+          )}
+        >
+          <span>Your</span>
+          <span>Academy</span>
         </span>
       )}
     </Link>
