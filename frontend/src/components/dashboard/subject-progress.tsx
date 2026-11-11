@@ -9,7 +9,7 @@ type Props = {
 export function SubjectProgress({ items }: Props) {
   if (items.length === 0) {
     return (
-      <p className="py-10 text-center text-sm text-[var(--muted)]">
+      <p className="rounded-[var(--radius)] border border-dashed border-[var(--line-strong)] px-4 py-8 text-center text-sm text-[var(--muted)]">
         Subject accuracy appears after you check answers in practice.
       </p>
     );

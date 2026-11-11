@@ -58,13 +58,31 @@ export function UserMenu({ compact = false, loginOnly = false }: { compact?: boo
       {!compact ? (
         <Link
           href="/profile"
-          className="hidden max-w-[10rem] truncate text-sm font-medium text-[var(--ink-soft)] hover:text-[var(--ink)] lg:inline"
+          className="hidden max-w-[12rem] items-center gap-2 truncate text-sm font-medium text-[var(--ink-soft)] hover:text-[var(--ink)] lg:inline-flex"
           title={me.data.name}
         >
-          {me.data.name}
+          {me.data.avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- short-lived signed Cloudinary URL
+            <img
+              src={me.data.avatarUrl}
+              alt=""
+              className="h-8 w-8 shrink-0 rounded-full object-cover"
+            />
+          ) : null}
+          <span className="truncate">{me.data.name}</span>
         </Link>
       ) : (
-        <p className="px-1 text-sm font-medium text-[var(--ink)]">{me.data.name}</p>
+        <div className="flex items-center gap-2 px-1">
+          {me.data.avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- short-lived signed Cloudinary URL
+            <img
+              src={me.data.avatarUrl}
+              alt=""
+              className="h-8 w-8 shrink-0 rounded-full object-cover"
+            />
+          ) : null}
+          <p className="text-sm font-medium text-[var(--ink)]">{me.data.name}</p>
+        </div>
       )}
       {isAdmin ? (
         <Link href="/admin/dashboard" className={compact ? 'w-full' : undefined}>

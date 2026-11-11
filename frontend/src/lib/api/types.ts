@@ -91,6 +91,8 @@ export type MeUser = {
   role: string;
   status: string;
   createdAt?: string;
+  /** Short-lived signed Cloudinary URL when an avatar is set. */
+  avatarUrl?: string | null;
   access: AccessSnapshot;
   study: StudyPrefs;
 };

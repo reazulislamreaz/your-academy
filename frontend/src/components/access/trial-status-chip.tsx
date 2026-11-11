@@ -38,7 +38,7 @@ export function TrialStatusChip({ className }: { className?: string }) {
         'motion-nav-indicator hidden items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1 text-xs font-semibold tracking-wide md:inline-flex',
         active
           ? 'bg-[var(--success-soft)] text-[var(--success)] hover:brightness-95'
-          : 'bg-[var(--highlight-soft)] text-[var(--highlight-fg)] hover:brightness-95',
+          : 'bg-[var(--highlight-soft)] text-[var(--highlight)] hover:brightness-95',
         className,
       )}
       title={active ? 'Trial includes answers and explanations' : 'Browse stays open; answers are premium'}

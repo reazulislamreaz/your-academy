@@ -62,8 +62,8 @@ function QuestionsContent() {
     <div className="space-y-8">
       <PageHeader
         eyebrow="Practice"
-        title="Question bank"
-        description="Search and filter published MCQs. Authentication required."
+        title="MCQ practice"
+        description="Search and filter published questions, then open one to check yourself."
       />
 
       <QuestionFilters categories={categories.data ?? []} />

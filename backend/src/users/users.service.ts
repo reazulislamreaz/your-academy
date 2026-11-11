@@ -1,9 +1,10 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { QuestionStatus } from '@prisma/client';
+import { MediaResourceType, QuestionStatus } from '@prisma/client';
 import { createErrorResponse } from '@your-academy/shared';
 import type { RequestUser } from '../auth/auth.types';
 import { newRequestId } from '../common/request-id';
 import { PrismaService } from '../database/prisma.service';
+import { StorageService } from '../storage/storage.service';
 import { AccessControlService } from '../subscriptions/access-control.service';
 import type { UpdateStudyPrefsDto } from './dto/update-study-prefs.dto';
 
@@ -12,6 +13,7 @@ export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly access: AccessControlService,
+    private readonly storage: StorageService,
   ) {}
 
   private async serializeMe(userId: string) {
@@ -26,6 +28,15 @@ export class UsersService {
             status: true,
             category: { select: { id: true, name: true } },
             subcategory: { select: { id: true, name: true } },
+          },
+        },
+        avatarAsset: {
+          select: {
+            id: true,
+            publicId: true,
+            resourceType: true,
+            deliveryType: true,
+            deletedAt: true,
           },
         },
       },
@@ -51,6 +62,16 @@ export class UsersService {
           }
         : null;
 
+    let avatarUrl: string | null = null;
+    const avatar = dbUser.avatarAsset;
+    if (avatar && !avatar.deletedAt) {
+      avatarUrl = await this.storage.generateSignedDownloadUrl(avatar.publicId, {
+        resourceType: avatar.resourceType === MediaResourceType.RAW ? 'raw' : 'image',
+        deliveryType: avatar.deliveryType,
+        ttlSeconds: 3600,
+      });
+    }
+
     return {
       id: dbUser.id,
       name: dbUser.name,
@@ -59,6 +80,7 @@ export class UsersService {
       role: dbUser.role,
       status: dbUser.status,
       createdAt: dbUser.createdAt.toISOString(),
+      avatarUrl,
       access,
       study: {
         preferredCategoryIds: dbUser.preferredCategoryIds,

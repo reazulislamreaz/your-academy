@@ -1,12 +1,12 @@
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type Tone = 'blue' | 'green' | 'purple' | 'amber' | 'red' | 'navy';
+type Tone = 'blue' | 'green' | 'teal' | 'amber' | 'red' | 'navy';
 
 const tones: Record<Tone, { bg: string; icon: string }> = {
   blue: { bg: 'bg-[var(--info-soft)]', icon: 'text-[var(--info)]' },
   green: { bg: 'bg-[var(--success-soft)]', icon: 'text-[var(--success)]' },
-  purple: { bg: 'bg-[#f3e8ff]', icon: 'text-[#7c3aed]' },
+  teal: { bg: 'bg-[var(--success-soft)]', icon: 'text-[var(--success)]' },
   amber: { bg: 'bg-[#fff4e5]', icon: 'text-[var(--warning)]' },
   red: { bg: 'bg-[var(--highlight-soft)]', icon: 'text-[var(--highlight)]' },
   navy: { bg: 'bg-[var(--brand-wash-strong)]', icon: 'text-[var(--ink)]' },

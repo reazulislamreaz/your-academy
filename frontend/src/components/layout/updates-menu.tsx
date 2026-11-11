@@ -19,7 +19,8 @@ export function UpdatesMenu() {
   const news = useQuery({
     queryKey: ['news-updates'],
     queryFn: () => apiFetch<NewsListItem[]>('/news'),
-    enabled: Boolean(me.data) && open,
+    enabled: Boolean(me.data),
+    staleTime: 60_000,
   });
 
   useEffect(() => {
@@ -42,6 +43,8 @@ export function UpdatesMenu() {
 
   const items = (news.data ?? []).slice(0, 5);
   const trialActive = me.data.access.isTrialActive;
+  // Honest badge: trial ended, or there is at least one published circular.
+  const showBadge = !trialActive || items.length > 0;
 
   return (
     <div className="relative" ref={rootRef}>
@@ -57,7 +60,9 @@ export function UpdatesMenu() {
         )}
       >
         <Bell className="h-4 w-4" />
-        <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[var(--highlight)]" />
+        {showBadge ? (
+          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[var(--highlight)]" />
+        ) : null}
       </button>
       {open ? (
         <div

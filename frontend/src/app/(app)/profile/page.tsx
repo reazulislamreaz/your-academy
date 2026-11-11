@@ -2,7 +2,9 @@
 
 import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { BookMarked, Clock3, FileText } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { MetricTile } from '@/components/dashboard/metric-tile';
 import { PageHeader } from '@/components/layout/page-header';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -16,6 +18,7 @@ import { isUnauthorized, meQueryKey, useLogout, useMe } from '@/features/auth/us
 import { ApiError, apiFetch } from '@/lib/api/client';
 import type { MeUser, UserStats } from '@/lib/api/types';
 import { getStorageStatus, uploadViaSignedRequest } from '@/lib/cloudinary-upload';
+import { formatStudyMinutes } from '@/lib/study-prefs';
 
 export default function ProfilePage() {
   const me = useMe();
@@ -41,6 +44,7 @@ export default function ProfilePage() {
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordMsg, setPasswordMsg] = useState<string | null>(null);
   const [passwordErr, setPasswordErr] = useState<string | null>(null);
 
@@ -62,7 +66,7 @@ export default function ProfilePage() {
       }),
     onSuccess: (user) => {
       qc.setQueryData(meQueryKey, user);
-      setProfileMsg('Profile updated');
+      setProfileMsg('Profile saved.');
       setProfileErr(null);
     },
     onError: (err) => {
@@ -72,16 +76,26 @@ export default function ProfilePage() {
   });
 
   const changePassword = useMutation({
-    mutationFn: () =>
-      apiFetch<{ user: MeUser }>('/auth/change-password', {
+    mutationFn: () => {
+      if (newPassword !== confirmPassword) {
+        return Promise.reject(new ApiError('VALIDATION', 'New passwords do not match', 400));
+      }
+      if (newPassword.length < 8) {
+        return Promise.reject(
+          new ApiError('VALIDATION', 'New password must be at least 8 characters', 400),
+        );
+      }
+      return apiFetch<{ user: MeUser }>('/auth/change-password', {
         method: 'POST',
         body: JSON.stringify({ currentPassword, newPassword }),
-      }),
+      });
+    },
     onSuccess: (result) => {
       qc.setQueryData(meQueryKey, result.user);
       setCurrentPassword('');
       setNewPassword('');
-      setPasswordMsg('Password changed');
+      setConfirmPassword('');
+      setPasswordMsg('Password updated.');
       setPasswordErr(null);
     },
     onError: (err) => {
@@ -100,7 +114,7 @@ export default function ProfilePage() {
     },
     onSuccess: (user) => {
       qc.setQueryData(meQueryKey, user);
-      setAvatarMsg('Avatar updated');
+      setAvatarMsg('Avatar updated.');
       setAvatarErr(null);
     },
     onError: (err) => {
@@ -138,11 +152,11 @@ export default function ProfilePage() {
   const user = me.data;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 pb-10 sm:space-y-8">
       <PageHeader
         eyebrow="Account"
         title="Profile & settings"
-        description="Study summary, trial access, and account controls."
+        description="Membership, study summary, and account controls."
         actions={
           <div className="flex flex-wrap gap-2">
             <Link href="/home">
@@ -163,74 +177,92 @@ export default function ProfilePage() {
         }
       />
 
-      <Surface className="space-y-4 border-l-[3px] border-l-[var(--highlight)] p-6">
+      <Surface className="space-y-4 border-l-[3px] border-l-[var(--highlight)] p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 className="font-display text-lg font-bold tracking-tight">{user.name}</h2>
-            <p className="mt-1 text-sm text-[var(--muted)]">{user.whatsappNumber}</p>
+          <div className="flex min-w-0 items-start gap-3">
+            {user.avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- short-lived signed Cloudinary URL
+              <img
+                src={user.avatarUrl}
+                alt=""
+                className="h-14 w-14 shrink-0 rounded-full object-cover ring-2 ring-[var(--line)]"
+              />
+            ) : (
+              <span
+                aria-hidden
+                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[var(--highlight-soft)] font-display text-lg font-bold text-[var(--highlight)]"
+              >
+                {user.name.trim().charAt(0).toUpperCase() || '?'}
+              </span>
+            )}
+            <div className="min-w-0">
+              <h2 className="font-display text-xl font-bold tracking-tight text-[var(--ink)]">
+                {user.name}
+              </h2>
+              <p className="mt-1 text-sm text-[var(--muted)]">
+                {user.whatsappNumber}
+                {user.email ? ` · ${user.email}` : ''}
+              </p>
+            </div>
           </div>
           <TrialCountdown
             trialEndsAt={user.access.trialEndsAt}
             isTrialActive={user.access.isTrialActive}
           />
         </div>
-        <p className="text-sm text-[var(--muted)]">
+        <p className="text-sm leading-relaxed text-[var(--muted)]">
           {user.access.isTrialActive
             ? 'Answers and explanations are unlocked for the rest of your trial.'
-            : 'You can still browse and bookmark. Correct answers stay premium.'}
+            : 'You can still browse and bookmark. Correct answers stay premium after trial.'}
         </p>
+        {user.access.hasActiveSubscription ? (
+          <Alert variant="success">Active membership entitlements are on for this account.</Alert>
+        ) : null}
       </Surface>
 
       <section className="space-y-3">
-        <h2 className="font-display text-xl font-semibold tracking-tight">Study summary</h2>
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div className="rounded-[16px] border border-[var(--line)] bg-white p-5 shadow-[var(--shadow-sm)]">
-            <p className="text-xs font-semibold tracking-[0.12em] text-[var(--muted)] uppercase">
-              Saved questions
-            </p>
-            <p className="mt-2 font-display text-3xl font-bold tabular-nums">
-              {stats.data?.questionBookmarks ?? 0}
-            </p>
-            <Link
-              href="/bookmarks"
-              className="mt-3 inline-block text-sm font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
-            >
-              View saved
-            </Link>
-          </div>
-          <div className="rounded-[16px] border border-[var(--line)] bg-white p-5 shadow-[var(--shadow-sm)]">
-            <p className="text-xs font-semibold tracking-[0.12em] text-[var(--muted)] uppercase">
-              Saved PDFs
-            </p>
-            <p className="mt-2 font-display text-3xl font-bold tabular-nums">
-              {stats.data?.documentBookmarks ?? 0}
-            </p>
-            <Link
-              href="/bookmarks"
-              className="mt-3 inline-block text-sm font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
-            >
-              View saved
-            </Link>
-          </div>
-          <div className="rounded-[16px] border border-[var(--line)] bg-white p-5 shadow-[var(--shadow-sm)]">
-            <p className="text-xs font-semibold tracking-[0.12em] text-[var(--muted)] uppercase">
-              Study time
-            </p>
-            <p className="mt-2 font-display text-3xl font-bold tabular-nums">
-              {Math.round((stats.data?.browsingSeconds ?? 0) / 60)} min
-            </p>
-            <p className="mt-3 text-xs text-[var(--muted)]">
-              Tracked while you study with this tab open.
-            </p>
-          </div>
+        <h2 className="font-display text-lg font-bold tracking-tight">Study summary</h2>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <MetricTile
+            label="Saved questions"
+            value={stats.data?.questionBookmarks ?? 0}
+            icon={BookMarked}
+            tone="navy"
+          />
+          <MetricTile
+            label="Saved PDFs"
+            value={stats.data?.documentBookmarks ?? 0}
+            icon={FileText}
+            tone="blue"
+          />
+          <MetricTile
+            label="Study time"
+            value={formatStudyMinutes(stats.data?.browsingSeconds ?? 0)}
+            icon={Clock3}
+            tone="green"
+          />
+        </div>
+        <div className="flex flex-wrap gap-3 text-sm">
+          <Link
+            href="/bookmarks"
+            className="font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
+          >
+            Open saved items
+          </Link>
+          <Link
+            href="/home#exam-history"
+            className="font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
+          >
+            Recent results
+          </Link>
         </div>
       </section>
 
       {stats.data &&
       (stats.data.recentQuestions.length > 0 || stats.data.recentDocuments.length > 0) ? (
-        <Surface className="space-y-5 p-6">
+        <Surface className="space-y-5 p-5 sm:p-6">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="font-display text-xl font-semibold">Recent saves</h2>
+            <h2 className="font-display text-lg font-bold tracking-tight">Recent saves</h2>
             <Link
               href="/bookmarks"
               className="text-sm font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
@@ -240,13 +272,15 @@ export default function ProfilePage() {
           </div>
           {stats.data.recentQuestions.length > 0 ? (
             <div className="space-y-2">
-              <p className="text-sm font-medium text-[var(--muted)]">Questions</p>
-              <ul className="space-y-2">
+              <p className="text-xs font-semibold tracking-wide text-[var(--muted)] uppercase">
+                Questions
+              </p>
+              <ul className="divide-y divide-[var(--line)]">
                 {stats.data.recentQuestions.map((item) => (
                   <li key={item.bookmarkId}>
                     <Link
                       href={`/questions/${item.id}`}
-                      className="text-sm font-semibold underline-offset-2 hover:underline"
+                      className="block py-2.5 text-sm font-semibold text-[var(--ink)] underline-offset-2 hover:underline"
                     >
                       {item.title}
                     </Link>
@@ -257,13 +291,15 @@ export default function ProfilePage() {
           ) : null}
           {stats.data.recentDocuments.length > 0 ? (
             <div className="space-y-2">
-              <p className="text-sm font-medium text-[var(--muted)]">PDFs</p>
-              <ul className="space-y-2">
+              <p className="text-xs font-semibold tracking-wide text-[var(--muted)] uppercase">
+                PDFs
+              </p>
+              <ul className="divide-y divide-[var(--line)]">
                 {stats.data.recentDocuments.map((item) => (
                   <li key={item.bookmarkId}>
                     <Link
                       href={`/documents/${item.id}`}
-                      className="text-sm font-semibold underline-offset-2 hover:underline"
+                      className="block py-2.5 text-sm font-semibold text-[var(--ink)] underline-offset-2 hover:underline"
                     >
                       {item.title}
                     </Link>
@@ -275,11 +311,12 @@ export default function ProfilePage() {
         </Surface>
       ) : null}
 
-      <Surface className="p-6">
-        <h2 className="font-display text-xl font-semibold">Profile</h2>
+      <Surface className="p-5 sm:p-6">
+        <h2 className="font-display text-lg font-bold tracking-tight">Profile details</h2>
         <p className="mt-1 text-sm text-[var(--muted)]">
-          WhatsApp <span className="font-medium text-[var(--ink)]">{user.whatsappNumber}</span> · Role{' '}
-          {user.role}
+          WhatsApp login is fixed at{' '}
+          <span className="font-medium text-[var(--ink)]">{user.whatsappNumber}</span>. Add an email
+          if you want password reset.
         </p>
         <form
           className="mt-6 space-y-4"
@@ -289,7 +326,7 @@ export default function ProfilePage() {
           }}
         >
           <Field>
-            <Label htmlFor="name">Name</Label>
+            <Label htmlFor="name">Display name</Label>
             <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
           </Field>
           <Field>
@@ -304,13 +341,13 @@ export default function ProfilePage() {
           </Field>
           {profileMsg ? <Alert variant="success">{profileMsg}</Alert> : null}
           {profileErr ? <Alert variant="danger">{profileErr}</Alert> : null}
-          <Button type="submit" disabled={saveProfile.isPending}>
+          <Button type="submit" disabled={saveProfile.isPending} className="rounded-full">
             {saveProfile.isPending ? 'Saving…' : 'Save profile'}
           </Button>
         </form>
 
         <div className="mt-8 space-y-3 border-t border-[var(--line)] pt-6">
-          <h3 className="font-display text-lg font-semibold">Avatar</h3>
+          <h3 className="font-display text-base font-bold tracking-tight">Avatar</h3>
           {storage.data && !storage.data.configured ? (
             <Alert variant="info">
               Cloudinary is not configured — avatar upload stays disabled until real CLOUDINARY_*
@@ -318,7 +355,7 @@ export default function ProfilePage() {
             </Alert>
           ) : (
             <>
-              <Label htmlFor="avatar">Profile photo</Label>
+              <Label htmlFor="avatar">Profile photo (JPEG, PNG, or WebP)</Label>
               <Input
                 id="avatar"
                 type="file"
@@ -340,8 +377,11 @@ export default function ProfilePage() {
         </div>
       </Surface>
 
-      <Surface className="p-6">
-        <h2 className="font-display text-xl font-semibold">Change password</h2>
+      <Surface className="p-5 sm:p-6">
+        <h2 className="font-display text-lg font-bold tracking-tight">Change password</h2>
+        <p className="mt-1 text-sm text-[var(--muted)]">
+          Use at least 8 characters. You stay signed in after a successful change.
+        </p>
         <form
           className="mt-6 space-y-4"
           onSubmit={(e) => {
@@ -372,9 +412,26 @@ export default function ProfilePage() {
               autoComplete="new-password"
             />
           </Field>
+          <Field>
+            <Label htmlFor="confirm">Confirm new password</Label>
+            <Input
+              id="confirm"
+              type="password"
+              required
+              minLength={8}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              autoComplete="new-password"
+            />
+          </Field>
           {passwordMsg ? <Alert variant="success">{passwordMsg}</Alert> : null}
           {passwordErr ? <Alert variant="danger">{passwordErr}</Alert> : null}
-          <Button type="submit" variant="secondary" disabled={changePassword.isPending}>
+          <Button
+            type="submit"
+            variant="secondary"
+            disabled={changePassword.isPending}
+            className="rounded-full"
+          >
             {changePassword.isPending ? 'Updating…' : 'Update password'}
           </Button>
         </form>

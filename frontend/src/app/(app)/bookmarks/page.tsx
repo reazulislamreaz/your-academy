@@ -85,8 +85,8 @@ export default function BookmarksPage() {
     <div className="space-y-8">
       <PageHeader
         eyebrow="Library"
-        title="Saved"
-        description="Questions and PDFs you bookmarked for later study."
+        title="Saved items"
+        description="Questions and PDFs you bookmarked while practicing."
       />
 
       <div className="flex gap-1 border-b border-[var(--line)]">
