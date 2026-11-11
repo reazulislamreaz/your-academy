@@ -27,11 +27,12 @@ async function bootstrap() {
       callback: (err: Error | null, allow?: boolean) => void,
     ) => {
       // Non-browser clients (curl, server-to-server) may omit Origin.
+      // Deny with callback(null, false) — never throw (throw becomes HTTP 500).
       if (!origin || origins.includes(origin)) {
         callback(null, true);
         return;
       }
-      callback(new Error(`Origin ${origin} not allowed by CORS`), false);
+      callback(null, false);
     },
     credentials: true,
   });
