@@ -1,6 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
+import type { CSSProperties } from 'react';
 import { TrialStatusChip } from '@/components/access/trial-status-chip';
 import { BrandMark } from './brand-mark';
 import { MobileNav, type NavItem } from './mobile-nav';
@@ -48,7 +49,10 @@ export function AppHeader() {
       : baseLinks;
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between gap-2 border-b border-[var(--line)] bg-[var(--bg-muted)]/80 px-3 backdrop-blur-md sm:h-16 sm:gap-3 sm:px-6">
+    <header
+      className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between gap-2 border-b border-[var(--line)] bg-[var(--bg-muted)]/80 px-3 backdrop-blur-md sm:h-16 sm:gap-3 sm:px-6 sm:[--header-h:4rem]"
+      style={{ '--header-h': '3.5rem' } as CSSProperties}
+    >
       <div className="flex min-w-0 items-center gap-2 sm:gap-3">
         <div className="lg:hidden">
           <BrandMark href="/home" markOnly />

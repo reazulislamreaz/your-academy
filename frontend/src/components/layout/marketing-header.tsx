@@ -118,6 +118,7 @@ export function MarketingHeader() {
           <UserMenu loginOnly />
         </div>
         <MobileNav
+          className="ml-auto shrink-0 md:ml-0"
           items={links}
           leading={
             <SearchField
