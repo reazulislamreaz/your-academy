@@ -110,6 +110,7 @@ lib/api/auth.ts
 - `next/font`: Syne (display), Manrope (UI), Source Serif 4 (reading)
 - Primitives in `frontend/src/components/ui/*` (CVA); layout shells in `components/layout/*`
 - Route-group shells: `(marketing)` / `(auth)` / `(app)` / `(admin)`
+- **Admin vs learner separation:** `(admin)` uses `AdminSidebar` / `AdminMobileNav` / `AdminGate` only — no learner `/home` or study-nav links. `(app)` is the learner shell; admins may deep-link to it (DEC-014) via an explicit “Admin console” escape hatch, not the reverse. Post-login: `ADMIN` → `/admin/dashboard`, `USER` → `/home` (`postLoginPath` + middleware soft role check). API `RolesGuard` remains the authz boundary.
 - Responsive layouts; `:focus-visible` rings; `prefers-reduced-motion`
 - Avoid purple-gradient / cream-terracotta AI clichés
 

@@ -5,14 +5,16 @@ import { usePathname } from 'next/navigation';
 import {
   FileQuestion,
   LayoutDashboard,
+  LogOut,
   Newspaper,
   FolderTree,
   FileText,
-  ArrowLeft,
   Users,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useLogout, useMe } from '@/features/auth/use-auth';
 import { BrandMark } from './brand-mark';
+import { Button } from '@/components/ui/button';
 
 const items = [
   { href: '/admin/dashboard', label: 'Overview', icon: LayoutDashboard },
@@ -25,6 +27,8 @@ const items = [
 
 export function AdminSidebar() {
   const pathname = usePathname();
+  const me = useMe();
+  const logout = useLogout();
 
   return (
     <aside className="flex h-full w-60 shrink-0 flex-col bg-[var(--bg-inverse)] text-white shadow-[var(--shadow)]">
@@ -55,20 +59,23 @@ export function AdminSidebar() {
           );
         })}
       </nav>
-      <div className="space-y-1 border-t border-white/10 p-3">
-        <Link
-          href="/home"
-          className="flex items-center gap-2 rounded-[10px] px-3 py-2.5 text-sm text-white/60 hover:bg-white/10 hover:text-white"
+      <div className="space-y-2 border-t border-white/10 p-3">
+        {me.data ? (
+          <p className="truncate px-3 text-xs text-white/50" title={me.data.name}>
+            Signed in as <span className="font-medium text-white/80">{me.data.name}</span>
+          </p>
+        ) : null}
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="w-full justify-start gap-2 text-white/70 hover:bg-white/10 hover:text-white"
+          disabled={logout.isPending}
+          onClick={() => logout.mutate()}
         >
-          <ArrowLeft className="h-4 w-4" />
-          Learner dashboard
-        </Link>
-        <Link
-          href="/questions"
-          className="flex items-center gap-2 rounded-[10px] px-3 py-2.5 text-sm text-white/45 hover:bg-white/10 hover:text-white"
-        >
-          Question bank
-        </Link>
+          <LogOut className="h-4 w-4" />
+          {logout.isPending ? 'Signing out…' : 'Sign out'}
+        </Button>
       </div>
     </aside>
   );

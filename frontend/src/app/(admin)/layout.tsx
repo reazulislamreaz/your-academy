@@ -1,10 +1,18 @@
+'use client';
+
 import type { ReactNode } from 'react';
-import Link from 'next/link';
+import { LogOut } from 'lucide-react';
 import { AdminMobileNav } from '@/components/layout/admin-mobile-nav';
 import { AdminSidebar } from '@/components/layout/admin-sidebar';
+import { BrandMark } from '@/components/layout/brand-mark';
+import { Button } from '@/components/ui/button';
 import { AdminGate } from '@/features/admin/admin-gate';
+import { useLogout, useMe } from '@/features/auth/use-auth';
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
+  const me = useMe();
+  const logout = useLogout();
+
   return (
     <AdminGate>
       <div className="flex min-h-screen bg-[var(--bg-desk)]">
@@ -15,23 +23,33 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         </div>
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="sticky top-0 z-30 lg:static">
-            <div className="flex items-center justify-between border-b border-[var(--line)] bg-[var(--bg-inverse)] px-4 py-3 text-white lg:hidden">
-              <p className="font-display text-lg font-bold tracking-tight">Admin</p>
-              <Link href="/home" className="min-h-10 px-2 text-sm text-white/65 hover:text-white">
-                Exit
-              </Link>
+            <div className="flex items-center justify-between gap-3 border-b border-[var(--line)] bg-[var(--bg-inverse)] px-4 py-3 text-white lg:hidden">
+              <BrandMark inverse markOnly href="/admin/dashboard" />
+              <div className="flex min-w-0 items-center gap-2">
+                <p className="truncate text-sm font-medium text-white/80">
+                  {me.data?.name ?? 'Admin'}
+                </p>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="shrink-0 text-white/70 hover:bg-white/10 hover:text-white"
+                  disabled={logout.isPending}
+                  aria-label="Sign out"
+                  onClick={() => logout.mutate()}
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
             <header className="sticky top-0 z-20 hidden border-b border-[var(--line)] bg-white/90 px-6 py-3 backdrop-blur-md lg:block">
-              <div className="mx-auto flex w-full max-w-6xl items-center justify-between">
+              <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3">
                 <p className="text-sm font-medium text-[var(--muted)]">
                   Your Academy · Platform management
                 </p>
-                <Link
-                  href="/home"
-                  className="text-sm font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
-                >
-                  Back to study desk
-                </Link>
+                <p className="truncate text-sm font-semibold text-[var(--ink-soft)]">
+                  {me.data?.name}
+                </p>
               </div>
             </header>
             <AdminMobileNav />

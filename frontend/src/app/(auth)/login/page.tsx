@@ -10,6 +10,7 @@ import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Surface } from '@/components/ui/surface';
+import { postLoginPath } from '@/features/auth/post-login-path';
 import { meQueryKey } from '@/features/auth/use-auth';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import type { MeUser } from '@/lib/api/types';
@@ -34,8 +35,7 @@ function LoginForm() {
         skipRefresh: true,
       });
       qc.setQueryData(meQueryKey, result.user);
-      const next = searchParams.get('next') || '/home';
-      router.push(next.startsWith('/') ? next : '/home');
+      router.push(postLoginPath(result.user, searchParams.get('next')));
       router.refresh();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Login failed');

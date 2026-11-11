@@ -1,5 +1,6 @@
 'use client';
 
+import { usePathname } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import { getCookie } from '@/lib/utils';
@@ -29,11 +30,14 @@ function getClientInstanceId(): string {
  */
 export function BrowsingHeartbeat() {
   const me = useMe();
+  const pathname = usePathname();
   const sessionIdRef = useRef<string | null>(null);
   const lastActiveRef = useRef(Date.now());
+  // Admin console is not learner study time (DEC-009 / shell separation).
+  const onAdminShell = pathname.startsWith('/admin');
 
   useEffect(() => {
-    if (!me.data) {
+    if (!me.data || onAdminShell) {
       sessionIdRef.current = null;
       return;
     }
@@ -125,7 +129,7 @@ export function BrowsingHeartbeat() {
       window.removeEventListener('pagehide', endSession);
       endSession();
     };
-  }, [me.data?.id]);
+  }, [me.data?.id, onAdminShell]);
 
   return null;
 }
