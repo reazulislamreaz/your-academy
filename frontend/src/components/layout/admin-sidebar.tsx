@@ -27,11 +27,11 @@ export function AdminSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="flex h-full w-60 shrink-0 flex-col bg-[var(--bg-inverse)] text-white">
+    <aside className="flex h-full w-60 shrink-0 flex-col bg-[var(--bg-inverse)] text-white shadow-[var(--shadow)]">
       <div className="border-b border-white/10 px-5 py-5">
         <BrandMark inverse href="/admin/dashboard" />
         <p className="mt-2 text-[10px] font-semibold tracking-[0.16em] text-white/45 uppercase">
-          Control room
+          Admin console
         </p>
       </div>
       <nav className="flex flex-1 flex-col gap-0.5 p-3" aria-label="Admin">
@@ -43,9 +43,9 @@ export function AdminSidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                'motion-nav-indicator flex items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2.5 text-sm font-medium',
+                'motion-nav-indicator flex items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-sm font-medium',
                 active
-                  ? 'bg-[var(--highlight)] text-[var(--highlight-fg)]'
+                  ? 'bg-[var(--highlight)] text-[var(--highlight-fg)] shadow-sm'
                   : 'text-white/70 hover:bg-white/10 hover:text-white',
               )}
             >
@@ -55,13 +55,19 @@ export function AdminSidebar() {
           );
         })}
       </nav>
-      <div className="border-t border-white/10 p-3">
+      <div className="space-y-1 border-t border-white/10 p-3">
         <Link
-          href="/questions"
-          className="flex items-center gap-2 rounded-[var(--radius-sm)] px-3 py-2.5 text-sm text-white/60 hover:bg-white/10 hover:text-white"
+          href="/home"
+          className="flex items-center gap-2 rounded-[10px] px-3 py-2.5 text-sm text-white/60 hover:bg-white/10 hover:text-white"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to app
+          Learner dashboard
+        </Link>
+        <Link
+          href="/questions"
+          className="flex items-center gap-2 rounded-[10px] px-3 py-2.5 text-sm text-white/45 hover:bg-white/10 hover:text-white"
+        >
+          Question bank
         </Link>
       </div>
     </aside>

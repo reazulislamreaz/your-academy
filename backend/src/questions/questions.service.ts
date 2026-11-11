@@ -250,6 +250,65 @@ export class QuestionsService {
     };
   }
 
+  /**
+   * Record a practice check. Correctness is computed server-side so post-trial
+   * learners still get personal analytics without answer fields on GET detail.
+   */
+  async recordAttempt(user: RequestUser, questionId: string, selectedOptionId: string) {
+    const question = await this.prisma.question.findFirst({
+      where: { id: questionId, status: QuestionStatus.PUBLISHED, deletedAt: null },
+      select: { id: true, categoryId: true },
+    });
+    if (!question) {
+      throw new NotFoundException(
+        createErrorResponse('QUESTION_NOT_FOUND', 'Question not found', newRequestId()),
+      );
+    }
+
+    const option = await this.prisma.questionOption.findFirst({
+      where: { id: selectedOptionId, questionId },
+      select: { id: true, isCorrect: true },
+    });
+    if (!option) {
+      throw new BadRequestException(
+        createErrorResponse(
+          'INVALID_OPTION',
+          'Selected option does not belong to this question',
+          newRequestId(),
+        ),
+      );
+    }
+
+    const attempt = await this.prisma.questionAttempt.create({
+      data: {
+        userId: user.userId,
+        questionId: question.id,
+        selectedOptionId: option.id,
+        isCorrect: option.isCorrect,
+        categoryId: question.categoryId,
+      },
+      select: {
+        id: true,
+        questionId: true,
+        selectedOptionId: true,
+        isCorrect: true,
+        createdAt: true,
+      },
+    });
+
+    const dbUser = await this.prisma.user.findUniqueOrThrow({ where: { id: user.userId } });
+    const canView = await this.access.canViewAnswers(dbUser);
+
+    return {
+      id: attempt.id,
+      questionId: attempt.questionId,
+      selectedOptionId: attempt.selectedOptionId,
+      createdAt: attempt.createdAt.toISOString(),
+      // Only echo correctness when answers are already entitled on the detail UI.
+      ...(canView ? { isCorrect: attempt.isCorrect } : {}),
+    };
+  }
+
   async navigation(
     id: string,
     filters: { categoryId?: string; subcategoryId?: string; difficulty?: Difficulty; q?: string },

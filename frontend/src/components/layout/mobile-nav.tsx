@@ -19,9 +19,12 @@ function isActive(pathname: string, item: NavItem) {
 export function MobileNav({
   items,
   trailing,
+  /** Tailwind breakpoint class when the hamburger is shown (default: below xl for marketing). */
+  breakpointClassName = 'xl:hidden',
 }: {
   items: NavItem[];
   trailing?: ReactNode;
+  breakpointClassName?: string;
 }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
@@ -45,7 +48,7 @@ export function MobileNav({
   }, [open]);
 
   return (
-    <div className="xl:hidden">
+    <div className={breakpointClassName}>
       <Button
         type="button"
         variant="ghost"

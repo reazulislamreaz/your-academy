@@ -15,7 +15,7 @@ const buttonVariants = cva(
           'border border-[var(--line-strong)] bg-[var(--bg-elevated)] text-[var(--ink)] hover:border-[var(--highlight)] hover:bg-[var(--bg-muted)]',
         ghost: 'bg-transparent text-[var(--ink-soft)] hover:bg-[var(--bg-muted)] hover:text-[var(--ink)]',
         danger: 'bg-[var(--danger)] text-white hover:brightness-110',
-        soft: 'bg-[var(--highlight-soft)] text-[var(--highlight-fg)] hover:bg-[var(--highlight-hover)]',
+        soft: 'bg-[var(--highlight-soft)] text-[var(--highlight)] hover:bg-[var(--highlight-hover)]',
       },
       size: {
         sm: 'h-9 px-3 text-xs',

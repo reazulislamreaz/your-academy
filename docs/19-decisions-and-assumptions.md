@@ -232,6 +232,16 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Impact | UsersModule, schema migration, study home / onboarding / practice player |
 | Status | **CONFIRMED** (audit 2026-11-05) |
 
+### DEC-022 — Learner attempt / accuracy analytics
+
+| Field | Value |
+|-------|-------|
+| Question | Should the learner dashboard show exams attempted, correct/wrong counts, accuracy %, and subject-wise performance? |
+| Current assumption | v1 practice checks are **ephemeral client-side**; no `QuestionAttempt` (or equivalent) store. Dashboards therefore use real bookmark + browsing-session analytics only — not fabricated accuracy KPIs. |
+| Recommended option | Add attempt persistence + aggregate APIs if product wants performance dashboards. |
+| Impact | Schema, Questions/Analytics modules, practice player, learner dashboard |
+| Status | **NEEDS APPROVAL** |
+
 ---
 
 ## Assumption Log (Non-Decision Facts We Are Proceeding With)

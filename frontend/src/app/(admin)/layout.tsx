@@ -16,12 +16,25 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex items-center justify-between border-b border-[var(--line)] bg-[var(--bg-inverse)] px-4 py-3 text-white lg:hidden">
             <p className="font-display text-lg font-bold tracking-tight">Admin</p>
-            <Link href="/questions" className="text-sm text-white/65 hover:text-white">
+            <Link href="/home" className="text-sm text-white/65 hover:text-white">
               Exit
             </Link>
           </div>
+          <header className="sticky top-0 z-20 hidden border-b border-[var(--line)] bg-white/90 px-6 py-3 backdrop-blur-md lg:block">
+            <div className="mx-auto flex w-full max-w-6xl items-center justify-between">
+              <p className="text-sm font-medium text-[var(--muted)]">
+                Your Academy · Platform management
+              </p>
+              <Link
+                href="/home"
+                className="text-sm font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
+              >
+                Back to study desk
+              </Link>
+            </div>
+          </header>
           <AdminMobileNav />
-          <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6 sm:py-8 motion-fade-in">
+          <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 motion-fade-in sm:px-6 sm:py-8">
             {children}
           </main>
         </div>

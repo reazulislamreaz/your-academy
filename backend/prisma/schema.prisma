@@ -103,6 +103,7 @@ model User {
   lastQuestion        Question?           @relation("UserLastQuestion", fields: [lastQuestionId], references: [id], onDelete: SetNull)
   questionBookmarks   QuestionBookmark[]
   documentBookmarks   DocumentBookmark[]
+  questionAttempts    QuestionAttempt[]
   browsingSessions    BrowsingSession[]
   subscriptions       UserSubscription[]
   createdNews         News[]              @relation("NewsCreator")
@@ -166,6 +167,7 @@ model Category {
   questions       Question[] @relation("QuestionCategory")
   subQuestions    Question[] @relation("QuestionSubcategory")
   documents       Document[]
+  attempts        QuestionAttempt[]
 
   @@index([parentId])
   @@index([isActive])
@@ -196,6 +198,7 @@ model Question {
   lastOpenedBy User[]           @relation("UserLastQuestion")
   options     QuestionOption[]
   bookmarks   QuestionBookmark[]
+  attempts    QuestionAttempt[]
 
   @@index([status, publishedAt(sort: Desc), id(sort: Desc)])
   @@index([categoryId, status])
@@ -212,10 +215,32 @@ model QuestionOption {
   isCorrect  Boolean @default(false) @map("is_correct")
   sortOrder  Int     @default(0) @map("sort_order")
 
-  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  question Question          @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  attempts QuestionAttempt[]
 
   @@index([questionId, sortOrder])
   @@map("question_options")
+}
+
+/// Learner practice check — server stores correctness for personal analytics (DEC-022).
+model QuestionAttempt {
+  id               String   @id @default(uuid()) @db.Uuid
+  userId           String   @map("user_id") @db.Uuid
+  questionId       String   @map("question_id") @db.Uuid
+  selectedOptionId String   @map("selected_option_id") @db.Uuid
+  isCorrect        Boolean  @map("is_correct")
+  categoryId       String   @map("category_id") @db.Uuid
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question       Question       @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selectedOption QuestionOption @relation(fields: [selectedOptionId], references: [id], onDelete: Cascade)
+  category       Category       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, categoryId])
+  @@index([userId, questionId, createdAt(sort: Desc)])
+  @@map("question_attempts")
 }
 
 model News {

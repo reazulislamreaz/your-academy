@@ -8,7 +8,7 @@ const badgeVariants = cva(
     variants: {
       variant: {
         default: 'bg-[var(--bg-muted)] text-[var(--ink-soft)]',
-        highlight: 'bg-[var(--highlight-soft)] text-[var(--highlight-fg)]',
+        highlight: 'bg-[var(--highlight-soft)] text-[var(--highlight)]',
         success: 'bg-[var(--success-soft)] text-[var(--success)]',
         danger: 'bg-[var(--danger-soft)] text-[var(--danger)]',
         inverse: 'bg-[var(--bg-inverse)] text-white',

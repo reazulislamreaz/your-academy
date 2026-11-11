@@ -113,3 +113,11 @@ export type UserStats = {
     title: string;
   }>;
 };
+
+/** GET /analytics/me/summary */
+export type AnalyticsSummary = {
+  totalSeconds: number;
+  sessions: number;
+  daySeconds: number;
+  weekSeconds: number;
+};

@@ -140,17 +140,23 @@ export default function ProfilePage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        eyebrow="Study report"
-        title="Your profile"
-        description="Practice summary, trial access, and account settings."
+        eyebrow="Account"
+        title="Profile & settings"
+        description="Study summary, trial access, and account controls."
         actions={
           <div className="flex flex-wrap gap-2">
             <Link href="/home">
-              <Button variant="soft" size="sm">
-                Study home
+              <Button variant="soft" size="sm" className="rounded-full">
+                Dashboard
               </Button>
             </Link>
-            <Button variant="outline" size="sm" disabled={logout.isPending} onClick={() => logout.mutate()}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-full"
+              disabled={logout.isPending}
+              onClick={() => logout.mutate()}
+            >
               {logout.isPending ? 'Signing out…' : 'Sign out'}
             </Button>
           </div>
@@ -158,13 +164,16 @@ export default function ProfilePage() {
       />
 
       <Surface className="space-y-4 border-l-[3px] border-l-[var(--highlight)] p-6">
-        <h2 className="text-xs font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
-          Trial access
-        </h2>
-        <TrialCountdown
-          trialEndsAt={user.access.trialEndsAt}
-          isTrialActive={user.access.isTrialActive}
-        />
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="font-display text-lg font-bold tracking-tight">{user.name}</h2>
+            <p className="mt-1 text-sm text-[var(--muted)]">{user.whatsappNumber}</p>
+          </div>
+          <TrialCountdown
+            trialEndsAt={user.access.trialEndsAt}
+            isTrialActive={user.access.isTrialActive}
+          />
+        </div>
         <p className="text-sm text-[var(--muted)]">
           {user.access.isTrialActive
             ? 'Answers and explanations are unlocked for the rest of your trial.'
@@ -174,8 +183,8 @@ export default function ProfilePage() {
 
       <section className="space-y-3">
         <h2 className="font-display text-xl font-semibold tracking-tight">Study summary</h2>
-        <div className="grid gap-px overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--line)] sm:grid-cols-3">
-          <div className="bg-[var(--bg-elevated)] p-5">
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="rounded-[16px] border border-[var(--line)] bg-white p-5 shadow-[var(--shadow-sm)]">
             <p className="text-xs font-semibold tracking-[0.12em] text-[var(--muted)] uppercase">
               Saved questions
             </p>
@@ -189,7 +198,7 @@ export default function ProfilePage() {
               View saved
             </Link>
           </div>
-          <div className="bg-[var(--bg-elevated)] p-5">
+          <div className="rounded-[16px] border border-[var(--line)] bg-white p-5 shadow-[var(--shadow-sm)]">
             <p className="text-xs font-semibold tracking-[0.12em] text-[var(--muted)] uppercase">
               Saved PDFs
             </p>
@@ -203,7 +212,7 @@ export default function ProfilePage() {
               View saved
             </Link>
           </div>
-          <div className="bg-[var(--bg-elevated)] p-5">
+          <div className="rounded-[16px] border border-[var(--line)] bg-white p-5 shadow-[var(--shadow-sm)]">
             <p className="text-xs font-semibold tracking-[0.12em] text-[var(--muted)] uppercase">
               Study time
             </p>

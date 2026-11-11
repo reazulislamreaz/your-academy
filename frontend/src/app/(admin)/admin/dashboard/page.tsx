@@ -2,6 +2,19 @@
 
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
+import {
+  ArrowRight,
+  Clock3,
+  FileQuestion,
+  FileText,
+  FolderTree,
+  Newspaper,
+  Plus,
+  Users,
+} from 'lucide-react';
+import { BarChart } from '@/components/dashboard/bar-chart';
+import { QuickLink } from '@/components/dashboard/quick-link';
+import { StatCard } from '@/components/dashboard/stat-card';
 import { PageHeader } from '@/components/layout/page-header';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -35,36 +48,6 @@ type Dashboard = {
   }>;
 };
 
-function Stat({
-  label,
-  value,
-  hint,
-  tone = 'default',
-}: {
-  label: string;
-  value: string | number;
-  hint?: string;
-  tone?: 'default' | 'action' | 'warn';
-}) {
-  return (
-    <div
-      className={
-        tone === 'action'
-          ? 'bg-[var(--highlight-soft)] px-4 py-4'
-          : tone === 'warn'
-            ? 'bg-[var(--bg-muted)] px-4 py-4'
-            : 'bg-[var(--bg-elevated)] px-4 py-4'
-      }
-    >
-      <p className="text-[10px] font-semibold tracking-[0.12em] text-[var(--muted)] uppercase">
-        {label}
-      </p>
-      <p className="mt-1.5 font-display text-2xl font-bold tracking-tight tabular-nums">{value}</p>
-      {hint ? <p className="mt-1 text-xs text-[var(--muted)]">{hint}</p> : null}
-    </div>
-  );
-}
-
 export default function AdminDashboardPage() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin-dashboard'],
@@ -73,10 +56,13 @@ export default function AdminDashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <Skeleton key={i} className="h-20 w-full" />
-        ))}
+      <div className="space-y-4">
+        <Skeleton className="h-10 w-56" />
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Skeleton key={i} className="h-28 w-full" />
+          ))}
+        </div>
       </div>
     );
   }
@@ -84,18 +70,71 @@ export default function AdminDashboardPage() {
     return <Alert variant="danger">Admin access required.</Alert>;
   }
 
+  const browsingHours = Math.round(data.browsingSecondsTotal / 3600);
+
   return (
     <div className="space-y-8">
       <PageHeader
-        eyebrow="Operations"
-        title="Overview"
-        description="Work queue first — then live counts, signups, and audit activity."
+        eyebrow="Admin"
+        title="Platform overview"
+        description="Live KPIs, work queue, and recent platform activity."
+        actions={
+          <Link href="/admin/questions/new">
+            <Button size="sm" className="rounded-full px-5">
+              <Plus className="h-4 w-4" />
+              New question
+            </Button>
+          </Link>
+        }
       />
 
+      {/* Primary KPIs */}
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard label="Registered users" value={data.users.total} icon={Users} tone="navy" />
+        <StatCard
+          label="Active users"
+          value={data.users.active}
+          hint="Not suspended"
+          icon={Users}
+          tone="teal"
+        />
+        <StatCard
+          label="Trial active"
+          value={data.users.trialActive}
+          hint="Answers unlocked"
+          icon={Clock3}
+          tone="red"
+        />
+        <StatCard
+          label="Trial expired"
+          value={data.users.trialExpired}
+          hint="Still browsing"
+          icon={Clock3}
+          tone="amber"
+        />
+        <StatCard
+          label="Questions"
+          value={data.questions.total}
+          hint={`${data.questions.published} published`}
+          icon={FileQuestion}
+          tone="blue"
+        />
+        <StatCard label="Categories" value={data.categories} icon={FolderTree} tone="violet" />
+        <StatCard label="News posts" value={data.news} icon={Newspaper} tone="slate" />
+        <StatCard
+          label="Browsing hours"
+          value={browsingHours}
+          hint={`${data.documents} documents`}
+          icon={FileText}
+          tone="navy"
+        />
+      </div>
+
+      {/* Work queue */}
       <section className="space-y-3">
-        <h2 className="font-display text-lg font-semibold tracking-tight">Work queue</h2>
-        <div className="grid gap-3 sm:grid-cols-3">
-          <Surface density="compact" className="flex flex-col justify-between gap-4 p-5">
+        <h2 className="font-display text-lg font-bold tracking-tight">Work queue</h2>
+        <div className="grid gap-4 md:grid-cols-3">
+          <Surface className="flex flex-col justify-between gap-4 p-5">
             <div>
               <div className="flex items-center gap-2">
                 <Badge variant="highlight">Drafts</Badge>
@@ -107,13 +146,14 @@ export default function AdminDashboardPage() {
                 Questions waiting to publish (need valid options).
               </p>
             </div>
-            <Link href="/admin/questions">
-              <Button size="sm" variant="soft">
-                Review questions
+            <Link href="/admin/questions?status=DRAFT">
+              <Button size="sm" variant="soft" className="rounded-full">
+                Review drafts
+                <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
           </Surface>
-          <Surface density="compact" className="flex flex-col justify-between gap-4 p-5">
+          <Surface className="flex flex-col justify-between gap-4 p-5">
             <div>
               <div className="flex items-center gap-2">
                 <Badge variant="success">Trials</Badge>
@@ -126,25 +166,25 @@ export default function AdminDashboardPage() {
               </p>
             </div>
             <Link href="/admin/users">
-              <Button size="sm" variant="outline">
+              <Button size="sm" variant="outline" className="rounded-full">
                 Manage users
               </Button>
             </Link>
           </Surface>
-          <Surface density="compact" className="flex flex-col justify-between gap-4 p-5">
+          <Surface className="flex flex-col justify-between gap-4 p-5">
             <div>
               <div className="flex items-center gap-2">
-                <Badge variant="outline">Expired trials</Badge>
+                <Badge variant="outline">Expired</Badge>
                 <span className="font-display text-2xl font-bold tabular-nums">
                   {data.users.trialExpired}
                 </span>
               </div>
               <p className="mt-2 text-sm text-[var(--muted)]">
-                Still browsing — answers gated by entitlement.
+                Post-trial browsers — answers gated by entitlement.
               </p>
             </div>
             <Link href="/admin/users">
-              <Button size="sm" variant="ghost">
+              <Button size="sm" variant="ghost" className="rounded-full">
                 Open users
               </Button>
             </Link>
@@ -152,69 +192,132 @@ export default function AdminDashboardPage() {
         </div>
       </section>
 
-      <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)]">
-        <div className="grid gap-px bg-[var(--line)] sm:grid-cols-2 lg:grid-cols-4">
-          <Stat label="Users" value={data.users.total} />
-          <Stat label="Active users" value={data.users.active} />
-          <Stat
-            label="Trial active"
-            value={data.users.trialActive}
-            tone="action"
-            hint="Full answers unlocked"
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+        <Surface className="space-y-4 p-6">
+          <div>
+            <h2 className="font-display text-lg font-bold tracking-tight">Question bank health</h2>
+            <p className="mt-1 text-sm text-[var(--muted)]">Status mix from live question counts.</p>
+          </div>
+          <BarChart
+            emptyLabel="No questions yet."
+            data={[
+              {
+                label: 'Published',
+                value: data.questions.published,
+                color: 'var(--success)',
+              },
+              {
+                label: 'Draft',
+                value: data.questions.draft,
+                color: 'var(--highlight)',
+              },
+              {
+                label: 'Archived',
+                value: data.questions.archived,
+                color: 'var(--muted)',
+              },
+            ]}
           />
-          <Stat label="Trial expired" value={data.users.trialExpired} tone="warn" />
-          <Stat label="Questions" value={data.questions.total} />
-          <Stat label="Published" value={data.questions.published} />
-          <Stat label="Drafts" value={data.questions.draft} tone="action" />
-          <Stat label="Archived" value={data.questions.archived} />
-          <Stat label="Categories" value={data.categories} />
-          <Stat label="News" value={data.news} />
-          <Stat label="Documents" value={data.documents} />
-          <Stat label="Browsing hours" value={Math.round(data.browsingSecondsTotal / 3600)} />
-        </div>
+        </Surface>
+
+        <Surface className="space-y-4 p-6">
+          <h2 className="font-display text-lg font-bold tracking-tight">Quick actions</h2>
+          <div className="grid gap-3">
+            <QuickLink
+              href="/admin/questions/new"
+              title="Create MCQ"
+              description="Draft a new question with options"
+              icon={FileQuestion}
+            />
+            <QuickLink
+              href="/admin/categories"
+              title="Manage categories"
+              description="Subjects and topic tree"
+              icon={FolderTree}
+            />
+            <QuickLink
+              href="/admin/users"
+              title="User controls"
+              description="Search, suspend, reinstate"
+              icon={Users}
+            />
+            <QuickLink
+              href="/admin/news"
+              title="Publish news"
+              description="Announcements and columns"
+              icon={Newspaper}
+            />
+          </div>
+        </Surface>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
-        <Surface density="compact" className="space-y-3 p-5">
-          <div className="flex items-center justify-between">
-            <h2 className="font-display text-lg font-semibold">Recent users</h2>
+        <Surface className="overflow-hidden p-0">
+          <div className="flex items-center justify-between border-b border-[var(--line)] px-5 py-4">
+            <h2 className="font-display text-lg font-bold tracking-tight">Recent registrations</h2>
             <Link
               href="/admin/users"
-              className="text-sm font-semibold underline-offset-2 hover:underline"
+              className="text-sm font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
             >
-              Manage
+              View all
             </Link>
           </div>
-          <ul className="divide-y divide-[var(--line)]">
-            {data.recentUsers.map((user) => (
-              <li key={user.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
-                <span className="min-w-0 truncate">
-                  <span className="font-medium">{user.name}</span>
-                  <span className="text-[var(--muted)]"> · {user.whatsappNumber}</span>
-                </span>
-                <span className="shrink-0 text-xs text-[var(--muted)]">{user.status}</span>
-              </li>
-            ))}
-          </ul>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[28rem] text-left text-sm">
+              <thead className="bg-[var(--bg-desk)] text-[11px] tracking-[0.08em] text-[var(--muted)] uppercase">
+                <tr>
+                  <th className="px-5 py-3 font-semibold">User</th>
+                  <th className="px-3 py-3 font-semibold">Role</th>
+                  <th className="px-3 py-3 font-semibold">Status</th>
+                  <th className="px-5 py-3 font-semibold">Joined</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--line)]">
+                {data.recentUsers.map((user) => (
+                  <tr key={user.id} className="hover:bg-[var(--brand-wash)]">
+                    <td className="px-5 py-3">
+                      <p className="font-semibold text-[var(--ink)]">{user.name}</p>
+                      <p className="text-xs text-[var(--muted)]">{user.whatsappNumber}</p>
+                    </td>
+                    <td className="px-3 py-3">
+                      <Badge variant="outline">{user.role}</Badge>
+                    </td>
+                    <td className="px-3 py-3">
+                      <Badge variant={user.status === 'ACTIVE' ? 'success' : 'outline'}>
+                        {user.status}
+                      </Badge>
+                    </td>
+                    <td className="px-5 py-3 text-xs text-[var(--muted)]">
+                      {new Date(user.createdAt).toLocaleDateString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </Surface>
 
-        <Surface density="compact" className="space-y-3 p-5">
-          <h2 className="font-display text-lg font-semibold">Recent activity</h2>
+        <Surface className="overflow-hidden p-0">
+          <div className="border-b border-[var(--line)] px-5 py-4">
+            <h2 className="font-display text-lg font-bold tracking-tight">System activity</h2>
+          </div>
           {data.recentActivity.length === 0 ? (
-            <p className="text-sm text-[var(--muted)]">No audit events yet.</p>
+            <p className="px-5 py-8 text-sm text-[var(--muted)]">No audit events yet.</p>
           ) : (
             <ul className="divide-y divide-[var(--line)]">
               {data.recentActivity.map((item) => (
-                <li key={item.id} className="py-2.5 text-sm">
-                  <span className="font-medium">{item.action}</span>
-                  <span className="text-[var(--muted)]">
-                    {' '}
-                    · {item.entityType}
-                    {item.actor ? ` · ${item.actor.name}` : ''}
-                  </span>
-                  <span className="mt-0.5 block text-xs text-[var(--muted)]">
-                    {new Date(item.createdAt).toLocaleString()}
-                  </span>
+                <li key={item.id} className="px-5 py-3.5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="default">{item.action}</Badge>
+                    <span className="text-xs text-[var(--muted)]">{item.entityType}</span>
+                  </div>
+                  <p className="mt-1.5 text-sm text-[var(--ink-soft)]">
+                    {item.actor ? item.actor.name : 'System'}
+                    <span className="text-[var(--muted)]">
+                      {' '}
+                      · {new Date(item.createdAt).toLocaleString()}
+                    </span>
+                  </p>
                 </li>
               ))}
             </ul>

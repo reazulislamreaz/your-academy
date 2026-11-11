@@ -17,6 +17,7 @@ import { CsrfGuard } from '../common/guards/csrf.guard';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { newRequestId } from '../common/request-id';
+import { CreateAttemptDto } from './dto/create-attempt.dto';
 import { CreateQuestionDto } from './dto/create-question.dto';
 import { UpdateQuestionDto } from './dto/update-question.dto';
 import { QuestionsService } from './questions.service';
@@ -69,6 +70,19 @@ export class QuestionsController {
   ) {
     return createSuccessResponse(
       await this.questions.navigation(id, { categoryId, subcategoryId, difficulty, q }),
+      newRequestId(),
+    );
+  }
+
+  @Post('questions/:id/attempts')
+  @UseGuards(JwtAuthGuard, CsrfGuard)
+  async recordAttempt(
+    @CurrentUser() user: RequestUser,
+    @Param('id') id: string,
+    @Body() dto: CreateAttemptDto,
+  ) {
+    return createSuccessResponse(
+      await this.questions.recordAttempt(user, id, dto.selectedOptionId),
       newRequestId(),
     );
   }
