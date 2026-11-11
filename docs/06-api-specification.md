@@ -148,7 +148,7 @@ Categories used for question filters require authentication (DEC-003).
 
 Question endpoints require authentication (DEC-003). Guests receive `401`.
 
-Query params for list: `cursor`, `limit`, `categoryId`, `subcategoryId`, `difficulty`, `q`, `sort=publishedAt_desc`.
+Query params for list: `cursor`, `limit`, `categoryId`, `subcategoryId`, `difficulty`, `q`, `examTag`, `sort=publishedAt_desc`.
 
 **Question detail `data` shape (entitled):**
 
@@ -186,6 +186,27 @@ Query params for list: `cursor`, `limit`, `categoryId`, `subcategoryId`, `diffic
 | DELETE | `/admin/questions/:id` | Soft delete | User | ADMIN |
 
 **Publish errors:** `422` if &lt;2 options or ≠1 correct.
+
+---
+
+### 2.5b Practice sets (DEC-023)
+
+Timed/untimed quizzes and model tests built from published questions. Review payloads still strip answers/explanations when the learner is not entitled.
+
+| Method | Endpoint | Description | Auth | Role |
+|--------|----------|-------------|------|------|
+| GET | `/practice-sets` | Published sets (`kind`, `examTag`, `categoryId`, `subcategoryId`, `isDaily`, cursor) | User | USER/ADMIN |
+| GET | `/practice-sets/:idOrSlug` | Detail + questions (no correct flags) | User | USER/ADMIN |
+| POST | `/practice-sets/:idOrSlug/attempts` | Start (or resume) attempt | User | USER/ADMIN |
+| POST | `/practice-attempts/:id/submit` | `{ answers: [{ questionId, selectedOptionId? }] }` | User | USER/ADMIN |
+| GET | `/practice-attempts/:id` | Score + review (answer privacy applied) | User | USER/ADMIN |
+| GET | `/me/practice-attempts` | Own submitted/expired history | User | USER/ADMIN |
+| GET | `/admin/practice-sets` | Admin list | User | ADMIN |
+| POST | `/admin/practice-sets` | Create draft with `questionIds` | User | ADMIN |
+| PATCH | `/admin/practice-sets/:id/publish` | Publish | User | ADMIN |
+| PATCH | `/admin/practice-sets/:id/archive` | Archive | User | ADMIN |
+
+`kind`: `DAILY_QUIZ` \| `SUBJECT_QUIZ` \| `TOPIC_QUIZ` \| `MODEL_TEST` \| `PREVIOUS_YEAR_SET`.
 
 ---
 

@@ -11,11 +11,11 @@ import { useMe } from '@/features/auth/use-auth';
 
 const baseLinks: NavItem[] = [
   { href: '/home', label: 'Dashboard', match: 'exact' },
-  { href: '/questions', label: 'Practice', match: 'prefix' },
-  { href: '/documents', label: 'Papers', match: 'prefix' },
-  { href: '/bookmarks', label: 'Saved', match: 'prefix' },
-  { href: '/news', label: 'News', match: 'prefix' },
-  { href: '/onboarding', label: 'Topics', match: 'prefix' },
+  { href: '/questions', label: 'Bank', match: 'prefix' },
+  { href: '/quizzes', label: 'Quizzes', match: 'prefix' },
+  { href: '/model-tests', label: 'Models', match: 'prefix' },
+  { href: '/exams', label: 'Exams', match: 'prefix' },
+  { href: '/results', label: 'Results', match: 'prefix' },
   { href: '/profile', label: 'Profile', match: 'prefix' },
 ];
 
@@ -25,19 +25,51 @@ const pageMeta: Record<string, { title: string; subtitle: string }> = {
     subtitle: 'Your practice pulse, recent results, and next steps.',
   },
   '/questions': {
-    title: 'MCQ practice',
+    title: 'Question bank',
     subtitle: 'Browse, filter, and check answers in the question bank.',
   },
+  '/subjects': {
+    title: 'Subject practice',
+    subtitle: 'Topics, MCQs, and subject quizzes by curriculum area.',
+  },
+  '/quizzes': {
+    title: 'Quiz center',
+    subtitle: 'Daily, subject, and topic quizzes with scored review.',
+  },
+  '/daily-quiz': {
+    title: 'Daily quiz',
+    subtitle: 'A short published set to keep your streak going.',
+  },
+  '/model-tests': {
+    title: 'Model tests',
+    subtitle: 'Timed mocks with negative marking where configured.',
+  },
+  '/exams': {
+    title: 'Govt job prep',
+    subtitle: 'BCS, bank, teacher, NTRCA, and other exam tracks.',
+  },
+  '/previous-year': {
+    title: 'Previous-year style',
+    subtitle: 'Demo collections inspired by previous-year workflows.',
+  },
+  '/practice': {
+    title: 'Practice set',
+    subtitle: 'Answer questions, watch the timer, then submit.',
+  },
+  '/results': {
+    title: 'My results',
+    subtitle: 'Scores and answer review from your attempts.',
+  },
   '/documents': {
-    title: 'Previous papers',
+    title: 'Study resources',
     subtitle: 'Published PDFs you can open and save for later.',
   },
   '/bookmarks': {
-    title: 'Saved items',
+    title: 'Saved questions',
     subtitle: 'Questions and papers you bookmarked while studying.',
   },
   '/news': {
-    title: 'News & circulars',
+    title: 'News & updates',
     subtitle: 'Exam notices and updates from Your Academy.',
   },
   '/onboarding': {

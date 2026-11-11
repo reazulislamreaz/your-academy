@@ -4,11 +4,14 @@ import Link from 'next/link';
 import { X } from 'lucide-react';
 import type { CategoryNode } from '@/lib/api/types';
 
+import { examLabel } from '@/lib/exam-tags';
+
 type FilterState = {
   q?: string;
   categoryId?: string;
   subcategoryId?: string;
   difficulty?: string;
+  examTag?: string;
 };
 
 type Props = FilterState & {
@@ -31,6 +34,7 @@ function chipHref(remove: keyof FilterState, current: FilterState) {
     sp.set('subcategoryId', current.subcategoryId);
   }
   if (current.difficulty && remove !== 'difficulty') sp.set('difficulty', current.difficulty);
+  if (current.examTag && remove !== 'examTag') sp.set('examTag', current.examTag);
   const qs = sp.toString();
   return qs ? `/questions?${qs}` : '/questions';
 }
@@ -41,8 +45,9 @@ export function FilterChips({
   categoryId,
   subcategoryId,
   difficulty,
+  examTag,
 }: Props) {
-  const current: FilterState = { q, categoryId, subcategoryId, difficulty };
+  const current: FilterState = { q, categoryId, subcategoryId, difficulty, examTag };
   const category = categories.find((c) => c.id === categoryId);
   const subcategory = category?.children.find((c) => c.id === subcategoryId);
   const chips: Array<{ key: string; label: string; href: string }> = [];
@@ -69,6 +74,13 @@ export function FilterChips({
       key: 'difficulty',
       label: difficulty.charAt(0) + difficulty.slice(1).toLowerCase(),
       href: chipHref('difficulty', current),
+    });
+  }
+  if (examTag) {
+    chips.push({
+      key: 'examTag',
+      label: examLabel(examTag),
+      href: chipHref('examTag', current),
     });
   }
 

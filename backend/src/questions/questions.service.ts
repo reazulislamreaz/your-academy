@@ -166,6 +166,7 @@ export class QuestionsService {
       subcategoryId?: string;
       difficulty?: Difficulty;
       q?: string;
+      examTag?: string;
     },
   ) {
     const limit = Math.min(params.limit ?? 20, 100);
@@ -175,6 +176,7 @@ export class QuestionsService {
       ...(params.categoryId ? { categoryId: params.categoryId } : {}),
       ...(params.subcategoryId ? { subcategoryId: params.subcategoryId } : {}),
       ...(params.difficulty ? { difficulty: params.difficulty } : {}),
+      ...(params.examTag ? { examTags: { has: params.examTag } } : {}),
       ...(params.q
         ? {
             OR: [
@@ -195,6 +197,8 @@ export class QuestionsService {
         title: true,
         difficulty: true,
         publishedAt: true,
+        examTags: true,
+        sourceNote: true,
         category: { select: { id: true, name: true, slug: true } },
         subcategory: { select: { id: true, name: true, slug: true } },
       },
@@ -240,6 +244,8 @@ export class QuestionsService {
       title: question.title,
       content: question.content,
       difficulty: question.difficulty,
+      examTags: question.examTags,
+      sourceNote: question.sourceNote,
       category: question.category,
       subcategory: question.subcategory,
       options,
@@ -311,7 +317,13 @@ export class QuestionsService {
 
   async navigation(
     id: string,
-    filters: { categoryId?: string; subcategoryId?: string; difficulty?: Difficulty; q?: string },
+    filters: {
+      categoryId?: string;
+      subcategoryId?: string;
+      difficulty?: Difficulty;
+      q?: string;
+      examTag?: string;
+    },
   ) {
     const current = await this.prisma.question.findFirst({
       where: { id, status: QuestionStatus.PUBLISHED, deletedAt: null },
@@ -328,6 +340,7 @@ export class QuestionsService {
       ...(filters.categoryId ? { categoryId: filters.categoryId } : {}),
       ...(filters.subcategoryId ? { subcategoryId: filters.subcategoryId } : {}),
       ...(filters.difficulty ? { difficulty: filters.difficulty } : {}),
+      ...(filters.examTag ? { examTags: { has: filters.examTag } } : {}),
       ...(filters.q
         ? {
             OR: [

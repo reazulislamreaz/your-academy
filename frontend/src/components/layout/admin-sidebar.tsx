@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
+  ClipboardList,
   FileQuestion,
   LayoutDashboard,
   LogOut,
@@ -20,6 +21,7 @@ const items = [
   { href: '/admin/dashboard', label: 'Overview', icon: LayoutDashboard },
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/questions', label: 'Questions', icon: FileQuestion },
+  { href: '/admin/practice-sets', label: 'Practice sets', icon: ClipboardList },
   { href: '/admin/categories', label: 'Categories', icon: FolderTree },
   { href: '/admin/news', label: 'News', icon: Newspaper },
   { href: '/admin/documents', label: 'Documents', icon: FileText },

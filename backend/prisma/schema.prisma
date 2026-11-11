@@ -74,6 +74,27 @@ enum PaymentStatus {
   REFUNDED
 }
 
+/// Practice / quiz / model-test products (DEC-023).
+enum PracticeSetKind {
+  DAILY_QUIZ
+  SUBJECT_QUIZ
+  TOPIC_QUIZ
+  MODEL_TEST
+  PREVIOUS_YEAR_SET
+}
+
+enum PracticeSetStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum PracticeAttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+  EXPIRED
+}
+
 // ─── Models ──────────────────────────────────────────────────────────────────
 
 model User {
@@ -104,6 +125,8 @@ model User {
   questionBookmarks   QuestionBookmark[]
   documentBookmarks   DocumentBookmark[]
   questionAttempts    QuestionAttempt[]
+  practiceAttempts    PracticeAttempt[]
+  createdPracticeSets PracticeSet[]       @relation("PracticeSetCreator")
   browsingSessions    BrowsingSession[]
   subscriptions       UserSubscription[]
   createdNews         News[]              @relation("NewsCreator")
@@ -163,11 +186,13 @@ model Category {
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   parent          Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict)
-  children        Category[] @relation("CategoryTree")
-  questions       Question[] @relation("QuestionCategory")
-  subQuestions    Question[] @relation("QuestionSubcategory")
-  documents       Document[]
-  attempts        QuestionAttempt[]
+  children         Category[]     @relation("CategoryTree")
+  questions        Question[]     @relation("QuestionCategory")
+  subQuestions     Question[]     @relation("QuestionSubcategory")
+  documents        Document[]
+  attempts         QuestionAttempt[]
+  practiceSets     PracticeSet[]  @relation("PracticeSetCategory")
+  practiceSetTopics PracticeSet[] @relation("PracticeSetSubcategory")
 
   @@index([parentId])
   @@index([isActive])
@@ -184,6 +209,10 @@ model Question {
   subcategoryId  String?        @map("subcategory_id") @db.Uuid
   difficulty     Difficulty     @default(MEDIUM)
   status         QuestionStatus @default(DRAFT)
+  /// Govt-job track tags (e.g. bcs-prelim, bank, primary-teacher). Not real PYQ unless marked.
+  examTags       String[]       @default([]) @map("exam_tags")
+  /// Optional human-readable source note (e.g. "Demo — BCS-style practice").
+  sourceNote     String?        @map("source_note") @db.VarChar(240)
   imageAssetId   String?        @map("image_asset_id") @db.Uuid
   createdById    String?        @map("created_by_id") @db.Uuid
   publishedAt    DateTime?      @map("published_at") @db.Timestamptz(3)
@@ -199,11 +228,14 @@ model Question {
   options     QuestionOption[]
   bookmarks   QuestionBookmark[]
   attempts    QuestionAttempt[]
+  practiceItems PracticeSetItem[]
+  practiceAnswers PracticeAttemptAnswer[]
 
   @@index([status, publishedAt(sort: Desc), id(sort: Desc)])
   @@index([categoryId, status])
   @@index([subcategoryId, status])
   @@index([difficulty, status])
+  @@index([examTags], type: Gin)
   @@map("questions")
 }
 
@@ -215,8 +247,9 @@ model QuestionOption {
   isCorrect  Boolean @default(false) @map("is_correct")
   sortOrder  Int     @default(0) @map("sort_order")
 
-  question Question          @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  attempts QuestionAttempt[]
+  question              Question                 @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  attempts              QuestionAttempt[]
+  practiceAttemptAnswers PracticeAttemptAnswer[]
 
   @@index([questionId, sortOrder])
   @@map("question_options")
@@ -443,4 +476,91 @@ model AuditLog {
   @@index([entityType, entityId])
   @@index([actorUserId, createdAt(sort: Desc)])
   @@map("audit_logs")
+}
+
+/// Timed or untimed practice packs: daily quiz, subject quiz, model test, etc. (DEC-023).
+model PracticeSet {
+  id                   String            @id @default(uuid()) @db.Uuid
+  title                String            @db.VarChar(200)
+  slug                 String            @unique @db.VarChar(220)
+  description          String?
+  kind                 PracticeSetKind
+  status               PracticeSetStatus @default(DRAFT)
+  durationSeconds      Int?              @map("duration_seconds")
+  marksPerCorrect      Float             @default(1) @map("marks_per_correct")
+  negativeMarkPerWrong Float             @default(0) @map("negative_mark_per_wrong")
+  categoryId           String?           @map("category_id") @db.Uuid
+  subcategoryId        String?           @map("subcategory_id") @db.Uuid
+  examTag              String?           @map("exam_tag") @db.VarChar(64)
+  isDaily              Boolean           @default(false) @map("is_daily")
+  publishedAt          DateTime?         @map("published_at") @db.Timestamptz(3)
+  createdById          String?           @map("created_by_id") @db.Uuid
+  createdAt            DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  category    Category?          @relation("PracticeSetCategory", fields: [categoryId], references: [id], onDelete: SetNull)
+  subcategory Category?          @relation("PracticeSetSubcategory", fields: [subcategoryId], references: [id], onDelete: SetNull)
+  createdBy   User?              @relation("PracticeSetCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  items       PracticeSetItem[]
+  attempts    PracticeAttempt[]
+
+  @@index([status, kind, publishedAt(sort: Desc)])
+  @@index([examTag, status])
+  @@index([categoryId, status])
+  @@index([isDaily, status])
+  @@map("practice_sets")
+}
+
+model PracticeSetItem {
+  id            String @id @default(uuid()) @db.Uuid
+  practiceSetId String @map("practice_set_id") @db.Uuid
+  questionId    String @map("question_id") @db.Uuid
+  sortOrder     Int    @default(0) @map("sort_order")
+
+  practiceSet PracticeSet @relation(fields: [practiceSetId], references: [id], onDelete: Cascade)
+  question    Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([practiceSetId, questionId])
+  @@index([practiceSetId, sortOrder])
+  @@map("practice_set_items")
+}
+
+model PracticeAttempt {
+  id            String                @id @default(uuid()) @db.Uuid
+  userId        String                @map("user_id") @db.Uuid
+  practiceSetId String                @map("practice_set_id") @db.Uuid
+  status        PracticeAttemptStatus @default(IN_PROGRESS)
+  startedAt     DateTime              @default(now()) @map("started_at") @db.Timestamptz(3)
+  submittedAt   DateTime?             @map("submitted_at") @db.Timestamptz(3)
+  score         Float?                
+  maxScore      Float?                @map("max_score")
+  correctCount  Int?                  @map("correct_count")
+  wrongCount    Int?                  @map("wrong_count")
+  skippedCount  Int?                  @map("skipped_count")
+  createdAt     DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user        User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  practiceSet PracticeSet             @relation(fields: [practiceSetId], references: [id], onDelete: Cascade)
+  answers     PracticeAttemptAnswer[]
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([practiceSetId, createdAt(sort: Desc)])
+  @@index([userId, status])
+  @@map("practice_attempts")
+}
+
+model PracticeAttemptAnswer {
+  id               String  @id @default(uuid()) @db.Uuid
+  attemptId        String  @map("attempt_id") @db.Uuid
+  questionId       String  @map("question_id") @db.Uuid
+  selectedOptionId String? @map("selected_option_id") @db.Uuid
+  isCorrect        Boolean? @map("is_correct")
+
+  attempt        PracticeAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question       Question        @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selectedOption QuestionOption? @relation(fields: [selectedOptionId], references: [id], onDelete: SetNull)
+
+  @@unique([attemptId, questionId])
+  @@index([attemptId])
+  @@map("practice_attempt_answers")
 }

@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import type { CategoryNode } from '@/lib/api/types';
+import { EXAM_TRACKS } from '@/lib/exam-tags';
 
 type Props = {
   categories: CategoryNode[];
@@ -22,12 +23,14 @@ export function QuestionFilters({ categories }: Props) {
   const [categoryId, setCategoryId] = useState(params.get('categoryId') ?? '');
   const [subcategoryId, setSubcategoryId] = useState(params.get('subcategoryId') ?? '');
   const [difficulty, setDifficulty] = useState(params.get('difficulty') ?? '');
+  const [examTag, setExamTag] = useState(params.get('examTag') ?? '');
 
   useEffect(() => {
     setQ(params.get('q') ?? '');
     setCategoryId(params.get('categoryId') ?? '');
     setSubcategoryId(params.get('subcategoryId') ?? '');
     setDifficulty(params.get('difficulty') ?? '');
+    setExamTag(params.get('examTag') ?? '');
   }, [params]);
 
   const selected = useMemo(
@@ -42,6 +45,7 @@ export function QuestionFilters({ categories }: Props) {
       if (categoryId) sp.set('categoryId', categoryId);
       if (subcategoryId) sp.set('subcategoryId', subcategoryId);
       if (difficulty) sp.set('difficulty', difficulty);
+      if (examTag) sp.set('examTag', examTag);
     }
     startTransition(() => {
       router.push(sp.toString() ? `/questions?${sp.toString()}` : '/questions');
@@ -50,7 +54,7 @@ export function QuestionFilters({ categories }: Props) {
 
   return (
     <form
-      className="z-10 grid min-w-0 gap-3 rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)]/95 p-3 shadow-[var(--shadow-sm)] backdrop-blur-md sm:grid-cols-2 sm:p-4 xl:sticky xl:top-16 xl:grid-cols-5 [&>*]:min-w-0"
+      className="z-10 grid min-w-0 gap-3 rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)]/95 p-3 shadow-[var(--shadow-sm)] backdrop-blur-md sm:grid-cols-2 sm:p-4 xl:sticky xl:top-16 xl:grid-cols-6 [&>*]:min-w-0"
       onSubmit={(e) => {
         e.preventDefault();
         apply();
@@ -112,7 +116,18 @@ export function QuestionFilters({ categories }: Props) {
           <option value="HARD">Hard</option>
         </Select>
       </Field>
-      <div className="flex flex-wrap items-end gap-2 sm:col-span-2 xl:col-span-5">
+      <Field>
+        <Label htmlFor="q-exam">Exam track</Label>
+        <Select id="q-exam" value={examTag} onChange={(e) => setExamTag(e.target.value)}>
+          <option value="">All</option>
+          {EXAM_TRACKS.map((t) => (
+            <option key={t.tag} value={t.tag}>
+              {t.label}
+            </option>
+          ))}
+        </Select>
+      </Field>
+      <div className="flex flex-wrap items-end gap-2 sm:col-span-2 xl:col-span-6">
         <Button type="submit" disabled={pending}>
           {pending ? 'Filtering…' : 'Apply filters'}
         </Button>

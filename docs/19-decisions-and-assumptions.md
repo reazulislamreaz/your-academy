@@ -237,8 +237,17 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Field | Value |
 |-------|-------|
 | Question | Should the learner dashboard show exams attempted, correct/wrong counts, accuracy %, and subject-wise performance? |
-| Decision | **Yes** — persist `QuestionAttempt` on Check answer (`POST /questions/:id/attempts`). Correctness is computed server-side (still omitted from GET detail when not entitled). Aggregates exposed on `GET /users/me/stats.performance`. Dedicated mock-exam products remain out of scope. |
+| Decision | **Yes** — persist `QuestionAttempt` on Check answer (`POST /questions/:id/attempts`). Correctness is computed server-side (still omitted from GET detail when not entitled). Aggregates exposed on `GET /users/me/stats.performance`. |
 | Impact | Schema migration, QuestionsModule, practice player, learner dashboard |
+| Status | **CONFIRMED** (product request 2026-11-11) |
+
+### DEC-023 — Practice sets (quizzes & model tests)
+
+| Field | Value |
+|-------|-------|
+| Question | Should Your Academy add timed quizzes / model tests inspired by QBookBD-style prep workflows? |
+| Decision | **Yes** — introduce `PracticeSet` (+ items/attempts) for daily/subject/topic quizzes, model tests, and previous-year-**style** collections. Questions stay in existing Category depth-2 tree; govt-job tracks use `Question.examTags`. Demo seed must label synthetic items (`sourceNote`) and must **not** falsely claim official previous-year papers. Answer privacy (trial/subscription) still applies on review payloads. |
+| Impact | Prisma models, PracticeModule APIs, learner prep hubs, admin practice-set management, seed catalog |
 | Status | **CONFIRMED** (product request 2026-11-11) |
 
 ---

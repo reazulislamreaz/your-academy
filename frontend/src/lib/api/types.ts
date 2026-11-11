@@ -25,6 +25,8 @@ export type QuestionListItem = {
   id: string;
   title: string;
   difficulty: string;
+  examTags?: string[];
+  sourceNote?: string | null;
   category: { id: string; name: string; slug: string };
   subcategory?: { id: string; name: string; slug: string } | null;
   publishedAt?: string | null;
@@ -36,6 +38,8 @@ export type QuestionDetail = {
   content: string;
   explanation?: string;
   difficulty: string;
+  examTags?: string[];
+  sourceNote?: string | null;
   options: Array<{
     id: string;
     label: string;
@@ -48,6 +52,108 @@ export type QuestionDetail = {
   publishedAt?: string | null;
   bookmarked: boolean;
   answersVisible: boolean;
+};
+
+export type PracticeSetKind =
+  | 'DAILY_QUIZ'
+  | 'SUBJECT_QUIZ'
+  | 'TOPIC_QUIZ'
+  | 'MODEL_TEST'
+  | 'PREVIOUS_YEAR_SET';
+
+export type PracticeSetListItem = {
+  id: string;
+  title: string;
+  slug: string;
+  description?: string | null;
+  kind: PracticeSetKind;
+  durationSeconds?: number | null;
+  marksPerCorrect: number;
+  negativeMarkPerWrong: number;
+  examTag?: string | null;
+  isDaily: boolean;
+  publishedAt?: string | null;
+  questionCount: number;
+  category?: { id: string; name: string; slug: string } | null;
+  subcategory?: { id: string; name: string; slug: string } | null;
+};
+
+export type PracticeSetDetail = PracticeSetListItem & {
+  questions: Array<{
+    sortOrder: number;
+    id: string;
+    title: string;
+    content: string;
+    difficulty: string;
+    options: Array<{ id: string; label: string; content: string; sortOrder: number }>;
+  }>;
+  activeAttempt?: {
+    id: string;
+    practiceSetId: string;
+    status: string;
+    startedAt: string;
+    maxScore?: number | null;
+    durationSeconds?: number | null;
+    expiresAt?: string | null;
+  } | null;
+};
+
+export type PracticeAttemptSummary = {
+  id: string;
+  status: string;
+  startedAt: string;
+  submittedAt?: string | null;
+  score?: number | null;
+  maxScore?: number | null;
+  correctCount?: number | null;
+  wrongCount?: number | null;
+  skippedCount?: number | null;
+  practiceSet: {
+    id: string;
+    title: string;
+    slug: string;
+    kind: PracticeSetKind;
+    examTag?: string | null;
+  };
+};
+
+export type PracticeAttemptResult = {
+  id: string;
+  status: string;
+  startedAt: string;
+  submittedAt?: string | null;
+  score?: number | null;
+  maxScore?: number | null;
+  correctCount?: number | null;
+  wrongCount?: number | null;
+  skippedCount?: number | null;
+  answersVisible: boolean;
+  practiceSet: {
+    id: string;
+    title: string;
+    slug: string;
+    kind: PracticeSetKind;
+    durationSeconds?: number | null;
+    marksPerCorrect: number;
+    negativeMarkPerWrong: number;
+    examTag?: string | null;
+  };
+  review: Array<{
+    questionId: string;
+    title: string;
+    content: string;
+    difficulty: string;
+    selectedOptionId?: string | null;
+    isCorrect?: boolean | null;
+    explanation?: string;
+    options: Array<{
+      id: string;
+      label: string;
+      content: string;
+      sortOrder: number;
+      isCorrect?: boolean;
+    }>;
+  }>;
 };
 
 export type DocumentListItem = {

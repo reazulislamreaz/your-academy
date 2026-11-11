@@ -19,7 +19,7 @@ import type { CategoryNode, QuestionListItem } from '@/lib/api/types';
 
 function buildQuery(sp: URLSearchParams, cursor?: string) {
   const q = new URLSearchParams();
-  for (const key of ['q', 'categoryId', 'subcategoryId', 'difficulty'] as const) {
+  for (const key of ['q', 'categoryId', 'subcategoryId', 'difficulty', 'examTag'] as const) {
     const v = sp.get(key);
     if (v) q.set(key, v);
   }
@@ -35,7 +35,8 @@ function QuestionsContent() {
   const categoryId = searchParams.get('categoryId') ?? undefined;
   const subcategoryId = searchParams.get('subcategoryId') ?? undefined;
   const difficulty = searchParams.get('difficulty') ?? undefined;
-  const hasFilters = Boolean(q || categoryId || subcategoryId || difficulty);
+  const examTag = searchParams.get('examTag') ?? undefined;
+  const hasFilters = Boolean(q || categoryId || subcategoryId || difficulty || examTag);
 
   const categories = useQuery({
     queryKey: ['categories'],
@@ -74,6 +75,7 @@ function QuestionsContent() {
         categoryId={categoryId}
         subcategoryId={subcategoryId}
         difficulty={difficulty}
+        examTag={examTag}
       />
 
       {!list.isLoading && !list.isError ? (

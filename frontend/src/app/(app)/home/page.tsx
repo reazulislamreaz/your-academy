@@ -302,28 +302,28 @@ export default function StudyHomePage() {
               {[
                 {
                   href: '/questions',
-                  title: 'MCQ practice',
-                  desc: 'Filter by subject and check yourself',
+                  title: 'Question bank',
+                  desc: 'Subject, topic, and exam-track MCQs',
                   icon: BookOpen,
                 },
                 {
-                  href: '/questions?q=Model',
-                  title: 'Model exams',
-                  desc: 'Search model / exam-style sets',
+                  href: '/model-tests',
+                  title: 'Model tests',
+                  desc: 'Timed mocks with score review',
                   icon: ClipboardList,
                 },
                 {
-                  href: '/documents',
-                  title: 'Previous papers',
-                  desc: 'Published PDF library',
+                  href: '/exams',
+                  title: 'Govt job prep',
+                  desc: 'BCS, bank, NTRCA, and more',
                   icon: FileText,
                 },
                 {
-                  href: '/onboarding',
-                  title: 'My topics',
+                  href: '/quizzes',
+                  title: 'Quiz center',
                   desc: preferredIds.length
-                    ? `${preferredIds.length} preferred subjects`
-                    : 'Choose subjects for recommendations',
+                    ? `${preferredIds.length} preferred subjects ready`
+                    : 'Daily, subject, and topic quizzes',
                   icon: Sparkles,
                 },
               ].map((item) => (

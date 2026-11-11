@@ -36,6 +36,7 @@ export class QuestionsController {
     @Query('subcategoryId') subcategoryId?: string,
     @Query('difficulty') difficulty?: Difficulty,
     @Query('q') q?: string,
+    @Query('examTag') examTag?: string,
   ) {
     const data = await this.questions.listPublished(user, {
       cursor,
@@ -44,6 +45,7 @@ export class QuestionsController {
       subcategoryId,
       difficulty,
       q,
+      examTag,
     });
     return createSuccessResponse(data.items, newRequestId(), {
       nextCursor: data.nextCursor,
@@ -67,9 +69,10 @@ export class QuestionsController {
     @Query('subcategoryId') subcategoryId?: string,
     @Query('difficulty') difficulty?: Difficulty,
     @Query('q') q?: string,
+    @Query('examTag') examTag?: string,
   ) {
     return createSuccessResponse(
-      await this.questions.navigation(id, { categoryId, subcategoryId, difficulty, q }),
+      await this.questions.navigation(id, { categoryId, subcategoryId, difficulty, q, examTag }),
       newRequestId(),
     );
   }

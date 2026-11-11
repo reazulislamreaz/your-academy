@@ -12,6 +12,7 @@ import { DatabaseModule } from './database/database.module';
 import { DocumentsModule } from './documents/documents.module';
 import { HealthModule } from './health/health.module';
 import { NewsModule } from './news/news.module';
+import { PracticeModule } from './practice/practice.module';
 import { PublicModule } from './public/public.module';
 import { QueueModule } from './queue/queue.module';
 import { QuestionsModule } from './questions/questions.module';
@@ -35,6 +36,7 @@ import { UsersModule } from './users/users.module';
     UsersModule,
     CategoriesModule,
     QuestionsModule,
+    PracticeModule,
     BookmarksModule,
     NewsModule,
     DocumentsModule,
