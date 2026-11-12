@@ -1,21 +1,12 @@
 import Link from 'next/link';
-import { Send } from 'lucide-react';
-import { FacebookIcon, LinkedinIcon, YoutubeIcon } from './social-icons';
 import { BrandMark } from './brand-mark';
 
 const FOOTER_LINKS = [
   { href: '/', label: 'Home' },
-  { href: '/#about', label: 'About' },
+  { href: '/#how-it-works', label: 'How it works' },
   { href: '/#contact', label: 'Contact' },
-  { href: '/#privacy', label: 'Privacy Policy' },
-  { href: '/#terms', label: 'Terms & Conditions' },
-] as const;
-
-const SOCIAL = [
-  { label: 'Facebook', Icon: FacebookIcon },
-  { label: 'YouTube', Icon: YoutubeIcon },
-  { label: 'Telegram', Icon: Send },
-  { label: 'LinkedIn', Icon: LinkedinIcon },
+  { href: '/register', label: 'Start free trial' },
+  { href: '/login', label: 'Sign in' },
 ] as const;
 
 /**
@@ -52,19 +43,13 @@ export function SiteFooter() {
           </nav>
 
           <div className="flex items-center justify-center gap-3 lg:justify-end">
-            <p className="text-sm text-white/75">Follow Us:</p>
-            <div className="flex items-center gap-2.5">
-              {SOCIAL.map(({ label, Icon }) => (
-                <span
-                  key={label}
-                  title={label}
-                  aria-label={label}
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[var(--bg-inverse)]"
-                >
-                  <Icon className="h-4 w-4" />
-                </span>
-              ))}
-            </div>
+            <p className="text-sm text-white/75">Get started:</p>
+            <Link
+              href="/register"
+              className="rounded-full bg-[var(--highlight)] px-4 py-2 text-sm font-semibold text-white hover:brightness-105"
+            >
+              Free trial
+            </Link>
           </div>
         </div>
 

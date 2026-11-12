@@ -20,7 +20,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           aria-hidden
           className="pointer-events-none absolute -right-20 bottom-10 h-64 w-64 rounded-full bg-[var(--highlight)]/30 blur-3xl"
         />
-        <BrandMark inverse className="relative" />
+        <BrandMark inverse priority className="relative" />
         <div className="relative max-w-md space-y-5">
           <p className="font-display text-4xl leading-[1.1] font-extrabold tracking-tight xl:text-5xl">
             Study at your exam desk

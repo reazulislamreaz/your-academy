@@ -13,11 +13,13 @@ export default function ExamsPage() {
         title="Exam preparation tracks"
         description="Browse question banks and practice sets by competitive exam category."
       />
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="motion-stagger grid gap-3 sm:grid-cols-2">
         {EXAM_TRACKS.map((track) => (
-          <Surface key={track.tag} className="p-4">
-            <h2 className="font-display text-base font-semibold text-[var(--ink)]">{track.label}</h2>
-            <div className="mt-3 flex flex-wrap gap-3 text-sm">
+          <Surface key={track.tag} className="motion-hover-lift p-4 sm:p-5">
+            <h2 className="font-display text-base font-semibold tracking-tight text-[var(--ink)]">
+              {track.label}
+            </h2>
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm">
               <Link
                 href={`/questions?examTag=${track.tag}`}
                 className="font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"

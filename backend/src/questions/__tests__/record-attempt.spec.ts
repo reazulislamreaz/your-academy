@@ -3,13 +3,14 @@ import { QuestionStatus } from '@prisma/client';
 import { QuestionsService } from '../questions.service';
 
 describe('QuestionsService.recordAttempt', () => {
-  const user = { userId: 'user-1', role: 'USER' as const };
+  const user = { userId: 'user-1', role: 'USER' as const, sessionId: 'sess-1' };
 
   function buildService(prisma: Record<string, unknown>, access: Record<string, unknown>) {
     return new QuestionsService(
       prisma as never,
       access as never,
-      { log: jest.fn() } as never,
+      { record: jest.fn() } as never,
+      { record: jest.fn() } as never,
     );
   }
 

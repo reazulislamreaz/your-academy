@@ -3,6 +3,23 @@ export interface ApiPaginationMeta {
   prevCursor: string | null;
   limit: number;
   total: number | null;
+  /** Derived from nextCursor for clients that prefer a boolean flag. */
+  hasNextPage?: boolean;
+}
+
+/** Build cursor pagination meta for list envelopes. */
+export function cursorPaginationMeta(
+  nextCursor: string | null,
+  limit: number,
+  total: number | null = null,
+): ApiPaginationMeta {
+  return {
+    nextCursor,
+    prevCursor: null,
+    limit,
+    total,
+    hasNextPage: Boolean(nextCursor),
+  };
 }
 
 export interface ApiMeta {

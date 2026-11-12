@@ -1,15 +1,14 @@
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type Tone = 'navy' | 'red' | 'blue' | 'teal' | 'amber' | 'violet' | 'slate';
+type Tone = 'navy' | 'red' | 'blue' | 'teal' | 'amber' | 'slate';
 
 const tones: Record<Tone, { icon: string; wash: string }> = {
   navy: { icon: 'bg-[var(--bg-inverse)] text-white', wash: 'bg-[var(--brand-wash)]' },
   red: { icon: 'bg-[var(--highlight)] text-white', wash: 'bg-[var(--highlight-soft)]' },
   blue: { icon: 'bg-[var(--info)] text-white', wash: 'bg-[var(--info-soft)]' },
   teal: { icon: 'bg-[var(--success)] text-white', wash: 'bg-[var(--success-soft)]' },
-  amber: { icon: 'bg-[var(--warning)] text-white', wash: 'bg-[#fff4e5]' },
-  violet: { icon: 'bg-[#7c3aed] text-white', wash: 'bg-[#f3e8ff]' },
+  amber: { icon: 'bg-[var(--warning)] text-white', wash: 'bg-[var(--warning-soft)]' },
   slate: { icon: 'bg-[var(--muted-strong)] text-white', wash: 'bg-[var(--bg-muted)]' },
 };
 

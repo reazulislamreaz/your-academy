@@ -1,12 +1,23 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { UserRole } from '@prisma/client';
-import { createSuccessResponse } from '@your-academy/shared';
+import { createSuccessResponse, cursorPaginationMeta } from '@your-academy/shared';
 import type { RequestUser } from '../auth/auth.types';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CsrfGuard } from '../common/guards/csrf.guard';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
+import { parseLimit } from '../common/pagination';
 import { newRequestId } from '../common/request-id';
 import { CreateNewsDto, UpdateNewsDto } from './dto/create-news.dto';
 import { NewsService } from './news.service';
@@ -16,8 +27,14 @@ export class NewsController {
   constructor(private readonly news: NewsService) {}
 
   @Get('news')
-  async list() {
-    return createSuccessResponse(await this.news.listPublished(), newRequestId());
+  async list(@Query('cursor') cursor?: string, @Query('limit') limit?: string) {
+    const take = parseLimit(limit, 20);
+    const data = await this.news.listPublished({ cursor, limit: take });
+    return createSuccessResponse(
+      data.items,
+      newRequestId(),
+      cursorPaginationMeta(data.nextCursor, take),
+    );
   }
 
   @Get('news/:slug')
@@ -28,8 +45,14 @@ export class NewsController {
   @Get('admin/news')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  async adminList() {
-    return createSuccessResponse(await this.news.adminList(), newRequestId());
+  async adminList(@Query('cursor') cursor?: string, @Query('limit') limit?: string) {
+    const take = parseLimit(limit, 50);
+    const data = await this.news.adminList({ cursor, limit: take });
+    return createSuccessResponse(
+      data.items,
+      newRequestId(),
+      cursorPaginationMeta(data.nextCursor, take),
+    );
   }
 
   @Get('admin/news/:id')

@@ -31,7 +31,13 @@ describe('QuestionsService answer privacy', () => {
   };
 
   const audit = { record: jest.fn() };
-  const service = new QuestionsService(prisma as never, access as never, audit as never);
+  const learningActivity = { record: jest.fn() };
+  const service = new QuestionsService(
+    prisma as never,
+    access as never,
+    audit as never,
+    learningActivity as never,
+  );
 
   const entitledUser = {
     id: 'u1',

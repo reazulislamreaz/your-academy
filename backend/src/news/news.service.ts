@@ -7,6 +7,7 @@ import {
 import { createErrorResponse } from '@your-academy/shared';
 import { AuditService } from '../audit/audit.service';
 import type { RequestUser } from '../auth/auth.types';
+import { paginateById, parseLimit } from '../common/pagination';
 import { newRequestId } from '../common/request-id';
 import { PrismaService } from '../database/prisma.service';
 import type { CreateNewsDto, UpdateNewsDto } from './dto/create-news.dto';
@@ -26,10 +27,13 @@ export class NewsService {
     private readonly audit: AuditService,
   ) {}
 
-  listPublished() {
-    return this.prisma.news.findMany({
+  async listPublished(params: { cursor?: string; limit?: number } = {}) {
+    const limit = parseLimit(params.limit, 20);
+    const rows = await this.prisma.news.findMany({
       where: { isPublished: true, deletedAt: null },
-      orderBy: { publishedAt: 'desc' },
+      orderBy: [{ publishedAt: 'desc' }, { id: 'desc' }],
+      take: limit + 1,
+      ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {}),
       select: {
         id: true,
         title: true,
@@ -38,12 +42,16 @@ export class NewsService {
         publishedAt: true,
       },
     });
+    return paginateById(rows, limit);
   }
 
-  adminList() {
-    return this.prisma.news.findMany({
+  async adminList(params: { cursor?: string; limit?: number } = {}) {
+    const limit = parseLimit(params.limit, 50);
+    const rows = await this.prisma.news.findMany({
       where: { deletedAt: null },
-      orderBy: [{ updatedAt: 'desc' }],
+      orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+      take: limit + 1,
+      ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {}),
       select: {
         id: true,
         title: true,
@@ -54,6 +62,7 @@ export class NewsService {
         updatedAt: true,
       },
     });
+    return paginateById(rows, limit);
   }
 
   async adminGet(id: string) {

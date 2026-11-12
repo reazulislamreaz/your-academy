@@ -166,6 +166,7 @@ export default function AdminCategoriesPage() {
                   <ConfirmButton
                     size="sm"
                     variant="ghost"
+                    aria-label={`Deactivate ${child.name}`}
                     confirmMessage={`Deactivate “${child.name}”?`}
                     onConfirm={() => deactivate.mutateAsync(child.id)}
                   >

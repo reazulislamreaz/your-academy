@@ -38,6 +38,8 @@ export function QuestionFilters({ categories }: Props) {
     [categories, categoryId],
   );
 
+  const advancedActive = Boolean(categoryId || subcategoryId || difficulty || examTag);
+
   function apply(next?: { clear?: boolean }) {
     const sp = new URLSearchParams();
     if (!next?.clear) {
@@ -52,27 +54,99 @@ export function QuestionFilters({ categories }: Props) {
     });
   }
 
+  const fieldProps = {
+    categories,
+    selected,
+    categoryId,
+    subcategoryId,
+    difficulty,
+    examTag,
+    setCategoryId,
+    setSubcategoryId,
+    setDifficulty,
+    setExamTag,
+  };
+
   return (
     <form
-      className="z-10 grid min-w-0 gap-3 rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)]/95 p-3 shadow-[var(--shadow-sm)] backdrop-blur-md sm:grid-cols-2 sm:p-4 xl:sticky xl:top-16 xl:grid-cols-6 [&>*]:min-w-0"
+      className="z-10 grid min-w-0 gap-3 rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)]/95 p-3 shadow-[var(--shadow-sm)] backdrop-blur-md sm:p-4 xl:sticky xl:top-[var(--header-h,4rem)] [&>*]:min-w-0"
       onSubmit={(e) => {
         e.preventDefault();
         apply();
       }}
     >
-      <Field className="xl:col-span-2">
-        <Label htmlFor="q-search">Search</Label>
-        <Input
-          id="q-search"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Title or content"
-        />
-      </Field>
+      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+        <Field>
+          <Label htmlFor="q-search">Search</Label>
+          <Input
+            id="q-search"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Title or content"
+          />
+        </Field>
+        <div className="flex flex-wrap gap-2">
+          <Button type="submit" disabled={pending}>
+            {pending ? 'Filtering…' : 'Apply'}
+          </Button>
+          <Button type="button" variant="ghost" disabled={pending} onClick={() => apply({ clear: true })}>
+            Clear
+          </Button>
+        </div>
+      </div>
+
+      <div className="hidden gap-3 md:grid md:grid-cols-2 xl:grid-cols-4">
+        <AdvancedFields idPrefix="desk" {...fieldProps} />
+      </div>
+
+      <details className="md:hidden" open={advancedActive || undefined}>
+        <summary className="cursor-pointer list-none rounded-[var(--radius)] border border-[var(--line)] px-3 py-2.5 text-sm font-semibold text-[var(--ink-soft)] marker:content-none [&::-webkit-details-marker]:hidden">
+          More filters{advancedActive ? ' · active' : ''}
+        </summary>
+        <div className="mt-3 grid gap-3">
+          <AdvancedFields idPrefix="mobile" {...fieldProps} />
+        </div>
+      </details>
+    </form>
+  );
+}
+
+function AdvancedFields({
+  idPrefix,
+  categories,
+  selected,
+  categoryId,
+  subcategoryId,
+  difficulty,
+  examTag,
+  setCategoryId,
+  setSubcategoryId,
+  setDifficulty,
+  setExamTag,
+}: {
+  idPrefix: string;
+  categories: CategoryNode[];
+  selected: CategoryNode | undefined;
+  categoryId: string;
+  subcategoryId: string;
+  difficulty: string;
+  examTag: string;
+  setCategoryId: (v: string) => void;
+  setSubcategoryId: (v: string) => void;
+  setDifficulty: (v: string) => void;
+  setExamTag: (v: string) => void;
+}) {
+  const catId = `${idPrefix}-q-cat`;
+  const subId = `${idPrefix}-q-sub`;
+  const diffId = `${idPrefix}-q-diff`;
+  const examId = `${idPrefix}-q-exam`;
+
+  return (
+    <>
       <Field>
-        <Label htmlFor="q-cat">Category</Label>
+        <Label htmlFor={catId}>Category</Label>
         <Select
-          id="q-cat"
+          id={catId}
           value={categoryId}
           onChange={(e) => {
             setCategoryId(e.target.value);
@@ -88,9 +162,9 @@ export function QuestionFilters({ categories }: Props) {
         </Select>
       </Field>
       <Field>
-        <Label htmlFor="q-sub">Subcategory</Label>
+        <Label htmlFor={subId}>Subcategory</Label>
         <Select
-          id="q-sub"
+          id={subId}
           value={subcategoryId}
           onChange={(e) => setSubcategoryId(e.target.value)}
           disabled={!selected}
@@ -104,12 +178,8 @@ export function QuestionFilters({ categories }: Props) {
         </Select>
       </Field>
       <Field>
-        <Label htmlFor="q-diff">Difficulty</Label>
-        <Select
-          id="q-diff"
-          value={difficulty}
-          onChange={(e) => setDifficulty(e.target.value)}
-        >
+        <Label htmlFor={diffId}>Difficulty</Label>
+        <Select id={diffId} value={difficulty} onChange={(e) => setDifficulty(e.target.value)}>
           <option value="">All</option>
           <option value="EASY">Easy</option>
           <option value="MEDIUM">Medium</option>
@@ -117,8 +187,8 @@ export function QuestionFilters({ categories }: Props) {
         </Select>
       </Field>
       <Field>
-        <Label htmlFor="q-exam">Exam track</Label>
-        <Select id="q-exam" value={examTag} onChange={(e) => setExamTag(e.target.value)}>
+        <Label htmlFor={examId}>Exam track</Label>
+        <Select id={examId} value={examTag} onChange={(e) => setExamTag(e.target.value)}>
           <option value="">All</option>
           {EXAM_TRACKS.map((t) => (
             <option key={t.tag} value={t.tag}>
@@ -127,14 +197,6 @@ export function QuestionFilters({ categories }: Props) {
           ))}
         </Select>
       </Field>
-      <div className="flex flex-wrap items-end gap-2 sm:col-span-2 xl:col-span-6">
-        <Button type="submit" disabled={pending}>
-          {pending ? 'Filtering…' : 'Apply filters'}
-        </Button>
-        <Button type="button" variant="ghost" disabled={pending} onClick={() => apply({ clear: true })}>
-          Clear
-        </Button>
-      </div>
-    </form>
+    </>
   );
 }

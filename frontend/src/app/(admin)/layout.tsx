@@ -16,14 +16,14 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
   return (
     <AdminGate>
-      <div className="flex min-h-screen bg-[var(--bg-desk)]">
+      <div className="desk-canvas flex min-h-screen overflow-x-clip">
         <div className="hidden lg:block">
           <div className="sticky top-0 h-screen">
             <AdminSidebar />
           </div>
         </div>
-        <div className="flex min-w-0 flex-1 flex-col">
-          <div className="sticky top-0 z-30 lg:static">
+        <div className="flex min-w-0 flex-1 flex-col overflow-x-clip">
+          <div className="sticky top-0 z-30 min-w-0 max-w-full lg:static">
             <div className="flex items-center justify-between gap-3 border-b border-[var(--line)] bg-[var(--bg-inverse)] px-4 py-3 text-white lg:hidden">
               <BrandMark inverse markOnly href="/admin/dashboard" />
               <div className="flex min-w-0 items-center gap-2">

@@ -55,27 +55,50 @@ export default function SubjectDetailPage() {
 
       <section className="space-y-3">
         <h2 className="font-display text-base font-bold text-[var(--ink)]">Topics</h2>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {subject.children.map((topic) => (
-            <Surface key={topic.id} className="p-4">
-              <h3 className="font-medium text-[var(--ink)]">{topic.name}</h3>
-              <div className="mt-3 flex flex-wrap gap-3 text-sm">
+        {subject.children.length === 0 ? (
+          <EmptyState
+            title="No topics yet"
+            description="Topic-level practice appears once subcategories are published for this subject."
+            action={
+              <div className="flex flex-wrap gap-3 text-sm">
                 <Link
-                  href={`/questions?categoryId=${subject.id}&subcategoryId=${topic.id}`}
+                  href={`/questions?categoryId=${subject.id}`}
                   className="font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
                 >
-                  Practice MCQs
+                  Practice subject MCQs
                 </Link>
                 <Link
-                  href={`/quizzes?categoryId=${subject.id}&subcategoryId=${topic.id}`}
+                  href={`/quizzes?categoryId=${subject.id}`}
                   className="font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
                 >
-                  Topic quizzes
+                  Subject quizzes
                 </Link>
               </div>
-            </Surface>
-          ))}
-        </div>
+            }
+          />
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {subject.children.map((topic) => (
+              <Surface key={topic.id} className="p-4">
+                <h3 className="font-medium text-[var(--ink)]">{topic.name}</h3>
+                <div className="mt-3 flex flex-wrap gap-3 text-sm">
+                  <Link
+                    href={`/questions?categoryId=${subject.id}&subcategoryId=${topic.id}`}
+                    className="font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
+                  >
+                    Practice MCQs
+                  </Link>
+                  <Link
+                    href={`/quizzes?categoryId=${subject.id}&subcategoryId=${topic.id}`}
+                    className="font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
+                  >
+                    Topic quizzes
+                  </Link>
+                </div>
+              </Surface>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="space-y-3">

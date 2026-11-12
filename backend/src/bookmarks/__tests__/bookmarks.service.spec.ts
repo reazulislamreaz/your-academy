@@ -17,7 +17,8 @@ describe('BookmarksService', () => {
     },
   };
 
-  const service = new BookmarksService(prisma as never);
+  const learningActivity = { record: jest.fn() };
+  const service = new BookmarksService(prisma as never, learningActivity as never);
   const user = { userId: 'user-1', role: 'USER' as const, sessionId: 'sess-1' };
 
   beforeEach(() => {
@@ -26,7 +27,11 @@ describe('BookmarksService', () => {
 
   describe('questions', () => {
     it('creates a bookmark for a published question', async () => {
-      prisma.question.findFirst.mockResolvedValue({ id: 'q1' });
+      prisma.question.findFirst.mockResolvedValue({
+        id: 'q1',
+        categoryId: 'cat1',
+        subcategoryId: null,
+      });
       prisma.questionBookmark.create.mockResolvedValue({
         id: 'b1',
         userId: user.userId,
@@ -39,10 +44,15 @@ describe('BookmarksService', () => {
       expect(prisma.questionBookmark.create).toHaveBeenCalledWith({
         data: { userId: user.userId, questionId: 'q1' },
       });
+      expect(learningActivity.record).toHaveBeenCalled();
     });
 
     it('returns 409 when duplicate bookmark', async () => {
-      prisma.question.findFirst.mockResolvedValue({ id: 'q1' });
+      prisma.question.findFirst.mockResolvedValue({
+        id: 'q1',
+        categoryId: 'cat1',
+        subcategoryId: null,
+      });
       prisma.questionBookmark.create.mockRejectedValue(new Error('Unique constraint'));
 
       await expect(service.addQuestion(user, 'q1')).rejects.toBeInstanceOf(ConflictException);

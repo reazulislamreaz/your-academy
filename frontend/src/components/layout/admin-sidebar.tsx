@@ -2,32 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import {
-  ClipboardList,
-  FileQuestion,
-  FileSpreadsheet,
-  LayoutDashboard,
-  LogOut,
-  Newspaper,
-  FolderTree,
-  FileText,
-  Users,
-} from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLogout, useMe } from '@/features/auth/use-auth';
 import { BrandMark } from './brand-mark';
+import { adminNavItems } from './admin-nav';
 import { Button } from '@/components/ui/button';
-
-const items = [
-  { href: '/admin/dashboard', label: 'Overview', icon: LayoutDashboard },
-  { href: '/admin/users', label: 'Users', icon: Users },
-  { href: '/admin/questions', label: 'Questions', icon: FileQuestion },
-  { href: '/admin/question-imports', label: 'Bulk upload', icon: FileSpreadsheet },
-  { href: '/admin/practice-sets', label: 'Practice sets', icon: ClipboardList },
-  { href: '/admin/categories', label: 'Categories', icon: FolderTree },
-  { href: '/admin/news', label: 'News', icon: Newspaper },
-  { href: '/admin/documents', label: 'Documents', icon: FileText },
-];
 
 export function AdminSidebar() {
   const pathname = usePathname();
@@ -43,13 +23,14 @@ export function AdminSidebar() {
         </p>
       </div>
       <nav className="flex flex-1 flex-col gap-0.5 p-3" aria-label="Admin">
-        {items.map((item) => {
+        {adminNavItems.map((item) => {
           const Icon = item.icon;
           const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
           return (
             <Link
               key={item.href}
               href={item.href}
+              aria-current={active ? 'page' : undefined}
               className={cn(
                 'motion-nav-indicator flex items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-sm font-medium',
                 active

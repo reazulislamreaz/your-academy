@@ -39,7 +39,7 @@ import { adminDownloadUrl } from '@/lib/api/upload';
 import { EXAM_TRACKS } from '@/lib/exam-tags';
 import type { CategoryNode } from '@/lib/api/types';
 import { cn } from '@/lib/utils';
-import { AdminBulkUploadPageSkeleton, AdminBulkUploadTableSkeleton, StatCardSkeleton } from '@/components/skeletons';
+import { AdminBulkUploadTableSkeleton, StatCardSkeleton } from '@/components/skeletons';
 
 export default function QuestionImportsHubPage() {
   const qc = useQueryClient();
@@ -108,7 +108,7 @@ export default function QuestionImportsHubPage() {
   const s = stats.data;
 
   return (
-    <div className="space-y-8">
+    <div className="min-w-0 space-y-8">
       <PageHeader
         eyebrow="Content"
         title="Bulk question upload"
@@ -116,13 +116,13 @@ export default function QuestionImportsHubPage() {
         actions={
           <div className="flex flex-wrap gap-2">
             <a href={adminDownloadUrl('/admin/question-imports/template')}>
-              <Button type="button" variant="outline" className="cursor-pointer rounded-full">
+              <Button type="button" variant="outline" className="cursor-pointer">
                 <Download className="size-4" />
                 Template
               </Button>
             </a>
             <Link href="/admin/question-imports/new">
-              <Button type="button" className="cursor-pointer rounded-full">
+              <Button type="button" className="cursor-pointer">
                 <Plus className="size-4" />
                 New upload
               </Button>
@@ -177,21 +177,23 @@ export default function QuestionImportsHubPage() {
               Start another →
             </Link>
           </div>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {s.recentUploads.map((item) => (
               <Link
                 key={item.id}
                 href={`/admin/question-imports/${item.id}`}
-                className="rounded-[12px] border border-[var(--line)] bg-[var(--bg-desk)] p-3 transition-colors hover:border-[var(--highlight)]/40 hover:bg-white"
+                className="min-w-0 max-w-full rounded-[12px] border border-[var(--line)] bg-[var(--bg-desk)] p-3 transition-colors hover:border-[var(--highlight)]/40 hover:bg-white"
               >
-                <div className="mb-1 flex items-center gap-2">
-                  <Badge variant={statusTone(item.status)}>{item.status}</Badge>
-                  <span className="truncate font-mono text-xs text-[var(--muted-strong)]">
+                <div className="mb-1 flex min-w-0 items-center gap-2">
+                  <Badge variant={statusTone(item.status)} className="shrink-0">
+                    {item.status}
+                  </Badge>
+                  <span className="min-w-0 truncate font-mono text-xs text-[var(--muted-strong)]">
                     {item.batchCode}
                   </span>
                 </div>
                 <p className="truncate text-sm font-semibold text-[var(--ink)]">{item.displayName}</p>
-                <p className="mt-1 text-sm text-[var(--muted-strong)]">
+                <p className="mt-1 truncate text-sm text-[var(--muted-strong)]">
                   {item.importedCount}/{item.totalRows} imported ·{' '}
                   {new Date(item.createdAt).toLocaleDateString()}
                 </p>
@@ -201,9 +203,9 @@ export default function QuestionImportsHubPage() {
         </Surface>
       ) : null}
 
-      <Surface className="space-y-4 p-4 sm:p-5">
+      <Surface className="min-w-0 space-y-4 overflow-hidden p-4 sm:p-5">
         <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
+          <div className="min-w-0">
             <h2 className="font-display text-base font-bold text-[var(--ink)]">
               Question collections
             </h2>
@@ -213,8 +215,8 @@ export default function QuestionImportsHubPage() {
           </div>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
-          <Field className="xl:col-span-2">
+        <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6">
+          <Field className="min-w-0 sm:col-span-2 xl:col-span-2">
             <Label htmlFor="qi-q">Search</Label>
             <Input
               id="qi-q"
@@ -223,7 +225,7 @@ export default function QuestionImportsHubPage() {
               placeholder="Collection name or batch code"
             />
           </Field>
-          <Field>
+          <Field className="min-w-0">
             <Label htmlFor="qi-status">Status</Label>
             <Select id="qi-status" value={status} onChange={(e) => setStatus(e.target.value)}>
               <option value="">All</option>
@@ -234,7 +236,7 @@ export default function QuestionImportsHubPage() {
               <option value="ARCHIVED">Archived</option>
             </Select>
           </Field>
-          <Field>
+          <Field className="min-w-0">
             <Label htmlFor="qi-subject">Subject</Label>
             <Select id="qi-subject" value={subject} onChange={(e) => setSubject(e.target.value)}>
               <option value="">All</option>
@@ -245,7 +247,7 @@ export default function QuestionImportsHubPage() {
               ))}
             </Select>
           </Field>
-          <Field>
+          <Field className="min-w-0">
             <Label htmlFor="qi-exam">Exam</Label>
             <Select
               id="qi-exam"
@@ -260,7 +262,7 @@ export default function QuestionImportsHubPage() {
               ))}
             </Select>
           </Field>
-          <Field>
+          <Field className="min-w-0">
             <Label htmlFor="qi-sort">Sort</Label>
             <Select id="qi-sort" value={sort} onChange={(e) => setSort(e.target.value)}>
               <option value="createdAt_desc">Newest first</option>
@@ -269,18 +271,25 @@ export default function QuestionImportsHubPage() {
               <option value="totalRows_desc">Most rows</option>
             </Select>
           </Field>
-          <Field>
+          <Field className="min-w-0">
             <Label htmlFor="qi-from">From</Label>
             <Input
               id="qi-from"
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
+              className="min-w-0"
             />
           </Field>
-          <Field>
+          <Field className="min-w-0">
             <Label htmlFor="qi-to">To</Label>
-            <Input id="qi-to" type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+            <Input
+              id="qi-to"
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="min-w-0"
+            />
           </Field>
         </div>
 
@@ -298,7 +307,7 @@ export default function QuestionImportsHubPage() {
             description="Download the template, then start a new upload to validate and import questions."
             action={
               <Link href="/admin/question-imports/new">
-                <Button className="cursor-pointer rounded-full">
+                <Button className="cursor-pointer">
                   <Plus className="size-4" />
                   New upload
                 </Button>
@@ -308,8 +317,8 @@ export default function QuestionImportsHubPage() {
         ) : null}
 
         {items.length > 0 ? (
-          <div className="overflow-x-auto rounded-[12px] border border-[var(--line)]">
-            <table className="min-w-full text-left text-sm">
+          <div className="min-w-0 w-full max-w-full overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
+            <table className="w-full min-w-[44rem] text-left text-sm">
               <thead className="bg-[var(--bg-desk)] text-xs tracking-wide text-[var(--muted-strong)] uppercase">
                 <tr>
                   <th className="px-3 py-3 font-semibold">Collection</th>
@@ -412,14 +421,19 @@ export default function QuestionImportsHubPage() {
                               </a>
                             ) : null}
                             {item.status !== 'ARCHIVED' ? (
-                              <button
-                                type="button"
-                                className="flex w-full cursor-pointer items-center gap-2 rounded-[8px] px-2.5 py-2 text-left text-sm hover:bg-[var(--bg-muted)]"
-                                onClick={() => archive.mutate(item.id)}
+                              <ConfirmButton
+                                size="sm"
+                                variant="ghost"
+                                className="w-full justify-start gap-2"
+                                confirmTitle="Archive collection?"
+                                confirmMessage={`Archive “${item.displayName}”? You can still view it later under archived status.`}
+                                confirmLabel="Archive"
+                                reversible
+                                onConfirm={() => archive.mutateAsync(item.id)}
                               >
                                 <Archive className="size-3.5" />
                                 Archive
-                              </button>
+                              </ConfirmButton>
                             ) : null}
                             {item.status !== 'COMPLETED' && item.status !== 'IMPORTING' ? (
                               <ConfirmButton
@@ -427,7 +441,7 @@ export default function QuestionImportsHubPage() {
                                 variant="ghost"
                                 className="w-full justify-start gap-2 text-[var(--danger)]"
                                 confirmMessage="Delete this collection? This cannot be undone."
-                                onConfirm={() => remove.mutate(item.id)}
+                                onConfirm={() => remove.mutateAsync(item.id)}
                               >
                                 <Trash2 className="size-3.5" />
                                 Delete

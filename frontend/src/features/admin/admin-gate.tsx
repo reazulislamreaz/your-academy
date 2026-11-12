@@ -2,8 +2,24 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, type ReactNode } from 'react';
-import { AdminDashboardPageSkeleton } from '@/components/skeletons';
+import { PageHeaderSkeleton, SkStatus } from '@/components/skeletons/primitives';
+import { Surface } from '@/components/ui/surface';
+import { Skeleton } from '@/components/ui/skeleton';
 import { isUnauthorized, useMe } from '@/features/auth/use-auth';
+
+/** Neutral gate shell — avoids flashing dashboard-shaped skeleton on every admin route. */
+function AdminGateSkeleton() {
+  return (
+    <SkStatus label="Checking admin access…" className="space-y-6 p-6">
+      <PageHeaderSkeleton />
+      <Surface className="space-y-3 p-5">
+        <Skeleton className="h-4 w-48" />
+        <Skeleton className="h-4 w-full max-w-xl" />
+        <Skeleton className="h-4 w-2/3 max-w-md" />
+      </Surface>
+    </SkStatus>
+  );
+}
 
 /**
  * Client RBAC gate for the admin shell.
@@ -24,20 +40,8 @@ export function AdminGate({ children }: { children: ReactNode }) {
     }
   }, [me.isLoading, me.error, me.data, router]);
 
-  if (me.isLoading) {
-    return (
-      <div className="p-6">
-        <AdminDashboardPageSkeleton />
-      </div>
-    );
-  }
-
-  if (isUnauthorized(me.error) || !me.data || me.data.role !== 'ADMIN') {
-    return (
-      <div className="p-6">
-        <AdminDashboardPageSkeleton />
-      </div>
-    );
+  if (me.isLoading || isUnauthorized(me.error) || !me.data || me.data.role !== 'ADMIN') {
+    return <AdminGateSkeleton />;
   }
 
   return <>{children}</>;

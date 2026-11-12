@@ -60,6 +60,9 @@ export {
   AdminQuestionsPageSkeleton,
   AdminUsersPageSkeleton,
   AdminUsersTableSkeleton,
+  AdminAuditTableSkeleton,
+  AdminUsersDetailPageSkeleton,
+  AdminActivityPageSkeleton,
 } from '@/components/skeletons/route/admin';
 
 export {

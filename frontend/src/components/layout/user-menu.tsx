@@ -66,6 +66,9 @@ export function UserMenu({ compact = false, loginOnly = false }: { compact?: boo
             <img
               src={me.data.avatarUrl}
               alt=""
+              width={32}
+              height={32}
+              decoding="async"
               className="h-8 w-8 shrink-0 rounded-full object-cover"
             />
           ) : null}
@@ -78,6 +81,9 @@ export function UserMenu({ compact = false, loginOnly = false }: { compact?: boo
             <img
               src={me.data.avatarUrl}
               alt=""
+              width={32}
+              height={32}
+              decoding="async"
               className="h-8 w-8 shrink-0 rounded-full object-cover"
             />
           ) : null}

@@ -11,6 +11,7 @@ import { ApiExceptionFilter } from './common/filters/api-exception.filter';
 import { DatabaseModule } from './database/database.module';
 import { DocumentsModule } from './documents/documents.module';
 import { HealthModule } from './health/health.module';
+import { LearningActivityModule } from './learning-activity/learning-activity.module';
 import { NewsModule } from './news/news.module';
 import { PracticeModule } from './practice/practice.module';
 import { QuestionImportModule } from './question-import/question-import.module';
@@ -32,6 +33,7 @@ import { UsersModule } from './users/users.module';
     DatabaseModule,
     QueueModule,
     AuditModule,
+    LearningActivityModule,
     SubscriptionsModule,
     AuthModule,
     UsersModule,

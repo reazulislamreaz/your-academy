@@ -26,6 +26,7 @@ describe('AuthService hardening paths', () => {
   const access = { getAccessSnapshot: jest.fn() };
   const emailQueue = { enqueuePasswordReset: jest.fn() };
   const audit = { record: jest.fn() };
+  const learningActivity = { record: jest.fn() };
 
   const service = new AuthService(
     prisma as never,
@@ -33,6 +34,7 @@ describe('AuthService hardening paths', () => {
     access as never,
     emailQueue as never,
     audit as never,
+    learningActivity as never,
   );
 
   beforeEach(() => {

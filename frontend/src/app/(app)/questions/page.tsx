@@ -132,37 +132,45 @@ function QuestionsContent() {
         />
       ) : null}
 
-      <div className="divide-y divide-[var(--line)] border-y border-[var(--line)]">
-        {items.map((item) => (
-          <ListRow
-            key={item.id}
-            href={`/questions/${item.id}${filterKey ? `?${filterKey}` : ''}`}
-            className="motion-press"
-            meta={
-              <>
-                <span>
-                  {item.category.name}
-                  {item.subcategory ? ` · ${item.subcategory.name}` : ''}
-                </span>
-                <Badge variant="highlight">{item.difficulty}</Badge>
-              </>
-            }
-            title={
-              <span className="font-display text-lg font-semibold tracking-tight">{item.title}</span>
-            }
-            trailing={<ChevronRight className="h-4 w-4 text-[var(--muted-strong)]" aria-hidden />}
-          />
-        ))}
-      </div>
+      {!list.isLoading && !list.isError && items.length > 0 ? (
+        <>
+          <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)]">
+            {items.map((item) => (
+              <ListRow
+                key={item.id}
+                href={`/questions/${item.id}${filterKey ? `?${filterKey}` : ''}`}
+                className="motion-press px-4 py-3.5 sm:px-5"
+                meta={
+                  <>
+                    <span>
+                      {item.category.name}
+                      {item.subcategory ? ` · ${item.subcategory.name}` : ''}
+                    </span>
+                    <Badge variant="highlight">{item.difficulty}</Badge>
+                  </>
+                }
+                title={
+                  <span className="font-display text-lg font-semibold tracking-tight">
+                    {item.title}
+                  </span>
+                }
+                trailing={
+                  <ChevronRight className="h-4 w-4 text-[var(--muted-strong)]" aria-hidden />
+                }
+              />
+            ))}
+          </div>
 
-      {list.hasNextPage ? (
-        <Button
-          variant="outline"
-          disabled={list.isFetchingNextPage}
-          onClick={() => void list.fetchNextPage()}
-        >
-          {list.isFetchingNextPage ? 'Loading…' : 'Load more'}
-        </Button>
+          {list.hasNextPage ? (
+            <Button
+              variant="outline"
+              disabled={list.isFetchingNextPage}
+              onClick={() => void list.fetchNextPage()}
+            >
+              {list.isFetchingNextPage ? 'Loading…' : 'Load more'}
+            </Button>
+          ) : null}
+        </>
       ) : null}
     </div>
   );

@@ -1,10 +1,10 @@
 # 21 — Design System
 
-**Status:** Elevated (2026-11-05 Option B UI polish)  
+**Status:** Elevated (2026-11-11 UI polish)  
 **Product:** Your Academy  
-**Direction:** “Exam desk” — cool paper surfaces, faint ruled texture, deep navy ink, amber highlighter CTAs.
+**Direction:** “Exam desk” — cool paper surfaces, faint ruled texture, deep navy ink, **red** accent CTAs (`--highlight: #e31e24`). CSS tokens in `frontend/src/app/globals.css` are the source of truth.
 
-Do **not** drift into purple SaaS gradients, cream+terracotta serif kits, or neon dark dashboards.
+Do **not** drift into purple SaaS gradients, cream+terracotta serif kits, amber-as-primary kits, or neon dark dashboards.
 
 ---
 
@@ -32,11 +32,11 @@ Do **not** drift into purple SaaS gradients, cream+terracotta serif kits, or neo
 | `--ink` | Primary text | `#0B1F33` |
 | `--muted` | Secondary text | `#5C6B7A` |
 | `--line` | Borders | `#D5DCE5` |
-| `--highlight` | Primary CTA | `#E5A008` |
-| `--highlight-soft` | Soft accent | `#FFF4D6` |
-| `--highlight-hover` | Soft button hover | `#FFE9B0` |
-| `--accent` | Secondary solid (navy) | `#0B1F33` |
-| `--success` / `--danger` | Semantic | teal / red |
+| `--highlight` | Primary CTA (brand red) | `#E31E24` |
+| `--highlight-soft` | Soft accent | `#FDECEC` |
+| `--highlight-hover` | Soft button hover | `#FADCDC` |
+| `--accent` | Secondary solid (navy) | `#002050` |
+| `--success` / `--danger` / `--warning` | Semantic | teal / deep red / amber |
 
 Page atmosphere: fixed faint horizontal rules + cool navy/amber radial washes (not decorative glow kits).
 
@@ -57,7 +57,7 @@ Bengali UI fonts are **out of scope** until i18n is approved.
 ## 4. Radius, shadow, spacing
 
 - Radius: `--radius-sm` 8 · `--radius` 12 · `--radius-lg` 16 · `--radius-xl` 22  
-- Prefer **12px controls**, not pill-everything.
+- Prefer **12px controls** (`--radius`); reserve `rounded-full` for avatars, progress tracks, and small indicators — not primary buttons.
 - Shadows: `--shadow-sm` / `--shadow` / `--shadow-lg`
 - Section padding: `--space-section` (utility `.section-pad`)
 - Page inline: `--space-page` (utility `.page-pad`)
@@ -89,7 +89,7 @@ Bengali UI fonts are **out of scope** until i18n is approved.
 | `OptionRow` | MCQ option states: idle / selected / correct / incorrect / missed |
 | `FilterChips` | Removable active question filters |
 | `QuestionFilters` | Sticky filter bar |
-| `ProductPreview` | Static marketing MCQ desk frame |
+| `SampleMcq` | Static marketing MCQ desk frame |
 | `TrialCountdown` | Profile / study home countdown |
 
 Layout: `BrandMark`, `MarketingHeader`, `AppHeader`, `AdminSidebar`, `AdminMobileNav`, `SiteFooter`, `PageHeader`, `MobileNav` / `DesktopNav`.

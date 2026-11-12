@@ -117,7 +117,7 @@ export default function NewQuestionImportPage() {
         description="Follow the steps to upload, configure, and validate your Excel file."
         actions={
           <Link href="/admin/question-imports">
-            <Button type="button" variant="outline" className="cursor-pointer rounded-full">
+            <Button type="button" variant="outline" className="cursor-pointer">
               <ArrowLeft className="size-4" />
               Collections
             </Button>
@@ -191,7 +191,7 @@ export default function NewQuestionImportPage() {
               {TEMPLATE_COLUMNS.map((col) => (
                 <span
                   key={col}
-                  className="rounded-full border border-[var(--line)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--ink-soft)]"
+                  className="border border-[var(--line)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--ink-soft)]"
                 >
                   {col}
                 </span>

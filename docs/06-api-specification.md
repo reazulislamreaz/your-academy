@@ -116,8 +116,8 @@ Profile picture: separate upload after auth or multipart field if approved.
 | PATCH | `/users/me/study-prefs` | Update preferred categories / continue pointer / onboarding flag | User | USER/ADMIN |
 | POST | `/users/me/avatar` | Avatar upload init/complete | User | USER/ADMIN |
 | GET | `/users/me/stats` | Personal dashboard stats (bookmark counts, browsing seconds, recent saves) | User | USER/ADMIN |
-| GET | `/admin/users` | List users | User | ADMIN |
-| GET | `/admin/users/:id` | User detail | User | ADMIN |
+| GET | `/admin/users` | List users (enriched: online, attempts, trial/sub; cursor/`q`/`status`/`createdFrom`/`createdTo`) | User | ADMIN |
+| GET | `/admin/users/:id` | User detail (profile, study stats, sessions, observed engagement, recent events; subscription read-only) | User | ADMIN |
 | PATCH | `/admin/users/:id/status` | Suspend/reinstate | User | ADMIN |
 | DELETE | `/users/me` | Delete own account | User | USER/ADMIN |
 
@@ -249,19 +249,19 @@ Timed/untimed quizzes and model tests built from published questions. Review pay
 
 | Method | Endpoint | Description | Auth | Role |
 |--------|----------|-------------|------|------|
-| GET | `/news` | Published list | Public/User | — |
+| GET | `/news` | Published list (`cursor`, `limit`, `hasNextPage`) | Public/User | — |
 | GET | `/news/:slug` | Article + linked **published** docs | Public/User | — |
-| GET | `/documents` | Published document list (hides `PREMIUM` when not entitled) | User | USER/ADMIN |
+| GET | `/documents` | Published document list (`cursor`, `limit`; hides `PREMIUM` when not entitled) | User | USER/ADMIN |
 | GET | `/documents/:id` | Metadata + signed download if allowed; `403 DOCUMENT_PREMIUM_REQUIRED` for gated PDFs | User | USER/ADMIN |
 | GET | `/ready` | Readiness: Postgres + Redis must be up | Public | — |
-| GET | `/admin/news` | Admin list (drafts + published) | User | ADMIN |
+| GET | `/admin/news` | Admin list (drafts + published; `cursor`, `limit`) | User | ADMIN |
 | GET | `/admin/news/:id` | Admin detail + `documentIds` / linked docs | User | ADMIN |
 | POST | `/admin/news` | Create draft (`documentIds?`) | User | ADMIN |
 | PATCH | `/admin/news/:id` | Update (optional `documentIds` replaces associations) | User | ADMIN |
 | POST | `/admin/news/:id/publish` | Publish | User | ADMIN |
 | POST | `/admin/news/:id/unpublish` | Unpublish | User | ADMIN |
 | DELETE | `/admin/news/:id` | Soft delete | User | ADMIN |
-| GET | `/admin/documents` | Admin list | User | ADMIN |
+| GET | `/admin/documents` | Admin list (`cursor`, `limit`) | User | ADMIN |
 | GET | `/admin/documents/:id` | Admin detail | User | ADMIN |
 | POST | `/admin/documents` | Create metadata (+ placeholder media until Cloudinary) | User | ADMIN |
 | PATCH | `/admin/documents/:id` | Update / publish toggle | User | ADMIN |
@@ -307,11 +307,20 @@ Heartbeat body: `{ "clientTimestamp": "ISO", "visibilityState": "visible|hidden"
 
 ---
 
-### 2.11 Admin Dashboard
+### 2.11 Admin Dashboard & Activity (Phase 1)
 
 | Method | Endpoint | Description | Auth | Role |
 |--------|----------|-------------|------|------|
-| GET | `/admin/dashboard` | Aggregated KPI payload | User | ADMIN |
+| GET | `/admin/dashboard` | Aggregated KPI payload (includes online, 24h registrations, engagement today, top subjects) | User | ADMIN |
+| GET | `/admin/activity/overview` | Registered, online (heartbeat window + 5/15/30m buckets), engagement today/7d/30d | User | ADMIN |
+| GET | `/admin/activity/online` | Searchable online list (`BrowsingSession` ACTIVE + heartbeat ≤90s) | User | ADMIN |
+| GET | `/admin/activity/events` | `LearningActivityEvent` timeline (`userId`/`type`/`subjectId`/`from`/`to`, cursor) | User | ADMIN |
+| GET | `/admin/activity/trends` | Daily series: attempts, practice completes, activeSeconds | User | ADMIN |
+| GET | `/admin/activity/export` | CSV export of filtered events (admin only) | User | ADMIN |
+| GET | `/admin/audit` | Paginated `AuditLog` browser | User | ADMIN |
+| POST | `/admin/questions/:id/duplicate` | Clone question as DRAFT | User | ADMIN |
+
+Online rule (DEC-009): ACTIVE session with `lastHeartbeatAt` within **90 seconds**.
 
 ---
 

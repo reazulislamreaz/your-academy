@@ -19,7 +19,7 @@ export function PageShell({ children, className, motionClassName = 'motion-page'
   const pathname = usePathname();
 
   return (
-    <div key={pathname} className={cn(motionClassName, className)}>
+    <div key={pathname} className={cn('min-w-0', motionClassName, className)}>
       {children}
     </div>
   );

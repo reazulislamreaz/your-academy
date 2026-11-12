@@ -64,6 +64,10 @@
   --space-section: clamp(3rem, 6vw, 5.5rem);
   --space-page: clamp(1.25rem, 3vw, 2rem);
 
+  /* Shell geometry */
+  --app-sidebar-width: 15.5rem;
+  --header-h: 3.5rem;
+
   /* Motion */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --duration-fast: 140ms;
@@ -125,6 +129,20 @@ body {
   line-height: var(--leading-normal);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+/* Quiet desk paper wash for learner/admin canvases (GPU-cheap). */
+.desk-canvas {
+  background-color: var(--bg-desk);
+  background-image:
+    linear-gradient(rgba(0, 32, 80, 0.035) 1px, transparent 1px),
+    radial-gradient(ellipse 80% 50% at 100% 0%, rgba(227, 30, 36, 0.04), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 0% 100%, rgba(0, 32, 80, 0.05), transparent 50%);
+  background-size:
+    100% 28px,
+    100% 100%,
+    100% 100%;
+  background-attachment: local;
 }
 
 /* Prefer these for secondary copy instead of ultra-faint muted colors */

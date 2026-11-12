@@ -41,7 +41,7 @@ export function AdminDashboardPageSkeleton() {
       <section className="space-y-3">
         <Skeleton className="h-5 w-40" />
         <Surface className="overflow-hidden p-0">
-          <div className="overflow-x-auto">
+          <div className="min-w-0 w-full max-w-full overflow-x-auto">
             <table className="w-full min-w-[36rem] text-left text-sm">
               <thead className="bg-[var(--bg-desk)]">
                 <tr>
@@ -71,6 +71,109 @@ export function AdminDashboardPageSkeleton() {
   );
 }
 
+/** `/admin/users/[id]` — profile + stats + timelines. */
+export function AdminUsersDetailPageSkeleton() {
+  return (
+    <SkStatus label="Loading user detail…" className="space-y-8">
+      <PageHeaderSkeleton withActions />
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Surface className="space-y-3 p-5">
+          <SkLine className="h-3 w-20" />
+          <div className="flex gap-2">
+            <SkBadge />
+            <SkBadge className="w-20" />
+          </div>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="flex justify-between gap-3">
+              <SkLine className="h-3 w-20" />
+              <SkLine className="h-3 w-28" />
+            </div>
+          ))}
+        </Surface>
+        <Surface className="space-y-3 p-5 lg:col-span-2">
+          <SkLine className="h-3 w-28" />
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="rounded-[12px] border border-[var(--line)] p-3 space-y-2">
+                <SkLine className="h-3 w-16" />
+                <Skeleton className="h-7 w-14" />
+              </div>
+            ))}
+          </div>
+        </Surface>
+      </div>
+      <Surface className="space-y-3 p-5">
+        <SkLine className="h-3 w-40" />
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="flex justify-between py-2">
+            <SkLine className="h-3.5 w-40" />
+            <SkLine className="h-3.5 w-20" />
+          </div>
+        ))}
+      </Surface>
+    </SkStatus>
+  );
+}
+
+/** `/admin/activity` — KPIs, online list, trends, event table. */
+export function AdminActivityPageSkeleton() {
+  return (
+    <SkStatus label="Loading activity…" className="space-y-8">
+      <PageHeaderSkeleton withActions />
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <StatCardSkeletonExact key={i} />
+        ))}
+      </div>
+      <Surface className="p-5">
+        <div className="flex flex-wrap gap-2">
+          <SkBadge />
+          <SkBadge className="w-20" />
+          <SkBadge className="w-24" />
+        </div>
+      </Surface>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Surface className="space-y-3 p-5">
+          <Skeleton className="h-5 w-32" />
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex justify-between gap-3 py-2">
+              <div className="space-y-1.5">
+                <SkLine className="h-3.5 w-32" />
+                <SkLine className="h-3 w-28" />
+              </div>
+              <SkLine className="h-3 w-16" />
+            </div>
+          ))}
+        </Surface>
+        <Surface className="space-y-4 p-5">
+          <Skeleton className="h-5 w-24" />
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="space-y-1.5">
+              <div className="flex justify-between">
+                <SkLine className="h-3 w-12" />
+                <SkLine className="h-3 w-8" />
+              </div>
+              <Skeleton className="h-2.5 w-full rounded-full" />
+            </div>
+          ))}
+        </Surface>
+      </div>
+      <Surface className="space-y-3 p-5">
+        <Skeleton className="h-5 w-36" />
+        <div className="overflow-hidden rounded-[12px] border border-[var(--line)]">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex gap-4 border-t border-[var(--line)] px-3 py-3 first:border-0">
+              <SkLine className="h-3 w-28" />
+              <SkBadge />
+              <SkLine className="h-3 w-32" />
+            </div>
+          ))}
+        </div>
+      </Surface>
+    </SkStatus>
+  );
+}
+
 /** `/admin/users` — search + 6-col table. */
 export function AdminUsersPageSkeleton() {
   return (
@@ -87,10 +190,48 @@ export function AdminUsersPageSkeleton() {
   );
 }
 
+export function AdminAuditTableSkeleton({ rows = 8 }: { rows?: number }) {
+  return (
+    <Surface className="overflow-hidden p-0">
+      <div className="min-w-0 w-full max-w-full overflow-x-auto">
+        <table className="w-full min-w-[40rem] text-left text-sm">
+          <thead className="bg-[var(--bg-desk)]">
+            <tr>
+              {['When', 'Action', 'Entity', 'Actor'].map((h) => (
+                <th key={h} className="px-4 py-3">
+                  <SkLine className="h-3 w-14" />
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[var(--line)]">
+            {Array.from({ length: rows }).map((_, r) => (
+              <tr key={r}>
+                <td className="px-4 py-3">
+                  <SkLine className="h-3 w-28" />
+                </td>
+                <td className="px-4 py-3">
+                  <SkBadge className="w-24" />
+                </td>
+                <td className="px-4 py-3">
+                  <SkLine className="h-3 w-36" />
+                </td>
+                <td className="px-4 py-3">
+                  <SkLine className="h-3 w-24" />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Surface>
+  );
+}
+
 export function AdminUsersTableSkeleton({ rows = 8 }: { rows?: number }) {
   return (
     <Surface className="overflow-hidden p-0">
-      <div className="overflow-x-auto">
+      <div className="min-w-0 w-full max-w-full overflow-x-auto">
         <table className="w-full min-w-[36rem] text-left text-sm">
           <thead className="bg-[var(--bg-desk)]">
             <tr>
@@ -252,7 +393,7 @@ export function AdminBulkUploadPageSkeleton() {
 
 export function AdminBulkUploadTableSkeleton({ rows = 5 }: { rows?: number }) {
   return (
-    <div className="overflow-x-auto rounded-[12px] border border-[var(--line)]">
+    <div className="min-w-0 w-full max-w-full overflow-x-auto rounded-[12px] border border-[var(--line)]">
       <table className="min-w-full text-left text-sm">
         <thead className="bg-[var(--bg-desk)]">
           <tr>
@@ -338,7 +479,7 @@ export function AdminBulkUploadDetailPageSkeleton() {
 
 export function AdminBulkPreviewTableSkeleton({ rows = 5 }: { rows?: number }) {
   return (
-    <div className="overflow-x-auto rounded-[12px] border border-[var(--line)]">
+    <div className="min-w-0 w-full max-w-full overflow-x-auto rounded-[12px] border border-[var(--line)]">
       <table className="min-w-[960px] w-full text-left text-sm">
         <thead className="bg-[var(--bg-desk)]">
           <tr>

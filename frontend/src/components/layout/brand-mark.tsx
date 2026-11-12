@@ -9,6 +9,8 @@ type Props = {
   inverse?: boolean;
   /** Compact YA mark only (tight headers) */
   markOnly?: boolean;
+  /** Only set on above-the-fold marketing / auth heroes */
+  priority?: boolean;
 };
 
 const FULL = {
@@ -28,7 +30,7 @@ const MARK = {
 } as const;
 
 /** Official YA lockup — one logo across marketing, app, admin, and auth. */
-export function BrandMark({ className, href = '/', inverse, markOnly }: Props) {
+export function BrandMark({ className, href = '/', inverse, markOnly, priority = false }: Props) {
   const asset = markOnly ? MARK : FULL;
   const src = inverse ? asset.inverseSrc : asset.src;
 
@@ -43,8 +45,9 @@ export function BrandMark({ className, href = '/', inverse, markOnly }: Props) {
         alt="Your Academy"
         width={asset.width}
         height={asset.height}
+        sizes="(max-width: 1024px) 120px, 160px"
         className={cn(asset.className, 'object-contain object-left')}
-        priority
+        priority={priority}
       />
     </Link>
   );

@@ -3,10 +3,14 @@ import { createErrorResponse } from '@your-academy/shared';
 import type { RequestUser } from '../auth/auth.types';
 import { newRequestId } from '../common/request-id';
 import { PrismaService } from '../database/prisma.service';
+import { LearningActivityService } from '../learning-activity/learning-activity.service';
 
 @Injectable()
 export class BookmarksService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly learningActivity: LearningActivityService,
+  ) {}
 
   async listQuestions(
     user: RequestUser,
@@ -26,7 +30,7 @@ export class BookmarksService {
       },
       take: take + 1,
       ...(opts.cursor ? { cursor: { id: opts.cursor }, skip: 1 } : {}),
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       include: {
         question: {
           select: {
@@ -52,9 +56,17 @@ export class BookmarksService {
       );
     }
     try {
-      return await this.prisma.questionBookmark.create({
+      const bookmark = await this.prisma.questionBookmark.create({
         data: { userId: user.userId, questionId },
       });
+      await this.learningActivity.record({
+        userId: user.userId,
+        type: 'BOOKMARK_QUESTION',
+        subjectCategoryId: question.categoryId,
+        topicCategoryId: question.subcategoryId,
+        questionId: question.id,
+      });
+      return bookmark;
     } catch {
       throw new ConflictException(
         createErrorResponse('BOOKMARK_EXISTS', 'Already bookmarked', newRequestId()),
@@ -78,7 +90,7 @@ export class BookmarksService {
       where: { userId: user.userId },
       take: take + 1,
       ...(opts.cursor ? { cursor: { id: opts.cursor }, skip: 1 } : {}),
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       include: { document: { select: { id: true, title: true, visibility: true } } },
     });
     const nextCursor = items.length > take ? items.pop()!.id : null;
@@ -96,9 +108,16 @@ export class BookmarksService {
     }
     // Visibility gating is enforced on document detail/download (DEC-001 / PREMIUM).
     try {
-      return await this.prisma.documentBookmark.create({
+      const bookmark = await this.prisma.documentBookmark.create({
         data: { userId: user.userId, documentId },
       });
+      await this.learningActivity.record({
+        userId: user.userId,
+        type: 'BOOKMARK_DOCUMENT',
+        subjectCategoryId: doc.categoryId,
+        meta: { documentId: doc.id },
+      });
+      return bookmark;
     } catch {
       throw new ConflictException(
         createErrorResponse('BOOKMARK_EXISTS', 'Already bookmarked', newRequestId()),

@@ -83,7 +83,7 @@ export function MarketingHeader() {
       style={{ '--header-h': '72px' } as CSSProperties}
     >
       <div className="mx-auto flex h-[72px] w-full max-w-[1280px] items-center gap-2 px-4 sm:gap-3 sm:px-6">
-        <BrandMark className="shrink-0" />
+        <BrandMark className="shrink-0" priority />
         <nav
           className="ml-1 hidden min-w-0 flex-1 items-center justify-center gap-0.5 xl:flex"
           aria-label="Primary"

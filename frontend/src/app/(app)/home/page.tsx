@@ -119,7 +119,7 @@ export default function StudyHomePage() {
     enabled: Boolean(me.data),
   });
 
-  // Reliable scroll for sidebar "Recent results" → /home#exam-history
+  // Profile / deep links → /home#exam-history (recent MCQ answer checks)
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const scrollToHash = () => {
@@ -153,6 +153,8 @@ export default function StudyHomePage() {
     categories.data?.filter((c) => preferredIds.includes(c.id)).slice(0, 6) ?? [];
   const suggestions =
     preferred.length > 0 ? preferred : (categories.data?.slice(0, 6) ?? []);
+  const statsFailed = stats.isError;
+  const analyticsFailed = analytics.isError;
   const perf = stats.data?.performance ?? emptyPerformance();
   const daySec = analytics.data?.daySeconds ?? 0;
   const weekSec = analytics.data?.weekSeconds ?? 0;
@@ -161,8 +163,9 @@ export default function StudyHomePage() {
   const savedCount =
     (stats.data?.questionBookmarks ?? 0) + (stats.data?.documentBookmarks ?? 0);
   const hour = new Date().getHours();
-  const insight =
-    perf.totalAttempts === 0
+  const insight = statsFailed
+    ? 'Could not load practice stats right now — try refreshing.'
+    : perf.totalAttempts === 0
       ? 'Check your first answer to unlock accuracy and subject progress.'
       : perf.weekAttempts > 0
         ? `This week: ${perf.weekAttempts} checks · ${perf.weekAccuracyPercent}% accuracy.`
@@ -190,13 +193,13 @@ export default function StudyHomePage() {
           </div>
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
             <Link href={last ? `/questions/${last.id}${last.filterQs ? `?${last.filterQs}` : ''}` : '/questions'} className="w-full sm:w-auto">
-              <Button className="w-full rounded-full px-5 sm:w-auto">
+              <Button className="w-full px-5 sm:w-auto">
                 {last ? 'Resume practice' : 'Start practice'}
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
             <Link href="/profile" className="w-full sm:w-auto">
-              <Button variant="outline" className="w-full rounded-full px-5 sm:w-auto">
+              <Button variant="outline" className="w-full px-5 sm:w-auto">
                 Account
               </Button>
             </Link>
@@ -209,47 +212,56 @@ export default function StudyHomePage() {
         </p>
       </Surface>
 
-      {/* Primary KPIs */}
-      <div className="motion-stagger grid grid-cols-2 gap-3 xl:grid-cols-4">
-        <MetricTile
-          label="Questions answered"
-          value={perf.uniqueQuestions}
-          icon={Target}
-          tone="navy"
-        />
-        <MetricTile
-          label="Accuracy"
-          value={perf.accuracyPercent}
-          suffix="%"
-          icon={Percent}
-          tone="green"
-        />
-        <MetricTile label="Correct" value={perf.correct} icon={CheckCircle2} tone="teal" />
-        <MetricTile label="Incorrect" value={perf.incorrect} icon={XCircle} tone="red" />
-      </div>
-
-      <div className="motion-stagger grid grid-cols-2 gap-3 xl:grid-cols-4">
-        <MetricTile
-          label="Checks taken"
-          value={perf.totalAttempts}
-          icon={ClipboardList}
-          tone="blue"
-        />
-        <MetricTile
-          label="Week accuracy"
-          value={perf.weekAccuracyPercent}
-          suffix="%"
-          icon={Percent}
-          tone="amber"
-        />
-        <MetricTile label="Saved items" value={savedCount} icon={BookMarked} tone="navy" />
-        <MetricTile
-          label="Study time"
-          value={formatStudyMinutes(totalSec)}
-          icon={Clock3}
-          tone="blue"
-        />
-      </div>
+      {/* Study metrics — single band to avoid double KPI density */}
+      {statsFailed || analyticsFailed ? (
+        <Alert variant="danger">
+          {statsFailed && analyticsFailed
+            ? 'Could not load practice stats or study time.'
+            : statsFailed
+              ? 'Could not load practice stats.'
+              : 'Could not load study-time summary.'}{' '}
+          Refresh the page to try again.
+        </Alert>
+      ) : null}
+      {!statsFailed ? (
+        <div className="motion-stagger grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <MetricTile
+            label="Answered"
+            value={perf.uniqueQuestions}
+            icon={Target}
+            tone="navy"
+          />
+          <MetricTile
+            label="Accuracy"
+            value={perf.accuracyPercent}
+            suffix="%"
+            icon={Percent}
+            tone="green"
+          />
+          <MetricTile label="Correct" value={perf.correct} icon={CheckCircle2} tone="teal" />
+          <MetricTile label="Incorrect" value={perf.incorrect} icon={XCircle} tone="red" />
+          <MetricTile
+            label="Checks"
+            value={perf.totalAttempts}
+            icon={ClipboardList}
+            tone="blue"
+          />
+          <MetricTile
+            label="Week accuracy"
+            value={perf.weekAccuracyPercent}
+            suffix="%"
+            icon={Percent}
+            tone="amber"
+          />
+          <MetricTile label="Saved" value={savedCount} icon={BookMarked} tone="navy" />
+          <MetricTile
+            label="Study time"
+            value={analyticsFailed ? '—' : formatStudyMinutes(totalSec)}
+            icon={Clock3}
+            tone="blue"
+          />
+        </div>
+      ) : null}
 
       {/* Continue + shortcuts */}
       <div className="grid gap-4 lg:grid-cols-5">
@@ -270,7 +282,7 @@ export default function StudyHomePage() {
                 href={`/questions/${last.id}${last.filterQs ? `?${last.filterQs}` : ''}`}
                 className="mt-3 inline-flex"
               >
-                <Button size="sm" className="rounded-full">
+                <Button size="sm">
                   Resume
                   <ArrowRight className="h-4 w-4" />
                 </Button>
@@ -283,7 +295,7 @@ export default function StudyHomePage() {
               description="Open any MCQ and press Check answer. Accuracy, subject progress, and recent results will appear here."
               action={
                 <Link href="/questions">
-                  <Button size="sm" className="rounded-full">
+                  <Button size="sm">
                     Browse questions
                   </Button>
                 </Link>
@@ -394,27 +406,35 @@ export default function StudyHomePage() {
         <Surface id="exam-history" className="scroll-mt-24 space-y-3 p-4 sm:p-5">
           <div className="flex items-center justify-between gap-2">
             <h2 className="min-w-0 truncate font-display text-base font-bold tracking-tight text-[var(--ink)]">
-              Recent results
+              Recent answer checks
             </h2>
-            <Badge variant="outline" className="shrink-0">
-              {perf.recentAttempts.length} shown
-            </Badge>
+            <div className="flex shrink-0 items-center gap-2">
+              <Link
+                href="/results"
+                className="text-xs font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
+              >
+                Quiz results
+              </Link>
+              <Badge variant="outline">{perf.recentAttempts.length} shown</Badge>
+            </div>
           </div>
+          {statsFailed ? <Alert variant="danger">Could not load recent checks.</Alert> : null}
           {stats.isLoading ? <HomeActivityListSkeleton rows={4} /> : null}
-          {!stats.isLoading && perf.recentAttempts.length === 0 ? (
+          {!stats.isLoading && !statsFailed && perf.recentAttempts.length === 0 ? (
             <EmptyState
               className="py-8"
               title="No checks yet"
               description="Results appear after you press Check answer on a practice question."
               action={
                 <Link href="/questions">
-                  <Button size="sm" variant="soft" className="rounded-full">
+                  <Button size="sm" variant="soft">
                     Start a check
                   </Button>
                 </Link>
               }
             />
-          ) : (
+          ) : null}
+          {!stats.isLoading && !statsFailed && perf.recentAttempts.length > 0 ? (
             <ul className="divide-y divide-[var(--line)]">
               {perf.recentAttempts.map((item) => (
                 <li key={item.id}>
@@ -453,7 +473,7 @@ export default function StudyHomePage() {
                 </li>
               ))}
             </ul>
-          )}
+          ) : null}
         </Surface>
 
         <Surface className="space-y-3 p-4 sm:p-5">
@@ -541,7 +561,7 @@ export default function StudyHomePage() {
               description="Bookmark questions or PDFs while you practice — they land here."
               action={
                 <Link href="/questions">
-                  <Button size="sm" variant="soft" className="rounded-full">
+                  <Button size="sm" variant="soft">
                     Browse questions
                   </Button>
                 </Link>

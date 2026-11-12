@@ -176,13 +176,19 @@ export default function PracticePlayerPage() {
                   <Badge variant="outline">{q.difficulty}</Badge>
                 </div>
                 <p className="text-sm text-[var(--ink-soft)] whitespace-pre-wrap">{q.content}</p>
-                <div className="grid gap-2">
+                <div
+                  className="grid gap-2"
+                  role="radiogroup"
+                  aria-label={`Options for question ${index + 1}`}
+                >
                   {q.options.map((opt) => {
                     const selected = answers[q.id] === opt.id;
                     return (
                       <button
                         key={opt.id}
                         type="button"
+                        role="radio"
+                        aria-checked={selected}
                         onClick={() =>
                           setAnswers((prev) => ({
                             ...prev,

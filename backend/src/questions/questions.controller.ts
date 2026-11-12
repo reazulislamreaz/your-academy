@@ -9,7 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Difficulty, QuestionStatus, UserRole } from '@prisma/client';
-import { createSuccessResponse } from '@your-academy/shared';
+import { createSuccessResponse, cursorPaginationMeta } from '@your-academy/shared';
 import type { RequestUser } from '../auth/auth.types';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -38,21 +38,21 @@ export class QuestionsController {
     @Query('q') q?: string,
     @Query('examTag') examTag?: string,
   ) {
+    const take = Math.min(Math.max(Number(limit) || 20, 1), 100);
     const data = await this.questions.listPublished(user, {
       cursor,
-      limit: limit ? Number(limit) : undefined,
+      limit: take,
       categoryId,
       subcategoryId,
       difficulty,
       q,
       examTag,
     });
-    return createSuccessResponse(data.items, newRequestId(), {
-      nextCursor: data.nextCursor,
-      prevCursor: null,
-      limit: limit ? Number(limit) : 20,
-      total: null,
-    });
+    return createSuccessResponse(
+      data.items,
+      newRequestId(),
+      cursorPaginationMeta(data.nextCursor, take),
+    );
   }
 
   @Get('questions/:id')
@@ -97,18 +97,20 @@ export class QuestionsController {
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
     @Query('status') status?: QuestionStatus,
+    @Query('q') q?: string,
   ) {
+    const take = Math.min(Math.max(Number(limit) || 20, 1), 100);
     const data = await this.questions.adminList({
       cursor,
-      limit: limit ? Number(limit) : undefined,
+      limit: take,
       status,
+      q,
     });
-    return createSuccessResponse(data.items, newRequestId(), {
-      nextCursor: data.nextCursor,
-      prevCursor: null,
-      limit: limit ? Number(limit) : 20,
-      total: null,
-    });
+    return createSuccessResponse(
+      data.items,
+      newRequestId(),
+      cursorPaginationMeta(data.nextCursor, take),
+    );
   }
 
   @Post('admin/questions')
@@ -144,5 +146,12 @@ export class QuestionsController {
   @Roles(UserRole.ADMIN)
   async archive(@CurrentUser() user: RequestUser, @Param('id') id: string) {
     return createSuccessResponse(await this.questions.archive(id, user.userId), newRequestId());
+  }
+
+  @Post('admin/questions/:id/duplicate')
+  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
+  @Roles(UserRole.ADMIN)
+  async duplicate(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return createSuccessResponse(await this.questions.duplicate(id, user.userId), newRequestId());
   }
 }

@@ -10,6 +10,7 @@ import { createErrorResponse } from '@your-academy/shared';
 import type { RequestUser } from '../auth/auth.types';
 import { newRequestId } from '../common/request-id';
 import { PrismaService } from '../database/prisma.service';
+import { LearningActivityService } from '../learning-activity/learning-activity.service';
 import { AccessControlService } from '../subscriptions/access-control.service';
 import type { CreatePracticeSetDto, SubmitAttemptDto } from './dto/submit-attempt.dto';
 
@@ -20,6 +21,7 @@ export class PracticeService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly access: AccessControlService,
+    private readonly learningActivity: LearningActivityService,
   ) {}
 
   async listPublished(params: {
@@ -153,6 +155,15 @@ export class PracticeService {
       },
     });
 
+    await this.learningActivity.record({
+      userId: user.userId,
+      type: 'PRACTICE_START',
+      subjectCategoryId: set.categoryId,
+      topicCategoryId: set.subcategoryId,
+      practiceSetId: set.id,
+      practiceAttemptId: attempt.id,
+    });
+
     return {
       ...attempt,
       startedAt: attempt.startedAt.toISOString(),
@@ -266,6 +277,22 @@ export class PracticeService {
           skippedCount,
         },
       });
+    });
+
+    await this.learningActivity.record({
+      userId: user.userId,
+      type: 'PRACTICE_SUBMIT',
+      subjectCategoryId: set.categoryId,
+      topicCategoryId: set.subcategoryId,
+      practiceSetId: set.id,
+      practiceAttemptId: updated.id,
+      meta: {
+        status,
+        correctCount,
+        wrongCount,
+        skippedCount,
+        score,
+      },
     });
 
     return this.getAttemptResult(user, updated.id);

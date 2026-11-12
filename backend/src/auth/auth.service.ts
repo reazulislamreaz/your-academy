@@ -22,6 +22,7 @@ import { randomToken, sha256 } from '../common/utils/crypto';
 import { isValidWhatsapp, normalizeWhatsapp } from '../common/utils/whatsapp';
 import { getJwtAccessSecret } from '../config/env';
 import { PrismaService } from '../database/prisma.service';
+import { LearningActivityService } from '../learning-activity/learning-activity.service';
 import { EmailQueueService } from '../queue/email-queue.service';
 import { AccessControlService } from '../subscriptions/access-control.service';
 import type { JwtPayload, RequestUser } from './auth.types';
@@ -41,6 +42,7 @@ export class AuthService {
     private readonly access: AccessControlService,
     private readonly emailQueue: EmailQueueService,
     private readonly audit: AuditService,
+    private readonly learningActivity: LearningActivityService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -154,6 +156,10 @@ export class AuthService {
     await this.prisma.browsingSession.updateMany({
       where: { userId: user.userId, status: BrowsingSessionStatus.ACTIVE },
       data: { status: BrowsingSessionStatus.ENDED, endedAt: new Date() },
+    });
+    await this.learningActivity.record({
+      userId: user.userId,
+      type: 'LOGOUT',
     });
   }
 
@@ -305,6 +311,10 @@ export class AuthService {
   private async issueSession(user: User) {
     const familyId = randomUUID();
     const tokens = await this.createSessionTokens(user, familyId);
+    await this.learningActivity.record({
+      userId: user.id,
+      type: 'LOGIN',
+    });
     return { user, ...tokens };
   }
 

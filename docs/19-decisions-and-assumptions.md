@@ -103,15 +103,15 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Impact | Questions navigation API |
 | Status | **PROPOSED** |
 
-### DEC-009 — Idle threshold for browsing time
+### DEC-009 — Idle threshold for browsing time / online presence
 
 | Field | Value |
 |-------|-------|
-| Question | When does idle pause accrual? |
-| Current assumption | **120 seconds** without interaction |
-| Recommended option | 120s configurable |
-| Impact | Analytics heartbeat |
-| Status | **PROPOSED** |
+| Question | When does idle pause accrual, and when is a learner “online” for admin? |
+| Current assumption | Heartbeat every ~30s while visible; idle pause accrual after **120s** without interaction (analytics). Admin **online** = `BrowsingSession.status=ACTIVE` and `lastHeartbeatAt` within **90s** (3× 30s heartbeat). Measured study time = `accruedSeconds`; session wall time shown separately. |
+| Recommended option | Keep 90s online window; keep 120s accrual idle; document both |
+| Impact | Analytics heartbeat; admin activity/online APIs |
+| Status | **CONFIRMED** (Phase 1 admin analytics) |
 
 ### DEC-010 — Multi-tab browsing sessions
 
@@ -258,6 +258,26 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Decision | **Yes** — add `QuestionUploadBatch` + `QuestionImportRow` with unique `batchCode`, SHA-256 `fileSha256` (block re-import of identical completed files), and `Question.contentHash` (normalized text SHA-256, partial unique index) for cross-file duplicate detection. Upload → validate/preview → confirm import (skip duplicates). Original files stored under local `QUESTION_IMPORT_DIR` / `backend/storage/question-imports` (admin operational artifacts; Cloudinary remains for learner media). Imports run in chunked API transactions; BullMQ can be added later for multi-thousand-row jobs if request timeouts become an issue. |
 | Impact | Prisma migration, QuestionImportModule, admin Bulk upload UI, question bank associations via Subject/Topic/examTags |
 | Status | **CONFIRMED** (product request 2026-11-11) |
+
+### DEC-025 — Learning activity event model (admin Phase 1)
+
+| Field | Value |
+|-------|-------|
+| Question | How should admin activity analytics be sourced? |
+| Decision | Append-only `LearningActivityEvent` (LOGIN/LOGOUT/QUESTION_ATTEMPT/PRACTICE_*/BOOKMARK_*/DOCUMENT_VIEW) written from learner paths; admin aggregates also use `BrowsingSession`, `QuestionAttempt`, `PracticeAttempt`, `AuditLog`. Prefer on-read aggregation in Phase 1; optional `UserDailyStudyRollup` later if slow. |
+| Impact | Schema migration, LearningActivityService, admin activity APIs/UI |
+| Status | **CONFIRMED** (Phase 1 admin analytics) |
+
+### Deferred / NEEDS APPROVAL (explicitly out of Phase 1)
+
+| Item | Notes |
+|------|-------|
+| Multi-format questions | Keep single-correct MCQ (2–6 options) only; True/False as 2-option MCQ in templates |
+| Payment admin / plan CRUD / refunds | PAYMENTS-V1 still deferred |
+| WebSockets / SSE for online | HTTP polling 15–30s only |
+| ZIP image packs / JSON import packages | Defer unless same MCQ schema map is trivial |
+| Bull Board / async multi-thousand import worker | Keep sync chunked import; revisit on timeouts |
+| Staff role matrix / platform settings / notification center | Later |
 
 ---
 

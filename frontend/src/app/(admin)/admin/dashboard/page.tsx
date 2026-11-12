@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import {
+  Activity,
   ArrowRight,
   Clock3,
   FileQuestion,
@@ -24,12 +25,25 @@ import { apiFetch } from '@/lib/api/client';
 import { AdminDashboardPageSkeleton } from '@/components/skeletons';
 
 type Dashboard = {
-  users: { total: number; active: number; trialActive: number; trialExpired: number };
+  users: {
+    total: number;
+    active: number;
+    trialActive: number;
+    trialExpired: number;
+    online: number;
+    newRegistrations24h: number;
+  };
   questions: { total: number; published: number; draft: number; archived: number };
   categories: number;
   news: number;
   documents: number;
   browsingSecondsTotal: number;
+  engagementToday: {
+    attempts: number;
+    practiceCompletes: number;
+    activeSeconds: number;
+  };
+  topSubjects: Array<{ categoryId: string; name: string; attempts: number }>;
   recentUsers: Array<{
     id: string;
     name: string;
@@ -71,7 +85,7 @@ export default function AdminDashboardPage() {
         description="Live KPIs, work queue, and recent platform activity."
         actions={
           <Link href="/admin/questions/new">
-            <Button size="sm" className="rounded-full px-5">
+            <Button size="sm" className="px-5">
               <Plus className="h-4 w-4" />
               New question
             </Button>
@@ -79,49 +93,7 @@ export default function AdminDashboardPage() {
         }
       />
 
-      {/* Primary KPIs */}
-      <div className="motion-stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Registered users" value={data.users.total} icon={Users} tone="navy" />
-        <StatCard
-          label="Active users"
-          value={data.users.active}
-          hint="Not suspended"
-          icon={Users}
-          tone="teal"
-        />
-        <StatCard
-          label="Trial active"
-          value={data.users.trialActive}
-          hint="Answers unlocked"
-          icon={Clock3}
-          tone="red"
-        />
-        <StatCard
-          label="Trial expired"
-          value={data.users.trialExpired}
-          hint="Still browsing"
-          icon={Clock3}
-          tone="amber"
-        />
-        <StatCard
-          label="Questions"
-          value={data.questions.total}
-          hint={`${data.questions.published} published`}
-          icon={FileQuestion}
-          tone="blue"
-        />
-        <StatCard label="Categories" value={data.categories} icon={FolderTree} tone="violet" />
-        <StatCard label="News posts" value={data.news} icon={Newspaper} tone="slate" />
-        <StatCard
-          label="Browsing hours"
-          value={browsingHours}
-          hint={`${data.documents} documents`}
-          icon={FileText}
-          tone="navy"
-        />
-      </div>
-
-      {/* Work queue */}
+      {/* Work queue first — ops focus before KPI grid */}
       <section className="space-y-3">
         <h2 className="font-display text-lg font-bold tracking-tight">Work queue</h2>
         <div className="grid gap-4 md:grid-cols-3">
@@ -138,7 +110,7 @@ export default function AdminDashboardPage() {
               </p>
             </div>
             <Link href="/admin/questions?status=DRAFT">
-              <Button size="sm" variant="soft" className="rounded-full">
+              <Button size="sm" variant="soft">
                 Review drafts
                 <ArrowRight className="h-4 w-4" />
               </Button>
@@ -157,7 +129,7 @@ export default function AdminDashboardPage() {
               </p>
             </div>
             <Link href="/admin/users">
-              <Button size="sm" variant="outline" className="rounded-full">
+              <Button size="sm" variant="outline">
                 Manage users
               </Button>
             </Link>
@@ -175,13 +147,60 @@ export default function AdminDashboardPage() {
               </p>
             </div>
             <Link href="/admin/users">
-              <Button size="sm" variant="ghost" className="rounded-full">
+              <Button size="sm" variant="ghost">
                 Open users
               </Button>
             </Link>
           </Surface>
         </div>
       </section>
+
+      <div className="motion-stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          label="Registered users"
+          value={data.users.total}
+          hint={`${data.users.newRegistrations24h} new (24h)`}
+          icon={Users}
+          tone="navy"
+        />
+        <StatCard
+          label="Online now"
+          value={data.users.online}
+          hint="Heartbeat within 90s"
+          icon={Activity}
+          tone="teal"
+        />
+        <StatCard
+          label="Trial active"
+          value={data.users.trialActive}
+          hint="Answers unlocked"
+          icon={Clock3}
+          tone="red"
+        />
+        <StatCard
+          label="Engagement today"
+          value={data.engagementToday.attempts}
+          hint={`${data.engagementToday.practiceCompletes} practice · ${Math.round(data.engagementToday.activeSeconds / 60)} active min`}
+          icon={Activity}
+          tone="amber"
+        />
+        <StatCard
+          label="Questions"
+          value={data.questions.total}
+          hint={`${data.questions.published} published`}
+          icon={FileQuestion}
+          tone="blue"
+        />
+        <StatCard label="Categories" value={data.categories} icon={FolderTree} tone="slate" />
+        <StatCard label="News posts" value={data.news} icon={Newspaper} tone="slate" />
+        <StatCard
+          label="Browsing hours"
+          value={browsingHours}
+          hint={`${data.documents} documents`}
+          icon={FileText}
+          tone="navy"
+        />
+      </div>
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
         <Surface className="space-y-4 p-6">
@@ -233,6 +252,12 @@ export default function AdminDashboardPage() {
               icon={Users}
             />
             <QuickLink
+              href="/admin/activity"
+              title="Learner activity"
+              description="Online users, trends, export"
+              icon={Activity}
+            />
+            <QuickLink
               href="/admin/news"
               title="Publish news"
               description="Announcements and columns"
@@ -241,6 +266,30 @@ export default function AdminDashboardPage() {
           </div>
         </Surface>
       </div>
+
+      {data.topSubjects.length > 0 ? (
+        <Surface className="space-y-4 p-6">
+          <div className="flex flex-wrap items-end justify-between gap-2">
+            <div>
+              <h2 className="font-display text-lg font-bold tracking-tight">Top subjects (7d)</h2>
+              <p className="mt-1 text-sm text-[var(--muted-strong)]">
+                From real question attempts — not claimed intent.
+              </p>
+            </div>
+            <Link href="/admin/activity">
+              <Button size="sm" variant="outline">
+                Open activity
+              </Button>
+            </Link>
+          </div>
+          <BarChart
+            data={data.topSubjects.map((s) => ({
+              label: s.name,
+              value: s.attempts,
+            }))}
+          />
+        </Surface>
+      ) : null}
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Surface className="overflow-hidden p-0">
@@ -255,7 +304,7 @@ export default function AdminDashboardPage() {
               View all
             </Link>
           </div>
-          <div className="overflow-x-auto">
+          <div className="min-w-0 w-full max-w-full overflow-x-auto">
             <table className="w-full min-w-[28rem] text-left text-sm">
               <thead className="bg-[var(--bg-desk)] text-xs font-semibold tracking-[0.08em] text-[var(--muted-strong)] uppercase">
                 <tr>

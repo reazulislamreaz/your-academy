@@ -292,7 +292,7 @@ export function QuestionDetailPageSkeleton() {
         <SkLine className="h-4 w-40" />
         <SkLine className="h-3.5 w-full max-w-lg" />
       </Surface>
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-[var(--line)] bg-[var(--bg-elevated)]/95 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-md lg:left-[16rem]">
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-[var(--line)] bg-[var(--bg-elevated)]/95 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-md lg:left-[var(--app-sidebar-width)]">
         <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-2 px-4 py-3 sm:px-6">
           <SkButton className="h-11 w-24" />
           <SkButton className="h-11 flex-1 sm:max-w-xs sm:flex-none sm:w-40" />
@@ -304,20 +304,26 @@ export function QuestionDetailPageSkeleton() {
 }
 
 /** `/subjects` — header + subject cards grid. */
-export function SubjectsPageSkeleton() {
+export function SubjectsPageSkeleton({ omitHeader }: { omitHeader?: boolean } = {}) {
+  const grid = (
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <Surface key={i} className="space-y-2 p-4">
+          <Skeleton className="h-5 w-2/3" />
+          <SkLine className="h-3.5 w-full" />
+          <SkLine className="h-3.5 w-[80%]" />
+          <SkLine className="mt-2 h-3 w-24" />
+        </Surface>
+      ))}
+    </div>
+  );
+  if (omitHeader) {
+    return <SkStatus label="Loading subjects…">{grid}</SkStatus>;
+  }
   return (
     <SkStatus label="Loading subjects…" className="space-y-8">
       <PageHeaderSkeleton />
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <Surface key={i} className="space-y-2 p-4">
-            <Skeleton className="h-5 w-2/3" />
-            <SkLine className="h-3.5 w-full" />
-            <SkLine className="h-3.5 w-[80%]" />
-            <SkLine className="mt-2 h-3 w-24" />
-          </Surface>
-        ))}
-      </div>
+      {grid}
     </SkStatus>
   );
 }

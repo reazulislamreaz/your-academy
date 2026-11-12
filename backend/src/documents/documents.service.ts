@@ -8,7 +8,9 @@ import { createErrorResponse } from '@your-academy/shared';
 import type { RequestUser } from '../auth/auth.types';
 import { newRequestId } from '../common/request-id';
 import { AuditService } from '../audit/audit.service';
+import { paginateById, parseLimit } from '../common/pagination';
 import { PrismaService } from '../database/prisma.service';
+import { LearningActivityService } from '../learning-activity/learning-activity.service';
 import { MaintenanceQueueService } from '../queue/maintenance-queue.service';
 import { AccessControlService } from '../subscriptions/access-control.service';
 import { StorageService } from '../storage/storage.service';
@@ -22,13 +24,14 @@ export class DocumentsService {
     private readonly access: AccessControlService,
     private readonly maintenanceQueue: MaintenanceQueueService,
     private readonly audit: AuditService,
+    private readonly learningActivity: LearningActivityService,
   ) {}
 
   async listPublished(
     user: RequestUser,
     params: { cursor?: string; limit?: number; categoryId?: string },
   ) {
-    const limit = Math.min(params.limit ?? 20, 100);
+    const limit = parseLimit(params.limit, 20);
     const dbUser = await this.prisma.user.findUniqueOrThrow({ where: { id: user.userId } });
     const allowPremium =
       dbUser.role === UserRole.ADMIN ||
@@ -55,14 +58,16 @@ export class DocumentsService {
         updatedAt: true,
       },
     });
-    const nextCursor = items.length > limit ? items.pop()!.id : null;
-    return { items, nextCursor };
+    return paginateById(items, limit);
   }
 
-  async adminList() {
-    return this.prisma.document.findMany({
+  async adminList(params: { cursor?: string; limit?: number } = {}) {
+    const limit = parseLimit(params.limit, 50);
+    const rows = await this.prisma.document.findMany({
       where: { deletedAt: null },
-      orderBy: [{ updatedAt: 'desc' }],
+      orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+      take: limit + 1,
+      ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {}),
       select: {
         id: true,
         title: true,
@@ -76,6 +81,7 @@ export class DocumentsService {
         updatedAt: true,
       },
     });
+    return paginateById(rows, limit);
   }
 
   async getPublished(id: string, user: RequestUser) {
@@ -86,6 +92,7 @@ export class DocumentsService {
         title: true,
         description: true,
         visibility: true,
+        categoryId: true,
         category: { select: { id: true, name: true } },
         mediaAsset: {
           select: {
@@ -122,6 +129,13 @@ export class DocumentsService {
         userId_documentId: { userId: user.userId, documentId: id },
       },
       select: { id: true },
+    });
+
+    await this.learningActivity.record({
+      userId: user.userId,
+      type: 'DOCUMENT_VIEW',
+      subjectCategoryId: doc.categoryId,
+      meta: { documentId: doc.id },
     });
 
     return {

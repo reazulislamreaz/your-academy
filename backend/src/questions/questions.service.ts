@@ -10,6 +10,7 @@ import type { RequestUser } from '../auth/auth.types';
 import { newRequestId } from '../common/request-id';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../database/prisma.service';
+import { LearningActivityService } from '../learning-activity/learning-activity.service';
 import { AccessControlService } from '../subscriptions/access-control.service';
 import type { CreateQuestionDto } from './dto/create-question.dto';
 import type { UpdateQuestionDto } from './dto/update-question.dto';
@@ -20,6 +21,7 @@ export class QuestionsService {
     private readonly prisma: PrismaService,
     private readonly access: AccessControlService,
     private readonly audit: AuditService,
+    private readonly learningActivity: LearningActivityService,
   ) {}
 
   async createDraft(user: RequestUser, dto: CreateQuestionDto) {
@@ -137,12 +139,26 @@ export class QuestionsService {
     return updated;
   }
 
-  async adminList(params: { cursor?: string; limit?: number; status?: QuestionStatus }) {
+  async adminList(params: {
+    cursor?: string;
+    limit?: number;
+    status?: QuestionStatus;
+    q?: string;
+  }) {
     const limit = Math.min(params.limit ?? 20, 100);
     const items = await this.prisma.question.findMany({
       where: {
         deletedAt: null,
         ...(params.status ? { status: params.status } : {}),
+        ...(params.q
+          ? {
+              OR: [
+                { title: { contains: params.q, mode: 'insensitive' } },
+                { content: { contains: params.q, mode: 'insensitive' } },
+                { sourceNote: { contains: params.q, mode: 'insensitive' } },
+              ],
+            }
+          : {}),
       },
       take: limit + 1,
       ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {}),
@@ -155,6 +171,53 @@ export class QuestionsService {
     });
     const nextCursor = items.length > limit ? items.pop()!.id : null;
     return { items, nextCursor };
+  }
+
+  /** Clone a question as a new DRAFT (options copied; status reset). */
+  async duplicate(id: string, actorUserId: string) {
+    const source = await this.prisma.question.findFirst({
+      where: { id, deletedAt: null },
+      include: { options: { orderBy: { sortOrder: 'asc' } } },
+    });
+    if (!source) {
+      throw new NotFoundException(
+        createErrorResponse('QUESTION_NOT_FOUND', 'Question not found', newRequestId()),
+      );
+    }
+
+    const created = await this.prisma.question.create({
+      data: {
+        title: `${source.title} (copy)`.slice(0, 200),
+        content: source.content,
+        explanation: source.explanation,
+        categoryId: source.categoryId,
+        subcategoryId: source.subcategoryId,
+        difficulty: source.difficulty,
+        status: QuestionStatus.DRAFT,
+        examTags: source.examTags,
+        sourceNote: source.sourceNote,
+        createdById: actorUserId,
+        options: {
+          create: source.options.map((o, index) => ({
+            label: o.label,
+            content: o.content,
+            isCorrect: o.isCorrect,
+            sortOrder: index,
+          })),
+        },
+      },
+      include: { options: { orderBy: { sortOrder: 'asc' } } },
+    });
+
+    await this.audit.record({
+      actorUserId,
+      action: 'QUESTION_DUPLICATE',
+      entityType: 'question',
+      entityId: created.id,
+      metadata: { sourceId: id },
+    });
+
+    return created;
   }
 
   async listPublished(
@@ -263,7 +326,7 @@ export class QuestionsService {
   async recordAttempt(user: RequestUser, questionId: string, selectedOptionId: string) {
     const question = await this.prisma.question.findFirst({
       where: { id: questionId, status: QuestionStatus.PUBLISHED, deletedAt: null },
-      select: { id: true, categoryId: true },
+      select: { id: true, categoryId: true, subcategoryId: true },
     });
     if (!question) {
       throw new NotFoundException(
@@ -300,6 +363,15 @@ export class QuestionsService {
         isCorrect: true,
         createdAt: true,
       },
+    });
+
+    await this.learningActivity.record({
+      userId: user.userId,
+      type: 'QUESTION_ATTEMPT',
+      subjectCategoryId: question.categoryId,
+      topicCategoryId: question.subcategoryId,
+      questionId: question.id,
+      meta: { attemptId: attempt.id },
     });
 
     const dbUser = await this.prisma.user.findUniqueOrThrow({ where: { id: user.userId } });

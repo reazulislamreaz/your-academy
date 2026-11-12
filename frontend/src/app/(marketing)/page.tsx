@@ -29,7 +29,6 @@ import {
   MathSymbolsIcon,
 } from '@/components/marketing/homepage-icons';
 import { Reveal } from '@/components/motion/reveal';
-import { cn } from '@/lib/utils';
 
 export const metadata: Metadata = {
   title: 'Your Academy — Job Exam Preparation',
@@ -80,11 +79,11 @@ const CATEGORIES = [
 ] as const;
 
 const TOPICS = [
-  { name: 'Bangla', href: '/questions?q=Bangla', Icon: BanglaBookIcon, selected: true },
-  { name: 'English', href: '/questions?q=English', Icon: EnglishLangIcon, selected: false },
-  { name: 'Math', href: '/questions?q=Math', Icon: MathSymbolsIcon, selected: false },
-  { name: 'GK', href: '/questions?q=GK', Icon: GkGlobeIcon, selected: false },
-  { name: 'Others', href: '/questions', Icon: GearBlueIcon, selected: false },
+  { name: 'Bangla', href: '/questions?q=Bangla', Icon: BanglaBookIcon },
+  { name: 'English', href: '/questions?q=English', Icon: EnglishLangIcon },
+  { name: 'Math', href: '/questions?q=Math', Icon: MathSymbolsIcon },
+  { name: 'GK', href: '/questions?q=GK', Icon: GkGlobeIcon },
+  { name: 'Others', href: '/questions', Icon: GearBlueIcon },
 ] as const;
 
 export default function HomePage() {
@@ -264,17 +263,11 @@ export default function HomePage() {
                 </Link>
               </div>
               <ul className="motion-stagger grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 lg:gap-4">
-                {TOPICS.map(({ name, href, Icon, selected }) => (
+                {TOPICS.map(({ name, href, Icon }) => (
                   <li key={name}>
                     <Link
                       href={href}
-                      aria-current={selected ? 'true' : undefined}
-                      className={cn(
-                        'group flex h-full flex-col items-center gap-2.5 rounded-[14px] border bg-white px-2 py-5 text-center shadow-[var(--shadow-sm)] transition-all duration-[var(--duration-fast)] hover:-translate-y-0.5 hover:shadow-[var(--shadow)]',
-                        selected
-                          ? 'border-[var(--highlight)] shadow-[0_0_0_1px_var(--highlight),var(--shadow-sm)]'
-                          : 'border-[var(--line)] hover:border-[var(--highlight)]',
-                      )}
+                      className="group flex h-full flex-col items-center gap-2.5 rounded-[14px] border border-[var(--line)] bg-white px-2 py-5 text-center shadow-[var(--shadow-sm)] transition-all duration-[var(--duration-fast)] hover:-translate-y-0.5 hover:border-[var(--highlight)] hover:shadow-[var(--shadow)]"
                     >
                       <Icon className="h-12 w-12" />
                       <span className="font-display text-sm font-bold tracking-tight text-[var(--ink)] sm:text-[15px]">
@@ -290,7 +283,7 @@ export default function HomePage() {
       </section>
 
       {/* Why + Progress + CTA */}
-      <section className="pb-[var(--space-section)]">
+      <section id="how-it-works" className="scroll-mt-24 pb-[var(--space-section)]">
         <Reveal className="motion-stagger mx-auto grid w-full max-w-[1280px] gap-5 px-4 sm:px-6 lg:grid-cols-3 lg:gap-6">
           <div className="rounded-[18px] bg-[#e8f0fe] p-6 shadow-[var(--shadow-sm)] sm:p-7">
             <h2 className="font-display text-xl font-bold tracking-tight text-[var(--ink)] sm:text-2xl">

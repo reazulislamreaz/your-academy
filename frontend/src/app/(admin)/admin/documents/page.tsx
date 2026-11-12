@@ -10,14 +10,17 @@ import { ConfirmButton } from '@/components/ui/confirm-button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { LoadMoreButton } from '@/components/ui/load-more-button';
 import { Select } from '@/components/ui/select';
 import { Surface } from '@/components/ui/surface';
 import { Textarea } from '@/components/ui/textarea';
+import { ContentIn } from '@/components/ui/skeleton';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import type { AdminDocumentItem } from '@/lib/api/admin-types';
 import type { CategoryNode } from '@/lib/api/types';
 import { getStorageStatus, uploadViaSignedRequest } from '@/lib/cloudinary-upload';
 import { AdminDocumentsPageSkeleton } from '@/components/skeletons';
+import { useCursorList } from '@/lib/hooks/use-cursor-list';
 
 export default function AdminDocumentsPage() {
   const qc = useQueryClient();
@@ -39,9 +42,10 @@ export default function AdminDocumentsPage() {
     queryFn: () => apiFetch<CategoryNode[]>('/categories'),
   });
 
-  const list = useQuery({
-    queryKey: ['admin-documents'],
-    queryFn: () => apiFetch<AdminDocumentItem[]>('/admin/documents'),
+  const list = useCursorList<AdminDocumentItem>(['admin-documents'], (cursor) => {
+    const qs = new URLSearchParams({ limit: '30' });
+    if (cursor) qs.set('cursor', cursor);
+    return `/admin/documents?${qs}`;
   });
 
   const create = useMutation({
@@ -185,42 +189,54 @@ export default function AdminDocumentsPage() {
       </Surface>
 
       {list.isLoading ? <AdminDocumentsPageSkeleton omitHeader /> : null}
-      {!list.isLoading && (list.data?.length ?? 0) === 0 ? (
+      {!list.isLoading && list.items.length === 0 ? (
         <EmptyState title="No documents" description="Create an entry above." />
       ) : null}
 
-      <ul className="divide-y divide-[var(--line)] overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)]">
-        {list.data?.map((doc) => (
-          <li
-            key={doc.id}
-            className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
-          >
-            <div>
-              <p className="font-semibold">{doc.title}</p>
-              <p className="text-sm text-[var(--muted-strong)]">
-                {doc.mediaAsset?.originalFilename ?? 'file'} ·{' '}
-                {doc.category?.name ?? 'Uncategorized'}
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant={doc.isPublished ? 'success' : 'outline'}>
-                {doc.isPublished ? 'Published' : 'Draft'}
-              </Badge>
-              <Button size="sm" variant="outline" onClick={() => togglePublish.mutate(doc)}>
-                {doc.isPublished ? 'Unpublish' : 'Publish'}
-              </Button>
-              <ConfirmButton
-                size="sm"
-                variant="ghost"
-                confirmMessage="Soft-delete this document?"
-                onConfirm={() => remove.mutateAsync(doc.id)}
+      {!list.isLoading && list.items.length > 0 ? (
+        <ContentIn>
+          <ul className="divide-y divide-[var(--line)] overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)]">
+            {list.items.map((doc) => (
+              <li
+                key={doc.id}
+                className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
               >
-                Delete
-              </ConfirmButton>
-            </div>
-          </li>
-        ))}
-      </ul>
+                <div>
+                  <p className="font-semibold">{doc.title}</p>
+                  <p className="text-sm text-[var(--muted-strong)]">
+                    {doc.mediaAsset?.originalFilename ?? 'file'} ·{' '}
+                    {doc.category?.name ?? 'Uncategorized'}
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant={doc.isPublished ? 'success' : 'outline'}>
+                    {doc.isPublished ? 'Published' : 'Draft'}
+                  </Badge>
+                  <Button size="sm" variant="outline" onClick={() => togglePublish.mutate(doc)}>
+                    {doc.isPublished ? 'Unpublish' : 'Publish'}
+                  </Button>
+                  <ConfirmButton
+                    size="sm"
+                    variant="ghost"
+                    confirmTitle="Delete this document?"
+                    confirmMessage="Soft-delete this document?"
+                    confirmLabel="Delete"
+                    reversible={false}
+                    onConfirm={() => remove.mutateAsync(doc.id)}
+                  >
+                    Delete
+                  </ConfirmButton>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <LoadMoreButton
+            hasNextPage={list.hasNextPage}
+            isFetchingNextPage={list.isFetchingNextPage}
+            onLoadMore={() => void list.fetchNextPage()}
+          />
+        </ContentIn>
+      ) : null}
     </div>
   );
 }

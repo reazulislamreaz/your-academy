@@ -20,6 +20,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html
       lang="en"
+      data-scroll-behavior="smooth"
       className={`${fontSans.variable} ${fontDisplay.variable} ${fontReading.variable}`}
     >
       <body className="min-h-screen font-sans antialiased">

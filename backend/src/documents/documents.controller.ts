@@ -10,13 +10,14 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
-import { createSuccessResponse } from '@your-academy/shared';
+import { createSuccessResponse, cursorPaginationMeta } from '@your-academy/shared';
 import type { RequestUser } from '../auth/auth.types';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CsrfGuard } from '../common/guards/csrf.guard';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
+import { parseLimit } from '../common/pagination';
 import { newRequestId } from '../common/request-id';
 import { CreateDocumentDto, UpdateDocumentDto } from './dto/create-document.dto';
 import { DocumentsService } from './documents.service';
@@ -33,17 +34,17 @@ export class DocumentsController {
     @Query('limit') limit?: string,
     @Query('categoryId') categoryId?: string,
   ) {
+    const take = parseLimit(limit, 20);
     const data = await this.documents.listPublished(user, {
       cursor,
-      limit: limit ? Number(limit) : undefined,
+      limit: take,
       categoryId,
     });
-    return createSuccessResponse(data.items, newRequestId(), {
-      nextCursor: data.nextCursor,
-      prevCursor: null,
-      limit: limit ? Number(limit) : 20,
-      total: null,
-    });
+    return createSuccessResponse(
+      data.items,
+      newRequestId(),
+      cursorPaginationMeta(data.nextCursor, take),
+    );
   }
 
   @Get('documents/:id')
@@ -55,8 +56,14 @@ export class DocumentsController {
   @Get('admin/documents')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  async adminList() {
-    return createSuccessResponse(await this.documents.adminList(), newRequestId());
+  async adminList(@Query('cursor') cursor?: string, @Query('limit') limit?: string) {
+    const take = parseLimit(limit, 50);
+    const data = await this.documents.adminList({ cursor, limit: take });
+    return createSuccessResponse(
+      data.items,
+      newRequestId(),
+      cursorPaginationMeta(data.nextCursor, take),
+    );
   }
 
   @Get('admin/documents/:id')

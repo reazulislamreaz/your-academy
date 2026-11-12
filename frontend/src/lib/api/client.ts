@@ -56,14 +56,48 @@ function shouldAttemptRefresh(path: string, skipRefresh?: boolean): boolean {
   ].includes(p);
 }
 
+/**
+ * CSRF is readable and set only with auth cookies. No CSRF ≈ guest — skip refresh
+ * so public pages do not stampede `/auth/refresh` (and hit 429) after `/users/me` 401s.
+ */
+function likelyHasSessionCookies(): boolean {
+  return Boolean(getCookie(process.env.NEXT_PUBLIC_CSRF_COOKIE_NAME ?? 'csrf_token'));
+}
+
+/** Single-flight refresh + cooldown after failure (prevents throttle storms). */
+let refreshInFlight: Promise<boolean> | null = null;
+let refreshCooldownUntil = 0;
+
 async function refreshSession(): Promise<boolean> {
-  const res = await fetch(`${API_BASE}/auth/refresh`, {
-    method: 'POST',
-    credentials: 'include',
-  });
-  if (!res.ok) return false;
-  const json = (await res.json()) as ApiEnvelope<unknown>;
-  return Boolean(json.success);
+  if (!likelyHasSessionCookies()) return false;
+  if (Date.now() < refreshCooldownUntil) return false;
+  if (refreshInFlight) return refreshInFlight;
+
+  refreshInFlight = (async () => {
+    try {
+      const res = await fetch(`${API_BASE}/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!res.ok) {
+        // 429: back off a full throttle window; other failures: short cool-down.
+        refreshCooldownUntil = Date.now() + (res.status === 429 ? 65_000 : 15_000);
+        return false;
+      }
+      const json = (await res.json()) as ApiEnvelope<unknown>;
+      const ok = Boolean(json.success);
+      if (!ok) refreshCooldownUntil = Date.now() + 15_000;
+      else refreshCooldownUntil = 0;
+      return ok;
+    } catch {
+      refreshCooldownUntil = Date.now() + 15_000;
+      return false;
+    } finally {
+      refreshInFlight = null;
+    }
+  })();
+
+  return refreshInFlight;
 }
 
 export async function apiFetchResult<T>(

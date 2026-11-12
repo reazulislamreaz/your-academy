@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { PageHeader } from '@/components/layout/page-header';
@@ -22,6 +22,7 @@ import { AdminQuestionFormPageSkeleton } from '@/components/skeletons';
 
 export default function EditQuestionPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const qc = useQueryClient();
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
@@ -93,6 +94,16 @@ export default function EditQuestionPage() {
     },
   });
 
+  const duplicate = useMutation({
+    mutationFn: () =>
+      apiFetch<{ id: string }>(`/admin/questions/${params.id}/duplicate`, { method: 'POST' }),
+    onSuccess: (created) => {
+      void qc.invalidateQueries({ queryKey: ['admin-questions'] });
+      router.push(`/admin/questions/${created.id}`);
+    },
+    onError: (err) => setError(err instanceof ApiError ? err.message : 'Duplicate failed'),
+  });
+
   if (detail.isLoading || !initial) {
     return <AdminQuestionFormPageSkeleton />;
   }
@@ -139,12 +150,29 @@ export default function EditQuestionPage() {
           >
             Publish
           </Button>
-        ) : null}
+        ) : (
+          <Link href={`/questions/${detail.data.id}`} target="_blank">
+            <Button size="sm" variant="outline">
+              Preview as learner
+            </Button>
+          </Link>
+        )}
+        <Button
+          size="sm"
+          variant="ghost"
+          disabled={duplicate.isPending}
+          onClick={() => duplicate.mutate()}
+        >
+          Duplicate
+        </Button>
         {detail.data.status !== 'ARCHIVED' ? (
           <ConfirmButton
             size="sm"
             variant="outline"
-            confirmMessage="Archive this question?"
+            confirmTitle="Archive this question?"
+            confirmMessage="Archive this question? It will leave the learner bank."
+            confirmLabel="Archive"
+            reversible
             onConfirm={() => archive.mutateAsync()}
           >
             Archive

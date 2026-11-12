@@ -43,6 +43,14 @@ export function middleware(request: NextRequest) {
     pathname.startsWith('/bookmarks') ||
     pathname.startsWith('/documents') ||
     pathname.startsWith('/profile') ||
+    pathname.startsWith('/practice') ||
+    pathname.startsWith('/results') ||
+    pathname.startsWith('/subjects') ||
+    pathname.startsWith('/quizzes') ||
+    pathname.startsWith('/daily-quiz') ||
+    pathname.startsWith('/model-tests') ||
+    pathname.startsWith('/exams') ||
+    pathname.startsWith('/previous-year') ||
     pathname.startsWith('/admin');
 
   if (needsAuth && !hasSession) {
@@ -85,6 +93,22 @@ export const config = {
     '/documents/:path*',
     '/profile',
     '/profile/:path*',
+    '/practice',
+    '/practice/:path*',
+    '/results',
+    '/results/:path*',
+    '/subjects',
+    '/subjects/:path*',
+    '/quizzes',
+    '/quizzes/:path*',
+    '/daily-quiz',
+    '/daily-quiz/:path*',
+    '/model-tests',
+    '/model-tests/:path*',
+    '/exams',
+    '/exams/:path*',
+    '/previous-year',
+    '/previous-year/:path*',
     '/admin/:path*',
     '/login',
     '/register',

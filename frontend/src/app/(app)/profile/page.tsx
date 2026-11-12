@@ -155,14 +155,13 @@ export default function ProfilePage() {
         actions={
           <div className="flex flex-wrap gap-2">
             <Link href="/home">
-              <Button variant="soft" size="sm" className="rounded-full">
+              <Button variant="soft" size="sm">
                 Dashboard
               </Button>
             </Link>
             <Button
               variant="outline"
               size="sm"
-              className="rounded-full"
               disabled={logout.isPending}
               onClick={() => logout.mutate()}
             >
@@ -180,6 +179,9 @@ export default function ProfilePage() {
               <img
                 src={user.avatarUrl}
                 alt=""
+                width={56}
+                height={56}
+                decoding="async"
                 className="h-14 w-14 shrink-0 rounded-full object-cover ring-2 ring-[var(--line)]"
               />
             ) : (
@@ -248,7 +250,7 @@ export default function ProfilePage() {
             href="/home#exam-history"
             className="font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
           >
-            Recent results
+            Recent answer checks
           </Link>
         </div>
       </section>
@@ -336,7 +338,7 @@ export default function ProfilePage() {
           </Field>
           {profileMsg ? <Alert variant="success">{profileMsg}</Alert> : null}
           {profileErr ? <Alert variant="danger">{profileErr}</Alert> : null}
-          <Button type="submit" disabled={saveProfile.isPending} className="rounded-full">
+          <Button type="submit" disabled={saveProfile.isPending}>
             {saveProfile.isPending ? 'Saving…' : 'Save profile'}
           </Button>
         </form>
@@ -425,7 +427,6 @@ export default function ProfilePage() {
             type="submit"
             variant="secondary"
             disabled={changePassword.isPending}
-            className="rounded-full"
           >
             {changePassword.isPending ? 'Updating…' : 'Update password'}
           </Button>

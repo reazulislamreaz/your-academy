@@ -213,6 +213,19 @@ function QuestionImportDetailContent() {
         </Alert>
       ) : null}
 
+      {data.status === 'IMPORTING' ? (
+        <Alert variant="info">
+          Import in progress. Counts update as chunks commit — refresh if the status stalls.
+          Download the report after completion for a full VALID/DUPLICATE/INVALID summary.
+        </Alert>
+      ) : null}
+
+      {data.status === 'COMPLETED' ? (
+        <Alert variant="success">
+          Import finished. Use Report / Export for a durable audit of what landed in the bank.
+        </Alert>
+      ) : null}
+
       {data.duplicateFileBatch ? (
         <Alert variant="warning">
           File hash matches a previous upload:{' '}
@@ -271,7 +284,10 @@ function QuestionImportDetailContent() {
               <ConfirmButton
                 size="sm"
                 variant="outline"
+                confirmTitle="Archive this collection?"
                 confirmMessage="Archive this collection? Imported questions stay in the bank."
+                confirmLabel="Archive"
+                reversible
                 disabled={archive.isPending}
                 onConfirm={() => archive.mutate()}
               >
@@ -284,7 +300,10 @@ function QuestionImportDetailContent() {
                 size="sm"
                 variant="outline"
                 className="text-[var(--danger)]"
-                confirmMessage="Delete this collection permanently?"
+                confirmTitle="Delete this collection?"
+                confirmMessage="Delete this collection permanently? This cannot be undone."
+                confirmLabel="Delete"
+                reversible={false}
                 disabled={remove.isPending}
                 onConfirm={() => remove.mutate()}
               >
@@ -451,7 +470,7 @@ function QuestionImportDetailContent() {
           <EmptyState title="No rows" description="No rows match this filter." />
         ) : null}
 
-        <div className="overflow-x-auto rounded-[12px] border border-[var(--line)]">
+        <div className="min-w-0 w-full max-w-full overflow-x-auto rounded-[12px] border border-[var(--line)]">
           <table className="min-w-[960px] w-full text-left text-sm">
             <thead className="bg-[var(--bg-desk)] text-xs font-semibold tracking-wide text-[var(--muted-strong)] uppercase">
               <tr>

@@ -25,7 +25,7 @@ function QuestionDetailContent() {
 
   const filterQs = useMemo(() => {
     const sp = new URLSearchParams();
-    for (const key of ['q', 'categoryId', 'subcategoryId', 'difficulty'] as const) {
+    for (const key of ['q', 'categoryId', 'subcategoryId', 'difficulty', 'examTag'] as const) {
       const v = searchParams.get(key);
       if (v) sp.set(key, v);
     }
@@ -63,27 +63,7 @@ function QuestionDetailContent() {
     },
   });
 
-  useEffect(() => {
-    if (!data) return;
-    let cancelled = false;
-    void (async () => {
-      try {
-        const user = await apiFetch<MeUser>('/users/me/study-prefs', {
-          method: 'PATCH',
-          body: JSON.stringify({
-            lastQuestionId: data.id,
-            lastQuestionFilterQs: filterQs || null,
-          }),
-        });
-        if (!cancelled) qc.setQueryData(meQueryKey, user);
-      } catch {
-        // Non-blocking: practice still works if resume pointer fails.
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [data?.id, filterQs, qc]);
+  // Resume pointer is written on Check (persistProgress) — avoid duplicate PATCH on every open.
 
   const bookmark = useMutation({
     mutationFn: async () => {
@@ -229,7 +209,7 @@ function QuestionDetailContent() {
       ) : null}
 
       <div
-        className="fixed inset-x-0 bottom-0 z-20 border-t border-[var(--line)] bg-[var(--bg-elevated)]/95 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-md lg:left-[16rem]"
+        className="fixed inset-x-0 bottom-0 z-20 border-t border-[var(--line)] bg-[var(--bg-elevated)]/95 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-md lg:left-[var(--app-sidebar-width)]"
         role="navigation"
         aria-label="Practice navigation"
       >

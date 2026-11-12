@@ -1,23 +1,32 @@
 'use client';
 
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
 import { PageHeader } from '@/components/layout/page-header';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
+import { LoadMoreButton } from '@/components/ui/load-more-button';
 import { Surface } from '@/components/ui/surface';
-import { ApiError, apiFetch } from '@/lib/api/client';
+import { ContentIn } from '@/components/ui/skeleton';
+import { ApiError } from '@/lib/api/client';
 import type { PracticeAttemptSummary } from '@/lib/api/types';
 import { examLabel, practiceKindLabel } from '@/lib/exam-tags';
 import { ResultsPageSkeleton } from '@/components/skeletons';
+import { useCursorList } from '@/lib/hooks/use-cursor-list';
 
 export default function ResultsPage() {
-  const list = useQuery({
-    queryKey: ['practice-attempts'],
-    queryFn: () => apiFetch<PracticeAttemptSummary[]>('/me/practice-attempts?limit=50'),
-    retry: false,
-  });
+  const list = useCursorList<PracticeAttemptSummary>(
+    ['practice-attempts'],
+    (cursor) => {
+      const qs = new URLSearchParams({ limit: '20' });
+      if (cursor) qs.set('cursor', cursor);
+      return `/me/practice-attempts?${qs}`;
+    },
+    { retry: false },
+  );
+
+  const unauthorized =
+    list.error instanceof ApiError && (list.error.status === 401 || list.error.status === 403);
 
   return (
     <div className="space-y-8">
@@ -29,18 +38,26 @@ export default function ResultsPage() {
 
       {list.isLoading ? <ResultsPageSkeleton omitHeader /> : null}
 
-      {list.error instanceof ApiError && (list.error.status === 401 || list.error.status === 403) ? (
+      {unauthorized ? (
         <EmptyState
           title="Sign in to view results"
           description="Quiz and model-test history is tied to your account."
+          action={
+            <Link
+              href="/login?next=/results"
+              className="text-sm font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
+            >
+              Sign in
+            </Link>
+          }
         />
       ) : null}
 
-      {list.isError && !(list.error instanceof ApiError && list.error.status === 401) ? (
+      {list.isError && !unauthorized ? (
         <Alert variant="danger">Could not load results.</Alert>
       ) : null}
 
-      {!list.isLoading && !list.isError && (list.data?.length ?? 0) === 0 ? (
+      {!list.isLoading && !list.isError && list.items.length === 0 ? (
         <EmptyState
           title="No attempts yet"
           description="Complete a quiz or model test to see scores here."
@@ -52,48 +69,49 @@ export default function ResultsPage() {
         />
       ) : null}
 
-      <div className="space-y-3">
-        {(list.data ?? []).map((attempt) => (
-          <Surface key={attempt.id} className="p-4">
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <div>
-                <div className="mb-1 flex flex-wrap gap-1.5">
-                  <Badge variant="highlight">{practiceKindLabel(attempt.practiceSet.kind)}</Badge>
-                  {attempt.practiceSet.examTag ? (
-                    <Badge variant="outline">{examLabel(attempt.practiceSet.examTag)}</Badge>
-                  ) : null}
-                  <Badge variant="outline">{attempt.status}</Badge>
+      {!list.isLoading && !list.isError && list.items.length > 0 ? (
+        <ContentIn className="space-y-3">
+          {list.items.map((attempt) => (
+            <Surface key={attempt.id} className="p-4">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div>
+                  <div className="mb-1 flex flex-wrap gap-1.5">
+                    <Badge variant="highlight">
+                      {practiceKindLabel(attempt.practiceSet.kind)}
+                    </Badge>
+                    {attempt.practiceSet.examTag ? (
+                      <Badge variant="outline">{examLabel(attempt.practiceSet.examTag)}</Badge>
+                    ) : null}
+                    <Badge variant="outline">{attempt.status}</Badge>
+                  </div>
+                  <h3 className="font-display text-base font-semibold">
+                    <Link
+                      href={`/results/${attempt.id}`}
+                      className="hover:text-[var(--highlight)]"
+                    >
+                      {attempt.practiceSet.title}
+                    </Link>
+                  </h3>
+                  <p className="mt-1 text-xs text-[var(--muted-strong)]">
+                    {attempt.submittedAt
+                      ? new Date(attempt.submittedAt).toLocaleString()
+                      : 'Not submitted'}
+                  </p>
                 </div>
-                <h3 className="font-display text-base font-semibold">
-                  <Link
-                    href={`/results/${attempt.id}`}
-                    className="hover:text-[var(--highlight)]"
-                  >
-                    {attempt.practiceSet.title}
-                  </Link>
-                </h3>
-                <p className="mt-1 text-xs text-[var(--muted-strong)]">
-                  {attempt.submittedAt
-                    ? new Date(attempt.submittedAt).toLocaleString()
-                    : 'Not submitted'}
+                <p className="font-display text-xl font-bold tabular-nums">
+                  {attempt.score ?? '—'}
+                  {attempt.maxScore != null ? `/${attempt.maxScore}` : ''}
                 </p>
               </div>
-              <div className="text-right">
-                <p className="font-display text-lg font-bold tabular-nums text-[var(--ink)]">
-                  {attempt.score ?? 0}
-                  <span className="text-sm font-medium text-[var(--muted-strong)]">
-                    /{attempt.maxScore ?? 0}
-                  </span>
-                </p>
-                <p className="text-xs text-[var(--muted-strong)]">
-                  ✓ {attempt.correctCount ?? 0} · ✗ {attempt.wrongCount ?? 0} · —{' '}
-                  {attempt.skippedCount ?? 0}
-                </p>
-              </div>
-            </div>
-          </Surface>
-        ))}
-      </div>
+            </Surface>
+          ))}
+          <LoadMoreButton
+            hasNextPage={list.hasNextPage}
+            isFetchingNextPage={list.isFetchingNextPage}
+            onLoadMore={() => void list.fetchNextPage()}
+          />
+        </ContentIn>
+      ) : null}
     </div>
   );
 }

@@ -8,6 +8,8 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Surface } from '@/components/ui/surface';
 import { apiFetch } from '@/lib/api/client';
 import type { CategoryNode } from '@/lib/api/types';
+import { SubjectsPageSkeleton } from '@/components/skeletons';
+import { ContentIn } from '@/components/ui/skeleton';
 
 export default function SubjectsPage() {
   const categories = useQuery({
@@ -23,19 +25,7 @@ export default function SubjectsPage() {
         description="Pick a subject, open a topic, then practice MCQs or start a subject quiz."
       />
 
-      {categories.isLoading ? (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" role="status" aria-busy="true" aria-live="polite">
-          <span className="sr-only">Loading subjects…</span>
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="space-y-2 rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] p-4 shadow-[var(--shadow-sm)]">
-              <div className="skeleton h-5 w-2/3 rounded-md" />
-              <div className="skeleton h-3.5 w-full rounded-md" />
-              <div className="skeleton h-3.5 w-[80%] rounded-md" />
-              <div className="skeleton mt-2 h-3 w-24 rounded-md" />
-            </div>
-          ))}
-        </div>
-      ) : null}
+      {categories.isLoading ? <SubjectsPageSkeleton omitHeader /> : null}
 
       {categories.isError ? (
         <Alert variant="danger">Could not load subjects.</Alert>
@@ -45,10 +35,11 @@ export default function SubjectsPage() {
         <EmptyState title="No subjects yet" description="Subjects appear once categories are published." />
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {!categories.isLoading && !categories.isError && (categories.data?.length ?? 0) > 0 ? (
+      <ContentIn className="motion-stagger grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {(categories.data ?? []).map((subject) => (
-          <Surface key={subject.id} className="p-4">
-            <h2 className="font-display text-lg font-semibold text-[var(--ink)]">
+          <Surface key={subject.id} className="motion-hover-lift p-4 sm:p-5">
+            <h2 className="font-display text-lg font-semibold tracking-tight text-[var(--ink)]">
               <Link
                 href={`/subjects/${subject.slug}`}
                 className="hover:text-[var(--highlight)]"
@@ -79,7 +70,8 @@ export default function SubjectsPage() {
             </div>
           </Surface>
         ))}
-      </div>
+      </ContentIn>
+      ) : null}
     </div>
   );
 }

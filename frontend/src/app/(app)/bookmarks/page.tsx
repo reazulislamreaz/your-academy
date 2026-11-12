@@ -89,7 +89,11 @@ export default function BookmarksPage() {
         description="Questions and PDFs you bookmarked while practicing."
       />
 
-      <div className="flex gap-1 border-b border-[var(--line)]">
+      <div
+        className="flex gap-1 border-b border-[var(--line)]"
+        role="tablist"
+        aria-label="Saved item types"
+      >
         {(
           [
             { id: 'questions', label: 'Questions' },
@@ -99,6 +103,11 @@ export default function BookmarksPage() {
           <button
             key={item.id}
             type="button"
+            role="tab"
+            id={`bookmarks-tab-${item.id}`}
+            aria-selected={tab === item.id}
+            aria-controls={`bookmarks-panel-${item.id}`}
+            tabIndex={tab === item.id ? 0 : -1}
             onClick={() => setTab(item.id)}
             className={cn(
               'relative px-4 py-2.5 text-sm font-semibold transition-colors',
@@ -120,10 +129,14 @@ export default function BookmarksPage() {
       {isUnauthorized(active.error) ? (
         <Alert variant="warning">
           Sign in to view bookmarks.{' '}
-          <Link href="/login" className="font-semibold underline-offset-2 hover:underline">
+          <Link href="/login?next=/bookmarks" className="font-semibold underline-offset-2 hover:underline">
             Sign in
           </Link>
         </Alert>
+      ) : null}
+
+      {active.isError && !isUnauthorized(active.error) ? (
+        <Alert variant="danger">Could not load bookmarks. Try again shortly.</Alert>
       ) : null}
 
       {tab === 'questions' && !questions.isLoading && !questions.error && questionRows.length === 0 ? (
@@ -156,8 +169,13 @@ export default function BookmarksPage() {
         />
       ) : null}
 
-      {tab === 'questions' ? (
-        <div className="divide-y divide-[var(--line)] border-y border-[var(--line)]">
+      {tab === 'questions' && questionRows.length > 0 ? (
+        <div
+          role="tabpanel"
+          id="bookmarks-panel-questions"
+          aria-labelledby="bookmarks-tab-questions"
+          className="divide-y divide-[var(--line)] border-y border-[var(--line)]"
+        >
           {questionRows.map((b) => (
             <div key={b.id} className="flex items-start justify-between gap-3 py-4">
               <Link href={`/questions/${b.question.id}`} className="min-w-0 flex-1 space-y-1">
@@ -178,8 +196,15 @@ export default function BookmarksPage() {
             </div>
           ))}
         </div>
-      ) : (
-        <div className="divide-y divide-[var(--line)] border-y border-[var(--line)]">
+      ) : null}
+
+      {tab === 'documents' && documentRows.length > 0 ? (
+        <div
+          role="tabpanel"
+          id="bookmarks-panel-documents"
+          aria-labelledby="bookmarks-tab-documents"
+          className="divide-y divide-[var(--line)] border-y border-[var(--line)]"
+        >
           {documentRows.map((b) => (
             <div key={b.id} className="flex items-start justify-between gap-3 py-4">
               <Link href={`/documents/${b.document.id}`} className="min-w-0 flex-1 space-y-1">
@@ -197,7 +222,7 @@ export default function BookmarksPage() {
             </div>
           ))}
         </div>
-      )}
+      ) : null}
 
       {active.hasNextPage ? (
         <Button
