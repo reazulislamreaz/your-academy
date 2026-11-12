@@ -94,7 +94,8 @@ export class PublicService {
       },
       take: limit + 1,
       ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {}),
-      orderBy: [{ importedAt: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
+      // Newest Admin upload first (upload createdAt DESC).
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       select: {
         id: true,
         batchCode: true,

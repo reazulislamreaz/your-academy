@@ -7,7 +7,15 @@ import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { listPublicQuestionSets } from '@/lib/api/public-questions';
 
-/** Latest upload-based Question Sets on the marketing homepage. */
+function formatUploadDate(iso: string) {
+  return new Date(iso).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+
+/** Latest Exam Sets on the marketing homepage (name + upload date). */
 export function HomepageLatestQuestions({ limit = 6 }: { limit?: number }) {
   const list = useQuery({
     queryKey: ['public-question-sets-home', limit],
@@ -16,7 +24,6 @@ export function HomepageLatestQuestions({ limit = 6 }: { limit?: number }) {
   });
 
   const items = list.data?.data ?? [];
-  const total = list.data?.pagination?.total;
 
   return (
     <section className="section-pad bg-[var(--bg-desk)]">
@@ -28,11 +35,10 @@ export function HomepageLatestQuestions({ limit = 6 }: { limit?: number }) {
               aria-hidden
             />
             <h2 className="font-display text-2xl font-bold tracking-tight text-[var(--ink)] sm:text-[2rem]">
-              Latest Question Sets
+              Latest Exam Sets
             </h2>
             <p className="text-sm text-[var(--muted-strong)] sm:text-base">
-              Each admin upload is a separate set
-              {total != null ? ` · ${total.toLocaleString()} available` : ''}.
+              Newest admin uploads appear first.
             </p>
           </div>
           <Link href="/preli-question-bank">
@@ -44,47 +50,39 @@ export function HomepageLatestQuestions({ limit = 6 }: { limit?: number }) {
         </div>
 
         {list.isLoading ? (
-          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="space-y-3">
             {Array.from({ length: 3 }).map((_, i) => (
               <li
                 key={i}
-                className="h-40 animate-pulse rounded-[1.25rem] border border-[var(--line)] bg-white"
+                className="h-[4.5rem] animate-pulse rounded-[1rem] border border-[var(--line)] bg-white"
               />
             ))}
           </ul>
         ) : null}
 
         {list.isError ? (
-          <Alert variant="danger">Could not load question sets.</Alert>
+          <Alert variant="danger">Could not load exam sets.</Alert>
         ) : null}
 
         {!list.isLoading && !list.isError && items.length === 0 ? (
           <div className="rounded-[1.25rem] border border-dashed border-[var(--line)] bg-white px-6 py-12 text-center text-sm text-[var(--muted-strong)]">
-            No published question sets yet. Admin uploads appear here automatically.
+            No exam sets yet. Admin uploads appear here automatically.
           </div>
         ) : null}
 
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="space-y-3">
           {items.map((set) => (
             <li key={set.id}>
               <Link
                 href={`/preli-question-bank/${set.id}`}
-                className="flex h-full flex-col rounded-[1.25rem] border border-[var(--line)] bg-white p-5 shadow-[var(--shadow-sm)] transition-all hover:-translate-y-0.5 hover:border-[var(--highlight)] hover:shadow-[var(--shadow)]"
+                className="block rounded-[1rem] border border-[var(--line)] bg-white px-5 py-4 shadow-[var(--shadow-sm)] transition-all hover:-translate-y-0.5 hover:border-[var(--highlight)] hover:shadow-[var(--shadow)]"
               >
-                <p className="text-[0.6875rem] font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
-                  Question set
-                </p>
-                <h3 className="mt-2 font-display text-lg font-bold tracking-tight text-[var(--ink)]">
+                <h3 className="font-display text-lg font-bold tracking-tight text-[var(--ink)]">
                   {set.title}
                 </h3>
-                <p className="mt-2 text-sm text-[var(--muted-strong)]">
-                  {set.questionCount} questions
-                  {set.subject ? ` · ${set.subject}` : ''}
+                <p className="mt-1.5 text-sm text-[var(--muted-strong)]">
+                  {formatUploadDate(set.uploadedAt)}
                 </p>
-                <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-[var(--highlight)]">
-                  View questions
-                  <ArrowRight className="size-4" />
-                </span>
               </Link>
             </li>
           ))}

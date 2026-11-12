@@ -2,14 +2,12 @@
 
 import Link from 'next/link';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { ArrowRight, BookOpen, CalendarDays, FolderOpen, Search } from 'lucide-react';
+import { FolderOpen, Search } from 'lucide-react';
 import { useState } from 'react';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { listPublicQuestionSets } from '@/lib/api/public-questions';
-import { AnswerVisibilityToggle } from './answer-visibility-toggle';
-import { useAnswerVisibility } from './use-answer-visibility';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -17,20 +15,18 @@ type Props = {
   className?: string;
 };
 
-function formatDate(iso: string | null) {
-  if (!iso) return '—';
+function formatUploadDate(iso: string) {
   return new Date(iso).toLocaleDateString(undefined, {
     year: 'numeric',
-    month: 'short',
+    month: 'long',
     day: 'numeric',
   });
 }
 
-/** Preli bank hub: one card per admin upload batch (Question Set). */
+/** Preli landing: Exam Sets only (name + upload date). Questions live on the set page. */
 export function PublicQuestionBank({ initialQ = '', className }: Props) {
   const [qInput, setQInput] = useState(initialQ);
   const [q, setQ] = useState(initialQ);
-  const visibility = useAnswerVisibility();
 
   const list = useInfiniteQuery({
     queryKey: ['public-question-sets', q],
@@ -45,19 +41,9 @@ export function PublicQuestionBank({ initialQ = '', className }: Props) {
   });
 
   const sets = list.data?.pages.flatMap((p) => p.data) ?? [];
-  const total = list.data?.pages[0]?.pagination?.total ?? null;
 
   return (
     <div className={cn('space-y-6', className)}>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <AnswerVisibilityToggle mode={visibility.mode} onChange={visibility.setMode} />
-        {total != null ? (
-          <p className="text-sm font-medium text-[var(--muted-strong)]">
-            {total.toLocaleString()} question set{total === 1 ? '' : 's'}
-          </p>
-        ) : null}
-      </div>
-
       <form
         className="flex flex-col gap-3 rounded-[1rem] border border-[var(--line)] bg-white p-4 shadow-[var(--shadow-sm)] sm:flex-row"
         onSubmit={(e) => {
@@ -70,9 +56,9 @@ export function PublicQuestionBank({ initialQ = '', className }: Props) {
           <Input
             value={qInput}
             onChange={(e) => setQInput(e.target.value)}
-            placeholder="Search question sets…"
+            placeholder="Search exams…"
             className="pl-9"
-            aria-label="Search question sets"
+            aria-label="Search exams"
           />
         </div>
         <div className="flex gap-2">
@@ -94,89 +80,44 @@ export function PublicQuestionBank({ initialQ = '', className }: Props) {
       </form>
 
       {list.isLoading ? (
-        <ul className="grid gap-4 sm:grid-cols-2">
-          {Array.from({ length: 4 }).map((_, i) => (
+        <ul className="space-y-3">
+          {Array.from({ length: 5 }).map((_, i) => (
             <li
               key={i}
-              className="h-40 animate-pulse rounded-[1.25rem] border border-[var(--line)] bg-white"
+              className="h-[4.5rem] animate-pulse rounded-[1rem] border border-[var(--line)] bg-white"
             />
           ))}
         </ul>
       ) : null}
 
       {list.isError ? (
-        <Alert variant="danger">Could not load question sets. Please try again.</Alert>
+        <Alert variant="danger">Could not load exam sets. Please try again.</Alert>
       ) : null}
 
       {!list.isLoading && !list.isError && sets.length === 0 ? (
         <div className="rounded-[1.25rem] border border-dashed border-[var(--line)] bg-white px-6 py-16 text-center">
           <FolderOpen className="mx-auto size-10 text-[var(--muted)] opacity-50" />
-          <p className="mt-3 font-display text-lg font-bold text-[var(--ink)]">No question sets yet</p>
+          <p className="mt-3 font-display text-lg font-bold text-[var(--ink)]">No exams yet</p>
           <p className="mt-2 text-sm text-[var(--muted-strong)]">
-            Each admin bulk upload becomes its own question set here.
+            Each admin upload appears here as its own exam set.
           </p>
         </div>
       ) : null}
 
-      <ul className="grid gap-4 sm:grid-cols-2">
+      <ul className="space-y-3">
         {sets.map((set) => (
           <li key={set.id}>
-            <article className="flex h-full flex-col rounded-[1.25rem] border border-[var(--line)] bg-white p-5 shadow-[var(--shadow)]">
-              <div className="space-y-2">
-                <p className="text-[0.6875rem] font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
-                  Question set
-                </p>
-                <h2 className="font-display text-lg font-bold tracking-tight text-[var(--ink)]">
-                  {set.title}
-                </h2>
-                {set.description ? (
-                  <p className="line-clamp-2 text-sm text-[var(--muted-strong)]">{set.description}</p>
-                ) : null}
-              </div>
-
-              <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                <div className="flex items-start gap-2">
-                  <BookOpen className="mt-0.5 size-4 shrink-0 text-[var(--muted)]" aria-hidden />
-                  <div>
-                    <dt className="text-xs text-[var(--muted)]">Questions</dt>
-                    <dd className="font-semibold text-[var(--ink)]">{set.questionCount}</dd>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <CalendarDays className="mt-0.5 size-4 shrink-0 text-[var(--muted)]" aria-hidden />
-                  <div>
-                    <dt className="text-xs text-[var(--muted)]">Uploaded</dt>
-                    <dd className="font-semibold text-[var(--ink)]">
-                      {formatDate(set.importedAt ?? set.uploadedAt)}
-                    </dd>
-                  </div>
-                </div>
-                {set.subject ? (
-                  <div className="col-span-2">
-                    <dt className="text-xs text-[var(--muted)]">Subject</dt>
-                    <dd className="font-medium text-[var(--ink-soft)]">
-                      {set.subject}
-                      {set.topic ? ` · ${set.topic}` : ''}
-                    </dd>
-                  </div>
-                ) : null}
-                {set.examCategory ? (
-                  <div className="col-span-2">
-                    <dt className="text-xs text-[var(--muted)]">Exam</dt>
-                    <dd className="font-medium text-[var(--ink-soft)]">{set.examCategory}</dd>
-                  </div>
-                ) : null}
-              </dl>
-
-              <div className="mt-5 pt-1">
-                <Link href={`/preli-question-bank/${set.id}`}>
-                  <Button type="button" className="w-full cursor-pointer sm:w-auto">
-                    View questions
-                    <ArrowRight className="size-4" />
-                  </Button>
-                </Link>
-              </div>
-            </article>
+            <Link
+              href={`/preli-question-bank/${set.id}`}
+              className="block rounded-[1rem] border border-[var(--line)] bg-white px-5 py-4 shadow-[var(--shadow-sm)] transition-all hover:-translate-y-0.5 hover:border-[var(--highlight)] hover:shadow-[var(--shadow)]"
+            >
+              <h2 className="font-display text-lg font-bold tracking-tight text-[var(--ink)] sm:text-xl">
+                {set.title}
+              </h2>
+              <p className="mt-1.5 text-sm text-[var(--muted-strong)]">
+                {formatUploadDate(set.uploadedAt)}
+              </p>
+            </Link>
           </li>
         ))}
       </ul>
@@ -190,7 +131,7 @@ export function PublicQuestionBank({ initialQ = '', className }: Props) {
             disabled={list.isFetchingNextPage}
             onClick={() => void list.fetchNextPage()}
           >
-            {list.isFetchingNextPage ? 'Loading…' : 'Load more sets'}
+            {list.isFetchingNextPage ? 'Loading…' : 'Load more exams'}
           </Button>
         </div>
       ) : null}

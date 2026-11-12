@@ -14,7 +14,7 @@ function PreliQuestionBankContent() {
       <PageHeader
         eyebrow="Public question bank"
         title="Preli Question Bank"
-        description="Each admin upload appears as its own question set. Browse without signing in — use Show/Hide All Answers anytime. Sign in only to save questions."
+        description="Browse exam sets by upload. Open an exam to view its MCQs — no login required."
       />
       <PublicQuestionBank initialQ={q} />
     </div>
