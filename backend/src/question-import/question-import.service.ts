@@ -24,7 +24,9 @@ import { mapExamCategoryToTag, parseDifficulty } from './exam-tag-map';
 import {
   buildImportReportBuffer,
   buildTemplateBuffer,
+  normalizeCorrectAnswer,
   parseQuestionWorkbook,
+  TEMPLATE_HEADERS,
   type ParsedImportRow,
 } from './excel-parser';
 import { hashFileBuffer, hashQuestionContent, slugifyBatchCode } from './question-normalize';
@@ -306,7 +308,7 @@ export class QuestionImportService {
         throw new BadRequestException(
           createErrorResponse(
             'INVALID_TEMPLATE',
-            'Missing required headers. Download the template and try again.',
+            `Missing required headers. Expected columns: ${TEMPLATE_HEADERS.join(' | ')}`,
             newRequestId(),
           ),
         );
@@ -361,18 +363,34 @@ export class QuestionImportService {
       const hash = row.question ? hashQuestionContent(row.question) : null;
       const errors: string[] = [];
 
-      if (!row.question) errors.push('Question is required');
-      if (!row.optionA || !row.optionB || !row.optionC || !row.optionD) {
-        errors.push('Options A–D are required');
+      if (!row.question) errors.push('Column "প্রশ্ন": question text is required');
+      if (!row.optionA) errors.push('Column "ক": option is required');
+      if (!row.optionB) errors.push('Column "খ": option is required');
+      if (!row.optionC) errors.push('Column "গ": option is required');
+      if (!row.optionD) errors.push('Column "ঘ": option is required');
+
+      const correct = normalizeCorrectAnswer(row.correctAnswer);
+      if (!correct) {
+        errors.push(
+          'Column "উত্তর": must be ক/খ/গ/ঘ (or A/B/C/D). Got: ' +
+            (row.correctAnswer.trim() || '(empty)'),
+        );
       }
-      const correct = row.correctAnswer.trim().toUpperCase();
-      if (!['A', 'B', 'C', 'D'].includes(correct)) {
-        errors.push('Correct Answer must be A, B, C, or D');
-      }
+
       const difficulty = parseDifficulty(row.difficulty);
-      if (!difficulty) errors.push('Difficulty must be Easy, Medium, or Hard');
-      if (!subjectName) errors.push('Subject is required');
-      if (!topicName) errors.push('Topic is required');
+      if (!difficulty) {
+        errors.push('Column "Difficulty": must be Easy, Medium, or Hard (optional; defaults to Medium)');
+      }
+      if (!subjectName) {
+        errors.push(
+          'Subject is required — set it in the upload form or add a Subject/বিষয় column',
+        );
+      }
+      if (!topicName) {
+        errors.push(
+          'Topic is required — set it in the upload form or add a Topic/টপিক column',
+        );
+      }
 
       const subject = subjectName
         ? categoryIndex.rootsByName.get(this.nameKey(subjectName))
@@ -401,7 +419,7 @@ export class QuestionImportService {
           optionB: row.optionB || null,
           optionC: row.optionC || null,
           optionD: row.optionD || null,
-          correctAnswer: correct?.[0] || null,
+          correctAnswer: correct,
           explanation: row.explanation || null,
           subjectName: subjectName || null,
           topicName: topicName || null,
@@ -409,7 +427,7 @@ export class QuestionImportService {
           examCategory: examCategory || null,
           examYear: row.examYear || null,
           source: row.source || null,
-          errorMessage: errors.join('; ').slice(0, 500),
+          errorMessage: `Row ${row.rowNumber}: ${errors.join('; ')}`.slice(0, 500),
         });
         continue;
       }
@@ -428,7 +446,7 @@ export class QuestionImportService {
           optionB: row.optionB,
           optionC: row.optionC,
           optionD: row.optionD,
-          correctAnswer: correct,
+          correctAnswer: correct!,
           explanation: row.explanation || null,
           subjectName,
           topicName,
@@ -436,7 +454,7 @@ export class QuestionImportService {
           examCategory: examCategory || null,
           examYear: row.examYear || null,
           source: row.source || null,
-          errorMessage: `Duplicate of row ${priorInFile} in this file`,
+          errorMessage: `Row ${row.rowNumber}: Duplicate of row ${priorInFile} in this file`,
         });
         continue;
       }
@@ -455,7 +473,7 @@ export class QuestionImportService {
           optionB: row.optionB,
           optionC: row.optionC,
           optionD: row.optionD,
-          correctAnswer: correct,
+          correctAnswer: correct!,
           explanation: row.explanation || null,
           subjectName,
           topicName,
@@ -464,7 +482,7 @@ export class QuestionImportService {
           examYear: row.examYear || null,
           source: row.source || null,
           existingQuestionId: existing.id,
-          errorMessage: `Duplicate of existing question (${existing.title.slice(0, 80)})`,
+          errorMessage: `Row ${row.rowNumber}: Duplicate of existing question (${existing.title.slice(0, 80)})`,
         });
         continue;
       }
@@ -482,7 +500,7 @@ export class QuestionImportService {
         optionB: row.optionB,
         optionC: row.optionC,
         optionD: row.optionD,
-        correctAnswer: correct,
+        correctAnswer: correct!,
         explanation: row.explanation || null,
         subjectName,
         topicName,
@@ -797,40 +815,25 @@ export class QuestionImportService {
 
     const ExcelJS = await import('exceljs');
     const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet('Questions');
-    sheet.addRow([
-      'Question',
-      'Option A',
-      'Option B',
-      'Option C',
-      'Option D',
-      'Correct Answer',
-      'Explanation',
-      'Subject',
-      'Topic',
-      'Difficulty',
-      'Exam Category',
-      'Exam Year',
-      'Source',
-    ]);
+    const sheet = workbook.addWorksheet('MCQ Questions');
+    sheet.addRow([...TEMPLATE_HEADERS]);
+    const letterToBn: Record<string, string> = { A: 'ক', B: 'খ', C: 'গ', D: 'ঘ' };
+    let serial = 1;
     for (const q of questions) {
       const byLabel = Object.fromEntries(q.options.map((o) => [o.label, o]));
-      const correct = q.options.find((o) => o.isCorrect)?.label ?? '';
+      const correctLabel = q.options.find((o) => o.isCorrect)?.label ?? '';
+      const examLabel = [q.examTags[0] ?? '', q.sourceNote ?? ''].filter(Boolean).join(' · ');
       sheet.addRow([
+        String(serial),
         q.content,
+        examLabel,
         byLabel.A?.content ?? '',
         byLabel.B?.content ?? '',
         byLabel.C?.content ?? '',
         byLabel.D?.content ?? '',
-        correct,
-        q.explanation ?? '',
-        q.category.name,
-        q.subcategory?.name ?? '',
-        q.difficulty,
-        q.examTags[0] ?? '',
-        '',
-        q.sourceNote ?? '',
+        letterToBn[correctLabel] ?? correctLabel,
       ]);
+      serial += 1;
     }
     const buf = await workbook.xlsx.writeBuffer();
     return {

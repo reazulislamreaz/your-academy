@@ -260,9 +260,9 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Field | Value |
 |-------|-------|
 | Question | How should admins bulk-upload MCQs without duplicating content or re-importing the same file? |
-| Decision | **Yes** — add `QuestionUploadBatch` + `QuestionImportRow` with unique `batchCode`, SHA-256 `fileSha256` (block re-import of identical completed files), and `Question.contentHash` (normalized text SHA-256, partial unique index) for cross-file duplicate detection. Upload → validate/preview → confirm import (skip duplicates). Original files stored under local `QUESTION_IMPORT_DIR` / `backend/storage/question-imports` (admin operational artifacts; Cloudinary remains for learner media). Imports run in chunked API transactions; BullMQ can be added later for multi-thousand-row jobs if request timeouts become an issue. |
+| Decision | **Yes** — add `QuestionUploadBatch` + `QuestionImportRow` with unique `batchCode`, SHA-256 `fileSha256` (block re-import of identical completed files), and `Question.contentHash` (normalized text SHA-256, partial unique index) for cross-file duplicate detection. Upload → validate/preview → confirm import (skip duplicates). Original files stored under local `QUESTION_IMPORT_DIR` / `backend/storage/question-imports` (admin operational artifacts; Cloudinary remains for learner media). Imports run in chunked API transactions; BullMQ can be added later for multi-thousand-row jobs if request timeouts become an issue. **Template (2026-11-12):** Google Sheets Bangla columns `প্রশ্ন নং \| প্রশ্ন \| পরীক্ষার নাম ও সাল \| ক \| খ \| গ \| ঘ \| উত্তর` (answers ক–ঘ). Subject/Topic set on the upload collection (not in-sheet). Header may appear below a title row; English legacy headers still accepted on upload. |
 | Impact | Prisma migration, QuestionImportModule, admin Bulk upload UI, question bank associations via Subject/Topic/examTags |
-| Status | **CONFIRMED** (product request 2026-11-11) |
+| Status | **CONFIRMED** (product request 2026-11-11; template updated 2026-11-12) |
 
 ### DEC-025 — Learning activity event model (admin Phase 1)
 

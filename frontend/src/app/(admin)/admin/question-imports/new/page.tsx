@@ -31,16 +31,14 @@ const STEPS = [
 ] as const;
 
 const TEMPLATE_COLUMNS = [
-  'Question',
-  'Option A–D',
-  'Correct Answer',
-  'Explanation',
-  'Subject',
-  'Topic',
-  'Difficulty',
-  'Exam Category',
-  'Exam Year',
-  'Source',
+  'প্রশ্ন নং',
+  'প্রশ্ন',
+  'পরীক্ষার নাম ও সাল',
+  'ক',
+  'খ',
+  'গ',
+  'ঘ',
+  'উত্তর',
 ];
 
 export default function NewQuestionImportPage() {
@@ -107,7 +105,9 @@ export default function NewQuestionImportPage() {
   });
 
   const canContinueStep1 = Boolean(file);
-  const canContinueStep2 = Boolean(displayName.trim() || file);
+  const canContinueStep2 = Boolean(
+    (displayName.trim() || file) && subjectName.trim() && topicName.trim(),
+  );
 
   return (
     <div className="mx-auto max-w-4xl space-y-8">
@@ -169,7 +169,8 @@ export default function NewQuestionImportPage() {
             <div>
               <h2 className="font-display text-lg font-bold">Select Excel file</h2>
               <p className="text-sm leading-relaxed text-[var(--muted-strong)]">
-                Use the official template so columns validate cleanly.
+                Upload the Google Sheets MCQ template as `.xlsx` or `.csv` — no column renaming needed.
+                Answers use ক / খ / গ / ঘ.
               </p>
             </div>
             <a href={adminDownloadUrl('/admin/question-imports/template')}>
@@ -185,7 +186,7 @@ export default function NewQuestionImportPage() {
           <div className="rounded-[12px] border border-[var(--line)] bg-[var(--bg-desk)] p-4">
             <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-[var(--ink)]">
               <FileSpreadsheet className="size-4 text-[var(--highlight)]" />
-              Required columns
+              Template columns
             </p>
             <div className="flex flex-wrap gap-1.5">
               {TEMPLATE_COLUMNS.map((col) => (
@@ -197,6 +198,10 @@ export default function NewQuestionImportPage() {
                 </span>
               ))}
             </div>
+            <p className="mt-3 text-xs leading-relaxed text-[var(--muted-strong)]">
+              Subject and topic are not in the sheet — choose them in the next step for the whole
+              collection. Title rows above the header are ignored automatically.
+            </p>
           </div>
 
           <div className="flex justify-end">
@@ -218,7 +223,8 @@ export default function NewQuestionImportPage() {
           <div>
             <h2 className="font-display text-lg font-bold">Configure collection</h2>
             <p className="text-sm leading-relaxed text-[var(--muted-strong)]">
-              Name the batch and set defaults used when Excel cells are empty.
+              Subject and topic apply to every row in this Google Sheets template. Exam name/year
+              from the sheet is kept when present.
             </p>
           </div>
 
@@ -229,7 +235,7 @@ export default function NewQuestionImportPage() {
                 id="display-name"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="BCS Preliminary 2025 Set 01"
+                placeholder="অনুবাদ সাহিত্য · BCS set"
               />
             </Field>
             <Field>
@@ -241,7 +247,7 @@ export default function NewQuestionImportPage() {
                   setAutoCode(false);
                   setBatchCode(e.target.value.toUpperCase());
                 }}
-                placeholder="BCS_PRELIMINARY_2025_SET_01"
+                placeholder="ANUBAD_SAHITYA_01"
               />
               <button
                 type="button"
@@ -252,13 +258,13 @@ export default function NewQuestionImportPage() {
               </button>
             </Field>
             <Field>
-              <Label htmlFor="exam">Examination category</Label>
+              <Label htmlFor="exam">Examination category (fallback)</Label>
               <Select
                 id="exam"
                 value={examCategory}
                 onChange={(e) => setExamCategory(e.target.value)}
               >
-                <option value="">From Excel rows</option>
+                <option value="">Use sheet &quot;পরীক্ষার নাম ও সাল&quot;</option>
                 {EXAM_TRACKS.map((t) => (
                   <option key={t.tag} value={t.label}>
                     {t.label}
@@ -267,7 +273,7 @@ export default function NewQuestionImportPage() {
               </Select>
             </Field>
             <Field>
-              <Label htmlFor="subject">Default subject</Label>
+              <Label htmlFor="subject">Subject (required)</Label>
               <Select
                 id="subject"
                 value={subjectName}
@@ -276,7 +282,7 @@ export default function NewQuestionImportPage() {
                   setTopicName('');
                 }}
               >
-                <option value="">From Excel rows</option>
+                <option value="">Select subject…</option>
                 {(categories.data ?? []).map((c) => (
                   <option key={c.id} value={c.name}>
                     {c.name}
@@ -285,14 +291,14 @@ export default function NewQuestionImportPage() {
               </Select>
             </Field>
             <Field>
-              <Label htmlFor="topic">Default topic</Label>
+              <Label htmlFor="topic">Topic (required)</Label>
               <Select
                 id="topic"
                 value={topicName}
                 onChange={(e) => setTopicName(e.target.value)}
                 disabled={!selectedSubject}
               >
-                <option value="">From Excel rows</option>
+                <option value="">Select topic…</option>
                 {(selectedSubject?.children ?? []).map((t) => (
                   <option key={t.id} value={t.name}>
                     {t.name}
@@ -362,9 +368,11 @@ export default function NewQuestionImportPage() {
             <div>
               <p className="text-xs font-semibold text-[var(--muted-strong)]">Defaults</p>
               <p className="text-sm text-[var(--ink-soft)]">
-                {[subjectName || 'Subject from Excel', topicName || 'Topic from Excel', examCategory || 'Exam from Excel']
-                  .filter(Boolean)
-                  .join(' · ')}
+                {[
+                  subjectName || 'Subject missing',
+                  topicName || 'Topic missing',
+                  examCategory || 'Exam from sheet',
+                ].join(' · ')}
               </p>
             </div>
           </div>

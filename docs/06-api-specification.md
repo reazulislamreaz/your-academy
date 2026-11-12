@@ -193,7 +193,7 @@ Query params for list: `cursor`, `limit`, `categoryId`, `subcategoryId`, `diffic
 
 | Method | Endpoint | Description | Auth | Role |
 |--------|----------|-------------|------|------|
-| GET | `/admin/question-imports/template` | Download `.xlsx` template | User | ADMIN |
+| GET | `/admin/question-imports/template` | Download Bangla Google Sheets `.xlsx` template (`প্রশ্ন নং…উত্তর`) | User | ADMIN |
 | GET | `/admin/question-imports` | List batches (`status`, `q`, cursor) | User | ADMIN |
 | POST | `/admin/question-imports/upload` | Multipart `file` + optional `batchCode`/`displayName` | User | ADMIN |
 | GET | `/admin/question-imports/:id` | Batch summary + duplicate-file warning | User | ADMIN |
