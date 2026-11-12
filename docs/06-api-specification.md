@@ -129,7 +129,10 @@ Profile picture: separate upload after auth or multipart field if approved.
 |--------|----------|-------------|------|------|
 | GET | `/categories` | Active tree/list (names only; public for marketing/filters) | Public | — |
 | GET | `/public/stats` | Published counts (questions/categories/news/documents) | Public | — |
-| GET | `/public/questions` | Published MCQ cards (options + correct answer), `createdAt DESC`, cursor pagination + filters (`q`, `categoryId`, `subcategoryId`, `examTag`, `difficulty`) | Public | — |
+| GET | `/public/questions` | Published MCQ cards (options + correct answer), `createdAt DESC`, cursor pagination + filters (`q`, `categoryId`, `subcategoryId`, `examTag`, `difficulty`, `uploadBatchId`) | Public | — |
+| GET | `/public/question-sets` | Upload-based Question Sets (completed/archived batches with published MCQs), newest first | Public | — |
+| GET | `/public/question-sets/:id` | Question Set metadata | Public | — |
+| GET | `/public/question-sets/:id/questions` | MCQs in a set in original upload `rowNumber` order | Public | — |
 | GET | `/categories/:id` | Detail | User | USER/ADMIN |
 | POST | `/admin/categories` | Create | User | ADMIN |
 | PATCH | `/admin/categories/:id` | Update | User | ADMIN |

@@ -1,4 +1,4 @@
-import { apiFetchResult } from './client';
+import { apiFetch, apiFetchResult } from './client';
 
 export type PublicQuestionCard = {
   id: string;
@@ -15,7 +15,56 @@ export type PublicQuestionCard = {
   correctAnswerBn: string;
   createdAt: string;
   publishedAt: string | null;
+  uploadBatchId?: string | null;
+  rowNumber?: number | null;
 };
+
+export type PublicQuestionSet = {
+  id: string;
+  batchCode: string;
+  title: string;
+  description: string | null;
+  subject: string | null;
+  topic: string | null;
+  examCategory: string | null;
+  questionCount: number;
+  uploadedAt: string;
+  importedAt: string | null;
+};
+
+export async function listPublicQuestionSets(params: {
+  cursor?: string;
+  limit?: number;
+  q?: string;
+}) {
+  const qs = new URLSearchParams();
+  if (params.cursor) qs.set('cursor', params.cursor);
+  qs.set('limit', String(params.limit ?? 20));
+  if (params.q) qs.set('q', params.q);
+  return apiFetchResult<PublicQuestionSet[]>(`/public/question-sets?${qs}`, {
+    skipRefresh: true,
+  });
+}
+
+export async function getPublicQuestionSet(id: string) {
+  return apiFetch<PublicQuestionSet>(`/public/question-sets/${id}`, {
+    skipRefresh: true,
+  });
+}
+
+export async function listPublicSetQuestions(
+  setId: string,
+  params: { cursor?: string; limit?: number; q?: string },
+) {
+  const qs = new URLSearchParams();
+  if (params.cursor) qs.set('cursor', params.cursor);
+  qs.set('limit', String(params.limit ?? 20));
+  if (params.q) qs.set('q', params.q);
+  return apiFetchResult<PublicQuestionCard[]>(
+    `/public/question-sets/${setId}/questions?${qs}`,
+    { skipRefresh: true },
+  );
+}
 
 export async function listPublicQuestions(params: {
   cursor?: string;
@@ -25,6 +74,7 @@ export async function listPublicQuestions(params: {
   subcategoryId?: string;
   examTag?: string;
   difficulty?: string;
+  uploadBatchId?: string;
 }) {
   const qs = new URLSearchParams();
   if (params.cursor) qs.set('cursor', params.cursor);
@@ -34,6 +84,7 @@ export async function listPublicQuestions(params: {
   if (params.subcategoryId) qs.set('subcategoryId', params.subcategoryId);
   if (params.examTag) qs.set('examTag', params.examTag);
   if (params.difficulty) qs.set('difficulty', params.difficulty);
+  if (params.uploadBatchId) qs.set('uploadBatchId', params.uploadBatchId);
   return apiFetchResult<PublicQuestionCard[]>(`/public/questions?${qs}`, {
     skipRefresh: true,
   });

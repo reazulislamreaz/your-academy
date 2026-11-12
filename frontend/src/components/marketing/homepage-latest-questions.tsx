@@ -5,14 +5,13 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowRight } from 'lucide-react';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { PublicMcqCard } from '@/components/marketing/public-mcq-card';
-import { listPublicQuestions } from '@/lib/api/public-questions';
+import { listPublicQuestionSets } from '@/lib/api/public-questions';
 
-/** Latest published MCQs for the marketing homepage (public, no login). */
+/** Latest upload-based Question Sets on the marketing homepage. */
 export function HomepageLatestQuestions({ limit = 6 }: { limit?: number }) {
   const list = useQuery({
-    queryKey: ['public-questions-home', limit],
-    queryFn: () => listPublicQuestions({ limit }),
+    queryKey: ['public-question-sets-home', limit],
+    queryFn: () => listPublicQuestionSets({ limit }),
     staleTime: 30_000,
   });
 
@@ -29,11 +28,11 @@ export function HomepageLatestQuestions({ limit = 6 }: { limit?: number }) {
               aria-hidden
             />
             <h2 className="font-display text-2xl font-bold tracking-tight text-[var(--ink)] sm:text-[2rem]">
-              Latest from the Question Bank
+              Latest Question Sets
             </h2>
             <p className="text-sm text-[var(--muted-strong)] sm:text-base">
-              Newest uploaded MCQs appear first
-              {total != null ? ` · ${total.toLocaleString()} published` : ''}.
+              Each admin upload is a separate set
+              {total != null ? ` · ${total.toLocaleString()} available` : ''}.
             </p>
           </div>
           <Link href="/preli-question-bank">
@@ -45,44 +44,51 @@ export function HomepageLatestQuestions({ limit = 6 }: { limit?: number }) {
         </div>
 
         {list.isLoading ? (
-          <ul className="space-y-4">
+          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 3 }).map((_, i) => (
               <li
                 key={i}
-                className="h-52 animate-pulse rounded-[1.25rem] border border-[var(--line)] bg-white"
+                className="h-40 animate-pulse rounded-[1.25rem] border border-[var(--line)] bg-white"
               />
             ))}
           </ul>
         ) : null}
 
         {list.isError ? (
-          <Alert variant="danger">Could not load latest questions.</Alert>
+          <Alert variant="danger">Could not load question sets.</Alert>
         ) : null}
 
         {!list.isLoading && !list.isError && items.length === 0 ? (
           <div className="rounded-[1.25rem] border border-dashed border-[var(--line)] bg-white px-6 py-12 text-center text-sm text-[var(--muted-strong)]">
-            No published questions yet. Admin uploads appear here automatically.
+            No published question sets yet. Admin uploads appear here automatically.
           </div>
         ) : null}
 
-        <ul className="space-y-4">
-          {items.map((item) => (
-            <li key={item.id}>
-              <PublicMcqCard question={item} />
+        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {items.map((set) => (
+            <li key={set.id}>
+              <Link
+                href={`/preli-question-bank/${set.id}`}
+                className="flex h-full flex-col rounded-[1.25rem] border border-[var(--line)] bg-white p-5 shadow-[var(--shadow-sm)] transition-all hover:-translate-y-0.5 hover:border-[var(--highlight)] hover:shadow-[var(--shadow)]"
+              >
+                <p className="text-[0.6875rem] font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
+                  Question set
+                </p>
+                <h3 className="mt-2 font-display text-lg font-bold tracking-tight text-[var(--ink)]">
+                  {set.title}
+                </h3>
+                <p className="mt-2 text-sm text-[var(--muted-strong)]">
+                  {set.questionCount} questions
+                  {set.subject ? ` · ${set.subject}` : ''}
+                </p>
+                <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-[var(--highlight)]">
+                  View questions
+                  <ArrowRight className="size-4" />
+                </span>
+              </Link>
             </li>
           ))}
         </ul>
-
-        {items.length > 0 ? (
-          <div className="flex justify-center pt-2">
-            <Link href="/preli-question-bank">
-              <Button type="button" variant="outline" className="cursor-pointer rounded-full px-6">
-                Browse all questions
-                <ArrowRight className="size-4" />
-              </Button>
-            </Link>
-          </div>
-        ) : null}
       </div>
     </section>
   );

@@ -65,9 +65,9 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Field | Value |
 |-------|-------|
 | Question | Should admin-uploaded published MCQs appear on the marketing homepage and Preli Question Bank without login, showing options + correct answer? |
-| Decision | **Yes.** `GET /api/v1/public/questions` (cursor pagination, `createdAt DESC`) returns published cards with options and correct answer labels. Homepage shows latest; `/preli-question-bank` is the full public bank with search/filters. Admin publish/archive/delete syncs automatically via existing `Question.status` / `deletedAt`. Save still requires login. |
-| Impact | PublicModule, marketing UI cards matching reference design, DEC-003 exception for public surfaces only |
-| Status | **CONFIRMED** (product request 2026-11-12) |
+| Decision | **Yes.** Public bank is organized by admin **upload batches** (`QuestionUploadBatch` → Question Set). `GET /api/v1/public/question-sets` lists sets; `…/question-sets/:id/questions` returns MCQs in original upload order. Cards include correct-answer data for UI toggles; **Show All / Hide All Answers** is a client preference (`localStorage`) with per-question reveal when hidden. Homepage lists latest sets; `/preli-question-bank` is the hub. Save still requires login. |
+| Impact | PublicModule batch APIs, marketing Question Set UI + answer visibility controls, DEC-003 exception for public surfaces only |
+| Status | **CONFIRMED** (product request 2026-11-12; grouping + answer toggles same day) |
 
 ### DEC-004 — Password reset delivery channel
 
