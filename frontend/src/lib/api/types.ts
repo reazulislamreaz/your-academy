@@ -3,7 +3,14 @@ export type CategoryNode = {
   name: string;
   slug: string;
   description?: string | null;
-  children: Array<{ id: string; name: string; slug: string }>;
+  isActive?: boolean;
+  children: Array<{
+    id: string;
+    name: string;
+    slug: string;
+    description?: string | null;
+    isActive?: boolean;
+  }>;
 };
 
 export type PublicStats = {

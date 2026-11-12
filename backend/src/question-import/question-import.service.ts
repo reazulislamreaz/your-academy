@@ -349,6 +349,17 @@ export class QuestionImportService {
     const collectionTopic = input.topicHint?.trim() || '';
     const collectionExam = input.examCategoryHint?.trim() || '';
 
+    const sheetHasCategory = parsed.some((row) => Boolean(row.subject?.trim()));
+    if (!collectionSubject && !sheetHasCategory) {
+      throw new BadRequestException(
+        createErrorResponse(
+          'CATEGORY_REQUIRED',
+          'Category is required for this collection',
+          newRequestId(),
+        ),
+      );
+    }
+
     const rowCreates: Prisma.QuestionImportRowCreateManyInput[] = [];
     let validCount = 0;
     let invalidCount = 0;
@@ -383,12 +394,7 @@ export class QuestionImportService {
       }
       if (!subjectName) {
         errors.push(
-          'Subject is required — set it in the upload form or add a Subject/বিষয় column',
-        );
-      }
-      if (!topicName) {
-        errors.push(
-          'Topic is required — set it in the upload form or add a Topic/টপিক column',
+          'Category is required — set it in the upload form or add a Subject/বিষয় column',
         );
       }
 
@@ -396,14 +402,14 @@ export class QuestionImportService {
         ? categoryIndex.rootsByName.get(this.nameKey(subjectName))
         : null;
       if (subjectName && !subject) {
-        errors.push(`Subject not found: ${subjectName}`);
+        errors.push(`Category not found: ${subjectName}`);
       }
       let topicId: string | undefined;
       if (subject && topicName) {
         topicId = categoryIndex.topicsByParentAndName.get(
           `${subject.id}::${this.nameKey(topicName)}`,
         );
-        // Topic may be created on import if subject exists — allow VALID without topic id.
+        // Subcategory may be created on import if category exists — allow VALID without topic id.
       }
 
       if (errors.length) {
@@ -614,11 +620,13 @@ export class QuestionImportService {
           try {
             if (!row.contentHash) throw new Error('Missing content hash');
             const subject = categoryIndex.rootsByName.get(this.nameKey(row.subjectName ?? ''));
-            if (!subject) throw new Error(`Subject not found: ${row.subjectName}`);
+            if (!subject) throw new Error(`Category not found: ${row.subjectName}`);
 
-            let topicId = categoryIndex.topicsByParentAndName.get(
-              `${subject.id}::${this.nameKey(row.topicName ?? '')}`,
-            );
+            let topicId = row.topicName
+              ? categoryIndex.topicsByParentAndName.get(
+                  `${subject.id}::${this.nameKey(row.topicName)}`,
+                )
+              : undefined;
             if (!topicId && row.topicName) {
               const slugBase = slugifyBatchCode(row.topicName).toLowerCase().replace(/_/g, '-') || 'topic';
               const slug = `${subject.slug}-${slugBase}`.slice(0, 100);

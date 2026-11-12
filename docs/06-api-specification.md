@@ -133,10 +133,12 @@ Profile picture: separate upload after auth or multipart field if approved.
 | GET | `/public/question-sets` | Upload-based Question Sets (completed/archived batches with published MCQs), newest first | Public | — |
 | GET | `/public/question-sets/:id` | Question Set metadata | Public | — |
 | GET | `/public/question-sets/:id/questions` | MCQs in a set in original upload `rowNumber` order | Public | — |
-| GET | `/categories/:id` | Detail | User | USER/ADMIN |
-| POST | `/admin/categories` | Create | User | ADMIN |
-| PATCH | `/admin/categories/:id` | Update | User | ADMIN |
-| DELETE | `/admin/categories/:id` | Delete/deactivate | User | ADMIN |
+| GET | `/admin/categories` | Admin tree including inactive + usage counts | User | ADMIN |
+| POST | `/admin/categories` | Create category or subcategory (`parentId`); slug optional (auto) | User | ADMIN |
+| PATCH | `/admin/categories/:id` | Update name/description/status/parent | User | ADMIN |
+| POST | `/admin/categories/:id/activate` | Set active | User | ADMIN |
+| POST | `/admin/categories/:id/deactivate` | Soft-hide from public dropdowns | User | ADMIN |
+| DELETE | `/admin/categories/:id` | Soft-deactivate; `?hard=true` permanent delete only when unused | User | ADMIN |
 
 Categories used for question filters require authentication (DEC-003).
 

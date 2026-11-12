@@ -23,13 +23,17 @@ import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Surface } from '@/components/ui/surface';
 import {
+  QuickCreateCategoryButton,
+  QuickCreateSubcategoryButton,
+} from '@/features/admin/categories/quick-create-dialogs';
+import {
   type ImportRow,
   type UploadBatch,
   statusTone,
 } from '@/features/admin/question-imports/types';
 import { ApiError, apiFetch, apiFetchResult } from '@/lib/api/client';
+import type { CategoryNode } from '@/lib/api/types';
 import { adminDownloadUrl } from '@/lib/api/upload';
-import { EXAM_TRACKS } from '@/lib/exam-tags';
 import { cn } from '@/lib/utils';
 import { AdminBulkPreviewTableSkeleton, AdminBulkUploadDetailPageSkeleton } from '@/components/skeletons';
 
@@ -41,10 +45,8 @@ function QuestionImportDetailContent() {
   const [skipDuplicates, setSkipDuplicates] = useState(true);
   const [editing, setEditing] = useState(false);
   const [displayName, setDisplayName] = useState('');
-  const [description, setDescription] = useState('');
   const [subjectHint, setSubjectHint] = useState('');
   const [topicHint, setTopicHint] = useState('');
-  const [examCategoryHint, setExamCategoryHint] = useState('');
   const [importProgress, setImportProgress] = useState<number | null>(null);
 
   const batch = useQuery({
@@ -52,13 +54,21 @@ function QuestionImportDetailContent() {
     queryFn: () => apiFetch<UploadBatch>(`/admin/question-imports/${id}`),
   });
 
+  const categories = useQuery({
+    queryKey: ['categories'],
+    queryFn: () => apiFetch<CategoryNode[]>('/categories'),
+  });
+
+  const selectedCategory = useMemo(
+    () => (categories.data ?? []).find((c) => c.name === subjectHint),
+    [categories.data, subjectHint],
+  );
+
   useEffect(() => {
     if (!batch.data) return;
     setDisplayName(batch.data.displayName);
-    setDescription(batch.data.description ?? '');
     setSubjectHint(batch.data.subjectHint ?? '');
     setTopicHint(batch.data.topicHint ?? '');
-    setExamCategoryHint(batch.data.examCategoryHint ?? '');
   }, [batch.data]);
 
   const rows = useInfiniteQuery({
@@ -107,10 +117,8 @@ function QuestionImportDetailContent() {
         method: 'PATCH',
         body: JSON.stringify({
           displayName,
-          description,
-          subjectHint,
-          topicHint,
-          examCategoryHint,
+          subjectHint: subjectHint.trim() || null,
+          topicHint: topicHint.trim() || null,
         }),
       }),
     onSuccess: () => {
@@ -315,59 +323,79 @@ function QuestionImportDetailContent() {
         </div>
 
         {editing ? (
-          <div className="grid gap-3 rounded-[12px] border border-[var(--line)] bg-[var(--bg-desk)] p-4 sm:grid-cols-2">
-            <Field className="sm:col-span-2">
-              <Label htmlFor="edit-name">Collection name</Label>
+          <div className="grid gap-3 rounded-[12px] border border-[var(--line)] bg-[var(--bg-desk)] p-4">
+            <Field>
+              <Label htmlFor="edit-name">Title</Label>
               <Input
                 id="edit-name"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
               />
             </Field>
-            <Field className="sm:col-span-2">
-              <Label htmlFor="edit-desc">Description</Label>
-              <Input
-                id="edit-desc"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
+            <Field>
+              <Label htmlFor="edit-category">Category</Label>
+              <div className="flex gap-2">
+                <Select
+                  id="edit-category"
+                  className="min-w-0 flex-1"
+                  value={subjectHint}
+                  onChange={(e) => {
+                    setSubjectHint(e.target.value);
+                    setTopicHint('');
+                  }}
+                >
+                  <option value="">Select category…</option>
+                  {(categories.data ?? []).map((c) => (
+                    <option key={c.id} value={c.name}>
+                      {c.name}
+                    </option>
+                  ))}
+                </Select>
+                <QuickCreateCategoryButton
+                  onCreated={(created) => {
+                    setSubjectHint(created.name);
+                    setTopicHint('');
+                  }}
+                />
+              </div>
             </Field>
             <Field>
-              <Label htmlFor="edit-subject">Subject</Label>
-              <Input
-                id="edit-subject"
-                value={subjectHint}
-                onChange={(e) => setSubjectHint(e.target.value)}
-              />
-            </Field>
-            <Field>
-              <Label htmlFor="edit-topic">Topic</Label>
-              <Input
-                id="edit-topic"
-                value={topicHint}
-                onChange={(e) => setTopicHint(e.target.value)}
-              />
-            </Field>
-            <Field className="sm:col-span-2">
-              <Label htmlFor="edit-exam">Exam category</Label>
-              <Select
-                id="edit-exam"
-                value={examCategoryHint}
-                onChange={(e) => setExamCategoryHint(e.target.value)}
-              >
-                <option value="">—</option>
-                {EXAM_TRACKS.map((t) => (
-                  <option key={t.tag} value={t.label}>
-                    {t.label}
+              <Label htmlFor="edit-subcategory">Subcategory (Optional)</Label>
+              <div className="flex gap-2">
+                <Select
+                  id="edit-subcategory"
+                  className="min-w-0 flex-1"
+                  value={topicHint}
+                  onChange={(e) => setTopicHint(e.target.value)}
+                  disabled={!selectedCategory}
+                >
+                  <option value="">
+                    {selectedCategory
+                      ? selectedCategory.children.length
+                        ? 'None'
+                        : 'No subcategories'
+                      : 'Select a category first…'}
                   </option>
-                ))}
-              </Select>
+                  {(selectedCategory?.children ?? []).map((t) => (
+                    <option key={t.id} value={t.name}>
+                      {t.name}
+                    </option>
+                  ))}
+                </Select>
+                <QuickCreateSubcategoryButton
+                  parentId={selectedCategory?.id ?? null}
+                  parentName={selectedCategory?.name}
+                  onCreated={(created) => {
+                    setTopicHint(created.name);
+                  }}
+                />
+              </div>
             </Field>
-            <div className="sm:col-span-2">
+            <div>
               <Button
                 type="button"
                 className="cursor-pointer"
-                disabled={saveMeta.isPending || !displayName.trim()}
+                disabled={saveMeta.isPending || !displayName.trim() || !subjectHint.trim()}
                 onClick={() => saveMeta.mutate()}
               >
                 {saveMeta.isPending ? 'Saving…' : 'Save changes'}
@@ -381,8 +409,6 @@ function QuestionImportDetailContent() {
               ) : null}
             </div>
           </div>
-        ) : data.description ? (
-          <p className="text-sm text-[var(--ink-soft)]">{data.description}</p>
         ) : null}
 
         {canImport ? (

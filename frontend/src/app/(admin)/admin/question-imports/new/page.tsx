@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, ArrowRight, Check, Download, FileSpreadsheet, Sparkles } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { PageHeader } from '@/components/layout/page-header';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -13,14 +13,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Surface } from '@/components/ui/surface';
-import { FileDropzone } from '@/features/admin/question-imports/file-dropzone';
 import {
-  type UploadBatch,
-  slugifyBatchCode,
-} from '@/features/admin/question-imports/types';
+  QuickCreateCategoryButton,
+  QuickCreateSubcategoryButton,
+} from '@/features/admin/categories/quick-create-dialogs';
+import { FileDropzone } from '@/features/admin/question-imports/file-dropzone';
+import { type UploadBatch } from '@/features/admin/question-imports/types';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import { adminDownloadUrl, apiUploadForm } from '@/lib/api/upload';
-import { EXAM_TRACKS } from '@/lib/exam-tags';
 import type { CategoryNode } from '@/lib/api/types';
 import { cn } from '@/lib/utils';
 
@@ -47,12 +47,8 @@ export default function NewQuestionImportPage() {
   const [step, setStep] = useState(1);
   const [file, setFile] = useState<File | null>(null);
   const [displayName, setDisplayName] = useState('');
-  const [batchCode, setBatchCode] = useState('');
-  const [autoCode, setAutoCode] = useState(true);
-  const [description, setDescription] = useState('');
-  const [subjectName, setSubjectName] = useState('');
-  const [topicName, setTopicName] = useState('');
-  const [examCategory, setExamCategory] = useState('');
+  const [categoryName, setCategoryName] = useState('');
+  const [subcategoryName, setSubcategoryName] = useState('');
   const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -61,33 +57,22 @@ export default function NewQuestionImportPage() {
     queryFn: () => apiFetch<CategoryNode[]>('/categories'),
   });
 
-  const selectedSubject = useMemo(
-    () => (categories.data ?? []).find((c) => c.name === subjectName),
-    [categories.data, subjectName],
+  const selectedCategory = useMemo(
+    () => (categories.data ?? []).find((c) => c.name === categoryName),
+    [categories.data, categoryName],
   );
-
-  useEffect(() => {
-    if (!autoCode) return;
-    const seed = displayName || file?.name.replace(/\.(xlsx|csv)$/i, '') || '';
-    if (!seed) {
-      setBatchCode('');
-      return;
-    }
-    setBatchCode(slugifyBatchCode(seed));
-  }, [autoCode, displayName, file]);
 
   const upload = useMutation({
     mutationFn: async () => {
       if (!file) throw new ApiError('FILE_REQUIRED', 'Choose a file first', 400);
+      if (!displayName.trim()) throw new ApiError('TITLE_REQUIRED', 'Title is required', 400);
+      if (!categoryName.trim()) throw new ApiError('CATEGORY_REQUIRED', 'Category is required', 400);
       setProgress(15);
       const form = new FormData();
       form.append('file', file);
-      if (displayName.trim()) form.append('displayName', displayName.trim());
-      if (batchCode.trim()) form.append('batchCode', batchCode.trim());
-      if (description.trim()) form.append('description', description.trim());
-      if (subjectName) form.append('subjectHint', subjectName);
-      if (topicName) form.append('topicHint', topicName);
-      if (examCategory) form.append('examCategoryHint', examCategory);
+      form.append('displayName', displayName.trim());
+      form.append('subjectHint', categoryName.trim());
+      if (subcategoryName.trim()) form.append('topicHint', subcategoryName.trim());
       setProgress(55);
       const result = await apiUploadForm<UploadBatch>('/admin/question-imports/upload', form);
       setProgress(100);
@@ -105,9 +90,7 @@ export default function NewQuestionImportPage() {
   });
 
   const canContinueStep1 = Boolean(file);
-  const canContinueStep2 = Boolean(
-    (displayName.trim() || file) && subjectName.trim() && topicName.trim(),
-  );
+  const canContinueStep2 = Boolean(displayName.trim() && categoryName.trim());
 
   return (
     <div className="mx-auto max-w-4xl space-y-8">
@@ -199,8 +182,8 @@ export default function NewQuestionImportPage() {
               ))}
             </div>
             <p className="mt-3 text-xs leading-relaxed text-[var(--muted-strong)]">
-              Subject and topic are not in the sheet — choose them in the next step for the whole
-              collection. Title rows above the header are ignored automatically.
+              Category is set in the next step for the whole collection. Exam name/year from the sheet
+              is kept when present. Title rows above the header are ignored automatically.
             </p>
           </div>
 
@@ -223,97 +206,84 @@ export default function NewQuestionImportPage() {
           <div>
             <h2 className="font-display text-lg font-bold">Configure collection</h2>
             <p className="text-sm leading-relaxed text-[var(--muted-strong)]">
-              Subject and topic apply to every row in this Google Sheets template. Exam name/year
-              from the sheet is kept when present.
+              Title and category apply to this upload. Subcategory is optional.
             </p>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field className="sm:col-span-2">
-              <Label htmlFor="display-name">Collection name</Label>
+          <div className="grid gap-3">
+            <Field>
+              <Label htmlFor="display-name">Title</Label>
               <Input
                 id="display-name"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="অনুবাদ সাহিত্য · BCS set"
+                required
               />
             </Field>
             <Field>
-              <Label htmlFor="batch-code">Batch code</Label>
-              <Input
-                id="batch-code"
-                value={batchCode}
-                onChange={(e) => {
-                  setAutoCode(false);
-                  setBatchCode(e.target.value.toUpperCase());
-                }}
-                placeholder="ANUBAD_SAHITYA_01"
-              />
-              <button
-                type="button"
-                className="mt-1 cursor-pointer text-xs font-semibold text-[var(--highlight)]"
-                onClick={() => setAutoCode(true)}
-              >
-                Auto-generate from name
-              </button>
+              <Label htmlFor="category">Category</Label>
+              <div className="flex gap-2">
+                <Select
+                  id="category"
+                  className="min-w-0 flex-1"
+                  value={categoryName}
+                  onChange={(e) => {
+                    setCategoryName(e.target.value);
+                    setSubcategoryName('');
+                  }}
+                  required
+                >
+                  <option value="">
+                    {(categories.data ?? []).length === 0
+                      ? 'No categories yet — create one'
+                      : 'Select category…'}
+                  </option>
+                  {(categories.data ?? []).map((c) => (
+                    <option key={c.id} value={c.name}>
+                      {c.name}
+                    </option>
+                  ))}
+                </Select>
+                <QuickCreateCategoryButton
+                  onCreated={(created) => {
+                    setCategoryName(created.name);
+                    setSubcategoryName('');
+                  }}
+                />
+              </div>
             </Field>
             <Field>
-              <Label htmlFor="exam">Examination category (fallback)</Label>
-              <Select
-                id="exam"
-                value={examCategory}
-                onChange={(e) => setExamCategory(e.target.value)}
-              >
-                <option value="">Use sheet &quot;পরীক্ষার নাম ও সাল&quot;</option>
-                {EXAM_TRACKS.map((t) => (
-                  <option key={t.tag} value={t.label}>
-                    {t.label}
+              <Label htmlFor="subcategory">Subcategory (Optional)</Label>
+              <div className="flex gap-2">
+                <Select
+                  id="subcategory"
+                  className="min-w-0 flex-1"
+                  value={subcategoryName}
+                  onChange={(e) => setSubcategoryName(e.target.value)}
+                  disabled={!selectedCategory}
+                >
+                  <option value="">
+                    {selectedCategory
+                      ? selectedCategory.children.length
+                        ? 'None'
+                        : 'No subcategories'
+                      : 'Select a category first…'}
                   </option>
-                ))}
-              </Select>
-            </Field>
-            <Field>
-              <Label htmlFor="subject">Subject (required)</Label>
-              <Select
-                id="subject"
-                value={subjectName}
-                onChange={(e) => {
-                  setSubjectName(e.target.value);
-                  setTopicName('');
-                }}
-              >
-                <option value="">Select subject…</option>
-                {(categories.data ?? []).map((c) => (
-                  <option key={c.id} value={c.name}>
-                    {c.name}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <Field>
-              <Label htmlFor="topic">Topic (required)</Label>
-              <Select
-                id="topic"
-                value={topicName}
-                onChange={(e) => setTopicName(e.target.value)}
-                disabled={!selectedSubject}
-              >
-                <option value="">Select topic…</option>
-                {(selectedSubject?.children ?? []).map((t) => (
-                  <option key={t.id} value={t.name}>
-                    {t.name}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <Field className="sm:col-span-2">
-              <Label htmlFor="description">Description (optional)</Label>
-              <Input
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Short note about this question set"
-              />
+                  {(selectedCategory?.children ?? []).map((t) => (
+                    <option key={t.id} value={t.name}>
+                      {t.name}
+                    </option>
+                  ))}
+                </Select>
+                <QuickCreateSubcategoryButton
+                  parentId={selectedCategory?.id ?? null}
+                  parentName={selectedCategory?.name}
+                  onCreated={(created) => {
+                    setSubcategoryName(created.name);
+                  }}
+                />
+              </div>
             </Field>
           </div>
 
@@ -354,26 +324,16 @@ export default function NewQuestionImportPage() {
               <p className="text-sm font-semibold text-[var(--ink)]">{file?.name ?? '—'}</p>
             </div>
             <div>
-              <p className="text-xs font-semibold text-[var(--muted-strong)]">Collection</p>
-              <p className="text-sm font-semibold text-[var(--ink)]">
-                {displayName || file?.name.replace(/\.(xlsx|csv)$/i, '') || '—'}
-              </p>
+              <p className="text-xs font-semibold text-[var(--muted-strong)]">Title</p>
+              <p className="text-sm font-semibold text-[var(--ink)]">{displayName || '—'}</p>
             </div>
             <div>
-              <p className="text-xs font-semibold text-[var(--muted-strong)]">Batch code</p>
-              <p className="font-mono text-sm font-medium text-[var(--ink)]">
-                {batchCode || '(auto on upload)'}
-              </p>
+              <p className="text-xs font-semibold text-[var(--muted-strong)]">Category</p>
+              <p className="text-sm text-[var(--ink-soft)]">{categoryName || '—'}</p>
             </div>
             <div>
-              <p className="text-xs font-semibold text-[var(--muted-strong)]">Defaults</p>
-              <p className="text-sm text-[var(--ink-soft)]">
-                {[
-                  subjectName || 'Subject missing',
-                  topicName || 'Topic missing',
-                  examCategory || 'Exam from sheet',
-                ].join(' · ')}
-              </p>
+              <p className="text-xs font-semibold text-[var(--muted-strong)]">Subcategory</p>
+              <p className="text-sm text-[var(--ink-soft)]">{subcategoryName || 'None'}</p>
             </div>
           </div>
 
@@ -399,7 +359,7 @@ export default function NewQuestionImportPage() {
             <Button
               type="button"
               className="cursor-pointer"
-              disabled={!file || upload.isPending}
+              disabled={!file || !displayName.trim() || !categoryName.trim() || upload.isPending}
               onClick={() => {
                 setError(null);
                 upload.mutate();

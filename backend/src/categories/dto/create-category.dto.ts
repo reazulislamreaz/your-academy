@@ -1,4 +1,12 @@
-import { IsBoolean, IsInt, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
 export class CreateCategoryDto {
   @IsString()
@@ -6,13 +14,16 @@ export class CreateCategoryDto {
   @MaxLength(120)
   name!: string;
 
+  /** Optional — server generates a unique slug from the name when omitted. */
+  @IsOptional()
   @IsString()
   @MinLength(2)
   @MaxLength(140)
-  slug!: string;
+  slug?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   description?: string;
 
   @IsOptional()

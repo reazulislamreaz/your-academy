@@ -18,12 +18,8 @@ function PreviousYearContent() {
         title={
           examTag ? `${examLabel(examTag)} previous-year style` : 'Previous-year style sets'
         }
-        description="Demo practice collections styled after previous-year workflows. Synthetic items are labeled in question source notes."
+        description="Previous-year style practice collections published by admins."
       />
-      <Alert>
-        These seed collections are original demo content for workflow testing — not official exam
-        papers.
-      </Alert>
       <PracticeSetList
         kind="PREVIOUS_YEAR_SET"
         examTag={examTag}
