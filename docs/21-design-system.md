@@ -42,36 +42,28 @@ Do **not** drift into purple SaaS gradients, cream+terracotta serif kits, amber-
 
 Page atmosphere (light shells): cool navy/red radial washes on desk canvas. Learner shell: `.learner-theme` charcoal overrides + `.learner-sidebar`; active nav is a soft grey pill (no bright red wash).
 
-### Learner dark tokens (`.learner-theme`, DEC-027)
+### Learner shell themes (`.learner-theme`, DEC-027 / DEC-028)
 
-Cool **navy-charcoal** stack (not flat black). Every color has one job.
+Scoped to `(app)` only. Toggle via header Sun/Moon (`LearnerThemeToggle`).  
+`data-theme="light"` (default) | `data-theme="dark"`. Persist: `localStorage` `ya-learner-color-scheme`. FOUC boot script in `(app)/layout`.
 
-| Token | Role | Approx |
-|-------|------|--------|
-| `--bg` / `--bg-desk` | Canvas | `#0B1020` |
-| `--bg-sidebar` | Rail | `#090E1A` |
-| `--bg-elevated` | Cards / panels | `#141B2D` |
-| `--bg-muted` / `--bg-soft` | Hover fills / nested | `#1C2640` / `#182238` |
-| `--ink` / `--ink-soft` | Primary / body text | `#F1F5F9` / `#D8DEE9` |
-| `--muted` / `--muted-strong` | Secondary / strong secondary | `#94A3B8` / `#CBD5E1` |
-| `--line` / `--line-strong` | Borders | slate @ 14% / 26% |
-| `--highlight` | **Primary** CTA (brand red) | `#E31E24` |
-| `--accent` / `--accent-blue` | **Secondary** — focus, selection, chrome | `#5B8DEF` |
-| `--success` | Correct / positive progress | soft green `#34D399` |
-| `--danger` | Incorrect / negative | soft red `#F07178` |
-| `--warning` | Alerts / pending | amber `#F0B429` |
-| `--info` | Helpful / neutral stats | blue (alias of accent) |
-| `--insight` | Learning insights / review | purple `#A78BFA` |
-| `--bookmark` | Saved MCQ gold | `#E8B84A` |
-| `--learn-*` | MCQ interaction aliases | selected / correct / incorrect / idle / review |
-| `--viz-*` | Charts: positive / negative / neutral / insight / achievement | semantic map |
-| `--focus-ring` | Keyboard / field focus halo | soft blue |
+**Light (default):** soft off-white desk `#F3F5F9`, white cards/sidebar, navy ink, blue/purple accents, soft shadows.  
+**Dark:** cool navy-charcoal `#0B1020` canvas, elevated `#141B2D` cards, soft borders, same semantic roles.
 
-**MCQ status map:** idle → muted · selected → accent blue · correct → green · incorrect → soft red · bookmarked → gold · completed → green · marked for review → purple.
+| Token | Role |
+|-------|------|
+| `--highlight` | Primary CTA (brand red) |
+| `--accent` | Focus, selection, chrome |
+| `--success` / `--danger` / `--warning` / `--info` | Semantic feedback |
+| `--insight` / `--bookmark` | Review / saved |
+| `--learn-*` / `--viz-*` | MCQ + chart aliases |
+| `--focus-ring` | Field / keyboard focus |
 
-**KPI / chart map:** green = progress · red = weak performance · blue = neutral counts · purple = insights · amber/gold = achievements / bookmarks · brand red reserved for primary CTAs and premium locks.
+**MCQ status map:** idle → muted · selected → accent · correct → green · incorrect → soft red · bookmarked → gold · completed → green · review → purple.
 
-Collapse width: `--app-sidebar-collapsed-width`. Persist collapse in `localStorage` key `ya-learner-sidebar-collapsed`. Target text contrast ≥ 4.5:1 on elevated surfaces.
+Collapse width: `--app-sidebar-collapsed-width` (`ya-learner-sidebar-collapsed`). Target text contrast ≥ 4.5:1.
+
+Do **not** apply `data-theme` or this toggle outside `(app)`.
 
 ---
 
@@ -140,7 +132,7 @@ List utility: `.list-row` in `globals.css` for hover/divider rhythm.
 |-------|-------|--------|
 | `(marketing)` | Marketing header + footer | `/` |
 | `(auth)` | Split navy brand panel + form (desktop); stacked on mobile | `/login`, `/register`, … |
-| `(app)` | Dark charcoal Orbit shell (`.learner-theme`): collapsible sidebar + sticky header (pill search + ⌘K, Saved MCQ, updates, trial, profile) | `/home`, `/onboarding`, `/questions`, `/bookmarks`, `/news`, `/profile`, … |
+| `(app)` | Learner shell (`.learner-theme` light/dark): collapsible sidebar + sticky header (theme toggle, pill search + ⌘K, Saved MCQ, updates, trial, profile) | `/home`, `/onboarding`, `/questions`, `/bookmarks`, `/news`, `/profile`, … |
 | `(admin)` | Navy sidebar + mobile tabs | `/admin/*` |
 
 Root `layout.tsx` only mounts fonts + providers (no global header).

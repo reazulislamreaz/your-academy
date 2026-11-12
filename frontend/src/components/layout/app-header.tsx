@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { Bookmark, Search } from 'lucide-react';
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import { TrialStatusChip } from '@/components/access/trial-status-chip';
+import { LearnerThemeToggle } from '@/components/theme/learner-theme-toggle';
+import { useLearnerTheme } from '@/components/theme/learner-theme-provider';
 import { BrandMark } from './brand-mark';
 import { LearnerMobileNav } from './learner-mobile-nav';
 import { UpdatesMenu } from './updates-menu';
@@ -16,8 +18,10 @@ import { UserMenu } from './user-menu';
  */
 export function AppHeader() {
   const router = useRouter();
+  const { theme } = useLearnerTheme();
   const [query, setQuery] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
+  const inverseLogo = theme === 'dark';
 
   const onSearch = (e: FormEvent) => {
     e.preventDefault();
@@ -53,7 +57,7 @@ export function AppHeader() {
       style={{ boxShadow: 'var(--shadow-header)' } as CSSProperties}
     >
       <div className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
-        <BrandMark href="/home" markOnly inverse className="lg:hidden [&_img]:h-8" />
+        <BrandMark href="/home" markOnly inverse={inverseLogo} className="lg:hidden [&_img]:h-8" />
         <TrialStatusChip className="hidden min-[420px]:inline-flex" />
       </div>
 
@@ -95,7 +99,7 @@ export function AppHeader() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search questions…"
-              className="h-10 w-full rounded-full border border-[var(--line)] bg-[var(--bg-elevated)] pr-14 pl-9 text-sm text-[var(--ink)] outline-none transition-[border-color,background-color,box-shadow] placeholder:text-[var(--muted)] focus:border-[var(--accent-blue)] focus:bg-[var(--bg-muted)] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.25)]"
+              className="h-10 w-full rounded-full border border-[var(--line)] bg-[var(--bg-elevated)] pr-14 pl-9 text-sm text-[var(--ink)] outline-none transition-[border-color,background-color,box-shadow] placeholder:text-[var(--muted)] focus:border-[var(--accent)] focus:bg-[var(--bg-muted)] focus:shadow-[var(--focus-ring)]"
             />
             <kbd className="pointer-events-none absolute top-1/2 right-3 hidden -translate-y-1/2 rounded-md border border-[var(--line)] bg-[var(--bg-muted)] px-1.5 py-0.5 text-[0.65rem] font-medium text-[var(--muted)] md:inline-block">
               ⌘K
@@ -103,6 +107,7 @@ export function AppHeader() {
           </div>
         </form>
 
+        <LearnerThemeToggle showLabel />
         <UpdatesMenu />
         <div className="hidden md:block">
           <UserMenu variant="header" />

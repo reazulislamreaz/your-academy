@@ -44,10 +44,10 @@ export function OptionRow({ label, content, state, disabled, onSelect }: Props) 
         className={cn(
           'mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-xs font-bold',
           state === 'idle' && 'bg-[var(--bg-muted)] text-[var(--muted-strong)]',
-          state === 'selected' && 'bg-[var(--learn-selected)] text-white',
-          state === 'correct' && 'bg-[var(--learn-correct)] text-[#06281c]',
+          state === 'selected' && 'bg-[var(--learn-selected)] text-[var(--accent-fg)]',
+          state === 'correct' && 'bg-[var(--learn-correct)] text-white',
           state === 'incorrect' && 'bg-[var(--learn-incorrect)] text-white',
-          state === 'missed' && 'bg-[var(--learn-correct)] text-[#06281c]',
+          state === 'missed' && 'bg-[var(--learn-correct)] text-white',
         )}
         aria-hidden
       >

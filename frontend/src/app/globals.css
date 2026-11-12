@@ -171,20 +171,132 @@ body {
 }
 
 /*
-  Learner dark theme (DEC-027) — premium navy-charcoal for (app) only.
-  Marketing / auth / admin keep light :root tokens.
+  Learner shell themes (DEC-027 / DEC-028) — scoped to (app) only.
+  Marketing / auth / admin keep :root tokens and are never toggled.
 
-  Roles (every token has one job):
-  - Surfaces: layered cool navy charcoal (depth without flat black)
-  - Primary (--highlight): brand red CTAs
-  - Secondary (--accent): focus, selection, neutral stats
-  - Success / Danger / Warning / Info: semantic feedback
-  - Insight / Bookmark: learning-status accents (not chrome decoration)
+  data-theme="light" (default) | data-theme="dark"
+  Persistence: localStorage `ya-learner-color-scheme`
 */
 .learner-theme {
+  /* Shared shell geometry + learning/viz aliases (resolve via mode tokens) */
+  --radius-sm: 10px;
+  --radius: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 22px;
+
+  --learn-correct: var(--success);
+  --learn-correct-soft: var(--success-soft);
+  --learn-incorrect: var(--danger);
+  --learn-incorrect-soft: var(--danger-soft);
+  --learn-selected: var(--accent);
+  --learn-selected-soft: var(--accent-soft);
+  --learn-idle: var(--muted);
+  --learn-bookmarked: var(--bookmark);
+  --learn-completed: var(--success);
+  --learn-review: var(--insight);
+
+  --viz-positive: var(--success);
+  --viz-negative: var(--danger);
+  --viz-neutral: var(--info);
+  --viz-insight: var(--insight);
+  --viz-achievement: var(--bookmark);
+
+  background: var(--bg-desk);
+  color: var(--ink);
+  font-family: var(--font-learner), var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.learner-theme .font-display,
+.learner-theme .font-sans {
+  font-family: var(--font-learner), var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.learner-theme :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.learner-theme .text-secondary {
+  color: var(--muted);
+}
+
+/* —— Light mode (default): soft off-white desk, white cards —— */
+.learner-theme[data-theme='light'] {
+  color-scheme: light;
+
+  --bg: #f3f5f9;
+  --bg-desk: #f3f5f9;
+  --bg-sidebar: #ffffff;
+  --bg-elevated: #ffffff;
+  --bg-muted: #e8edf5;
+  --bg-soft: #eef2f8;
+  --bg-inverse: #0b1020;
+
+  --ink: #0f1b33;
+  --ink-soft: #1e2f4d;
+  --muted: #5b6b82;
+  --muted-strong: #3d4d66;
+
+  --line: #e2e8f0;
+  --line-strong: #cbd5e1;
+
+  --highlight: #e31e24;
+  --highlight-fg: #ffffff;
+  --highlight-soft: #fdecec;
+  --highlight-hover: #fadcdc;
+  --accent: #3b6fd9;
+  --accent-fg: #ffffff;
+  --accent-blue: #3b6fd9;
+  --accent-soft: #e4ecfb;
+  --brand-wash: rgba(59, 111, 217, 0.06);
+  --brand-wash-strong: rgba(59, 111, 217, 0.11);
+
+  --success: #0f9f6e;
+  --success-soft: #d8f5ea;
+  --success-fg: #0b5f43;
+  --danger: #d64545;
+  --danger-soft: #fde8e8;
+  --danger-fg: #9f1e1e;
+  --warning: #c47d0e;
+  --warning-soft: #fff4e0;
+  --warning-fg: #8a5608;
+  --info: #3b6fd9;
+  --info-soft: #e4ecfb;
+  --info-fg: #1e4ba8;
+
+  --insight: #7c5cdb;
+  --insight-soft: #efeafc;
+  --insight-fg: #4c2fad;
+  --bookmark: #c9922a;
+  --bookmark-soft: #fff6e4;
+  --bookmark-fg: #8a6414;
+
+  --focus-ring: 0 0 0 3px rgba(59, 111, 217, 0.28);
+
+  --shadow-sm: 0 1px 2px rgba(15, 27, 51, 0.04), 0 1px 1px rgba(15, 27, 51, 0.03);
+  --shadow: 0 10px 28px rgba(15, 27, 51, 0.07), 0 2px 6px rgba(15, 27, 51, 0.04);
+  --shadow-lg: 0 22px 48px rgba(15, 27, 51, 0.12), 0 4px 12px rgba(15, 27, 51, 0.05);
+  --shadow-header: 0 1px 0 rgba(15, 27, 51, 0.05), 0 8px 20px rgba(15, 27, 51, 0.04);
+}
+
+.learner-theme[data-theme='light'].desk-canvas,
+.learner-theme[data-theme='light'] .desk-canvas {
+  background-color: var(--bg-desk);
+  background-image:
+    radial-gradient(ellipse 55% 40% at 100% -8%, rgba(59, 111, 217, 0.07), transparent 55%),
+    radial-gradient(ellipse 45% 35% at 0% 100%, rgba(124, 92, 219, 0.05), transparent 50%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.65), transparent 32%);
+}
+
+.learner-theme[data-theme='light'] .learner-sidebar {
+  background: var(--bg-sidebar);
+  box-shadow: inset -1px 0 0 var(--line);
+}
+
+/* —— Dark mode: cool navy-charcoal —— */
+.learner-theme[data-theme='dark'] {
   color-scheme: dark;
 
-  /* Surfaces — cool navy charcoal stack (canvas → card → hover) */
   --bg: #0b1020;
   --bg-desk: #0b1020;
   --bg-sidebar: #090e1a;
@@ -193,17 +305,14 @@ body {
   --bg-soft: #182238;
   --bg-inverse: #e8edf7;
 
-  /* Text — AA+ on elevated surfaces */
   --ink: #f1f5f9;
   --ink-soft: #d8dee9;
   --muted: #94a3b8;
   --muted-strong: #cbd5e1;
 
-  /* Borders */
   --line: rgba(148, 163, 184, 0.14);
   --line-strong: rgba(148, 163, 184, 0.26);
 
-  /* Brand */
   --highlight: #e31e24;
   --highlight-fg: #ffffff;
   --highlight-soft: rgba(227, 30, 36, 0.18);
@@ -215,7 +324,6 @@ body {
   --brand-wash: rgba(91, 141, 239, 0.06);
   --brand-wash-strong: rgba(91, 141, 239, 0.12);
 
-  /* Semantic status */
   --success: #34d399;
   --success-soft: rgba(52, 211, 153, 0.14);
   --success-fg: #a7f3d0;
@@ -229,7 +337,6 @@ body {
   --info-soft: rgba(91, 141, 239, 0.16);
   --info-fg: #bfdbfe;
 
-  /* Learning / insight accents (MCQ + analytics meaning) */
   --insight: #a78bfa;
   --insight-soft: rgba(167, 139, 250, 0.16);
   --insight-fg: #ddd6fe;
@@ -237,70 +344,41 @@ body {
   --bookmark-soft: rgba(232, 184, 74, 0.16);
   --bookmark-fg: #fde68a;
 
-  /* Learning interaction aliases */
-  --learn-correct: var(--success);
-  --learn-correct-soft: var(--success-soft);
-  --learn-incorrect: var(--danger);
-  --learn-incorrect-soft: var(--danger-soft);
-  --learn-selected: var(--accent);
-  --learn-selected-soft: var(--accent-soft);
-  --learn-idle: var(--muted);
-  --learn-bookmarked: var(--bookmark);
-  --learn-completed: var(--success);
-  --learn-review: var(--insight);
-
-  /* Data viz meanings */
-  --viz-positive: var(--success);
-  --viz-negative: var(--danger);
-  --viz-neutral: var(--info);
-  --viz-insight: var(--insight);
-  --viz-achievement: var(--bookmark);
-
-  /* Focus */
   --focus-ring: 0 0 0 3px rgba(91, 141, 239, 0.35);
 
-  /* Elevation — soft depth, no neon glow */
   --shadow-sm: 0 1px 0 rgba(255, 255, 255, 0.04);
   --shadow: 0 10px 32px rgba(4, 8, 20, 0.45);
   --shadow-lg: 0 24px 56px rgba(4, 8, 20, 0.55);
   --shadow-header: 0 1px 0 rgba(148, 163, 184, 0.1);
-
-  --radius-sm: 10px;
-  --radius: 14px;
-  --radius-lg: 18px;
-  --radius-xl: 22px;
-
-  background: var(--bg-desk);
-  color: var(--ink);
-  font-family: var(--font-learner), var(--font-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
-.learner-theme .font-display,
-.learner-theme .font-sans {
-  font-family: var(--font-learner), var(--font-sans), ui-sans-serif, system-ui, sans-serif;
-}
-
-.learner-theme .desk-canvas {
+.learner-theme[data-theme='dark'].desk-canvas,
+.learner-theme[data-theme='dark'] .desk-canvas {
   background-color: var(--bg-desk);
   background-image:
     radial-gradient(ellipse 55% 42% at 100% -5%, rgba(91, 141, 239, 0.07), transparent 58%),
     radial-gradient(ellipse 40% 35% at 0% 100%, rgba(167, 139, 250, 0.04), transparent 55%);
 }
 
-.learner-theme .learner-sidebar {
+.learner-theme[data-theme='dark'] .learner-sidebar {
   background:
     linear-gradient(180deg, rgba(20, 27, 45, 0.35), transparent 40%),
     var(--bg-sidebar);
   box-shadow: inset -1px 0 0 var(--line);
 }
 
-.learner-theme :focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-.learner-theme .text-secondary {
-  color: var(--muted);
+/* Smooth theme switch (scoped; honor reduced motion) */
+@media (prefers-reduced-motion: no-preference) {
+  .learner-theme.theme-transitioning,
+  .learner-theme.theme-transitioning *:not(svg):not(svg *) {
+    transition:
+      background-color 220ms var(--ease-out),
+      color 220ms var(--ease-out),
+      border-color 220ms var(--ease-out),
+      box-shadow 220ms var(--ease-out),
+      fill 220ms var(--ease-out),
+      stroke 220ms var(--ease-out) !important;
+  }
 }
 
 /* Learner sidebar surface (light fallback if used outside .learner-theme) */

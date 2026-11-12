@@ -5,15 +5,12 @@ import { useQuery } from '@tanstack/react-query';
 import {
   ArrowRight,
   BookOpen,
-  CheckCircle2,
   ClipboardCheck,
   ClipboardList,
   FileText,
   Sparkles,
   Target,
-  XCircle,
 } from 'lucide-react';
-import { useEffect } from 'react';
 import { AccuracyDonut } from '@/components/dashboard/accuracy-donut';
 import { BarChart } from '@/components/dashboard/bar-chart';
 import { HomeStatCard } from '@/components/dashboard/home-stat-card';
@@ -126,17 +123,6 @@ export default function StudyHomePage() {
     queryFn: () => apiFetch<NewsListItem[]>('/news'),
     enabled: Boolean(me.data),
   });
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const scrollToHash = () => {
-      if (window.location.hash !== '#exam-history') return;
-      document.getElementById('exam-history')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    };
-    scrollToHash();
-    window.addEventListener('hashchange', scrollToHash);
-    return () => window.removeEventListener('hashchange', scrollToHash);
-  }, [me.data?.id, stats.dataUpdatedAt]);
 
   if (me.isLoading) {
     return <HomePageSkeleton />;
@@ -267,93 +253,6 @@ export default function StudyHomePage() {
           />
         </div>
       ) : null}
-
-      {/* Large recent practice panel */}
-      <Surface id="exam-history" elevated className="scroll-mt-24 space-y-4 p-4 sm:p-6">
-        <div className="flex items-center justify-between gap-2">
-          <div className="min-w-0">
-            <h2 className="text-[0.9375rem] font-semibold tracking-tight text-[var(--ink)] sm:text-base">
-              Recent practice
-            </h2>
-            <p className="mt-0.5 text-xs text-[var(--muted)]">Latest answer checks from your account</p>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <Link
-              href="/results"
-              className="text-xs font-semibold text-[var(--muted)] underline-offset-2 hover:text-[var(--ink)] hover:underline"
-            >
-              Quiz results
-            </Link>
-            <Badge variant="outline">{perf.recentAttempts.length}</Badge>
-          </div>
-        </div>
-        {statsFailed ? <Alert variant="danger">Could not load recent checks.</Alert> : null}
-        {stats.isLoading ? <HomeActivityListSkeleton rows={5} /> : null}
-        {!stats.isLoading && !statsFailed && perf.recentAttempts.length === 0 ? (
-          <EmptyState
-            nested
-            className="py-10"
-            title="No checks yet"
-            description="Results appear after you press Check answer on a practice question."
-            action={
-              <Link href="/questions">
-                <Button size="sm">Start a check</Button>
-              </Link>
-            }
-          />
-        ) : null}
-        {!stats.isLoading && !statsFailed && perf.recentAttempts.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[36rem] border-collapse text-left text-sm">
-              <thead>
-                <tr className="border-b border-[var(--line)] text-[0.6875rem] font-semibold tracking-[0.08em] text-[var(--muted)] uppercase">
-                  <th className="pb-3 pr-4 font-semibold">Question</th>
-                  <th className="pb-3 pr-4 font-semibold">Category</th>
-                  <th className="pb-3 pr-4 font-semibold">Result</th>
-                  <th className="pb-3 font-semibold">When</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--line)]">
-                {perf.recentAttempts.map((item) => (
-                  <tr key={item.id} className="group">
-                    <td className="py-3.5 pr-4">
-                      <Link
-                        href={`/questions/${item.questionId}`}
-                        className="flex items-center gap-3 font-medium text-[var(--ink)] transition-colors group-hover:text-[var(--ink-soft)]"
-                      >
-                        <span
-                          className={cn(
-                            'flex size-8 shrink-0 items-center justify-center rounded-full',
-                            item.isCorrect
-                              ? 'bg-[var(--learn-correct-soft)] text-[var(--learn-correct)]'
-                              : 'bg-[var(--learn-incorrect-soft)] text-[var(--learn-incorrect)]',
-                          )}
-                        >
-                          {item.isCorrect ? (
-                            <CheckCircle2 className="size-4" aria-hidden strokeWidth={1.75} />
-                          ) : (
-                            <XCircle className="size-4" aria-hidden strokeWidth={1.75} />
-                          )}
-                        </span>
-                        <span className="line-clamp-1">{item.title}</span>
-                      </Link>
-                    </td>
-                    <td className="py-3.5 pr-4 text-[var(--muted)]">{item.categoryName}</td>
-                    <td className="py-3.5 pr-4">
-                      <Badge variant={item.isCorrect ? 'success' : 'danger'}>
-                        {item.isCorrect ? 'Correct' : 'Wrong'}
-                      </Badge>
-                    </td>
-                    <td className="py-3.5 whitespace-nowrap text-[var(--muted)]">
-                      {new Date(item.createdAt).toLocaleString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : null}
-      </Surface>
 
       {/* Continue + quick actions + answer mix */}
       <div className="grid gap-4 lg:grid-cols-5">

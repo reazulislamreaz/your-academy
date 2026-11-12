@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { PanelLeftClose, PanelLeftOpen, Shield } from 'lucide-react';
 import { Suspense, useEffect, useState } from 'react';
+import { useLearnerTheme } from '@/components/theme/learner-theme-provider';
 import { BrandMark } from './brand-mark';
 import { learnerLinkActive, learnerNavGroups } from './learner-nav';
 import { cn } from '@/lib/utils';
@@ -18,8 +19,10 @@ function SidebarNav() {
   const pathname = usePathname();
   useSearchParams();
   const me = useMe();
+  const { theme } = useLearnerTheme();
   const isAdmin = me.data?.role === 'ADMIN';
   const [collapsed, setCollapsed] = useState(false);
+  const inverseLogo = theme === 'dark';
 
   const stats = useQuery({
     queryKey: ['me-stats'],
@@ -78,9 +81,9 @@ function SidebarNav() {
         )}
       >
         {collapsed ? (
-          <BrandMark href="/home" markOnly inverse className="[&_img]:h-8" />
+          <BrandMark href="/home" markOnly inverse={inverseLogo} className="[&_img]:h-8" />
         ) : (
-          <BrandMark href="/home" inverse className="[&_img]:h-9" />
+          <BrandMark href="/home" inverse={inverseLogo} className="[&_img]:h-9" />
         )}
         {!collapsed ? (
           <button

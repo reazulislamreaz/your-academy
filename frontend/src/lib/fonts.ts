@@ -16,7 +16,7 @@ export const fontSans = Manrope({
   weight: ['400', '500', '600', '700'],
 });
 
-/** Learner dark shell UI (Orbit-style) — scoped via `.learner-theme`. */
+/** Learner shell UI — scoped via `.learner-theme` (light/dark). */
 export const fontLearner = Inter({
   subsets: ['latin'],
   variable: '--font-learner',
