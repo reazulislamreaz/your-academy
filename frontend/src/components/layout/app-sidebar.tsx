@@ -76,7 +76,7 @@ function SidebarNav() {
     >
       <div
         className={cn(
-          'flex h-[var(--header-h,3.75rem)] shrink-0 items-center gap-2',
+          'flex h-[var(--header-h,4.5rem)] shrink-0 items-center gap-2',
           collapsed ? 'justify-center px-2' : 'justify-between px-4',
         )}
       >

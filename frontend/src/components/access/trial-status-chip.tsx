@@ -31,10 +31,10 @@ export function TrialStatusChip({ className }: { className?: string }) {
     <Link
       href="/home"
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold tracking-wide transition-colors',
+        'inline-flex h-9 items-center gap-1.5 rounded-full border px-3.5 text-[13px] font-semibold tracking-wide transition-colors',
         active
-          ? 'bg-[var(--highlight-soft)] text-[var(--highlight)] hover:bg-[var(--highlight-hover)]'
-          : 'bg-[var(--bg-muted)] text-[var(--muted-strong)] hover:bg-[var(--line)]',
+          ? 'border-[var(--highlight)]/25 bg-[var(--highlight-soft)] text-[var(--highlight)] hover:bg-[var(--highlight-hover)]'
+          : 'border-[var(--line)] bg-[var(--bg-muted)] text-[var(--muted-strong)] hover:border-[var(--line-strong)]',
         className,
       )}
       title={
@@ -43,7 +43,7 @@ export function TrialStatusChip({ className }: { className?: string }) {
           : 'Browse stays open; answers are premium'
       }
     >
-      <Hourglass className="size-3.5 shrink-0" aria-hidden strokeWidth={2.25} />
+      <Hourglass className="size-3.5 shrink-0" aria-hidden strokeWidth={2} />
       {active ? formatDaysLeft(remaining) : 'Trial ended'}
     </Link>
   );

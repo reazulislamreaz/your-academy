@@ -93,7 +93,7 @@ export function UserMenu({
           aria-label="Account menu"
           onClick={() => setOpen((v) => !v)}
           className={cn(
-            'flex max-w-[14rem] items-center gap-2 rounded-full py-1 pr-2 pl-1 text-left transition-colors hover:bg-[var(--bg-muted)]',
+            'flex max-w-[15rem] items-center gap-2.5 rounded-full py-1 pr-2.5 pl-1 text-left transition-colors hover:bg-[var(--bg-muted)]',
             open && 'bg-[var(--bg-muted)]',
           )}
         >
@@ -102,22 +102,26 @@ export function UserMenu({
             <img
               src={me.data.avatarUrl}
               alt=""
-              width={36}
-              height={36}
+              width={40}
+              height={40}
               decoding="async"
-              className="size-9 shrink-0 rounded-full object-cover"
+              className="size-10 shrink-0 rounded-full object-cover ring-1 ring-[var(--line)]"
             />
           ) : (
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[var(--brand-wash-strong)] text-[var(--ink)]">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[var(--brand-wash-strong)] text-[var(--ink)] ring-1 ring-[var(--line)]">
               <UserRound className="size-4" aria-hidden />
             </span>
           )}
-          <span className="hidden min-w-0 truncate text-sm font-semibold text-[var(--ink)] sm:inline">
+          <span className="hidden min-w-0 truncate text-[15px] font-semibold text-[var(--ink)] sm:inline">
             {me.data.name}
           </span>
           <ChevronDown
-            className={cn('hidden size-4 shrink-0 text-[var(--muted-strong)] sm:block', open && 'rotate-180')}
+            className={cn(
+              'hidden size-4 shrink-0 text-[var(--muted)] transition-transform sm:block',
+              open && 'rotate-180',
+            )}
             aria-hidden
+            strokeWidth={2}
           />
         </button>
         {open ? (

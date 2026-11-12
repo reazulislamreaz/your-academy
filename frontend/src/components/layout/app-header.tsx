@@ -9,12 +9,13 @@ import { LearnerThemeToggle } from '@/components/theme/learner-theme-toggle';
 import { useLearnerTheme } from '@/components/theme/learner-theme-provider';
 import { BrandMark } from './brand-mark';
 import { LearnerMobileNav } from './learner-mobile-nav';
+import { MessagesMenu } from './messages-menu';
 import { UpdatesMenu } from './updates-menu';
 import { UserMenu } from './user-menu';
 
 /**
- * Learner utilities bar — trial, saved MCQs, search, updates, profile.
- * No chat surface (product has none).
+ * Learner top navbar — matches Student Dashboard reference:
+ * logo · trial · Saved MCQ · search · notifications · messages · profile.
  */
 export function AppHeader() {
   const router = useRouter();
@@ -53,35 +54,51 @@ export function AppHeader() {
 
   return (
     <header
-      className="sticky top-0 z-30 flex h-[var(--header-h,3.75rem)] shrink-0 items-center gap-2 border-b border-[var(--line)] bg-[var(--bg)]/90 px-3 backdrop-blur-xl sm:gap-3 sm:px-5"
+      className="sticky top-0 z-30 flex h-[var(--header-h,4.5rem)] shrink-0 items-center gap-3 border-b border-[var(--line)] bg-[var(--bg-elevated)] px-3 sm:gap-4 sm:px-5 lg:px-6"
       style={{ boxShadow: 'var(--shadow-header)' } as CSSProperties}
     >
-      <div className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
-        <BrandMark href="/home" markOnly inverse={inverseLogo} className="lg:hidden [&_img]:h-8" />
-        <TrialStatusChip className="hidden min-[420px]:inline-flex" />
+      {/* Left: logo + trial */}
+      <div className="flex min-w-0 shrink-0 items-center gap-3 sm:gap-4">
+        <BrandMark
+          href="/home"
+          markOnly
+          inverse={inverseLogo}
+          className="lg:hidden [&_img]:h-8"
+        />
+        <BrandMark
+          href="/home"
+          inverse={inverseLogo}
+          className="hidden lg:inline-flex [&_img]:h-10"
+        />
+        <TrialStatusChip className="hidden min-[400px]:inline-flex" />
       </div>
 
-      <div className="ml-auto flex min-w-0 flex-1 items-center justify-end gap-1.5 sm:gap-2">
+      {/* Right utilities */}
+      <div className="ml-auto flex min-w-0 flex-1 items-center justify-end gap-2 sm:gap-2.5 md:gap-3">
         <Link
           href="/bookmarks"
-          className="hidden items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--bg-elevated)] px-3 py-2 text-sm font-semibold text-[var(--ink)] shadow-[var(--shadow-sm)] transition-colors hover:border-[var(--line-strong)] hover:bg-[var(--bg-muted)] md:inline-flex"
+          className="hidden h-10 items-center gap-2 rounded-full border border-[var(--line-strong)] bg-[var(--bg-muted)] px-3.5 text-sm font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--bg-soft)] md:inline-flex"
         >
-          <Bookmark className="size-4 shrink-0 text-[var(--muted)]" aria-hidden strokeWidth={1.75} />
+          <Bookmark
+            className="size-4 shrink-0 text-[var(--ink-soft)]"
+            aria-hidden
+            strokeWidth={2}
+          />
           <span className="hidden lg:inline">Saved MCQ</span>
         </Link>
 
         <Link
           href="/questions"
           aria-label="Search questions"
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--line)] bg-[var(--bg-elevated)] text-[var(--muted)] shadow-[var(--shadow-sm)] hover:bg-[var(--bg-muted)] hover:text-[var(--ink)] sm:hidden"
+          className="flex size-10 items-center justify-center rounded-[12px] border border-[var(--line)] bg-[var(--bg-muted)] text-[var(--ink-soft)] transition-colors hover:bg-[var(--bg-soft)] hover:text-[var(--ink)] sm:hidden"
         >
-          <Search className="size-4" aria-hidden strokeWidth={1.75} />
+          <Search className="size-[18px]" aria-hidden strokeWidth={1.75} />
         </Link>
 
         <form
           onSubmit={onSearch}
           role="search"
-          className="hidden min-w-0 flex-1 sm:block sm:max-w-[14rem] md:max-w-[18rem] lg:max-w-[22rem]"
+          className="hidden min-w-0 sm:block sm:w-[11.5rem] md:w-[13.5rem] lg:w-[15rem]"
         >
           <label htmlFor="app-header-search" className="sr-only">
             Search questions
@@ -98,17 +115,17 @@ export function AppHeader() {
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search questions…"
-              className="h-10 w-full rounded-full border border-[var(--line)] bg-[var(--bg-elevated)] pr-14 pl-9 text-sm text-[var(--ink)] outline-none transition-[border-color,background-color,box-shadow] placeholder:text-[var(--muted)] focus:border-[var(--accent)] focus:bg-[var(--bg-muted)] focus:shadow-[var(--focus-ring)]"
+              placeholder="Search..."
+              className="h-10 w-full rounded-full border border-[var(--line)] bg-[var(--bg-muted)] pr-3 pl-9 text-sm text-[var(--ink)] outline-none transition-[border-color,background-color,box-shadow] placeholder:text-[var(--muted)] focus:border-[var(--accent)] focus:bg-[var(--bg-elevated)] focus:shadow-[var(--focus-ring)]"
             />
-            <kbd className="pointer-events-none absolute top-1/2 right-3 hidden -translate-y-1/2 rounded-md border border-[var(--line)] bg-[var(--bg-muted)] px-1.5 py-0.5 text-[0.65rem] font-medium text-[var(--muted)] md:inline-block">
-              ⌘K
-            </kbd>
           </div>
         </form>
 
-        <LearnerThemeToggle showLabel />
         <UpdatesMenu />
+        <div className="hidden sm:block">
+          <MessagesMenu />
+        </div>
+        <LearnerThemeToggle className="rounded-[12px] border-[var(--line)] bg-[var(--bg-muted)] shadow-none" />
         <div className="hidden md:block">
           <UserMenu variant="header" />
         </div>
