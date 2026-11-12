@@ -5,10 +5,10 @@ import { io, type Socket } from 'socket.io-client';
 import type { SupportMessage } from '@/lib/api/support';
 
 function socketOrigin(): string {
-  const explicit = process.env.NEXT_PUBLIC_SOCKET_URL?.trim();
-  if (explicit) return explicit.replace(/\/$/, '');
+  // Always same-origin in the browser so HttpOnly auth + support_guest_token cookies
+  // are sent (Next/Nginx rewrite `/socket.io` → API). Direct API origin breaks guests.
   if (typeof window !== 'undefined') return window.location.origin;
-  return 'http://localhost:5000';
+  return (process.env.NEXT_PUBLIC_SOCKET_URL ?? '').replace(/\/$/, '');
 }
 
 export type SupportSocketHandlers = {

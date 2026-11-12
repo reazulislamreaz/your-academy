@@ -54,11 +54,18 @@ export class SupportGateway implements OnGatewayInit, OnGatewayConnection, OnGat
     @Inject(REDIS_CONNECTION) private readonly redis: IORedis,
   ) {}
 
-  afterInit(server: Server) {
+  afterInit() {
     try {
+      // Nest injects the `/support` Namespace; Redis adapter must be set on the root Server.
+      const root =
+        (this.server as unknown as { server?: Server }).server ?? this.server;
+      if (typeof (root as { adapter?: unknown }).adapter !== 'function') {
+        this.logger.warn('Socket.IO root adapter setter unavailable; using in-memory');
+        return;
+      }
       const pub = this.redis.duplicate();
       const sub = this.redis.duplicate();
-      server.adapter(createAdapter(pub, sub) as never);
+      (root as Server).adapter(createAdapter(pub, sub) as never);
       this.logger.log('Socket.IO Redis adapter attached for /support');
     } catch (err) {
       this.logger.warn(`Redis adapter unavailable, using in-memory: ${String(err)}`);

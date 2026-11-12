@@ -57,7 +57,7 @@ Docker Compose overrides `DATABASE_URL` host to `postgres` for `api` / `worker` 
 |----------|----------|-------------|
 | `NEXT_PUBLIC_API_BASE_URL` | yes | Prefer `/api/v1` (Next rewrite) |
 | `API_INTERNAL_URL` | yes | Backend origin for rewrite (`http://localhost:5000` or `http://api:5000` in Docker) |
-| `NEXT_PUBLIC_SOCKET_URL` | no | Socket.IO origin for support chat. Local: `http://localhost:5000`. Production behind Nginx: leave empty (same-origin `/socket.io/`). |
+| `NEXT_PUBLIC_SOCKET_URL` | no | Socket.IO origin for support chat. **Leave empty** so the browser uses same-origin `/socket.io` (Next rewrite / Nginx → API) and sends HttpOnly auth + `support_guest_token` cookies. Set only if you intentionally connect straight to the API origin. |
 | `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | yes | Public cloud name only |
 | `PORT` | no | Next listen port |
 
