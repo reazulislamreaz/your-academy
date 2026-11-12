@@ -123,20 +123,31 @@ export class SupportController {
 
   @Post('uploads/sign')
   @UseGuards(OptionalJwtAuthGuard, CsrfGuard)
-  async signUpload(@Req() req: Request & { user?: RequestUser }) {
+  async signUpload(
+    @Req() req: Request & { user?: RequestUser },
+    @Body() body?: { resourceType?: 'image' | 'raw'; mimeType?: string },
+  ) {
     const actor = await resolveSupportActor(req, this.guests);
+    const mime = body?.mimeType?.toLowerCase() ?? '';
+    const resourceType =
+      body?.resourceType ??
+      (mime.startsWith('image/') ? 'image' : 'raw');
     if (actor.kind === 'guest') {
       return createSuccessResponse(
-        this.storage.createGuestSupportUploadParams(actor.guestSessionId),
+        this.storage.createGuestSupportUploadParams(actor.guestSessionId, { resourceType }),
         newRequestId(),
       );
     }
     return createSuccessResponse(
-      this.storage.createSignedUploadParams('support-attachment', {
-        userId: actor.userId,
-        role: actor.role,
-        sessionId: actor.sessionId,
-      }),
+      this.storage.createSignedUploadParams(
+        'support-attachment',
+        {
+          userId: actor.userId,
+          role: actor.role,
+          sessionId: actor.sessionId,
+        },
+        { resourceType },
+      ),
       newRequestId(),
     );
   }

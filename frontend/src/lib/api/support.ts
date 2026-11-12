@@ -109,7 +109,7 @@ export async function markSupportRead(conversationId: string) {
   });
 }
 
-export async function signSupportUpload() {
+export async function signSupportUpload(opts?: { mimeType?: string; resourceType?: 'image' | 'raw' }) {
   return apiFetch<{
     configured: boolean;
     cloudName: string;
@@ -120,7 +120,13 @@ export async function signSupportUpload() {
     purpose: string;
     resourceType: 'image' | 'raw';
     deliveryType: string;
-  }>('/support/uploads/sign', { method: 'POST', body: JSON.stringify({}) });
+  }>('/support/uploads/sign', {
+    method: 'POST',
+    body: JSON.stringify({
+      mimeType: opts?.mimeType,
+      resourceType: opts?.resourceType,
+    }),
+  });
 }
 
 export async function confirmSupportUpload(input: {
@@ -138,7 +144,8 @@ export async function confirmSupportUpload(input: {
 }
 
 export async function uploadSupportAttachment(file: File) {
-  const sign = await signSupportUpload();
+  const resourceType = file.type.startsWith('image/') ? 'image' : 'raw';
+  const sign = await signSupportUpload({ mimeType: file.type, resourceType });
   const form = new FormData();
   form.append('file', file);
   form.append('api_key', sign.apiKey);

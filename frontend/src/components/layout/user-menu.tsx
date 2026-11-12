@@ -134,22 +134,23 @@ export function UserMenu({
               <p className="truncate text-xs text-[var(--muted-strong)]">{me.data.whatsappNumber}</p>
             </div>
             <div className="flex flex-col p-1.5">
-              <Link
-                href="/profile"
-                className="rounded-[var(--radius-sm)] px-3 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--bg-muted)]"
-                onClick={() => setOpen(false)}
-              >
-                Profile
-              </Link>
               {isAdmin ? (
                 <Link
                   href="/admin/dashboard"
                   className="rounded-[var(--radius-sm)] px-3 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--bg-muted)]"
                   onClick={() => setOpen(false)}
                 >
-                  Admin
+                  Admin dashboard
                 </Link>
-              ) : null}
+              ) : (
+                <Link
+                  href="/profile"
+                  className="rounded-[var(--radius-sm)] px-3 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--bg-muted)]"
+                  onClick={() => setOpen(false)}
+                >
+                  Profile
+                </Link>
+              )}
               <button
                 type="button"
                 disabled={logout.isPending}
@@ -173,7 +174,7 @@ export function UserMenu({
     <div className={compact ? 'flex flex-col gap-2' : 'flex items-center gap-2'}>
       {!compact ? (
         <Link
-          href="/profile"
+          href={isAdmin ? '/admin/dashboard' : '/profile'}
           className="hidden max-w-[12rem] items-center gap-2 truncate text-sm font-medium text-[var(--ink-soft)] hover:text-[var(--ink)] lg:inline-flex"
           title={me.data.name}
         >
@@ -209,7 +210,7 @@ export function UserMenu({
       {isAdmin ? (
         <Link href="/admin/dashboard" className={compact ? 'w-full' : undefined}>
           <Button variant="outline" size="sm" className={compact ? 'w-full' : undefined}>
-            Admin
+            Admin dashboard
           </Button>
         </Link>
       ) : null}

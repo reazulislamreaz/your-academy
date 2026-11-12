@@ -25,6 +25,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | DEC-027 | Learner Orbit dark charcoal theme | CONFIRMED |
 | DEC-028 | Learner dashboard light/dark toggle | CONFIRMED |
 | DEC-029 | Real-time support messaging (Socket.IO) | CONFIRMED |
+| DEC-030 | Role-exclusive dashboard routing (ADMIN vs learner) | CONFIRMED |
 
 ---
 
@@ -308,6 +309,15 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Impact | Prisma support models, `SupportModule` + gateway, storage purpose, marketing/learner FAB, admin Support Inbox |
 | Status | **CONFIRMED** (product request 2026-11-12) |
 
+### DEC-030 — Role-exclusive dashboard routing
+
+| Field | Value |
+|-------|-------|
+| Question | Can `ADMIN` users use the learner/student dashboard, and can learners open `/admin/*`? |
+| Decision | **No cross-dashboard access.** After login, `ADMIN` → `/admin/dashboard` only; `USER` → `/home`. Middleware + `LearnerGate` / `AdminGate` block the other shell even via direct URL or `?next=`. Learner nav never exposes admin console links. Backend `/api/v1/admin/*` (and admin mutations) stay behind `JwtAuthGuard` + `RolesGuard(ADMIN)`. Learner content APIs may still authorize admins where DEC-014 applies (answer privacy bypass); UI dashboards remain exclusive. |
+| Impact | `middleware.ts`, `role-routing.ts`, `postLoginPath`, `(app)`/`(admin)` gates, nav/user-menu cleanup |
+| Status | **CONFIRMED** (product request 2026-11-12) |
+
 ### Deferred / NEEDS APPROVAL (explicitly out of Phase 1)
 
 | Item | Notes |
@@ -318,6 +328,8 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | ZIP image packs / JSON import packages | Defer unless same MCQ schema map is trivial |
 | Bull Board / async multi-thousand import worker | Keep sync chunked import; revisit on timeouts |
 | Staff role matrix / platform settings / notification center | Later |
+| Support message reply/quote, edit, soft-delete | Needs schema (`replyToMessageId`, `editedAt`, `deletedAt`) — UI quotes text locally until approved |
+| Admin-initiated outbound DM to arbitrary users | Needs create-conversation-by-userId API — inbox currently reuses open guest/learner threads |
 
 ---
 

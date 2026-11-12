@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { PanelLeftClose, PanelLeftOpen, Shield } from 'lucide-react';
+import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { Suspense, useEffect, useState } from 'react';
 import { useLearnerTheme } from '@/components/theme/learner-theme-provider';
 import { BrandMark } from './brand-mark';
@@ -20,7 +20,6 @@ function SidebarNav() {
   useSearchParams();
   const me = useMe();
   const { theme } = useLearnerTheme();
-  const isAdmin = me.data?.role === 'ADMIN';
   const [collapsed, setCollapsed] = useState(false);
   const inverseLogo = theme === 'dark';
 
@@ -168,23 +167,7 @@ function SidebarNav() {
         ))}
       </nav>
 
-      {isAdmin ? (
-        <div className={cn('border-t border-[var(--line)]', collapsed ? 'p-2' : 'p-3')}>
-          <Link
-            href="/admin/dashboard"
-            title={collapsed ? 'Admin console' : undefined}
-            className={cn(
-              'learner-nav-link motion-nav-indicator flex items-center rounded-[var(--radius)] text-sm font-medium text-[var(--muted)] hover:bg-[var(--brand-wash)] hover:text-[var(--ink-soft)]',
-              collapsed ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5',
-            )}
-          >
-            <span className="flex size-7 shrink-0 items-center justify-center">
-              <Shield className="size-4" aria-hidden strokeWidth={1.75} />
-            </span>
-            {!collapsed ? <span>Admin console</span> : null}
-          </Link>
-        </div>
-      ) : !collapsed ? (
+      {!collapsed ? (
         <div className="border-t border-[var(--line)] px-4 py-3">
           <p className="text-[0.6875rem] leading-relaxed text-[var(--muted)]">
             Practice daily. Answers stay private to your account.

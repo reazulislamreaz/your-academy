@@ -1,11 +1,17 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import {
+  defaultPathForRole,
+  isAdminAppPath,
+  isLearnerAppPath,
+  type AppRole,
+} from '@/lib/auth/role-routing';
 
 const ACCESS = process.env.ACCESS_COOKIE_NAME ?? 'access_token';
 const REFRESH = process.env.REFRESH_COOKIE_NAME ?? 'refresh_token';
 
 /** Soft-read JWT role for UX redirects only — API remains authz source of truth. */
-function readAccessRole(token: string | undefined): 'ADMIN' | 'USER' | null {
+function readAccessRole(token: string | undefined): AppRole | null {
   if (!token) return null;
   try {
     const segment = token.split('.')[1];
@@ -18,11 +24,7 @@ function readAccessRole(token: string | undefined): 'ADMIN' | 'USER' | null {
   }
 }
 
-function defaultAuthedPath(role: 'ADMIN' | 'USER' | null): string {
-  return role === 'ADMIN' ? '/admin/dashboard' : '/home';
-}
-
-/** Soft gate: cookie presence only. API remains source of truth for authz. */
+/** Soft gate: cookie presence + role-based dashboard separation. */
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const access = request.cookies.get(ACCESS)?.value;
@@ -36,22 +38,7 @@ export function middleware(request: NextRequest) {
     pathname.startsWith('/forgot-password') ||
     pathname.startsWith('/reset-password');
 
-  const needsAuth =
-    pathname.startsWith('/home') ||
-    pathname.startsWith('/onboarding') ||
-    pathname.startsWith('/questions') ||
-    pathname.startsWith('/bookmarks') ||
-    pathname.startsWith('/documents') ||
-    pathname.startsWith('/profile') ||
-    pathname.startsWith('/practice') ||
-    pathname.startsWith('/results') ||
-    pathname.startsWith('/subjects') ||
-    pathname.startsWith('/quizzes') ||
-    pathname.startsWith('/daily-quiz') ||
-    pathname.startsWith('/model-tests') ||
-    pathname.startsWith('/exams') ||
-    pathname.startsWith('/previous-year') ||
-    pathname.startsWith('/admin');
+  const needsAuth = isLearnerAppPath(pathname) || isAdminAppPath(pathname);
 
   if (needsAuth && !hasSession) {
     const url = request.nextUrl.clone();
@@ -60,18 +47,25 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Soft block: non-admin access tokens should not enter /admin UI.
-  // Expired access + refresh-only sessions fall through to AdminGate + API 403.
-  if (pathname.startsWith('/admin') && role === 'USER') {
+  // Non-admins must not enter /admin UI (expired access falls through to AdminGate + API 403).
+  if (isAdminAppPath(pathname) && role === 'USER') {
     const url = request.nextUrl.clone();
     url.pathname = '/home';
     url.search = '';
     return NextResponse.redirect(url);
   }
 
+  // Admins must not enter learner / student dashboards.
+  if (isLearnerAppPath(pathname) && role === 'ADMIN') {
+    const url = request.nextUrl.clone();
+    url.pathname = '/admin/dashboard';
+    url.search = '';
+    return NextResponse.redirect(url);
+  }
+
   if (isAuthPage && hasSession && (pathname === '/login' || pathname === '/register')) {
     const url = request.nextUrl.clone();
-    url.pathname = defaultAuthedPath(role);
+    url.pathname = defaultPathForRole(role);
     url.search = '';
     return NextResponse.redirect(url);
   }
@@ -109,6 +103,9 @@ export const config = {
     '/exams/:path*',
     '/previous-year',
     '/previous-year/:path*',
+    '/news',
+    '/news/:path*',
+    '/admin',
     '/admin/:path*',
     '/login',
     '/register',

@@ -2,14 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, Shield, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { UserMenu } from './user-menu';
 import { learnerLinkActive, learnerNavGroups } from './learner-nav';
 import { cn } from '@/lib/utils';
-import { useMe } from '@/features/auth/use-auth';
 
 /** Grouped drawer matching desktop sidebar IA (lg:hidden). */
 export function LearnerMobileNav() {
@@ -17,7 +16,6 @@ export function LearnerMobileNav() {
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
   const panelId = useId();
-  const me = useMe();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -122,17 +120,6 @@ export function LearnerMobileNav() {
                   </div>
                 </div>
               ))}
-              {me.data?.role === 'ADMIN' ? (
-                <Link
-                  href="/admin/dashboard"
-                  className="flex items-center gap-2.5 rounded-[var(--radius)] px-3 py-2.5 text-base font-medium text-[var(--ink-soft)] hover:bg-[var(--brand-wash)]"
-                >
-                  <span className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--bg-muted)]">
-                    <Shield className="size-4" aria-hidden />
-                  </span>
-                  Admin console
-                </Link>
-              ) : null}
             </nav>
             <div className="mt-6 border-t border-[var(--line)] pt-4">
               <UserMenu compact />

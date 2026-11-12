@@ -13,6 +13,10 @@ import {
   type SupportMessage,
 } from '@/lib/api/support';
 import { cn } from '@/lib/utils';
+import {
+  SupportAttachmentBubble,
+  SupportPendingAttachmentPreview,
+} from './support-attachment';
 import { useSupportSocket } from './support-socket';
 
 function newClientId() {
@@ -54,9 +58,12 @@ export function SupportChatWindow({
   const [typing, setTyping] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [pendingPreviewUrl, setPendingPreviewUrl] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const attachAbort = useRef(0);
 
   const listFn = adminList ?? listSupportMessages;
   const sendFn = adminSend ?? sendSupportMessage;
@@ -174,12 +181,25 @@ export function SupportChatWindow({
     }
   };
 
+  const clearPending = () => {
+    attachAbort.current += 1;
+    setPendingFile(null);
+    if (pendingPreviewUrl) URL.revokeObjectURL(pendingPreviewUrl);
+    setPendingPreviewUrl(null);
+    if (fileRef.current) fileRef.current.value = '';
+  };
+
   const onAttach = async (file: File | null) => {
     if (!file || closed) return;
+    const ticket = ++attachAbort.current;
+    setPendingFile(file);
+    const localUrl = file.type.startsWith('image/') ? URL.createObjectURL(file) : null;
+    setPendingPreviewUrl(localUrl);
     setSending(true);
     setError(null);
     try {
       const asset = await uploadSupportAttachment(file);
+      if (ticket !== attachAbort.current) return;
       const clientMessageId = newClientId();
       const payload = {
         clientMessageId,
@@ -187,6 +207,31 @@ export function SupportChatWindow({
         originalFilename: file.name,
         body: draft.trim() || undefined,
       };
+      // Optimistic bubble with local preview while server ACK arrives
+      if (localUrl) {
+        mergeMessage({
+          id: `tmp-${clientMessageId}`,
+          conversationId: conversation.id,
+          senderType: mode === 'admin' ? 'ADMIN' : mode === 'guest' ? 'GUEST' : 'USER',
+          senderUserId: null,
+          clientMessageId,
+          kind: 'ATTACHMENT',
+          body: payload.body ?? null,
+          deliveredAt: null,
+          readAt: null,
+          createdAt: new Date().toISOString(),
+          attachments: [
+            {
+              id: `tmp-att-${clientMessageId}`,
+              mediaAssetId: asset.id,
+              originalFilename: file.name,
+              mimeType: file.type || 'application/octet-stream',
+              bytes: file.size,
+              downloadUrl: localUrl,
+            },
+          ],
+        });
+      }
       if (socket.connected && !adminSend) {
         socket.sendMessage({ conversationId: conversation.id, ...payload });
       } else {
@@ -194,12 +239,24 @@ export function SupportChatWindow({
       }
       setDraft('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Attachment failed');
+      if (ticket === attachAbort.current) {
+        setError(err instanceof Error ? err.message : 'Attachment failed');
+      }
     } finally {
-      setSending(false);
-      if (fileRef.current) fileRef.current.value = '';
+      if (ticket === attachAbort.current) {
+        setSending(false);
+        setPendingFile(null);
+        // Keep object URL until real message replaces optimistic (revoked on unmount/clear)
+        if (fileRef.current) fileRef.current.value = '';
+      }
     }
   };
+
+  useEffect(() => {
+    return () => {
+      if (pendingPreviewUrl) URL.revokeObjectURL(pendingPreviewUrl);
+    };
+  }, [pendingPreviewUrl]);
 
   return (
     <div
@@ -255,18 +312,7 @@ export function SupportChatWindow({
                 >
                   {m.body ? <p className="whitespace-pre-wrap break-words">{m.body}</p> : null}
                   {m.attachments.map((a) => (
-                    <a
-                      key={a.id}
-                      href={a.downloadUrl ?? undefined}
-                      target="_blank"
-                      rel="noreferrer"
-                      className={cn(
-                        'mt-1 block text-xs underline underline-offset-2',
-                        mine ? 'opacity-90' : 'text-[var(--accent)]',
-                      )}
-                    >
-                      {a.originalFilename}
-                    </a>
+                    <SupportAttachmentBubble key={a.id} attachment={a} mine={mine} />
                   ))}
                   <p
                     className={cn(
@@ -294,6 +340,14 @@ export function SupportChatWindow({
 
       {error ? (
         <p className="border-t border-[var(--line)] px-4 py-2 text-xs text-red-600">{error}</p>
+      ) : null}
+
+      {pendingFile ? (
+        <SupportPendingAttachmentPreview
+          file={pendingFile}
+          previewUrl={pendingPreviewUrl}
+          onClear={clearPending}
+        />
       ) : null}
 
       <form

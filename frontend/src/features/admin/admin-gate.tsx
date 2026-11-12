@@ -23,7 +23,7 @@ function AdminGateSkeleton() {
 
 /**
  * Client RBAC gate for the admin shell.
- * API RolesGuard remains the security boundary; this only keeps UX/routing honest.
+ * Non-admins are sent to the learner desk; API RolesGuard remains the security boundary.
  */
 export function AdminGate({ children }: { children: ReactNode }) {
   const me = useMe();

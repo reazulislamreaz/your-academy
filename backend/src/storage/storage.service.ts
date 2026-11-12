@@ -39,7 +39,11 @@ export class StorageService {
     return secret.length >= 16;
   }
 
-  createSignedUploadParams(purposeRaw: string, user: RequestUser): SignedUploadParams {
+  createSignedUploadParams(
+    purposeRaw: string,
+    user: RequestUser,
+    opts?: { resourceType?: 'image' | 'raw' },
+  ): SignedUploadParams {
     const purpose = this.assertPurpose(purposeRaw);
     this.assertPurposeAllowed(purpose, user);
 
@@ -56,7 +60,13 @@ export class StorageService {
     const folder = `${process.env.CLOUDINARY_FOLDER_PREFIX ?? 'your-academy'}/${purpose}/${user.userId}`;
     const timestamp = Math.floor(Date.now() / 1000);
     const resourceType =
-      purpose === 'pdf' || purpose === 'support-attachment' ? 'raw' : 'image';
+      purpose === 'support-attachment'
+        ? opts?.resourceType === 'image'
+          ? 'image'
+          : 'raw'
+        : purpose === 'pdf'
+          ? 'raw'
+          : 'image';
     // PDFs, avatars, and support files use authenticated delivery.
     const deliveryType =
       purpose === 'pdf' || purpose === 'avatar' || purpose === 'support-attachment'
@@ -127,7 +137,7 @@ export class StorageService {
       type?: string;
     };
     try {
-      remote = await cloudinary.api.resource(input.publicId, { resource_type: resourceType });
+      remote = await this.fetchCloudinaryResource(input.publicId, resourceType, purpose);
     } catch (err) {
       this.logger.warn(`Cloudinary confirm failed for ${input.publicId}: ${String(err)}`);
       throw new BadRequestException(
@@ -231,7 +241,10 @@ export class StorageService {
   }
 
   /** Guest support uploads — folder keyed by guest session id (no User FK). */
-  createGuestSupportUploadParams(guestSessionId: string): SignedUploadParams {
+  createGuestSupportUploadParams(
+    guestSessionId: string,
+    opts?: { resourceType?: 'image' | 'raw' },
+  ): SignedUploadParams {
     if (!this.isConfigured()) {
       throw new ServiceUnavailableException(
         createErrorResponse(
@@ -244,6 +257,7 @@ export class StorageService {
     const purpose: UploadPurpose = 'support-attachment';
     const folder = `${process.env.CLOUDINARY_FOLDER_PREFIX ?? 'your-academy'}/${purpose}/guest-${guestSessionId}`;
     const timestamp = Math.floor(Date.now() / 1000);
+    const resourceType = opts?.resourceType === 'image' ? 'image' : 'raw';
     const toSign: Record<string, string | number> = {
       folder,
       timestamp,
@@ -261,7 +275,7 @@ export class StorageService {
       timestamp,
       signature,
       purpose,
-      resourceType: 'raw',
+      resourceType,
       deliveryType: 'authenticated',
     };
   }
@@ -286,7 +300,7 @@ export class StorageService {
     const resourceType = (input.resourceType ?? 'raw') as 'image' | 'raw';
     let remote: { bytes?: number; format?: string; width?: number; height?: number; type?: string };
     try {
-      remote = await cloudinary.api.resource(input.publicId, { resource_type: resourceType });
+      remote = await this.fetchCloudinaryResource(input.publicId, resourceType, purpose);
     } catch (err) {
       this.logger.warn(`Cloudinary confirm failed for ${input.publicId}: ${String(err)}`);
       throw new BadRequestException(
@@ -313,6 +327,52 @@ export class StorageService {
         uploadedById: null,
       },
     });
+  }
+
+  /**
+   * Authenticated/private assets require `type` on Admin API lookups.
+   * Try delivery-aware options first, then fall back.
+   */
+  private async fetchCloudinaryResource(
+    publicId: string,
+    resourceType: 'image' | 'raw',
+    purpose: UploadPurpose,
+  ): Promise<{
+    bytes?: number;
+    format?: string;
+    width?: number;
+    height?: number;
+    type?: string;
+    resource_type?: string;
+  }> {
+    const preferredType =
+      purpose === 'pdf' || purpose === 'avatar' || purpose === 'support-attachment'
+        ? 'authenticated'
+        : 'upload';
+    const attempts: Array<{ resource_type: 'image' | 'raw'; type?: string }> = [
+      { resource_type: resourceType, type: preferredType },
+      { resource_type: resourceType },
+      { resource_type: resourceType, type: 'upload' },
+      { resource_type: resourceType, type: 'authenticated' },
+      { resource_type: resourceType, type: 'private' },
+    ];
+    // Also try without file extension — Cloudinary Admin API sometimes stores raw
+    // public_ids without the uploaded filename extension.
+    const ids = publicId.includes('.')
+      ? [publicId, publicId.replace(/\.[^./]+$/, '')]
+      : [publicId];
+
+    let lastErr: unknown;
+    for (const id of ids) {
+      for (const opts of attempts) {
+        try {
+          return await cloudinary.api.resource(id, opts);
+        } catch (err) {
+          lastErr = err;
+        }
+      }
+    }
+    throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
   }
 
   private assertMimeForPurpose(purpose: UploadPurpose, mimeType: string) {
