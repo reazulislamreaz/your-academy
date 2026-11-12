@@ -20,12 +20,14 @@ export class PublicController {
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
     @Query('q') q?: string,
+    @Query('categoryId') categoryId?: string,
   ) {
     const take = Math.min(Math.max(Number(limit) || 20, 1), 100);
     const data = await this.publicService.listQuestionSets({
       cursor,
       limit: take,
       q,
+      categoryId,
     });
     return createSuccessResponse(
       data.items,

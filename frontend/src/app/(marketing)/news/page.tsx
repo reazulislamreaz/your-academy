@@ -18,11 +18,11 @@ export default function NewsPage() {
   });
 
   return (
-    <div className="space-y-8">
+    <div className="mx-auto w-full max-w-[960px] space-y-8 px-4 py-8 sm:px-6 sm:py-10">
       <PageHeader
         eyebrow="Updates"
-        title="News"
-        description="Platform updates and study tips. Public — no login required."
+        title="পত্রিকার গুরুত্বপূর্ণ কলাম"
+        description="Important columns and exam tips. Browse freely — no login required."
       />
       {list.isLoading ? <NewsPageSkeleton omitHeader /> : null}
       {list.error ? <Alert variant="danger">Could not load news.</Alert> : null}

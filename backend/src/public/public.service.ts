@@ -72,26 +72,40 @@ export class PublicService {
   }
 
   /** Public Question Sets = completed/archived upload batches with live published MCQs. */
-  async listQuestionSets(params: { cursor?: string; limit?: number; q?: string }) {
+  async listQuestionSets(params: {
+    cursor?: string;
+    limit?: number;
+    q?: string;
+    categoryId?: string;
+  }) {
     const limit = Math.min(Math.max(params.limit ?? 20, 1), 100);
     const q = params.q?.trim();
+    const categoryId = params.categoryId?.trim() || undefined;
+
+    const where: Prisma.QuestionUploadBatchWhereInput = {
+      status: { in: [QuestionUploadStatus.COMPLETED, QuestionUploadStatus.ARCHIVED] },
+      questions: {
+        some: {
+          status: QuestionStatus.PUBLISHED,
+          deletedAt: null,
+          ...(categoryId ? { categoryId } : {}),
+        },
+      },
+      ...(q
+        ? {
+            OR: [
+              { displayName: { contains: q, mode: 'insensitive' } },
+              { batchCode: { contains: q, mode: 'insensitive' } },
+              { examCategoryHint: { contains: q, mode: 'insensitive' } },
+              { subjectHint: { contains: q, mode: 'insensitive' } },
+              { topicHint: { contains: q, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+    };
 
     const batches = await this.prisma.questionUploadBatch.findMany({
-      where: {
-        status: { in: [QuestionUploadStatus.COMPLETED, QuestionUploadStatus.ARCHIVED] },
-        questions: { some: { status: QuestionStatus.PUBLISHED, deletedAt: null } },
-        ...(q
-          ? {
-              OR: [
-                { displayName: { contains: q, mode: 'insensitive' } },
-                { batchCode: { contains: q, mode: 'insensitive' } },
-                { examCategoryHint: { contains: q, mode: 'insensitive' } },
-                { subjectHint: { contains: q, mode: 'insensitive' } },
-                { topicHint: { contains: q, mode: 'insensitive' } },
-              ],
-            }
-          : {}),
-      },
+      where,
       take: limit + 1,
       ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {}),
       // Newest Admin upload first (upload createdAt DESC).
@@ -109,7 +123,11 @@ export class PublicService {
         _count: {
           select: {
             questions: {
-              where: { status: QuestionStatus.PUBLISHED, deletedAt: null },
+              where: {
+                status: QuestionStatus.PUBLISHED,
+                deletedAt: null,
+                ...(categoryId ? { categoryId } : {}),
+              },
             },
           },
         },
@@ -130,23 +148,7 @@ export class PublicService {
       importedAt: b.importedAt?.toISOString() ?? null,
     }));
 
-    const total = await this.prisma.questionUploadBatch.count({
-      where: {
-        status: { in: [QuestionUploadStatus.COMPLETED, QuestionUploadStatus.ARCHIVED] },
-        questions: { some: { status: QuestionStatus.PUBLISHED, deletedAt: null } },
-        ...(q
-          ? {
-              OR: [
-                { displayName: { contains: q, mode: 'insensitive' } },
-                { batchCode: { contains: q, mode: 'insensitive' } },
-                { examCategoryHint: { contains: q, mode: 'insensitive' } },
-                { subjectHint: { contains: q, mode: 'insensitive' } },
-                { topicHint: { contains: q, mode: 'insensitive' } },
-              ],
-            }
-          : {}),
-      },
-    });
+    const total = await this.prisma.questionUploadBatch.count({ where });
 
     return { items, nextCursor, total };
   }

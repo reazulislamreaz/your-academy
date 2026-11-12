@@ -36,11 +36,13 @@ export async function listPublicQuestionSets(params: {
   cursor?: string;
   limit?: number;
   q?: string;
+  categoryId?: string;
 }) {
   const qs = new URLSearchParams();
   if (params.cursor) qs.set('cursor', params.cursor);
   qs.set('limit', String(params.limit ?? 20));
   if (params.q) qs.set('q', params.q);
+  if (params.categoryId) qs.set('categoryId', params.categoryId);
   return apiFetchResult<PublicQuestionSet[]>(`/public/question-sets?${qs}`, {
     skipRefresh: true,
   });

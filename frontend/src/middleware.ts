@@ -4,6 +4,7 @@ import {
   defaultPathForRole,
   isAdminAppPath,
   isLearnerAppPath,
+  isPublicMarketingPath,
   type AppRole,
 } from '@/lib/auth/role-routing';
 
@@ -37,6 +38,11 @@ export function middleware(request: NextRequest) {
     pathname.startsWith('/register') ||
     pathname.startsWith('/forgot-password') ||
     pathname.startsWith('/reset-password');
+
+  // Public marketing pages (Home, Preli bank, News, etc.) are never auth-gated.
+  if (isPublicMarketingPath(pathname)) {
+    return NextResponse.next();
+  }
 
   const needsAuth = isLearnerAppPath(pathname) || isAdminAppPath(pathname);
 
@@ -103,8 +109,6 @@ export const config = {
     '/exams/:path*',
     '/previous-year',
     '/previous-year/:path*',
-    '/news',
-    '/news/:path*',
     '/admin',
     '/admin/:path*',
     '/login',

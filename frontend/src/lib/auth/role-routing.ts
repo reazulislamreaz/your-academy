@@ -18,8 +18,21 @@ export const LEARNER_APP_PREFIXES = [
   '/model-tests',
   '/exams',
   '/previous-year',
+] as const;
+
+/** Public marketing surfaces — never soft-gated by auth middleware. */
+export const PUBLIC_MARKETING_PREFIXES = [
+  '/',
+  '/preli-question-bank',
   '/news',
 ] as const;
+
+export function isPublicMarketingPath(pathname: string): boolean {
+  if (pathname === '/') return true;
+  return PUBLIC_MARKETING_PREFIXES.filter((p) => p !== '/').some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
 
 export function isAdminAppPath(pathname: string): boolean {
   return pathname === '/admin' || pathname.startsWith('/admin/');

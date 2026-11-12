@@ -18,6 +18,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | PAYMENTS-V1 | No payment integration in initial release | CONFIRMED |
 | DEC-001 | Post-trial published PDFs/documents remain accessible | CONFIRMED |
 | DEC-003 | Question bank requires authentication | SUPERSEDED by DEC-031 for public bank |
+| DEC-018 | Published news publicly readable (marketing `/news`) | CONFIRMED |
 | DEC-031 | Public Preli Question Bank (no login) | CONFIRMED |
 | DEC-004 | Password reset delivered via email | CONFIRMED |
 | DEC-012 | Web auth via HTTP-only cookies + CSRF protection | CONFIRMED |
@@ -214,10 +215,9 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Field | Value |
 |-------|-------|
 | Question | Full news articles public? |
-| Current assumption | Published news **publicly readable**; default educational PDFs use `AUTHENTICATED` visibility (DEC-001) |
-| Recommended option | Public news for marketing SEO |
-| Impact | News routes |
-| Status | **PROPOSED** |
+| Decision | **Yes.** Published news list + article pages live under the marketing shell (`/news`, `/news/:slug`) with no login. Attached PDFs still respect document visibility (DEC-001). |
+| Impact | `(marketing)/news` routes; removed `/news` from learner auth middleware prefixes |
+| Status | **CONFIRMED** (2026-11-12) |
 
 ### DEC-019 — Soft delete vs archive for questions
 

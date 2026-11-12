@@ -6,6 +6,7 @@ import { BookMarked, Clock3, FileText } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { MetricTile } from '@/components/dashboard/metric-tile';
 import { PageHeader } from '@/components/layout/page-header';
+import { UserAvatar } from '@/components/layout/user-avatar';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
@@ -174,24 +175,12 @@ export default function ProfilePage() {
       <Surface elevated className="space-y-4 border-l-[3px] border-l-[var(--highlight)] p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex min-w-0 items-start gap-3">
-            {user.avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element -- short-lived signed Cloudinary URL
-              <img
-                src={user.avatarUrl}
-                alt=""
-                width={56}
-                height={56}
-                decoding="async"
-                className="h-14 w-14 shrink-0 rounded-full object-cover ring-2 ring-[var(--line)]"
-              />
-            ) : (
-              <span
-                aria-hidden
-                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[var(--highlight-soft)] font-display text-lg font-bold text-[var(--highlight)]"
-              >
-                {user.name.trim().charAt(0).toUpperCase() || '?'}
-              </span>
-            )}
+            <UserAvatar
+              name={user.name}
+              avatarUrl={user.avatarUrl}
+              size="lg"
+              className="size-14 ring-2"
+            />
             <div className="min-w-0">
               <h2 className="font-display text-xl font-bold tracking-tight text-[var(--ink)]">
                 {user.name}
