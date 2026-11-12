@@ -1,6 +1,7 @@
 'use client';
 
 import { MessageCircle, X } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -13,8 +14,19 @@ import {
   getSupportUnread,
   type SupportConversation,
 } from '@/lib/api/support';
-import { cn } from '@/lib/utils';
-import { SupportChatWindow } from './support-chat-window';
+import { cn, getCookie } from '@/lib/utils';
+
+const SupportChatWindow = dynamic(
+  () => import('./support-chat-window').then((m) => m.SupportChatWindow),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex flex-1 items-center justify-center p-6 text-sm text-[var(--muted)]">
+        Loading chat…
+      </div>
+    ),
+  },
+);
 
 type Mode = 'learner' | 'guest' | 'auto';
 
@@ -57,10 +69,21 @@ export function SupportWidget({
     mode === 'guest' ? 'guest' : 'learner',
   );
 
+  const canPollUnread =
+    mode === 'learner'
+      ? Boolean(getCookie(process.env.NEXT_PUBLIC_CSRF_COOKIE_NAME ?? 'csrf_token'))
+      : mode === 'guest'
+        ? Boolean(getCookie('support_guest_token'))
+        : Boolean(
+            getCookie(process.env.NEXT_PUBLIC_CSRF_COOKIE_NAME ?? 'csrf_token') ||
+              getCookie('support_guest_token'),
+          );
+
   const unreadQ = useQuery({
-    queryKey: ['support-unread'],
+    queryKey: ['support-unread', mode],
     queryFn: getSupportUnread,
-    refetchInterval: 60_000,
+    enabled: canPollUnread,
+    refetchInterval: canPollUnread ? 60_000 : false,
     retry: false,
   });
   const unread = unreadQ.data?.unread ?? 0;

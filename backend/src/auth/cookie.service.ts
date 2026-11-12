@@ -3,6 +3,9 @@ import type { Response } from 'express';
 
 @Injectable()
 export class CookieService {
+  /** DEC-012: scope refresh to auth routes (refresh + logout). */
+  private static readonly REFRESH_COOKIE_PATH = '/api/v1/auth';
+
   private get secure() {
     return process.env.COOKIE_SECURE === 'true';
   }
@@ -39,8 +42,16 @@ export class CookieService {
       httpOnly: true,
       maxAge: accessTtl * 1000,
     });
+    // Drop legacy path=/ refresh cookie so browsers keep a single scoped token.
+    res.clearCookie(refreshName, {
+      path: '/',
+      domain: this.domain,
+      secure: this.secure,
+      sameSite: this.sameSite,
+    });
     res.cookie(refreshName, params.refreshToken, {
       ...base,
+      path: CookieService.REFRESH_COOKIE_PATH,
       httpOnly: true,
       maxAge: refreshTtl * 1000,
     });
@@ -52,18 +63,20 @@ export class CookieService {
   }
 
   clearAuthCookies(res: Response) {
-    const names = [
-      process.env.ACCESS_COOKIE_NAME ?? 'access_token',
-      process.env.REFRESH_COOKIE_NAME ?? 'refresh_token',
-      process.env.CSRF_COOKIE_NAME ?? 'csrf_token',
-    ];
-    for (const name of names) {
-      res.clearCookie(name, {
-        path: '/',
-        domain: this.domain,
-        secure: this.secure,
-        sameSite: this.sameSite,
-      });
+    const accessName = process.env.ACCESS_COOKIE_NAME ?? 'access_token';
+    const refreshName = process.env.REFRESH_COOKIE_NAME ?? 'refresh_token';
+    const csrfName = process.env.CSRF_COOKIE_NAME ?? 'csrf_token';
+    const clearBase = {
+      domain: this.domain,
+      secure: this.secure,
+      sameSite: this.sameSite,
+    } as const;
+
+    for (const name of [accessName, csrfName]) {
+      res.clearCookie(name, { ...clearBase, path: '/' });
     }
+    // Clear both scoped and legacy refresh cookies during logout / rotation.
+    res.clearCookie(refreshName, { ...clearBase, path: CookieService.REFRESH_COOKIE_PATH });
+    res.clearCookie(refreshName, { ...clearBase, path: '/' });
   }
 }

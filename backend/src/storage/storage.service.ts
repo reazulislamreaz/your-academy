@@ -12,7 +12,11 @@ import type { RequestUser } from '../auth/auth.types';
 import { newRequestId } from '../common/request-id';
 import { PrismaService } from '../database/prisma.service';
 import type { ConfirmUploadInput, SignedUploadParams, UploadPurpose } from './storage.types';
-import { SUPPORT_ATTACHMENT_MIMES, UPLOAD_PURPOSES } from './storage.types';
+import {
+  SUPPORT_ATTACHMENT_MAX_BYTES,
+  SUPPORT_ATTACHMENT_MIMES,
+  UPLOAD_PURPOSES,
+} from './storage.types';
 
 @Injectable()
 export class StorageService {
@@ -156,6 +160,8 @@ export class StorageService {
         : `image/${remote.format ?? input.format ?? 'jpeg'}`);
 
     this.assertMimeForPurpose(purpose, mimeType);
+    const bytes = remote.bytes ?? input.bytes ?? 0;
+    this.assertBytesForPurpose(purpose, bytes);
 
     const deliveryType =
       remote.type === 'authenticated'
@@ -170,7 +176,7 @@ export class StorageService {
         resourceType: resourceType === 'raw' ? MediaResourceType.RAW : MediaResourceType.IMAGE,
         deliveryType,
         format: remote.format ?? input.format,
-        bytes: remote.bytes ?? input.bytes ?? 0,
+        bytes,
         mimeType,
         width: remote.width ?? input.width,
         height: remote.height ?? input.height,
@@ -369,15 +375,26 @@ export class StorageService {
         ),
       );
     }
-    const mimeType = input.mimeType ?? 'application/octet-stream';
+    const format = (remote.format ?? input.format ?? '').toLowerCase();
+    const mimeType =
+      input.mimeType ??
+      (resourceType === 'image'
+        ? `image/${format || 'jpeg'}`
+        : format === 'pdf'
+          ? 'application/pdf'
+          : format === 'txt'
+            ? 'text/plain'
+            : 'application/octet-stream');
     this.assertMimeForPurpose(purpose, mimeType);
+    const bytes = remote.bytes ?? input.bytes ?? 0;
+    this.assertBytesForPurpose(purpose, bytes);
     return this.prisma.mediaAsset.create({
       data: {
         publicId: input.publicId,
         resourceType: resourceType === 'raw' ? MediaResourceType.RAW : MediaResourceType.IMAGE,
         deliveryType: MediaDeliveryType.AUTHENTICATED,
         format: remote.format ?? input.format,
-        bytes: remote.bytes ?? input.bytes ?? 0,
+        bytes,
         mimeType,
         width: remote.width ?? input.width,
         height: remote.height ?? input.height,
@@ -453,6 +470,24 @@ export class StorageService {
         createErrorResponse(
           'INVALID_MIME_TYPE',
           `MIME type ${mimeType} is not allowed for purpose ${purpose}`,
+          newRequestId(),
+        ),
+      );
+    }
+  }
+
+  private assertBytesForPurpose(purpose: UploadPurpose, bytes: number) {
+    const max =
+      purpose === 'support-attachment'
+        ? SUPPORT_ATTACHMENT_MAX_BYTES
+        : purpose === 'pdf'
+          ? 40 * 1024 * 1024
+          : 8 * 1024 * 1024;
+    if (!Number.isFinite(bytes) || bytes < 1 || bytes > max) {
+      throw new BadRequestException(
+        createErrorResponse(
+          'FILE_TOO_LARGE',
+          `Upload exceeds the ${Math.round(max / (1024 * 1024))}MB limit for ${purpose}`,
           newRequestId(),
         ),
       );

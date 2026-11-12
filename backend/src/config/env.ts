@@ -50,6 +50,15 @@ export function validateEnv(): void {
     if (trialDays !== 7) {
       throw new Error('TRIAL_DAYS must remain 7 unless business approves a change');
     }
+    const origins = getWebOrigins();
+    if (
+      origins.length === 0 ||
+      origins.every((origin) => origin.includes('localhost') || origin.includes('127.0.0.1'))
+    ) {
+      throw new Error(
+        'WEB_ORIGIN / WEB_ORIGINS must include at least one non-localhost origin when NODE_ENV=production',
+      );
+    }
   } else if (process.env.JWT_ACCESS_SECRET) {
     // Warm the resolver so misconfigured short secrets surface early in logs.
     getJwtAccessSecret();

@@ -3,6 +3,7 @@ import { AppHeader } from '@/components/layout/app-header';
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import { PageShell } from '@/components/motion/page-shell';
 import { LearnerThemeProvider } from '@/components/theme/learner-theme-provider';
+import { BrowsingHeartbeat } from '@/features/analytics/browsing-heartbeat';
 import { LearnerGate } from '@/features/auth/learner-gate';
 import { SupportChatProvider } from '@/features/support/support-chat-provider';
 import { LEARNER_THEME_BOOT_SCRIPT, LEARNER_THEME_DEFAULT } from '@/lib/learner-theme';
@@ -18,6 +19,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       <script dangerouslySetInnerHTML={{ __html: LEARNER_THEME_BOOT_SCRIPT }} />
       <LearnerThemeProvider>
         <LearnerGate>
+          <BrowsingHeartbeat />
           <SupportChatProvider mode="learner">
             <div className="hidden lg:block">
               <div className="sticky top-0 h-screen">

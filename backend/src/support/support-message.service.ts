@@ -44,6 +44,35 @@ export class SupportMessageService {
     return cleaned.slice(0, SUPPORT_MESSAGE_MAX_LEN);
   }
 
+  /** Attachments may only reference assets the actor uploaded (prevents signed-URL IDOR). */
+  private async requireOwnedAttachmentAsset(actor: SupportActor, mediaAssetId: string) {
+    const asset = await this.prisma.mediaAsset.findUnique({ where: { id: mediaAssetId } });
+    if (!asset || asset.deletedAt) {
+      throw new NotFoundException(
+        createErrorResponse('ASSET_NOT_FOUND', 'Attachment asset not found', newRequestId()),
+      );
+    }
+
+    const prefix = process.env.CLOUDINARY_FOLDER_PREFIX ?? 'your-academy';
+    const owned =
+      actor.kind === 'user'
+        ? asset.uploadedById === actor.userId
+        : asset.uploadedById == null &&
+          asset.publicId.startsWith(`${prefix}/support-attachment/guest-${actor.guestSessionId}`);
+
+    if (!owned) {
+      throw new ForbiddenException(
+        createErrorResponse(
+          'ASSET_FORBIDDEN',
+          'Attachment does not belong to this account',
+          newRequestId(),
+        ),
+      );
+    }
+
+    return asset;
+  }
+
   private async withDownloadUrls(
     messages: Array<{
       id: string;
@@ -70,19 +99,30 @@ export class SupportMessageService {
       }>;
     }>,
   ): Promise<SupportMessageDto[]> {
-    const urls = new Map<string, string | null>();
+    const unique = new Map<
+      string,
+      { publicId: string; resourceType: string; deliveryType: string }
+    >();
     for (const m of messages) {
       for (const a of m.attachments) {
-        if (urls.has(a.mediaAssetId)) continue;
-        const resourceType = a.mediaAsset.resourceType === 'RAW' ? 'raw' : 'image';
-        const url = await this.storage.generateSignedDownloadUrl(a.mediaAsset.publicId, {
-          resourceType,
-          deliveryType: a.mediaAsset.deliveryType as never,
-          ttlSeconds: 300,
-        });
-        urls.set(a.mediaAssetId, url);
+        if (!unique.has(a.mediaAssetId)) {
+          unique.set(a.mediaAssetId, a.mediaAsset);
+        }
       }
     }
+
+    const urls = new Map<string, string | null>();
+    await Promise.all(
+      [...unique.entries()].map(async ([mediaAssetId, mediaAsset]) => {
+        const resourceType = mediaAsset.resourceType === 'RAW' ? 'raw' : 'image';
+        const url = await this.storage.generateSignedDownloadUrl(mediaAsset.publicId, {
+          resourceType,
+          deliveryType: mediaAsset.deliveryType as never,
+          ttlSeconds: 300,
+        });
+        urls.set(mediaAssetId, url);
+      }),
+    );
     return messages.map((m) => mapMessage(m as never, urls));
   }
 
@@ -150,13 +190,9 @@ export class SupportMessageService {
         ? SupportSenderType.GUEST
         : SupportSenderType.USER;
 
+    let ownedAsset: { id: string; mimeType: string; bytes: number } | null = null;
     if (input.mediaAssetId) {
-      const asset = await this.prisma.mediaAsset.findUnique({ where: { id: input.mediaAssetId } });
-      if (!asset || asset.deletedAt) {
-        throw new NotFoundException(
-          createErrorResponse('ASSET_NOT_FOUND', 'Attachment asset not found', newRequestId()),
-        );
-      }
+      ownedAsset = await this.requireOwnedAttachmentAsset(actor, input.mediaAssetId);
     }
 
     const preview = body
@@ -172,21 +208,17 @@ export class SupportMessageService {
           senderType,
           senderUserId: actor.kind === 'user' ? actor.userId : null,
           clientMessageId: input.clientMessageId || null,
-          kind: input.mediaAssetId ? SupportMessageKind.ATTACHMENT : SupportMessageKind.TEXT,
+          kind: ownedAsset ? SupportMessageKind.ATTACHMENT : SupportMessageKind.TEXT,
           body,
           deliveredAt: new Date(),
-          ...(input.mediaAssetId
+          ...(ownedAsset
             ? {
                 attachments: {
                   create: {
-                    mediaAssetId: input.mediaAssetId,
+                    mediaAssetId: ownedAsset.id,
                     originalFilename: input.originalFilename ?? 'file',
-                    mimeType: (
-                      await tx.mediaAsset.findUniqueOrThrow({ where: { id: input.mediaAssetId } })
-                    ).mimeType,
-                    bytes: (
-                      await tx.mediaAsset.findUniqueOrThrow({ where: { id: input.mediaAssetId } })
-                    ).bytes,
+                    mimeType: ownedAsset.mimeType,
+                    bytes: ownedAsset.bytes,
                   },
                 },
               }

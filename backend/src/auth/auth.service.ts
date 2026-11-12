@@ -8,6 +8,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import {
   BrowsingSessionStatus,
+  Prisma,
   QuestionStatus,
   UserRole,
   UserStatus,
@@ -149,14 +150,16 @@ export class AuthService {
   }
 
   async logout(user: RequestUser) {
-    await this.prisma.authSession.update({
-      where: { id: user.sessionId },
-      data: { revokedAt: new Date() },
-    });
-    await this.prisma.browsingSession.updateMany({
-      where: { userId: user.userId, status: BrowsingSessionStatus.ACTIVE },
-      data: { status: BrowsingSessionStatus.ENDED, endedAt: new Date() },
-    });
+    await this.prisma.$transaction([
+      this.prisma.authSession.update({
+        where: { id: user.sessionId },
+        data: { revokedAt: new Date() },
+      }),
+      this.prisma.browsingSession.updateMany({
+        where: { userId: user.userId, status: BrowsingSessionStatus.ACTIVE },
+        data: { status: BrowsingSessionStatus.ENDED, endedAt: new Date() },
+      }),
+    ]);
     await this.learningActivity.record({
       userId: user.userId,
       type: 'LOGOUT',
@@ -204,19 +207,27 @@ export class AuthService {
     if (user?.email && user.status === UserStatus.ACTIVE && !user.deletedAt) {
       const token = randomToken(32);
       const ttl = Number(process.env.PASSWORD_RESET_TTL_SECONDS ?? 3600);
-      await this.prisma.passwordResetToken.create({
-        data: {
-          userId: user.id,
-          tokenHash: sha256(token),
-          expiresAt: new Date(Date.now() + ttl * 1000),
-        },
-      });
+      const tokenHash = sha256(token);
+      // Invalidate unused prior tokens so only the latest reset link works.
+      await this.prisma.$transaction([
+        this.prisma.passwordResetToken.updateMany({
+          where: { userId: user.id, usedAt: null },
+          data: { usedAt: new Date() },
+        }),
+        this.prisma.passwordResetToken.create({
+          data: {
+            userId: user.id,
+            tokenHash,
+            expiresAt: new Date(Date.now() + ttl * 1000),
+          },
+        }),
+      ]);
       const base = process.env.PASSWORD_RESET_URL_BASE ?? 'http://localhost:3000/reset-password';
       const resetUrl = `${base}?token=${token}`;
       try {
         await this.emailQueue.enqueuePasswordReset(
           { to: user.email, resetUrl, userId: user.id },
-          sha256(token).slice(0, 32),
+          tokenHash.slice(0, 32),
         );
       } catch (err) {
         this.logger.error(`Failed to enqueue password reset email: ${String(err)}`);
@@ -235,25 +246,26 @@ export class AuthService {
 
   async resetPassword(dto: ResetPasswordDto) {
     const tokenHash = sha256(dto.token);
-    const record = await this.prisma.passwordResetToken.findUnique({ where: { tokenHash } });
-    if (!record || record.usedAt || record.expiresAt < new Date()) {
-      throw new UnprocessableEntityException(
-        createErrorResponse('INVALID_TOKEN', 'Reset token is invalid or expired', newRequestId()),
-      );
-    }
-
     const passwordHash = await argon2.hash(dto.newPassword, { type: argon2.argon2id });
-    await this.prisma.$transaction([
-      this.prisma.user.update({ where: { id: record.userId }, data: { passwordHash } }),
-      this.prisma.passwordResetToken.update({
-        where: { id: record.id },
+
+    await this.prisma.$transaction(async (tx) => {
+      const claimed = await tx.passwordResetToken.updateMany({
+        where: { tokenHash, usedAt: null, expiresAt: { gt: new Date() } },
         data: { usedAt: new Date() },
-      }),
-      this.prisma.authSession.updateMany({
+      });
+      if (claimed.count !== 1) {
+        throw new UnprocessableEntityException(
+          createErrorResponse('INVALID_TOKEN', 'Reset token is invalid or expired', newRequestId()),
+        );
+      }
+
+      const record = await tx.passwordResetToken.findUniqueOrThrow({ where: { tokenHash } });
+      await tx.user.update({ where: { id: record.userId }, data: { passwordHash } });
+      await tx.authSession.updateMany({
         where: { userId: record.userId, revokedAt: null },
         data: { revokedAt: new Date() },
-      }),
-    ]);
+      });
+    });
 
     return { message: 'Password updated. Please sign in.' };
   }
@@ -319,20 +331,40 @@ export class AuthService {
   }
 
   private async rotateSession(user: User, oldSessionId: string, familyId: string) {
-    const tokens = await this.createSessionTokens(user, familyId);
-    await this.prisma.authSession.update({
-      where: { id: oldSessionId },
-      data: { revokedAt: new Date(), replacedBySessionId: tokens.sessionId },
+    return this.prisma.$transaction(async (tx) => {
+      const tokens = await this.createSessionTokens(user, familyId, tx);
+      const rotated = await tx.authSession.updateMany({
+        where: { id: oldSessionId, revokedAt: null },
+        data: { revokedAt: new Date(), replacedBySessionId: tokens.sessionId },
+      });
+      if (rotated.count !== 1) {
+        // Concurrent refresh already consumed this token — treat as reuse.
+        await tx.authSession.update({
+          where: { id: tokens.sessionId },
+          data: { revokedAt: new Date() },
+        });
+        await tx.authSession.updateMany({
+          where: { familyId, revokedAt: null },
+          data: { revokedAt: new Date() },
+        });
+        throw new UnauthorizedException(
+          createErrorResponse('TOKEN_REUSE', 'Refresh token reuse detected', newRequestId()),
+        );
+      }
+      return tokens;
     });
-    return tokens;
   }
 
-  private async createSessionTokens(user: User, familyId: string) {
+  private async createSessionTokens(
+    user: User,
+    familyId: string,
+    db: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
     const refreshToken = randomToken(48);
     const refreshTtl = Number(process.env.JWT_REFRESH_TTL_SECONDS ?? 2592000);
     const accessTtl = Number(process.env.JWT_ACCESS_TTL_SECONDS ?? 900);
 
-    const session = await this.prisma.authSession.create({
+    const session = await db.authSession.create({
       data: {
         userId: user.id,
         refreshTokenHash: sha256(refreshToken),

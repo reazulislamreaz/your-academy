@@ -29,6 +29,7 @@ export function LearnerGate({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
+    // enabled:false (no CSRF hint) is idle, not loading — still treat as unauthenticated.
     if (me.isLoading) return;
     if (isUnauthorized(me.error) || !me.data) {
       router.replace('/login?next=/home');

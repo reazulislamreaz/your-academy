@@ -108,7 +108,8 @@ export function BrowsingHeartbeat() {
       const csrf = getCookie(process.env.NEXT_PUBLIC_CSRF_COOKIE_NAME ?? 'csrf_token');
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (csrf) headers['X-CSRF-Token'] = csrf;
-      void fetch(`/api/v1/analytics/sessions/${id}/end`, {
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? '/api/v1';
+      void fetch(`${apiBase}/analytics/sessions/${id}/end`, {
         method: 'POST',
         credentials: 'include',
         headers,

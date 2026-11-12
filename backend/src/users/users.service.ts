@@ -249,11 +249,11 @@ export class UsersService {
         where: { userId: user.userId },
         _count: { _all: true },
       }),
-      this.prisma.questionAttempt.findMany({
-        where: { userId: user.userId },
-        distinct: ['questionId'],
-        select: { questionId: true },
-      }),
+      this.prisma.$queryRaw<[{ count: bigint }]>`
+        SELECT COUNT(DISTINCT "question_id")::bigint AS count
+        FROM "question_attempts"
+        WHERE "user_id" = ${user.userId}::uuid
+      `,
       this.prisma.questionAttempt.groupBy({
         by: ['isCorrect'],
         where: { userId: user.userId, createdAt: { gte: weekStart } },
@@ -343,7 +343,7 @@ export class UsersService {
       })),
       performance: {
         totalAttempts,
-        uniqueQuestions: uniqueQuestions.length,
+        uniqueQuestions: Number(uniqueQuestions[0]?.count ?? 0),
         correct,
         incorrect,
         accuracyPercent:

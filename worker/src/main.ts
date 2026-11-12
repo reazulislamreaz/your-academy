@@ -44,6 +44,12 @@ async function sendPasswordResetEmail(data: PasswordResetJob) {
   const from = process.env.EMAIL_FROM ?? 'noreply@your-academy.local';
 
   if (!host) {
+    // Never log reset URLs/tokens outside local development — they are bearer secrets.
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(
+        'SMTP_HOST is required in production to deliver password-reset emails (refusing to log reset URLs)',
+      );
+    }
     console.log(`[${service}-worker] SMTP_HOST unset — logging password reset for ${data.to}`);
     console.log(`[${service}-worker] resetUrl=${data.resetUrl}`);
     return;

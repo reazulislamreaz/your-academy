@@ -2,7 +2,6 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState, type ReactNode } from 'react';
-import { BrowsingHeartbeat } from '@/features/analytics/browsing-heartbeat';
 import { RouteProgress } from '@/components/loading';
 import { ApiError } from '@/lib/api/client';
 
@@ -29,7 +28,6 @@ export function Providers({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={client}>
       <RouteProgress />
-      <BrowsingHeartbeat />
       {children}
     </QueryClientProvider>
   );

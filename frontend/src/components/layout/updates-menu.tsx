@@ -17,7 +17,7 @@ export function UpdatesMenu() {
   const rootRef = useRef<HTMLDivElement>(null);
 
   const news = useQuery({
-    queryKey: ['news-updates'],
+    queryKey: ['news', 'updates'],
     queryFn: () => apiFetch<NewsListItem[]>('/news'),
     enabled: Boolean(me.data),
     staleTime: 60_000,

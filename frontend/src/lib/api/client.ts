@@ -162,22 +162,3 @@ export function serverApiBase(): string {
   const internal = process.env.API_INTERNAL_URL ?? 'http://localhost:5000';
   return `${internal.replace(/\/$/, '')}/api/v1`;
 }
-
-export async function serverFetch<T>(path: string, init?: RequestInit): Promise<T | null> {
-  try {
-    const res = await fetch(`${serverApiBase()}${path}`, {
-      ...init,
-      next: { revalidate: 60 },
-      headers: {
-        Accept: 'application/json',
-        ...(init?.headers ?? {}),
-      },
-    });
-    if (!res.ok) return null;
-    const json = (await res.json()) as ApiEnvelope<T>;
-    if (!json.success) return null;
-    return (json.data as T) ?? null;
-  } catch {
-    return null;
-  }
-}

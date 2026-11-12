@@ -47,7 +47,7 @@
 - Stored **hashed** (SHA-256) in `AuthSession`
 - Lifetime: **30 days** (configurable)
 - **Web delivery:** HTTP-only cookie (e.g. `refresh_token`), `Secure` in production, `SameSite=Lax`
-- Prefer `Path=/api/v1/auth/refresh` (include logout path as needed) to limit send surface
+- Implemented: refresh cookie `Path=/api/v1/auth` (covers `/refresh` + `/logout`); access/CSRF remain `Path=/`
 - **Rotation:** each refresh issues new token, marks old revoked, links `replacedBySessionId`
 - **Reuse detection:** presenting revoked token in family → revoke entire family
 

@@ -120,7 +120,7 @@ export default function StudyHomePage() {
   });
 
   const news = useQuery({
-    queryKey: ['news-home'],
+    queryKey: ['news', 'home'],
     queryFn: () => apiFetch<NewsListItem[]>('/news'),
     enabled: Boolean(me.data),
   });

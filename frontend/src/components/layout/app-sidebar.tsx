@@ -24,7 +24,7 @@ function SidebarNav() {
   const inverseLogo = theme === 'dark';
 
   const stats = useQuery({
-    queryKey: ['me-stats'],
+    queryKey: ['stats'],
     queryFn: () => apiFetch<UserStats>('/users/me/stats'),
     enabled: Boolean(me.data),
     staleTime: 60_000,

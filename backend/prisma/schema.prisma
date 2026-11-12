@@ -318,6 +318,7 @@ model QuestionOption {
   practiceAttemptAnswers PracticeAttemptAnswer[]
 
   @@index([questionId, sortOrder])
+  /// Partial unique (migration): one is_correct=true row per question_id
   @@map("question_options")
 }
 
@@ -492,6 +493,7 @@ model BrowsingSession {
 
   @@index([userId, startedAt(sort: Desc)])
   @@index([status, lastHeartbeatAt(sort: Desc)])
+  /// Partial unique (migration): one ACTIVE session per user_id
   @@map("browsing_sessions")
 }
 
