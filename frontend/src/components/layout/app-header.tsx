@@ -60,13 +60,13 @@ export function AppHeader() {
       {/* Left: logo + trial */}
       <div className="flex min-w-0 shrink-0 items-center gap-3 sm:gap-4">
         <BrandMark
-          href="/home"
+          href="/"
           markOnly
           inverse={inverseLogo}
           className="lg:hidden [&_img]:h-8"
         />
         <BrandMark
-          href="/home"
+          href="/"
           inverse={inverseLogo}
           className="hidden lg:inline-flex [&_img]:h-10"
         />

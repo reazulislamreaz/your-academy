@@ -37,7 +37,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         >
           <div className="sticky top-0 z-30 min-w-0 max-w-full shrink-0 lg:static">
             <div className="flex items-center justify-between gap-3 border-b border-[var(--line)] bg-[var(--bg-elevated)] px-4 py-3 lg:hidden">
-              <BrandMark markOnly href="/admin/dashboard" />
+              <BrandMark markOnly href="/" />
               <div className="flex min-w-0 items-center gap-2">
                 <p className="truncate text-sm font-medium text-[var(--ink-soft)]">
                   {me.data?.name ?? 'Admin'}

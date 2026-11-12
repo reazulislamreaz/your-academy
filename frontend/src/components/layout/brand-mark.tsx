@@ -37,8 +37,13 @@ export function BrandMark({ className, href = '/', inverse, markOnly, priority =
   return (
     <Link
       href={href}
-      className={cn('group inline-flex shrink-0 items-center', className)}
-      aria-label="Your Academy home"
+      className={cn(
+        'group inline-flex shrink-0 cursor-pointer items-center rounded-[var(--radius-sm)]',
+        'transition-[opacity,transform] duration-[var(--duration-fast)] ease-[var(--ease-out)]',
+        'hover:opacity-80 active:scale-[0.98]',
+        className,
+      )}
+      aria-label={href === '/' ? 'Your Academy homepage' : 'Your Academy'}
     >
       <Image
         src={src}
@@ -46,7 +51,10 @@ export function BrandMark({ className, href = '/', inverse, markOnly, priority =
         width={asset.width}
         height={asset.height}
         sizes="(max-width: 1024px) 120px, 160px"
-        className={cn(asset.className, 'object-contain object-left')}
+        className={cn(
+          asset.className,
+          'object-contain object-left transition-opacity duration-[var(--duration-fast)] group-hover:opacity-90',
+        )}
         priority={priority}
       />
     </Link>

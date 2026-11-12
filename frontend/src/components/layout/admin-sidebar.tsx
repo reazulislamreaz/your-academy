@@ -55,9 +55,9 @@ export function AdminSidebar() {
         )}
       >
         {collapsed ? (
-          <BrandMark href="/admin/dashboard" markOnly className="[&_img]:h-8" />
+          <BrandMark href="/" markOnly className="[&_img]:h-8" />
         ) : (
-          <BrandMark href="/admin/dashboard" className="[&_img]:h-9" />
+          <BrandMark href="/" className="[&_img]:h-9" />
         )}
         {!collapsed ? (
           <button
