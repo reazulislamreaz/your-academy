@@ -29,6 +29,12 @@ erDiagram
   Document ||--o| MediaAsset : file
   Document ||--o{ DocumentBookmark : bookmarked
   MediaAsset }o--|| User : uploadedBy
+  User ||--o{ SupportConversation : opens
+  SupportGuestSession ||--o{ SupportConversation : opens
+  SupportConversation ||--o{ SupportMessage : has
+  SupportMessage ||--o{ SupportAttachment : files
+  SupportConversation ||--o{ SupportInternalNote : notes
+  MediaAsset ||--o{ SupportAttachment : file
 ```
 
 ## 2. Soft-Delete Strategy
@@ -326,6 +332,38 @@ Future-ready placeholder.
 | createdAt | TIMESTAMPTZ |
 
 **Indexes:** (createdAt DESC); (entityType, entityId); (actorUserId, createdAt DESC).
+
+### 3.17 Support messaging (DEC-029)
+
+Enums: `SupportConversationStatus` (`OPEN`|`PENDING`|`CLOSED`|`ARCHIVED`), `SupportSenderType` (`USER`|`GUEST`|`ADMIN`|`SYSTEM`), `SupportMessageKind` (`TEXT`|`ATTACHMENT`|`SYSTEM`).
+
+#### SupportGuestSession
+
+| Field | Type | Notes |
+|-------|------|-------|
+| id | UUID PK | |
+| tokenHash | VARCHAR unique | SHA-256 of HttpOnly cookie `support_guest_token` |
+| name / whatsappNumber | VARCHAR | Guest contact gate |
+| linkedUserId | UUID NULL FK → User | Set on register/login WhatsApp match |
+| expiresAt | TIMESTAMPTZ | Default 30 days |
+
+#### SupportConversation
+
+| Field | Type | Notes |
+|-------|------|-------|
+| status | ENUM | One open/pending per user or guest session |
+| userId / guestSessionId | UUID NULL | Exactly one participant side |
+| guestName / guestWhatsapp | VARCHAR NULL | Snapshot for admin inbox |
+| assignedAdminId | UUID NULL | Optional routing metadata |
+| lastMessageAt / lastMessagePreview | | Inbox sort |
+| userUnreadCount / adminUnreadCount | INT | |
+| closedAt / archivedAt | TIMESTAMPTZ NULL | Soft archive |
+
+**Indexes:** `(status, lastMessageAt DESC)`, `(userId, status)`, `(guestSessionId)`, `(assignedAdminId)`.
+
+#### SupportMessage / SupportAttachment / SupportInternalNote
+
+Messages: cursor via `(conversationId, id)`; unique `(conversationId, clientMessageId)` for idempotency. Attachments link `MediaAsset` (Cloudinary purpose `support-attachment`, authenticated). Internal notes are admin-only.
 
 ## 4. Transactions (Examples)
 

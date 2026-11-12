@@ -14,6 +14,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { CsrfGuard } from '../common/guards/csrf.guard';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { newRequestId } from '../common/request-id';
+import { SupportGuestService } from '../support/support-guest.service';
 import { AuthService } from './auth.service';
 import type { RequestUser } from './auth.types';
 import { CookieService } from './cookie.service';
@@ -28,6 +29,7 @@ export class AuthController {
   constructor(
     private readonly auth: AuthService,
     private readonly cookies: CookieService,
+    private readonly supportGuests: SupportGuestService,
   ) {}
 
   @Post('register')
@@ -39,6 +41,7 @@ export class AuthController {
       refreshToken: result.refreshToken,
       csrfToken: result.csrfToken,
     });
+    await this.supportGuests.linkGuestToUser(result.user.id, result.user.whatsappNumber, res);
     return createSuccessResponse(
       { user: await this.auth.toPublicUser(result.user) },
       newRequestId(),
@@ -55,6 +58,7 @@ export class AuthController {
       refreshToken: result.refreshToken,
       csrfToken: result.csrfToken,
     });
+    await this.supportGuests.linkGuestToUser(result.user.id, result.user.whatsappNumber, res);
     return createSuccessResponse(
       { user: await this.auth.toPublicUser(result.user) },
       newRequestId(),

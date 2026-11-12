@@ -36,7 +36,7 @@ Docker Compose overrides `DATABASE_URL` host to `postgres` for `api` / `worker` 
 |----------|----------|-------------|
 | `API_PORT` | yes | Default `5000` |
 | `API_PUBLIC_URL` | yes | e.g. `http://localhost:5000` |
-| `WEB_ORIGIN` | yes | CORS origin (`http://localhost:3000`). Comma-separated multi-origin also accepted via `WEB_ORIGINS` or `WEB_ORIGIN`. |
+| `WEB_ORIGIN` | yes | CORS origin (`http://localhost:3000`). Comma-separated multi-origin also accepted via `WEB_ORIGINS` or `WEB_ORIGIN`. Also used for Socket.IO `/support` CORS (DEC-029). |
 | `WEB_ORIGINS` | no | Optional alias for multi-origin allowlist |
 | `JWT_ACCESS_SECRET` | yes | Strong random secret (≥32 chars) |
 | `JWT_ACCESS_TTL_SECONDS` | yes | Default `900` |
@@ -57,8 +57,11 @@ Docker Compose overrides `DATABASE_URL` host to `postgres` for `api` / `worker` 
 |----------|----------|-------------|
 | `NEXT_PUBLIC_API_BASE_URL` | yes | Prefer `/api/v1` (Next rewrite) |
 | `API_INTERNAL_URL` | yes | Backend origin for rewrite (`http://localhost:5000` or `http://api:5000` in Docker) |
+| `NEXT_PUBLIC_SOCKET_URL` | no | Socket.IO origin for support chat. Local: `http://localhost:5000`. Production behind Nginx: leave empty (same-origin `/socket.io/`). |
 | `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | yes | Public cloud name only |
 | `PORT` | no | Next listen port |
+
+Support guest cookie reuses `COOKIE_SECURE` / `COOKIE_SAME_SITE` / `COOKIE_DOMAIN` (`support_guest_token`, HttpOnly).
 
 No `CLOUDINARY_API_SECRET` on web.
 

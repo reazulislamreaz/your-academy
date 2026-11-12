@@ -12,7 +12,7 @@ import type { RequestUser } from '../auth/auth.types';
 import { newRequestId } from '../common/request-id';
 import { PrismaService } from '../database/prisma.service';
 import type { ConfirmUploadInput, SignedUploadParams, UploadPurpose } from './storage.types';
-import { UPLOAD_PURPOSES } from './storage.types';
+import { SUPPORT_ATTACHMENT_MIMES, UPLOAD_PURPOSES } from './storage.types';
 
 @Injectable()
 export class StorageService {
@@ -55,9 +55,13 @@ export class StorageService {
 
     const folder = `${process.env.CLOUDINARY_FOLDER_PREFIX ?? 'your-academy'}/${purpose}/${user.userId}`;
     const timestamp = Math.floor(Date.now() / 1000);
-    const resourceType = purpose === 'pdf' ? 'raw' : 'image';
-    // PDFs and avatars use authenticated delivery so downloads require signed URLs.
-    const deliveryType = purpose === 'pdf' || purpose === 'avatar' ? 'authenticated' : 'upload';
+    const resourceType =
+      purpose === 'pdf' || purpose === 'support-attachment' ? 'raw' : 'image';
+    // PDFs, avatars, and support files use authenticated delivery.
+    const deliveryType =
+      purpose === 'pdf' || purpose === 'avatar' || purpose === 'support-attachment'
+        ? 'authenticated'
+        : 'upload';
 
     const toSign: Record<string, string | number> = {
       folder,
@@ -109,7 +113,8 @@ export class StorageService {
       );
     }
 
-    const resourceType = (input.resourceType ?? (purpose === 'pdf' ? 'raw' : 'image')) as
+    const resourceType = (input.resourceType ??
+      (purpose === 'pdf' || purpose === 'support-attachment' ? 'raw' : 'image')) as
       | 'image'
       | 'raw';
 
@@ -213,7 +218,7 @@ export class StorageService {
   }
 
   private assertPurposeAllowed(purpose: UploadPurpose, user: RequestUser) {
-    if (purpose === 'avatar') return;
+    if (purpose === 'avatar' || purpose === 'support-attachment') return;
     if (user.role !== UserRole.ADMIN) {
       throw new ForbiddenException(
         createErrorResponse(
@@ -225,17 +230,105 @@ export class StorageService {
     }
   }
 
+  /** Guest support uploads — folder keyed by guest session id (no User FK). */
+  createGuestSupportUploadParams(guestSessionId: string): SignedUploadParams {
+    if (!this.isConfigured()) {
+      throw new ServiceUnavailableException(
+        createErrorResponse(
+          'STORAGE_NOT_CONFIGURED',
+          'Cloudinary is not configured. Set CLOUDINARY_* credentials to enable uploads.',
+          newRequestId(),
+        ),
+      );
+    }
+    const purpose: UploadPurpose = 'support-attachment';
+    const folder = `${process.env.CLOUDINARY_FOLDER_PREFIX ?? 'your-academy'}/${purpose}/guest-${guestSessionId}`;
+    const timestamp = Math.floor(Date.now() / 1000);
+    const toSign: Record<string, string | number> = {
+      folder,
+      timestamp,
+      type: 'authenticated',
+    };
+    const signature = cloudinary.utils.api_sign_request(
+      toSign,
+      process.env.CLOUDINARY_API_SECRET as string,
+    );
+    return {
+      configured: true,
+      cloudName: process.env.CLOUDINARY_CLOUD_NAME as string,
+      apiKey: process.env.CLOUDINARY_API_KEY as string,
+      folder,
+      timestamp,
+      signature,
+      purpose,
+      resourceType: 'raw',
+      deliveryType: 'authenticated',
+    };
+  }
+
+  async confirmGuestSupportUpload(guestSessionId: string, input: ConfirmUploadInput) {
+    if (!this.isConfigured()) {
+      throw new ServiceUnavailableException(
+        createErrorResponse('STORAGE_NOT_CONFIGURED', 'Cloudinary is not configured', newRequestId()),
+      );
+    }
+    const purpose: UploadPurpose = 'support-attachment';
+    const prefix = `${process.env.CLOUDINARY_FOLDER_PREFIX ?? 'your-academy'}/${purpose}/guest-${guestSessionId}`;
+    if (!input.publicId.startsWith(prefix)) {
+      throw new ForbiddenException(
+        createErrorResponse(
+          'INVALID_PUBLIC_ID',
+          'Upload public_id does not match signed folder',
+          newRequestId(),
+        ),
+      );
+    }
+    const resourceType = (input.resourceType ?? 'raw') as 'image' | 'raw';
+    let remote: { bytes?: number; format?: string; width?: number; height?: number; type?: string };
+    try {
+      remote = await cloudinary.api.resource(input.publicId, { resource_type: resourceType });
+    } catch (err) {
+      this.logger.warn(`Cloudinary confirm failed for ${input.publicId}: ${String(err)}`);
+      throw new BadRequestException(
+        createErrorResponse(
+          'ASSET_NOT_FOUND',
+          'Cloudinary asset not found or not yet available',
+          newRequestId(),
+        ),
+      );
+    }
+    const mimeType = input.mimeType ?? 'application/octet-stream';
+    this.assertMimeForPurpose(purpose, mimeType);
+    return this.prisma.mediaAsset.create({
+      data: {
+        publicId: input.publicId,
+        resourceType: resourceType === 'raw' ? MediaResourceType.RAW : MediaResourceType.IMAGE,
+        deliveryType: MediaDeliveryType.AUTHENTICATED,
+        format: remote.format ?? input.format,
+        bytes: remote.bytes ?? input.bytes ?? 0,
+        mimeType,
+        width: remote.width ?? input.width,
+        height: remote.height ?? input.height,
+        originalFilename: input.originalFilename,
+        uploadedById: null,
+      },
+    });
+  }
+
   private assertMimeForPurpose(purpose: UploadPurpose, mimeType: string) {
     const normalized = mimeType.toLowerCase().split(';')[0]?.trim() ?? '';
     const imageOk = ['image/jpeg', 'image/png', 'image/webp'].includes(normalized);
     const pdfOk = normalized === 'application/pdf';
+    const supportOk = (SUPPORT_ATTACHMENT_MIMES as readonly string[]).includes(normalized);
 
     const allowed =
       purpose === 'pdf'
         ? pdfOk
-        : purpose === 'avatar' || purpose === 'question-image' || purpose === 'news-cover'
-          ? imageOk
-          : false;
+        : purpose === 'support-attachment'
+          ? supportOk
+          : purpose === 'avatar' || purpose === 'question-image' || purpose === 'news-cover'
+            ? imageOk
+            : false;
 
     if (!allowed) {
       throw new BadRequestException(

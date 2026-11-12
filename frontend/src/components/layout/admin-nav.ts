@@ -6,6 +6,7 @@ import {
   FileText,
   FolderTree,
   LayoutDashboard,
+  MessageCircle,
   Newspaper,
   ScrollText,
   Users,
@@ -22,6 +23,7 @@ export type AdminNavItem = {
 /** Shared admin sidebar + mobile strip. */
 export const adminNavItems: AdminNavItem[] = [
   { href: '/admin/dashboard', label: 'Overview', icon: LayoutDashboard },
+  { href: '/admin/support', label: 'Support', icon: MessageCircle },
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/activity', label: 'Activity', icon: Activity },
   { href: '/admin/audit', label: 'Audit', icon: ScrollText },

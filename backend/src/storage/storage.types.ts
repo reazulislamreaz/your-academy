@@ -1,4 +1,10 @@
-export const UPLOAD_PURPOSES = ['avatar', 'question-image', 'news-cover', 'pdf'] as const;
+export const UPLOAD_PURPOSES = [
+  'avatar',
+  'question-image',
+  'news-cover',
+  'pdf',
+  'support-attachment',
+] as const;
 export type UploadPurpose = (typeof UPLOAD_PURPOSES)[number];
 
 export type SignedUploadParams = {
@@ -25,3 +31,17 @@ export type ConfirmUploadInput = {
   height?: number;
   originalFilename?: string;
 };
+
+export const SUPPORT_ATTACHMENT_MIMES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'text/plain',
+] as const;
+
+export const SUPPORT_ATTACHMENT_MAX_BYTES = 10 * 1024 * 1024;

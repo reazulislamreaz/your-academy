@@ -24,6 +24,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | DEC-026 | MCQ Save to Collection folders | CONFIRMED |
 | DEC-027 | Learner Orbit dark charcoal theme | CONFIRMED |
 | DEC-028 | Learner dashboard light/dark toggle | CONFIRMED |
+| DEC-029 | Real-time support messaging (Socket.IO) | CONFIRMED |
 
 ---
 
@@ -298,13 +299,22 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Impact | Dual learner token sets, `LearnerThemeProvider` / toggle, `(app)/layout` boot script |
 | Status | **CONFIRMED** (product request 2026-11-12) |
 
+### DEC-029 — Real-time support messaging (Socket.IO)
+
+| Field | Value |
+|-------|-------|
+| Question | Should the platform offer real-time Admin Support chat for guests and students? |
+| Decision | **Yes.** Socket.IO on the Nest API (Redis adapter) for support chat only. Guests provide **name + WhatsApp** before chatting (`support_guest_token` HttpOnly cookie). Authenticated learners use JWT cookies. All `ADMIN`s share the inbox; optional `assignedAdminId`, internal notes, close/reopen/archive. Attachments via Cloudinary purpose `support-attachment` (authenticated). Guest→account link when WhatsApp matches on register/login. |
+| Impact | Prisma support models, `SupportModule` + gateway, storage purpose, marketing/learner FAB, admin Support Inbox |
+| Status | **CONFIRMED** (product request 2026-11-12) |
+
 ### Deferred / NEEDS APPROVAL (explicitly out of Phase 1)
 
 | Item | Notes |
 |------|-------|
 | Multi-format questions | Keep single-correct MCQ (2–6 options) only; True/False as 2-option MCQ in templates |
 | Payment admin / plan CRUD / refunds | PAYMENTS-V1 still deferred |
-| WebSockets / SSE for online | HTTP polling 15–30s only |
+| WebSockets / SSE for online presence | Still deferred for browsing presence (heartbeat/polling). **Exception:** Socket.IO approved for support chat only (DEC-029) |
 | ZIP image packs / JSON import packages | Defer unless same MCQ schema map is trivial |
 | Bull Board / async multi-thousand import worker | Keep sync chunked import; revisit on timeouts |
 | Staff role matrix / platform settings / notification center | Later |

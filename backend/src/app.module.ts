@@ -20,6 +20,7 @@ import { QueueModule } from './queue/queue.module';
 import { QuestionsModule } from './questions/questions.module';
 import { StorageModule } from './storage/storage.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
+import { SupportModule } from './support/support.module';
 import { UsersModule } from './users/users.module';
 
 @Module({
@@ -48,6 +49,7 @@ import { UsersModule } from './users/users.module';
     AnalyticsModule,
     AdminModule,
     StorageModule,
+    SupportModule,
     HealthModule,
   ],
   providers: [

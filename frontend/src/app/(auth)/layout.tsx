@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { BrandMark } from '@/components/layout/brand-mark';
 import { PageShell } from '@/components/motion/page-shell';
+import { SupportWidget } from '@/features/support/support-widget';
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
@@ -64,6 +65,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           <PageShell>{children}</PageShell>
         </main>
       </div>
+      <SupportWidget mode="guest" />
     </div>
   );
 }
