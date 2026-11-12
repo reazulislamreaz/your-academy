@@ -24,7 +24,10 @@ import { cn } from '@/lib/utils';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
-pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+// Loaded only via `pdf-viewer-dynamic` (ssr: false). Guard anyway for safety.
+if (typeof window !== 'undefined') {
+  pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+}
 
 type FitMode = 'width' | 'page' | 'custom';
 

@@ -20,7 +20,12 @@ export type AdminNavItem = {
   icon: LucideIcon;
 };
 
-/** Shared admin sidebar + mobile strip. */
+export type AdminNavGroup = {
+  title: string;
+  items: AdminNavItem[];
+};
+
+/** Flat list — used for active-route lookup. */
 export const adminNavItems: AdminNavItem[] = [
   { href: '/admin/dashboard', label: 'Overview', icon: LayoutDashboard },
   { href: '/admin/support', label: 'Support', icon: MessageCircle },
@@ -34,3 +39,32 @@ export const adminNavItems: AdminNavItem[] = [
   { href: '/admin/news', label: 'News', icon: Newspaper },
   { href: '/admin/documents', label: 'Documents', shortLabel: 'Docs', icon: FileText },
 ];
+
+/** Grouped nav for sidebar + mobile drawer (enterprise IA). */
+export const adminNavGroups: AdminNavGroup[] = [
+  {
+    title: 'Console',
+    items: adminNavItems.filter((i) =>
+      ['/admin/dashboard', '/admin/support', '/admin/users', '/admin/activity', '/admin/audit'].includes(
+        i.href,
+      ),
+    ),
+  },
+  {
+    title: 'Content',
+    items: adminNavItems.filter((i) =>
+      [
+        '/admin/questions',
+        '/admin/question-imports',
+        '/admin/practice-sets',
+        '/admin/categories',
+        '/admin/news',
+        '/admin/documents',
+      ].includes(i.href),
+    ),
+  },
+];
+
+export function isAdminNavActive(pathname: string, href: string): boolean {
+  return pathname === href || pathname.startsWith(`${href}/`);
+}

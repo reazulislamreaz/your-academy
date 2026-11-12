@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
 import { Alert } from '@/components/ui/alert';
-import { PdfViewer } from '@/components/pdf/pdf-viewer';
+import { PdfViewer } from '@/components/pdf/pdf-viewer-dynamic';
 import { PageLoader } from '@/components/loading';
 import { ApiError } from '@/lib/api/client';
 import { getPublicDocument, publicDocumentFileUrl } from '@/lib/api/public-documents';

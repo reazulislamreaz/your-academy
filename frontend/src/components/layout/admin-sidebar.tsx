@@ -6,7 +6,7 @@ import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { BrandMark } from './brand-mark';
-import { adminNavItems } from './admin-nav';
+import { adminNavGroups, isAdminNavActive } from './admin-nav';
 import { UserMenu } from './user-menu';
 
 const COLLAPSE_KEY = 'ya-admin-sidebar-collapsed';
@@ -38,7 +38,7 @@ export function AdminSidebar() {
   return (
     <aside
       className={cn(
-        'learner-sidebar flex h-full shrink-0 flex-col transition-[width] duration-200 ease-[var(--ease-out)]',
+        'admin-sidebar flex h-full shrink-0 flex-col transition-[width] duration-200 ease-[var(--ease-out)]',
         collapsed
           ? 'w-[var(--app-sidebar-collapsed-width,4.75rem)]'
           : 'w-[var(--app-sidebar-width,16.25rem)]',
@@ -47,21 +47,21 @@ export function AdminSidebar() {
     >
       <div
         className={cn(
-          'flex h-[var(--header-h,4.5rem)] shrink-0 items-center gap-2',
+          'flex h-[var(--header-h,4.5rem)] shrink-0 items-center gap-2 border-b border-white/10',
           collapsed ? 'justify-center px-2' : 'justify-between px-4',
         )}
       >
         {collapsed ? (
-          <BrandMark href="/" markOnly className="[&_img]:h-8" />
+          <BrandMark href="/" markOnly inverse className="[&_img]:h-8" />
         ) : (
-          <BrandMark href="/" className="[&_img]:h-9" />
+          <BrandMark href="/" inverse className="[&_img]:h-9" />
         )}
         {!collapsed ? (
           <button
             type="button"
             onClick={toggleCollapsed}
             aria-label="Collapse sidebar"
-            className="flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-[var(--muted)] transition-colors hover:bg-[var(--brand-wash)] hover:text-[var(--ink)]"
+            className="flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-[var(--admin-sidebar-muted)] transition-colors hover:bg-white/10 hover:text-white"
           >
             <PanelLeftClose className="size-4" aria-hidden strokeWidth={1.75} />
           </button>
@@ -69,58 +69,78 @@ export function AdminSidebar() {
       </div>
 
       {collapsed ? (
-        <div className="flex justify-center pb-2">
+        <div className="flex justify-center border-b border-white/10 py-2">
           <button
             type="button"
             onClick={toggleCollapsed}
             aria-label="Expand sidebar"
-            className="flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-[var(--muted)] transition-colors hover:bg-[var(--brand-wash)] hover:text-[var(--ink)]"
+            className="flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-[var(--admin-sidebar-muted)] transition-colors hover:bg-white/10 hover:text-white"
           >
             <PanelLeftOpen className="size-4" aria-hidden strokeWidth={1.75} />
           </button>
         </div>
       ) : (
-        <p className="px-5 pb-3 text-[0.6875rem] font-semibold tracking-[0.16em] text-[var(--muted)] uppercase">
-          Admin console
-        </p>
+        <div className="border-b border-white/10 px-5 py-3">
+          <p className="text-[0.6875rem] font-semibold tracking-[0.16em] text-[var(--admin-sidebar-muted)] uppercase">
+            Admin console
+          </p>
+          <p className="mt-0.5 text-xs text-white/55">Your Academy operations</p>
+        </div>
       )}
 
       <nav
-        className={cn('flex flex-1 flex-col gap-0.5 overflow-y-auto pb-4', collapsed ? 'px-2' : 'px-3')}
+        className={cn(
+          'flex flex-1 flex-col gap-4 overflow-y-auto py-4',
+          collapsed ? 'px-2' : 'px-3',
+        )}
         aria-label="Admin"
       >
-        {adminNavItems.map((item) => {
-          const Icon = item.icon;
-          const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              title={collapsed ? item.label : undefined}
-              aria-current={active ? 'page' : undefined}
-              className={cn(
-                'learner-nav-link motion-nav-indicator flex items-center rounded-[var(--radius)] text-sm font-medium',
-                collapsed ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5',
-                active
-                  ? 'bg-[var(--bg-muted)] font-semibold text-[var(--ink)]'
-                  : 'text-[var(--muted)] hover:bg-[var(--brand-wash)] hover:text-[var(--ink-soft)]',
-              )}
-            >
-              <span className="flex size-7 shrink-0 items-center justify-center">
-                <Icon className="size-4" aria-hidden strokeWidth={1.75} />
-              </span>
-              {!collapsed ? <span className="min-w-0 flex-1 truncate">{item.label}</span> : null}
-            </Link>
-          );
-        })}
+        {adminNavGroups.map((group) => (
+          <div key={group.title} className="space-y-1">
+            {!collapsed ? (
+              <p className="px-3 pb-1 text-[0.625rem] font-semibold tracking-[0.14em] text-[var(--admin-sidebar-muted)] uppercase">
+                {group.title}
+              </p>
+            ) : null}
+            {group.items.map((item) => {
+              const Icon = item.icon;
+              const active = isAdminNavActive(pathname, item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  title={collapsed ? item.label : undefined}
+                  aria-current={active ? 'page' : undefined}
+                  className={cn(
+                    'admin-nav-link motion-nav-indicator flex items-center rounded-[var(--radius)] text-sm font-medium',
+                    collapsed ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5',
+                  )}
+                >
+                  <span className="flex size-7 shrink-0 items-center justify-center">
+                    <Icon className="size-4" aria-hidden strokeWidth={1.75} />
+                  </span>
+                  {!collapsed ? <span className="min-w-0 flex-1 truncate">{item.label}</span> : null}
+                </Link>
+              );
+            })}
+          </div>
+        ))}
       </nav>
 
       <div
         className={cn(
-          'border-t border-[var(--line)]',
-          collapsed ? 'flex justify-center p-2' : 'flex items-center px-4 py-3',
+          'border-t border-white/10',
+          collapsed ? 'flex justify-center p-2' : 'flex items-center gap-2 px-3 py-3',
         )}
       >
+        {!collapsed ? (
+          <Link
+            href="/"
+            className="mr-auto truncate px-2 text-xs font-semibold text-[var(--admin-sidebar-muted)] hover:text-white"
+          >
+            ← Website
+          </Link>
+        ) : null}
         <UserMenu variant="header" menuPlacement="top" />
       </div>
     </aside>
