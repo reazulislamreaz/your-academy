@@ -24,6 +24,7 @@ export const LEARNER_APP_PREFIXES = [
 export const PUBLIC_MARKETING_PREFIXES = [
   '/',
   '/preli-question-bank',
+  '/written-question-bank',
   '/news',
 ] as const;
 

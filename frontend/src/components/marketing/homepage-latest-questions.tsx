@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight } from 'lucide-react';
-import { Alert } from '@/components/ui/alert';
+import { ListCardSkeleton, LoadError } from '@/components/loading';
 import { Button } from '@/components/ui/button';
 import { listPublicQuestionSets } from '@/lib/api/public-questions';
 
@@ -49,19 +49,13 @@ export function HomepageLatestQuestions({ limit = 6 }: { limit?: number }) {
           </Link>
         </div>
 
-        {list.isLoading ? (
-          <ul className="space-y-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <li
-                key={i}
-                className="h-[4.5rem] animate-pulse rounded-[1rem] border border-[var(--line)] bg-white"
-              />
-            ))}
-          </ul>
-        ) : null}
+        {list.isLoading ? <ListCardSkeleton rows={3} /> : null}
 
         {list.isError ? (
-          <Alert variant="danger">Could not load exam sets.</Alert>
+          <LoadError
+            message="Could not load exam sets."
+            onRetry={() => void list.refetch()}
+          />
         ) : null}
 
         {!list.isLoading && !list.isError && items.length === 0 ? (

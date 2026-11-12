@@ -100,11 +100,28 @@ Bengali UI fonts are **out of scope** until i18n is approved.
 | `Input` / `Textarea` / `Select` / `Label` / `Field` | Forms |
 | `Badge` | Difficulty, status |
 | `Alert` | Inline feedback |
-| `Skeleton` | Loading placeholders |
+| `Skeleton` / `SkeletonRegion` / `ContentIn` | Content-shaped placeholders + fade handoff |
 | `Surface` | Bordered panel (`density`, `quiet` optional) |
 | `ListRow` | Quiet browse-list rows (prefer over boxed cards) |
 | `EmptyState` | Zero-data / auth-required |
 | `Separator` | Dividers |
+| `Button` `loading` | Inline orbit loader; disables control |
+
+### `components/loading` (unified system)
+
+| Component | Use |
+|-----------|-----|
+| `GlobalLoader` | Cold start / root `loading.tsx` only — brand pulse, full viewport |
+| `RouteProgress` | Thin top bar on client navigations (mounted in `Providers`) |
+| `PageLoader` | In-shell Suspense (`(marketing|app|admin|auth)/loading.tsx`) |
+| `BrandPulse` | YA mark breathe + ring (no generic spinner) |
+| `InlineLoader` | Buttons / compact actions |
+| `ProgressBar` | Uploads & bulk MCQ import (determinate / indeterminate) |
+| `ListCardSkeleton` | Marketing / public list placeholders |
+| `LoadError` | Failed fetch + optional **Try again** |
+| `Delayed` / `useDeferredLoading` | Anti-flicker for overlay-style waits |
+
+**Rules:** Prefer route skeletons for data; never full-screen-block for small API calls; use `isLoading` not `isFetching`; honor `prefers-reduced-motion`.
 
 ### Feature / access
 
@@ -168,13 +185,15 @@ CSS-first system in `frontend/src/app/globals.css`. Shared helpers:
 | `.skeleton` | Soft L→R shimmer (theme wash) |
 | `SkeletonRegion` / `ContentIn` | Busy region + fade handoff |
 | `@/components/skeletons` | **Page-specific** route skeletons under `components/skeletons/route/` |
+| `RouteProgress` / `BrandPulse` / `PageLoader` | Navigation + brand loading (see §5) |
 
-**Skeleton rules:**
+**Skeleton / loading rules:**
 - One dedicated skeleton per route (e.g. `HomePageSkeleton`, `AdminUsersTableSkeleton`) composed from small primitives (`SkLine`, `SkBadge`, `PageHeaderSkeleton`).
 - Match grids, table columns, card radii, sticky bars, and responsive breakpoints of the real page.
 - Prefer `omitHeader` / section skeletons when the live `PageHeader` already paints.
 - Use `isLoading` (no cached data), not `isFetching`; announce with `aria-busy` + sr-only label.
 - Soft L→R shimmer; respect `prefers-reduced-motion`.
+- Context-aware: global → page → skeleton → inline → progress. No spinner carpet-bombing.
 
 Tokens: `--duration-fast` / `--duration` / `--duration-slow` + `--ease-out`. Prefer transform/opacity. All entrance/hover motion is disabled under `prefers-reduced-motion: reduce`. Do not add Framer Motion unless a feature truly needs it.
 

@@ -848,3 +848,161 @@ input:disabled {
     animation: none !important;
   }
 }
+
+/* ——— Unified loading system (brand pulse, route bar, inline) ——— */
+
+.ya-global-loader-bg {
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 40%, color-mix(in srgb, var(--highlight) 8%, transparent), transparent 70%),
+    radial-gradient(ellipse 60% 45% at 80% 10%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 65%),
+    var(--bg);
+}
+
+.ya-brand-pulse-ring {
+  transform-origin: center;
+}
+
+.ya-brand-pulse-core {
+  transform-origin: center;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ya-brand-pulse-ring {
+    animation: ya-brand-ring 1.8s var(--ease-out) infinite;
+  }
+
+  .ya-brand-pulse-core {
+    animation: ya-brand-breathe 1.8s var(--ease-out) infinite;
+  }
+}
+
+@keyframes ya-brand-ring {
+  0%,
+  100% {
+    transform: scale(0.92);
+    opacity: 0.35;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.85;
+  }
+}
+
+@keyframes ya-brand-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.04);
+  }
+}
+
+.ya-inline-loader {
+  width: 1rem;
+  height: 1rem;
+  position: relative;
+}
+
+.ya-inline-loader-dot {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  border: 2px solid color-mix(in srgb, currentColor 28%, transparent);
+  border-top-color: currentColor;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ya-inline-loader-dot {
+    animation: ya-inline-spin 0.7s linear infinite;
+  }
+}
+
+@keyframes ya-inline-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ya-progress-indeterminate {
+  transform-origin: left center;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ya-progress-indeterminate {
+    animation: ya-progress-slide 1.1s var(--ease-out) infinite;
+  }
+}
+
+@keyframes ya-progress-slide {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(320%);
+  }
+}
+
+.ya-route-progress-run {
+  animation: ya-route-run 0.4s var(--ease-out) forwards;
+}
+
+.ya-route-progress-done {
+  animation: ya-route-done 0.22s var(--ease-out) forwards;
+}
+
+@keyframes ya-route-run {
+  from {
+    transform: scaleX(0.08);
+  }
+  to {
+    transform: scaleX(0.72);
+  }
+}
+
+@keyframes ya-route-done {
+  from {
+    transform: scaleX(0.72);
+  }
+  to {
+    transform: scaleX(1);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ya-brand-pulse-ring,
+  .ya-brand-pulse-core,
+  .ya-inline-loader-dot,
+  .ya-progress-indeterminate,
+  .ya-route-progress-run,
+  .ya-route-progress-done {
+    animation: none !important;
+  }
+
+  .ya-route-progress-run,
+  .ya-route-progress-done {
+    transform: scaleX(1);
+    opacity: 0.85;
+  }
+}
+
+/* In-app PDF viewer — reading canvas; discourage print stylesheet dumps */
+.ya-pdf-viewer .react-pdf__Page__canvas {
+  max-width: 100%;
+  height: auto !important;
+}
+
+.ya-pdf-scroller {
+  background:
+    radial-gradient(ellipse 80% 40% at 50% 0%, color-mix(in srgb, var(--accent) 6%, transparent), transparent 70%),
+    var(--bg-desk);
+}
+
+@media print {
+  .ya-pdf-viewer,
+  .ya-pdf-scroller {
+    display: none !important;
+  }
+}

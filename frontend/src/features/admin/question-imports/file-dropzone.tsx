@@ -2,6 +2,7 @@
 
 import { FileSpreadsheet, UploadCloud, X } from 'lucide-react';
 import { useCallback, useId, useState } from 'react';
+import { ProgressBar } from '@/components/loading';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { formatBytes } from './types';
@@ -106,12 +107,7 @@ export function FileDropzone({ file, onFileChange, disabled, progress }: Props) 
               {progress == null ? ' · Ready to validate' : null}
             </p>
             {progress != null ? (
-              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--bg-muted)]">
-                <div
-                  className="h-full rounded-full bg-[var(--highlight)] transition-all"
-                  style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
-                />
-              </div>
+              <ProgressBar value={progress} className="mt-2" label="Upload progress" />
             ) : null}
           </div>
           <Button

@@ -27,6 +27,170 @@ export class DocumentsService {
     private readonly learningActivity: LearningActivityService,
   ) {}
 
+  /**
+   * Guest-facing library for পত্রিকার গুরুত্বপূর্ণ কলাম — published PUBLIC docs only.
+   */
+  async listPublicPublished(params: { cursor?: string; limit?: number; q?: string } = {}) {
+    const limit = parseLimit(params.limit, 20);
+    const q = params.q?.trim();
+    const items = await this.prisma.document.findMany({
+      where: {
+        isPublished: true,
+        deletedAt: null,
+        visibility: DocumentVisibility.PUBLIC,
+        ...(q
+          ? {
+              OR: [
+                { title: { contains: q, mode: 'insensitive' } },
+                { description: { contains: q, mode: 'insensitive' } },
+              ],
+            }
+          : {}),
+      },
+      take: limit + 1,
+      ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {}),
+      orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        visibility: true,
+        category: { select: { id: true, name: true } },
+        mediaAsset: {
+          select: { originalFilename: true, mimeType: true, bytes: true },
+        },
+        updatedAt: true,
+        createdAt: true,
+      },
+    });
+    return paginateById(items, limit);
+  }
+
+  async getPublicPublished(id: string) {
+    const doc = await this.prisma.document.findFirst({
+      where: {
+        id,
+        isPublished: true,
+        deletedAt: null,
+        visibility: DocumentVisibility.PUBLIC,
+      },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        visibility: true,
+        category: { select: { id: true, name: true } },
+        mediaAsset: {
+          select: {
+            id: true,
+            mimeType: true,
+            bytes: true,
+            originalFilename: true,
+            format: true,
+          },
+        },
+        updatedAt: true,
+        createdAt: true,
+      },
+    });
+    if (!doc) {
+      throw new NotFoundException(
+        createErrorResponse('DOCUMENT_NOT_FOUND', 'Document not found', newRequestId()),
+      );
+    }
+    const view = await this.resolveViewAvailability(doc.mediaAsset.id);
+    return {
+      ...doc,
+      /** In-app viewer only — never expose storage URLs to the client. */
+      view,
+    };
+  }
+
+  /**
+   * Proxy bytes for the public PDF viewer. Returns null when asset cannot be served.
+   * Caller sets Content-Disposition: inline (no attachment / download UI).
+   */
+  async getPublicPdfBytes(id: string): Promise<{
+    buffer: Buffer;
+    contentType: string;
+    filename: string;
+  }> {
+    const doc = await this.prisma.document.findFirst({
+      where: {
+        id,
+        isPublished: true,
+        deletedAt: null,
+        visibility: DocumentVisibility.PUBLIC,
+      },
+      select: {
+        mediaAsset: {
+          select: {
+            id: true,
+            publicId: true,
+            mimeType: true,
+            originalFilename: true,
+            resourceType: true,
+            deliveryType: true,
+            deletedAt: true,
+          },
+        },
+      },
+    });
+    if (!doc?.mediaAsset || doc.mediaAsset.deletedAt) {
+      throw new NotFoundException(
+        createErrorResponse('DOCUMENT_NOT_FOUND', 'Document not found', newRequestId()),
+      );
+    }
+    const asset = doc.mediaAsset;
+    if (asset.publicId.startsWith('seed/') || asset.publicId.startsWith('admin-placeholder/')) {
+      throw new NotFoundException(
+        createErrorResponse(
+          'DOCUMENT_FILE_UNAVAILABLE',
+          'PDF file is not available',
+          newRequestId(),
+        ),
+      );
+    }
+    const fetched = await this.storage.fetchAssetBytes(asset.publicId, {
+      resourceType: asset.resourceType === MediaResourceType.RAW ? 'raw' : 'image',
+      deliveryType: asset.deliveryType,
+      ttlSeconds: 120,
+    });
+    if (!fetched) {
+      throw new NotFoundException(
+        createErrorResponse(
+          'DOCUMENT_FILE_UNAVAILABLE',
+          'PDF file is not available',
+          newRequestId(),
+        ),
+      );
+    }
+    return {
+      buffer: fetched.buffer,
+      contentType: asset.mimeType || fetched.contentType || 'application/pdf',
+      filename: asset.originalFilename?.replace(/[^\w.\-()+ ]+/g, '_') || 'document.pdf',
+    };
+  }
+
+  private async resolveViewAvailability(mediaAssetId: string) {
+    const asset = await this.prisma.mediaAsset.findUnique({ where: { id: mediaAssetId } });
+    if (!asset || asset.deletedAt) {
+      return { available: false, reason: 'ASSET_MISSING' as const };
+    }
+    if (asset.publicId.startsWith('seed/') || asset.publicId.startsWith('admin-placeholder/')) {
+      return {
+        available: false,
+        reason: (this.storage.isConfigured()
+          ? 'PLACEHOLDER_ASSET'
+          : 'STORAGE_NOT_CONFIGURED') as 'PLACEHOLDER_ASSET' | 'STORAGE_NOT_CONFIGURED',
+      };
+    }
+    if (!this.storage.isConfigured()) {
+      return { available: false, reason: 'STORAGE_NOT_CONFIGURED' as const };
+    }
+    return { available: true, reason: 'OK' as const };
+  }
+
   async listPublished(
     user: RequestUser,
     params: { cursor?: string; limit?: number; categoryId?: string },
@@ -207,7 +371,7 @@ export class DocumentsService {
           title: dto.title.trim(),
           description: dto.description,
           categoryId: dto.categoryId,
-          visibility: dto.visibility ?? DocumentVisibility.AUTHENTICATED,
+          visibility: dto.visibility ?? DocumentVisibility.PUBLIC,
           isPublished: dto.isPublished ?? false,
           mediaAssetId: media.id,
           createdById: user.userId,
@@ -244,7 +408,7 @@ export class DocumentsService {
           title: dto.title.trim(),
           description: dto.description,
           categoryId: dto.categoryId,
-          visibility: dto.visibility ?? DocumentVisibility.AUTHENTICATED,
+          visibility: dto.visibility ?? DocumentVisibility.PUBLIC,
           isPublished: dto.isPublished ?? false,
           mediaAssetId: media.id,
           createdById: user.userId,

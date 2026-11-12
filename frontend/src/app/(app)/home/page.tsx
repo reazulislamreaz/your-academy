@@ -17,6 +17,7 @@ import { HomeStatCard } from '@/components/dashboard/home-stat-card';
 import { ProgressRing } from '@/components/dashboard/progress-ring';
 import { QuickLink } from '@/components/dashboard/quick-link';
 import { SubjectProgress } from '@/components/dashboard/subject-progress';
+import { LoadError } from '@/components/loading';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -193,14 +194,19 @@ export default function StudyHomePage() {
       </div>
 
       {statsFailed || analyticsFailed ? (
-        <Alert variant="danger">
-          {statsFailed && analyticsFailed
-            ? 'Could not load practice stats or study time.'
-            : statsFailed
-              ? 'Could not load practice stats.'
-              : 'Could not load study-time summary.'}{' '}
-          Refresh the page to try again.
-        </Alert>
+        <LoadError
+          message={
+            statsFailed && analyticsFailed
+              ? 'Could not load practice stats or study time.'
+              : statsFailed
+                ? 'Could not load practice stats.'
+                : 'Could not load study-time summary.'
+          }
+          onRetry={() => {
+            void stats.refetch();
+            void analytics.refetch();
+          }}
+        />
       ) : null}
 
       {/* Two wide KPI cards */}

@@ -1,4 +1,7 @@
+'use client';
+
 import type { HTMLAttributes, ReactNode } from 'react';
+import { Delayed } from '@/components/loading/delayed';
 import { cn } from '@/lib/utils';
 
 type SkeletonProps = HTMLAttributes<HTMLDivElement> & {
@@ -30,6 +33,11 @@ type SkeletonRegionProps = {
   fallback: ReactNode;
   children: ReactNode;
   className?: string;
+  /**
+   * Optional delay before painting the skeleton (ms). Default `0` reserves layout
+   * immediately (preferred). Use a small delay only for overlay-style waits.
+   */
+  delayMs?: number;
 };
 
 /**
@@ -42,12 +50,21 @@ export function SkeletonRegion({
   fallback,
   children,
   className,
+  delayMs = 0,
 }: SkeletonRegionProps) {
   if (loading) {
+    const body =
+      delayMs > 0 ? (
+        <Delayed show delayMs={delayMs}>
+          {fallback}
+        </Delayed>
+      ) : (
+        fallback
+      );
     return (
       <div role="status" aria-busy="true" aria-live="polite" className={className}>
         <span className="sr-only">{label}…</span>
-        {fallback}
+        {body}
       </div>
     );
   }

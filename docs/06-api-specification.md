@@ -129,6 +129,9 @@ Profile picture: separate upload after auth or multipart field if approved.
 |--------|----------|-------------|------|------|
 | GET | `/categories` | Active tree/list (names only; public for marketing/filters) | Public | — |
 | GET | `/public/stats` | Published counts (questions/categories/news/documents) | Public | — |
+| GET | `/public/documents` | Published `PUBLIC` documents for পত্রিকার গুরুত্বপূর্ণ কলাম (`cursor`, `limit`, `q`) | Public | — |
+| GET | `/public/documents/:id` | Public document metadata + `view.available` (no storage URLs) | Public | — |
+| GET | `/public/documents/:id/file` | PDF bytes proxy for in-app viewer (`Content-Disposition: inline`; no attachment) | Public | — |
 | GET | `/public/questions` | Published MCQ cards (options + correct answer), `createdAt DESC`, cursor pagination + filters (`q`, `categoryId`, `subcategoryId`, `examTag`, `difficulty`, `uploadBatchId`) | Public | — |
 | GET | `/public/question-sets` | Upload-based Question Sets (completed/archived batches with published MCQs), newest first | Public | — |
 | GET | `/public/question-sets/:id` | Question Set metadata | Public | — |

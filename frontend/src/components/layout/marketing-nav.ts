@@ -25,10 +25,9 @@ export const marketingNavItems: MarketingNavItem[] = [
   },
   {
     id: 'written',
-    href: '/preli-question-bank?examTag=bcs-written',
+    href: '/written-question-bank',
     label: 'Written Question Bank',
     match: 'prefix',
-    query: { examTag: 'bcs-written' },
   },
   {
     id: 'news',

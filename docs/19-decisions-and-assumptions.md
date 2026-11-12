@@ -18,8 +18,10 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | PAYMENTS-V1 | No payment integration in initial release | CONFIRMED |
 | DEC-001 | Post-trial published PDFs/documents remain accessible | CONFIRMED |
 | DEC-003 | Question bank requires authentication | SUPERSEDED by DEC-031 for public bank |
-| DEC-018 | Published news publicly readable (marketing `/news`) | CONFIRMED |
+| DEC-018 | Published news publicly readable (marketing `/news`) | SUPERSEDED in part by DEC-032 |
 | DEC-031 | Public Preli Question Bank (no login) | CONFIRMED |
+| DEC-032 | Admin PUBLIC documents on পত্রিকার গুরুত্বপূর্ণ কলাম | CONFIRMED |
+| DEC-033 | In-app PDF viewer; no download UI; API byte proxy | CONFIRMED |
 | DEC-004 | Password reset delivered via email | CONFIRMED |
 | DEC-012 | Web auth via HTTP-only cookies + CSRF protection | CONFIRMED |
 | DEC-020 | pnpm workspaces + Turborepo | CONFIRMED |
@@ -215,9 +217,27 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Field | Value |
 |-------|-------|
 | Question | Full news articles public? |
-| Decision | **Yes.** Published news list + article pages live under the marketing shell (`/news`, `/news/:slug`) with no login. Attached PDFs still respect document visibility (DEC-001). |
+| Decision | **Yes** for article deep links (`/news/:slug`). **List hub updated by DEC-032:** marketing `/news` (পত্রিকার গুরুত্বপূর্ণ কলাম) lists published **PUBLIC** admin documents (PDFs), not news articles. |
 | Impact | `(marketing)/news` routes; removed `/news` from learner auth middleware prefixes |
-| Status | **CONFIRMED** (2026-11-12) |
+| Status | **SUPERSEDED in part by DEC-032** (2026-11-12) |
+
+### DEC-032 — Newspaper columns = public documents
+
+| Field | Value |
+|-------|-------|
+| Question | Should admin-uploaded documents appear on পত্রিকার গুরুত্বপূর্ণ কলাম without login? |
+| Decision | **Yes.** `GET /api/v1/public/documents` (+ `/:id` metadata) returns published documents with `visibility = PUBLIC`. Admin document create defaults to `PUBLIC` so new published uploads appear on marketing `/news`. Learner `/documents` library and AUTHENTICATED/PREMIUM rules (DEC-001) remain for the authenticated app. |
+| Impact | PublicModule document endpoints; `(marketing)/news` + `/news/d/:id`; admin Documents create default |
+| Status | **CONFIRMED** (product request 2026-11-12) |
+
+### DEC-033 — In-app PDF viewer (no download UI)
+
+| Field | Value |
+|-------|-------|
+| Question | How should পত্রিকার গুরুত্বপূর্ণ কলাম PDFs be read, and can users download them? |
+| Decision | **In-app PDF.js viewer** on `/news/d/:id` with page nav, zoom, fit width/page, fullscreen. **No download / save / print buttons.** Bytes are served only via `GET /api/v1/public/documents/:id/file` (server fetches short-lived Cloudinary URL; client never receives storage URLs). Soft deterrents: `Content-Disposition: inline`, short private cache, context-menu / Ctrl+S / Ctrl+P blocked in the viewer, print CSS hides canvas. **Residual risk:** determined users can still capture bytes via DevTools/network/screenshots — do not claim absolute prevention. |
+| Impact | `react-pdf` + worker in `public/`; PublicModule file proxy; DocumentsService view metadata |
+| Status | **CONFIRMED** (product request 2026-11-12) |
 
 ### DEC-019 — Soft delete vs archive for questions
 

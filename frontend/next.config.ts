@@ -4,9 +4,18 @@ const apiOrigin = process.env.API_INTERNAL_URL ?? 'http://localhost:5000';
 
 const nextConfig: NextConfig = {
   output: 'standalone',
-  transpilePackages: ['@your-academy/shared'],
+  transpilePackages: ['@your-academy/shared', 'react-pdf', 'pdfjs-dist'],
   // Socket.IO polling hits `/socket.io/?EIO=…`; don't 308-strip the trailing slash.
   skipTrailingSlashRedirect: true,
+  webpack: (config) => {
+    // react-pdf / pdfjs optional native deps are unused in the browser bundle.
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      canvas: false,
+      encoding: false,
+    };
+    return config;
+  },
   // Tunnel / preview hosts hitting local `next dev` (avoids cross-origin /_next warnings).
   allowedDevOrigins: ['reaz3000.syedbipul.me', 'localhost', '127.0.0.1'],
   async rewrites() {

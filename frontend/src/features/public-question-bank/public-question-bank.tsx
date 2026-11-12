@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { FolderOpen, Search, X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Alert } from '@/components/ui/alert';
+import { ListCardSkeleton, LoadError } from '@/components/loading';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { apiFetch } from '@/lib/api/client';
@@ -146,33 +147,25 @@ export function PublicQuestionBank({
         ) : null}
       </div>
 
-      {list.isLoading ? (
-        <ul className="space-y-3">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <li
-              key={i}
-              className="h-[4.5rem] animate-pulse rounded-[1rem] border border-[var(--line)] bg-white"
-            />
-          ))}
-        </ul>
-      ) : null}
+      {list.isLoading ? <ListCardSkeleton rows={5} /> : null}
 
       {list.isError ? (
-        <Alert variant="danger">Could not load collections. Please try again.</Alert>
+        <LoadError
+          message="Could not load collections. Please try again."
+          onRetry={() => void list.refetch()}
+        />
       ) : null}
 
       {!list.isLoading && !list.isError && sets.length === 0 ? (
-        <div className="rounded-[1.25rem] border border-dashed border-[var(--line)] bg-white px-6 py-16 text-center">
-          <FolderOpen className="mx-auto size-10 text-[var(--muted)] opacity-50" />
-          <p className="mt-3 font-display text-lg font-bold text-[var(--ink)]">
-            {hasFilters ? 'No matching collections' : 'No collections yet'}
-          </p>
-          <p className="mt-2 text-sm text-[var(--muted-strong)]">
-            {hasFilters
+        <EmptyState
+          align="center"
+          title={hasFilters ? 'No matching collections' : 'No collections yet'}
+          description={
+            hasFilters
               ? 'Try a different search or category.'
-              : 'Published uploads will appear here.'}
-          </p>
-        </div>
+              : 'Published uploads will appear here.'
+          }
+        />
       ) : null}
 
       <ul className="space-y-3">

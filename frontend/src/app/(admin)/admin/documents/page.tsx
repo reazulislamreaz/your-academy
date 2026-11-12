@@ -64,7 +64,8 @@ export default function AdminDocumentsPage() {
           filename: file?.name,
           mediaAssetId,
           isPublished: publishNow,
-          visibility: 'AUTHENTICATED',
+          // PUBLIC → appears on পত্রিকার গুরুত্বপূর্ণ কলাম without login
+          visibility: 'PUBLIC',
         }),
       });
     },
@@ -75,12 +76,13 @@ export default function AdminDocumentsPage() {
       setCategoryId('');
       setMsg(
         storage.data?.configured && file
-          ? 'Document created with Cloudinary asset.'
+          ? 'Document created — published PUBLIC docs appear on পত্রিকার গুরুত্বপূর্ণ কলাম.'
           : 'Document created (metadata/placeholder — configure Cloudinary for real PDFs).',
       );
       setError(null);
       void qc.invalidateQueries({ queryKey: ['admin-documents'] });
       void qc.invalidateQueries({ queryKey: ['documents'] });
+      void qc.invalidateQueries({ queryKey: ['public-documents'] });
     },
     onError: (err) => {
       setMsg(null);
@@ -97,6 +99,7 @@ export default function AdminDocumentsPage() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['admin-documents'] });
       void qc.invalidateQueries({ queryKey: ['documents'] });
+      void qc.invalidateQueries({ queryKey: ['public-documents'] });
     },
   });
 
@@ -105,6 +108,7 @@ export default function AdminDocumentsPage() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['admin-documents'] });
       void qc.invalidateQueries({ queryKey: ['documents'] });
+      void qc.invalidateQueries({ queryKey: ['public-documents'] });
     },
   });
 
@@ -113,7 +117,7 @@ export default function AdminDocumentsPage() {
       <PageHeader
         eyebrow="Content"
         title="Documents"
-        description="Publish PDF library entries. Uploads use signed Cloudinary requests when configured."
+        description="Publish PDF columns for পত্রিকার গুরুত্বপূর্ণ কলাম (public). Uploads use signed Cloudinary when configured."
       />
 
       {storage.data ? (
@@ -182,7 +186,7 @@ export default function AdminDocumentsPage() {
           </label>
           {error ? <Alert variant="danger">{error}</Alert> : null}
           {msg ? <Alert variant="success">{msg}</Alert> : null}
-          <Button type="submit" disabled={create.isPending}>
+          <Button type="submit" loading={create.isPending}>
             {create.isPending ? 'Creating…' : 'Create'}
           </Button>
         </form>
@@ -212,9 +216,29 @@ export default function AdminDocumentsPage() {
                   <Badge variant={doc.isPublished ? 'success' : 'outline'}>
                     {doc.isPublished ? 'Published' : 'Draft'}
                   </Badge>
+                  <Badge variant={doc.visibility === 'PUBLIC' ? 'success' : 'outline'}>
+                    {doc.visibility}
+                  </Badge>
                   <Button size="sm" variant="outline" onClick={() => togglePublish.mutate(doc)}>
                     {doc.isPublished ? 'Unpublish' : 'Publish'}
                   </Button>
+                  {doc.visibility !== 'PUBLIC' ? (
+                    <Button
+                      size="sm"
+                      variant="soft"
+                      onClick={() =>
+                        apiFetch(`/admin/documents/${doc.id}`, {
+                          method: 'PATCH',
+                          body: JSON.stringify({ visibility: 'PUBLIC' }),
+                        }).then(() => {
+                          void qc.invalidateQueries({ queryKey: ['admin-documents'] });
+                          void qc.invalidateQueries({ queryKey: ['public-documents'] });
+                        })
+                      }
+                    >
+                      Make public
+                    </Button>
+                  ) : null}
                   <ConfirmButton
                     size="sm"
                     variant="ghost"

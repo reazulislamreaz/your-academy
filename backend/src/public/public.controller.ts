@@ -1,17 +1,70 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Header, Param, Query, Res } from '@nestjs/common';
 import { Difficulty } from '@prisma/client';
+import type { Response } from 'express';
 import { createSuccessResponse, cursorPaginationMeta } from '@your-academy/shared';
 import { newRequestId } from '../common/request-id';
+import { DocumentsService } from '../documents/documents.service';
+import { parseLimit } from '../common/pagination';
 import { PublicService } from './public.service';
 
 /** Unauthenticated marketing + public question bank (DEC-031). */
 @Controller('api/v1/public')
 export class PublicController {
-  constructor(private readonly publicService: PublicService) {}
+  constructor(
+    private readonly publicService: PublicService,
+    private readonly documentsService: DocumentsService,
+  ) {}
 
   @Get('stats')
   async stats() {
     return createSuccessResponse(await this.publicService.stats(), newRequestId());
+  }
+
+  /** Published PUBLIC documents for পত্রিকার গুরুত্বপূর্ণ কলাম (no login). */
+  @Get('documents')
+  async listDocuments(
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit?: string,
+    @Query('q') q?: string,
+  ) {
+    const take = parseLimit(limit, 20);
+    const data = await this.documentsService.listPublicPublished({
+      cursor,
+      limit: take,
+      q,
+    });
+    return createSuccessResponse(
+      data.items,
+      newRequestId(),
+      cursorPaginationMeta(data.nextCursor, take),
+    );
+  }
+
+  @Get('documents/:id')
+  async getDocument(@Param('id') id: string) {
+    return createSuccessResponse(
+      await this.documentsService.getPublicPublished(id),
+      newRequestId(),
+    );
+  }
+
+  /**
+   * Controlled PDF bytes for the in-app viewer (DEC-033).
+   * Inline disposition only — no attachment filename / download UX.
+   * Does not expose Cloudinary URLs to the browser.
+   */
+  @Get('documents/:id/file')
+  @Header('X-Content-Type-Options', 'nosniff')
+  @Header('Cache-Control', 'private, max-age=60, no-transform')
+  @Header('Content-Disposition', 'inline')
+  async streamDocument(@Param('id') id: string, @Res() res: Response) {
+    const file = await this.documentsService.getPublicPdfBytes(id);
+    const type = file.contentType.toLowerCase().includes('pdf')
+      ? 'application/pdf'
+      : file.contentType;
+    res.setHeader('Content-Type', type);
+    res.setHeader('Content-Length', String(file.buffer.length));
+    res.send(file.buffer);
   }
 
   /** Upload-based Question Sets (one per admin import batch). */

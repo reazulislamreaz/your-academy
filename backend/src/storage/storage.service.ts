@@ -184,6 +184,46 @@ export class StorageService {
     publicId: string,
     opts: { resourceType?: 'image' | 'raw'; deliveryType?: MediaDeliveryType; ttlSeconds?: number },
   ): Promise<string | null> {
+    return this.buildSignedAssetUrl(publicId, { ...opts, forceAttachment: true });
+  }
+
+  /**
+   * Short-lived signed URL for server-side fetch / inline viewing (no `attachment` flag).
+   * Prefer proxying through the API instead of exposing this URL to browsers.
+   */
+  async generateSignedViewUrl(
+    publicId: string,
+    opts: { resourceType?: 'image' | 'raw'; deliveryType?: MediaDeliveryType; ttlSeconds?: number },
+  ): Promise<string | null> {
+    return this.buildSignedAssetUrl(publicId, { ...opts, forceAttachment: false });
+  }
+
+  /** Fetch asset bytes via a short-lived signed URL (API proxy use). */
+  async fetchAssetBytes(
+    publicId: string,
+    opts: { resourceType?: 'image' | 'raw'; deliveryType?: MediaDeliveryType; ttlSeconds?: number },
+  ): Promise<{ buffer: Buffer; contentType: string } | null> {
+    const url = await this.generateSignedViewUrl(publicId, opts);
+    if (!url) return null;
+    const res = await fetch(url);
+    if (!res.ok) {
+      this.logger.warn(`Upstream asset fetch failed (${res.status}) for ${publicId}`);
+      return null;
+    }
+    const contentType = res.headers.get('content-type') ?? 'application/octet-stream';
+    const buffer = Buffer.from(await res.arrayBuffer());
+    return { buffer, contentType };
+  }
+
+  private buildSignedAssetUrl(
+    publicId: string,
+    opts: {
+      resourceType?: 'image' | 'raw';
+      deliveryType?: MediaDeliveryType;
+      ttlSeconds?: number;
+      forceAttachment?: boolean;
+    },
+  ): string | null {
     if (!this.isConfigured()) return null;
 
     const ttl = opts.ttlSeconds ?? 120;
@@ -201,7 +241,7 @@ export class StorageService {
       secure: true,
       sign_url: type !== 'upload',
       expires_at: type === 'upload' ? undefined : Math.floor(Date.now() / 1000) + ttl,
-      flags: resourceType === 'raw' ? 'attachment' : undefined,
+      flags: opts.forceAttachment && resourceType === 'raw' ? 'attachment' : undefined,
     });
   }
 

@@ -4,9 +4,11 @@ import Link from 'next/link';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Search } from 'lucide-react';
 import { useState } from 'react';
-import { Alert } from '@/components/ui/alert';
+import { ListCardSkeleton, LoadError } from '@/components/loading';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import { PublicMcqCard } from '@/components/marketing/public-mcq-card';
 import {
   getPublicQuestionSet,
@@ -60,10 +62,14 @@ export function PublicQuestionSetView({ setId, className }: Props) {
       </div>
 
       {setQry.isLoading ? (
-        <div className="h-24 animate-pulse rounded-[1rem] border border-[var(--line)] bg-white" />
+        <div className="space-y-3 rounded-[1rem] border border-[var(--line)] bg-[var(--bg-elevated)] px-5 py-5 shadow-[var(--shadow-sm)]">
+          <Skeleton className="h-3 w-24" />
+          <Skeleton className="h-8 w-2/3 max-w-lg" />
+          <Skeleton className="h-3.5 w-48" />
+        </div>
       ) : null}
       {setQry.isError ? (
-        <Alert variant="danger">Question set not found or has no published questions.</Alert>
+        <LoadError message="Question set not found or has no published questions." />
       ) : null}
       {setQry.data ? (
         <header className="space-y-2 border-b border-[var(--line)] pb-5">
@@ -108,24 +114,25 @@ export function PublicQuestionSetView({ setId, className }: Props) {
       </div>
 
       {list.isLoading ? (
-        <ul className="space-y-4">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <li
-              key={i}
-              className="h-56 animate-pulse rounded-[1.25rem] border border-[var(--line)] bg-white"
-            />
-          ))}
-        </ul>
+        <ListCardSkeleton
+          rows={3}
+          rowClassName="min-h-56 py-6"
+        />
       ) : null}
 
       {list.isError ? (
-        <Alert variant="danger">Could not load questions for this set.</Alert>
+        <LoadError
+          message="Could not load questions for this set."
+          onRetry={() => void list.refetch()}
+        />
       ) : null}
 
       {!list.isLoading && !list.isError && items.length === 0 ? (
-        <div className="rounded-[1.25rem] border border-dashed border-[var(--line)] bg-white px-6 py-12 text-center text-sm text-[var(--muted-strong)]">
-          No questions match your search in this set.
-        </div>
+        <EmptyState
+          align="center"
+          title="No matching questions"
+          description="No questions match your search in this set."
+        />
       ) : null}
 
       <ul className="space-y-4">
