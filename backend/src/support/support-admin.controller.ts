@@ -43,10 +43,24 @@ export class SupportAdminController {
     const data = await this.conversations.listAdmin({
       q: query.q,
       status: query.status,
+      filter: query.filter,
       cursor: query.cursor,
       limit: query.limit ? Number(query.limit) : undefined,
     });
-    return createSuccessResponse(data.items, newRequestId(), data.meta);
+    const items = data.items.map((c) => {
+      const actor = c.userId
+        ? ({ kind: 'user' as const, id: c.userId })
+        : c.guestSessionId
+          ? ({ kind: 'guest' as const, id: c.guestSessionId })
+          : null;
+      if (!actor) return c;
+      return {
+        ...c,
+        participantOnline: this.presence.isOnline(actor),
+        participantLastSeenAt: this.presence.lastSeen(actor)?.toISOString() ?? null,
+      };
+    });
+    return createSuccessResponse(items, newRequestId(), data.meta);
   }
 
   @Get('conversations/:id')

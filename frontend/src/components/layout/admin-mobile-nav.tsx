@@ -33,10 +33,10 @@ export function AdminMobileNav() {
             href={item.href}
             aria-current={active ? 'page' : undefined}
             className={cn(
-              'motion-nav-indicator shrink-0 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-medium',
+              'motion-nav-indicator shrink-0 rounded-[var(--radius)] px-3 py-2 text-sm font-medium',
               active
-                ? 'bg-[var(--highlight)] text-white'
-                : 'text-[var(--muted-strong)] hover:bg-[var(--bg-muted)]',
+                ? 'bg-[var(--bg-muted)] font-semibold text-[var(--ink)]'
+                : 'text-[var(--muted)] hover:bg-[var(--brand-wash)] hover:text-[var(--ink-soft)]',
             )}
           >
             {item.shortLabel ?? item.label}

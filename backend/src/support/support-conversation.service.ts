@@ -95,12 +95,26 @@ export class SupportConversationService {
   async listAdmin(params: {
     q?: string;
     status?: SupportConversationStatus;
+    filter?: 'all' | 'unread' | 'active' | 'archived';
     cursor?: string;
     limit?: number;
   }) {
     const limit = Math.min(Math.max(params.limit ?? 20, 1), 100);
+    const filter = params.filter ?? 'all';
+    const statusFilter =
+      params.status ??
+      (filter === 'active'
+        ? undefined
+        : filter === 'archived'
+          ? SupportConversationStatus.ARCHIVED
+          : undefined);
+
     const where = {
-      ...(params.status ? { status: params.status } : {}),
+      ...(statusFilter ? { status: statusFilter } : {}),
+      ...(filter === 'active'
+        ? { status: { in: [SupportConversationStatus.OPEN, SupportConversationStatus.PENDING] } }
+        : {}),
+      ...(filter === 'unread' ? { adminUnreadCount: { gt: 0 } } : {}),
       ...(params.q
         ? {
             OR: [

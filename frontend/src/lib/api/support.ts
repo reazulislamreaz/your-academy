@@ -19,6 +19,8 @@ export type SupportConversation = {
   updatedAt: string;
   participantName: string | null;
   participantAvatarUrl: string | null;
+  participantOnline?: boolean;
+  participantLastSeenAt?: string | null;
 };
 
 export type SupportMessage = {
@@ -182,14 +184,22 @@ export async function uploadSupportAttachment(file: File) {
 export async function listAdminSupportConversations(params: {
   q?: string;
   status?: string;
+  filter?: 'all' | 'unread' | 'active' | 'archived';
   cursor?: string;
   limit?: number;
 }) {
-  const qs = new URLSearchParams({ limit: String(params.limit ?? 30) });
+  const qs = new URLSearchParams({ limit: String(params.limit ?? 40) });
   if (params.q) qs.set('q', params.q);
   if (params.status) qs.set('status', params.status);
+  if (params.filter && params.filter !== 'all') qs.set('filter', params.filter);
   if (params.cursor) qs.set('cursor', params.cursor);
   return apiFetchResult<SupportConversation[]>(`/admin/support/conversations?${qs}`);
+}
+
+export async function getAdminSupportPresence() {
+  return apiFetch<Array<{ key: string; sockets: number; lastSeenAt: string | null }>>(
+    '/admin/support/presence',
+  );
 }
 
 export async function getAdminSupportConversation(id: string) {

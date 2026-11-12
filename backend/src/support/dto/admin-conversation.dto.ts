@@ -1,5 +1,6 @@
 import {
   IsEnum,
+  IsIn,
   IsOptional,
   IsString,
   IsUUID,
@@ -36,6 +37,11 @@ export class AdminConversationQueryDto {
   @IsOptional()
   @IsEnum(SupportConversationStatus)
   status?: SupportConversationStatus;
+
+  /** Inbox chip filter: all | unread | active | archived */
+  @IsOptional()
+  @IsIn(['all', 'unread', 'active', 'archived'])
+  filter?: 'all' | 'unread' | 'active' | 'archived';
 
   @IsOptional()
   @IsString()

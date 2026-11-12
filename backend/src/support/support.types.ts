@@ -49,4 +49,6 @@ export type SupportConversationDto = {
   updatedAt: string;
   participantName: string | null;
   participantAvatarUrl: string | null;
+  participantOnline?: boolean;
+  participantLastSeenAt?: string | null;
 };
