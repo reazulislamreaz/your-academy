@@ -166,13 +166,13 @@ function MarketingHeaderInner() {
         {/* Desktop / tablet actions */}
         <div className="ml-auto hidden shrink-0 items-center gap-2 md:flex xl:ml-0">
           {dashboardHref ? <DashboardNavButton href={dashboardHref} /> : null}
-          <UserMenu loginOnly />
+          {me.data ? <UserMenu variant="header" /> : <UserMenu loginOnly />}
         </div>
 
-        {/* Phone actions: one primary CTA + menu */}
+        {/* Phone actions: Login or avatar + menu */}
         <div className="ml-auto flex shrink-0 items-center gap-1.5 md:hidden">
-          {dashboardHref ? (
-            <DashboardNavButton href={dashboardHref} compact />
+          {me.data ? (
+            <UserMenu variant="header" />
           ) : (
             <Link href="/login">
               <Button size="sm" className="cursor-pointer rounded-full px-3.5">
@@ -201,15 +201,13 @@ function MarketingHeaderInner() {
               />
             }
             trailing={
-              me.data ? (
-                <UserMenu compact />
-              ) : (
+              !me.data ? (
                 <Link href="/preli-question-bank">
                   <Button variant="outline" className="w-full rounded-full">
                     Browse question bank
                   </Button>
                 </Link>
-              )
+              ) : null
             }
           />
         </div>

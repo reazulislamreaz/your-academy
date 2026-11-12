@@ -29,7 +29,7 @@ export function useLogout() {
       qc.removeQueries({ queryKey: ['bookmarks'] });
       qc.removeQueries({ queryKey: ['documents'] });
       qc.removeQueries({ queryKey: ['admin-dashboard'] });
-      router.push('/login');
+      router.push('/');
       router.refresh();
     },
   });

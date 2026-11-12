@@ -126,9 +126,7 @@ export function AppHeader() {
           <MessagesMenu />
         </div>
         <LearnerThemeToggle className="rounded-[12px] border-[var(--line)] bg-[var(--bg-muted)] shadow-none" />
-        <div className="hidden md:block">
-          <UserMenu variant="header" />
-        </div>
+        <UserMenu variant="header" />
         <LearnerMobileNav />
       </div>
     </header>

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { adminNavItems } from './admin-nav';
 import { BrandMark } from './brand-mark';
+import { UserMenu } from './user-menu';
 
 const ADMIN_NAV_GROUPS = [
   {
@@ -164,6 +165,7 @@ export function AdminMobileNav() {
           </p>
           <p className="truncate text-sm font-semibold text-[var(--ink)]">{activeLabel}</p>
         </div>
+        <UserMenu variant="header" />
         <Button
           ref={triggerRef}
           type="button"

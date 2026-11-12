@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { BrandMark } from './brand-mark';
 import { adminNavItems } from './admin-nav';
+import { UserMenu } from './user-menu';
 
 const COLLAPSE_KEY = 'ya-admin-sidebar-collapsed';
 
@@ -114,6 +115,14 @@ export function AdminSidebar() {
         })}
       </nav>
 
+      <div
+        className={cn(
+          'border-t border-[var(--line)]',
+          collapsed ? 'flex justify-center p-2' : 'flex items-center px-4 py-3',
+        )}
+      >
+        <UserMenu variant="header" menuPlacement="top" />
+      </div>
     </aside>
   );
 }
