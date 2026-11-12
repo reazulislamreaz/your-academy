@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import type { Metadata } from 'next';
 import { Button } from '@/components/ui/button';
-import { SampleMcq } from '@/components/marketing/sample-mcq';
+import { HomepageLatestQuestions } from '@/components/marketing/homepage-latest-questions';
 import { NewsletterBar } from '@/components/marketing/newsletter-bar';
 import {
   BanglaBookIcon,
@@ -49,41 +49,41 @@ const CATEGORIES = [
   {
     name: 'BCS',
     subtitle: '(Preliminary + Written)',
-    href: '/questions?q=BCS',
+    href: '/preli-question-bank?q=BCS',
     Icon: BcsEmblemIcon,
   },
   {
     name: 'Bank',
     subtitle: '(Officer & SO)',
-    href: '/questions?q=Bank',
+    href: '/preli-question-bank?examTag=bank',
     Icon: BankTempleIcon,
   },
   {
     name: 'Government Jobs',
     subtitle: '',
-    href: '/questions?q=Government',
+    href: '/preli-question-bank?examTag=govt-job',
     Icon: GovSealIcon,
   },
   {
     name: 'Primary & NTRCA',
     subtitle: '',
-    href: '/questions?q=NTRCA',
+    href: '/preli-question-bank?examTag=ntrca',
     Icon: GradCapIcon,
   },
   {
     name: 'Other Govt. Jobs',
     subtitle: '',
-    href: '/questions',
+    href: '/preli-question-bank',
     Icon: GearBlueIcon,
   },
 ] as const;
 
 const TOPICS = [
-  { name: 'Bangla', href: '/questions?q=Bangla', Icon: BanglaBookIcon },
-  { name: 'English', href: '/questions?q=English', Icon: EnglishLangIcon },
-  { name: 'Math', href: '/questions?q=Math', Icon: MathSymbolsIcon },
-  { name: 'GK', href: '/questions?q=GK', Icon: GkGlobeIcon },
-  { name: 'Others', href: '/questions', Icon: GearBlueIcon },
+  { name: 'Bangla', href: '/preli-question-bank?q=Bangla', Icon: BanglaBookIcon },
+  { name: 'English', href: '/preli-question-bank?q=English', Icon: EnglishLangIcon },
+  { name: 'Math', href: '/preli-question-bank?q=Math', Icon: MathSymbolsIcon },
+  { name: 'GK', href: '/preli-question-bank?q=GK', Icon: GkGlobeIcon },
+  { name: 'Others', href: '/preli-question-bank', Icon: GearBlueIcon },
 ] as const;
 
 export default function HomePage() {
@@ -127,13 +127,13 @@ export default function HomePage() {
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
-              <Link href="/questions">
+              <Link href="/preli-question-bank">
                 <Button
                   size="lg"
                   variant="outline"
                   className="rounded-full border-white/55 bg-transparent px-7 text-white hover:border-white hover:bg-white/10"
                 >
-                  Explore Job Exams
+                  Explore Question Bank
                 </Button>
               </Link>
             </div>
@@ -210,7 +210,7 @@ export default function HomePage() {
             <p className="text-[var(--muted-strong)]">
               Choose your target exam and start your preparation
             </p>
-            <Link href="/questions" className="inline-flex pt-1">
+            <Link href="/preli-question-bank" className="inline-flex pt-1">
               <Button className="rounded-full px-6 shadow-sm">
                 View All Exams
                 <ArrowRight className="h-4 w-4" />
@@ -255,7 +255,7 @@ export default function HomePage() {
                 <h2 className="font-display text-3xl font-bold tracking-tight text-[var(--ink)] sm:text-[2rem]">
                   Topic Base Question Analysis
                 </h2>
-                <Link href="/questions" className="inline-flex pt-1">
+                <Link href="/preli-question-bank" className="inline-flex pt-1">
                   <Button className="rounded-full px-6 shadow-sm">
                     View All Topics
                     <ArrowRight className="h-4 w-4" />
@@ -443,28 +443,7 @@ export default function HomePage() {
         </Reveal>
       </section>
 
-      {/* Sample MCQ — left intro + card */}
-      <section className="pb-[var(--space-section)]">
-        <Reveal className="mx-auto grid w-full max-w-[1280px] items-center gap-8 px-4 sm:px-6 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,2.15fr)] lg:gap-10">
-          <div className="space-y-4">
-            <span
-              className="mb-1 block h-[3px] w-7 rounded-full bg-[var(--highlight)]"
-              aria-hidden
-            />
-            <h2 className="font-display text-3xl font-bold tracking-tight text-[var(--ink)] sm:text-[2rem]">
-              Try a Sample MCQ
-            </h2>
-            <p className="text-[var(--muted-strong)]">Test your knowledge with our free MCQ</p>
-            <Link href="/questions" className="inline-flex pt-1">
-              <Button className="rounded-full px-6 shadow-sm">
-                Practice Now
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
-          <SampleMcq />
-        </Reveal>
-      </section>
+      <HomepageLatestQuestions limit={6} />
 
       {/* Newsletter */}
       <section className="pb-[var(--space-section)]">

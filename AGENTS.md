@@ -66,7 +66,7 @@ Forbidden without approval: microservices, GraphQL, alternate ORMs, payment prov
 | Post-trial allowed | Login, homepage, browse/search/filter questions, titles/content/options, save MCQs, profile, bookmarks, activity, news, **published PDFs** (DEC-001) |
 | Post-trial denied | Correct answers, indicators, explanations — **omit from API** |
 | Questions CRUD | **Admin only** |
-| Question browse | **Authenticated only** (DEC-003) |
+| Question browse | Public Preli bank + homepage via `/api/v1/public/questions` (DEC-031); learner practice `/questions*` remains authenticated (DEC-003) |
 | Payments | Not in v1; keep subscription tables modular |
 | Register fields | name, WhatsApp (unique), password; avatar optional; email optional at register |
 | Password reset | **Email** only (DEC-004); needs email on account; no enumeration |
@@ -239,6 +239,7 @@ Forbidden without approval: microservices, GraphQL, alternate ORMs, payment prov
 | Doc | Topic |
 |-----|-------|
 | `docs/00`–`03` | Overview, business, functional, NFR |
+| `docs/19` DEC-031 | Public Preli Question Bank (no login) |
 | `docs/04`–`06` | Architecture, DB, API |
 | `docs/07`–`08` | Auth, access control |
 | `docs/09`–`10` | Cloudinary, BullMQ |

@@ -13,16 +13,18 @@ import { Button } from '@/components/ui/button';
 
 const links: NavItem[] = [
   { href: '/', label: 'Home', match: 'exact' },
-  { href: '/questions?q=Preliminary', label: 'Prili Question Bank' },
-  { href: '/questions?q=Written', label: 'Written Question Bank' },
-  { href: '/questions', label: 'Exam', match: 'prefix' },
+  { href: '/preli-question-bank', label: 'Prili Question Bank', match: 'prefix' },
+  { href: '/preli-question-bank?examTag=bcs-written', label: 'Written Question Bank' },
+  { href: '/preli-question-bank', label: 'Exam', match: 'prefix' },
   { href: '/news', label: 'পত্রিকার গুরুত্বপূর্ণ কলাম', match: 'prefix' },
-  { href: '/questions?q=Job', label: 'চাকরি' },
+  { href: '/preli-question-bank?q=Job', label: 'চাকরি' },
 ];
 
 function isHomeActive(pathname: string, href: string, label: string) {
   if (label === 'Home') return pathname === '/';
-  if (label === 'Exam') return pathname === '/questions' || pathname.startsWith('/questions/');
+  if (label === 'Prili Question Bank' || label === 'Exam') {
+    return pathname === '/preli-question-bank' || pathname.startsWith('/preli-question-bank/');
+  }
   if (href.startsWith('/news')) return pathname === '/news' || pathname.startsWith('/news/');
   return false;
 }
@@ -74,7 +76,9 @@ export function MarketingHeader() {
   const onSearch = (e: FormEvent) => {
     e.preventDefault();
     const q = query.trim();
-    router.push(q ? `/questions?q=${encodeURIComponent(q)}` : '/questions');
+    router.push(
+      q ? `/preli-question-bank?q=${encodeURIComponent(q)}` : '/preli-question-bank',
+    );
   };
 
   return (

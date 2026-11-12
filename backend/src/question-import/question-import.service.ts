@@ -641,6 +641,7 @@ export class QuestionImportService {
             const difficulty = (parseDifficulty(row.difficulty) ?? 'MEDIUM') as Difficulty;
             const examTag = mapExamCategoryToTag(row.examCategory);
             const sourceParts = [
+              row.examCategory?.trim(),
               row.source?.trim(),
               row.examYear?.trim() ? `Year ${row.examYear.trim()}` : null,
               `Batch ${batchId.slice(0, 8)}`,

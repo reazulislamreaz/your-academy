@@ -17,7 +17,8 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | ANSWER-PRIVACY-API | Backend omits answers/explanations post-trial | CONFIRMED |
 | PAYMENTS-V1 | No payment integration in initial release | CONFIRMED |
 | DEC-001 | Post-trial published PDFs/documents remain accessible | CONFIRMED |
-| DEC-003 | Question bank requires authentication | CONFIRMED |
+| DEC-003 | Question bank requires authentication | SUPERSEDED by DEC-031 for public bank |
+| DEC-031 | Public Preli Question Bank (no login) | CONFIRMED |
 | DEC-004 | Password reset delivered via email | CONFIRMED |
 | DEC-012 | Web auth via HTTP-only cookies + CSRF protection | CONFIRMED |
 | DEC-020 | pnpm workspaces + Turborepo | CONFIRMED |
@@ -55,9 +56,18 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Field | Value |
 |-------|-------|
 | Question | Can unauthenticated users browse full questions/options? |
-| Decision | **No.** Guests may view marketing pages and published news (per DEC-018). The question bank (list, detail, options, navigation) requires authentication. |
-| Impact | API guards on `/questions*`; frontend redirects guests to login |
-| Status | **CONFIRMED** |
+| Decision | **Originally no** for the authenticated learner practice routes (`/questions*`). **Updated by DEC-031:** a dedicated public Preli Question Bank + homepage feed expose published MCQs (including correct answers on cards) without login. Save/bookmarks and learner practice analytics still require auth. |
+| Impact | Public `GET /api/v1/public/questions`; marketing `/preli-question-bank` + homepage cards; learner `/questions*` remains gated |
+| Status | **SUPERSEDED in part by DEC-031** (2026-11-12) |
+
+### DEC-031 — Public Preli Question Bank
+
+| Field | Value |
+|-------|-------|
+| Question | Should admin-uploaded published MCQs appear on the marketing homepage and Preli Question Bank without login, showing options + correct answer? |
+| Decision | **Yes.** `GET /api/v1/public/questions` (cursor pagination, `createdAt DESC`) returns published cards with options and correct answer labels. Homepage shows latest; `/preli-question-bank` is the full public bank with search/filters. Admin publish/archive/delete syncs automatically via existing `Question.status` / `deletedAt`. Save still requires login. |
+| Impact | PublicModule, marketing UI cards matching reference design, DEC-003 exception for public surfaces only |
+| Status | **CONFIRMED** (product request 2026-11-12) |
 
 ### DEC-004 — Password reset delivery channel
 

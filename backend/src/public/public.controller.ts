@@ -1,34 +1,43 @@
-import { Controller, Get } from '@nestjs/common';
-import { QuestionStatus } from '@prisma/client';
-import { createSuccessResponse } from '@your-academy/shared';
+import { Controller, Get, Query } from '@nestjs/common';
+import { Difficulty } from '@prisma/client';
+import { createSuccessResponse, cursorPaginationMeta } from '@your-academy/shared';
 import { newRequestId } from '../common/request-id';
-import { PrismaService } from '../database/prisma.service';
+import { PublicService } from './public.service';
 
-/** Unauthenticated marketing stats — counts only, no question content. */
+/** Unauthenticated marketing + public question bank (DEC-031). */
 @Controller('api/v1/public')
 export class PublicController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly publicService: PublicService) {}
 
   @Get('stats')
   async stats() {
-    const [questions, categories, news, documents] = await Promise.all([
-      this.prisma.question.count({
-        where: { status: QuestionStatus.PUBLISHED, deletedAt: null },
-      }),
-      this.prisma.category.count({
-        where: { isActive: true, parentId: null },
-      }),
-      this.prisma.news.count({
-        where: { isPublished: true, deletedAt: null },
-      }),
-      this.prisma.document.count({
-        where: { isPublished: true, deletedAt: null },
-      }),
-    ]);
+    return createSuccessResponse(await this.publicService.stats(), newRequestId());
+  }
 
+  @Get('questions')
+  async questions(
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit?: string,
+    @Query('categoryId') categoryId?: string,
+    @Query('subcategoryId') subcategoryId?: string,
+    @Query('difficulty') difficulty?: Difficulty,
+    @Query('q') q?: string,
+    @Query('examTag') examTag?: string,
+  ) {
+    const take = Math.min(Math.max(Number(limit) || 20, 1), 100);
+    const data = await this.publicService.listPublishedQuestions({
+      cursor,
+      limit: take,
+      categoryId,
+      subcategoryId,
+      difficulty,
+      q,
+      examTag,
+    });
     return createSuccessResponse(
-      { questions, categories, news, documents },
+      data.items,
       newRequestId(),
+      cursorPaginationMeta(data.nextCursor, take, data.total),
     );
   }
 }

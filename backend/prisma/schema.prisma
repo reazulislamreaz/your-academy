@@ -295,6 +295,7 @@ model Question {
   importRows  QuestionImportRow[] @relation("ImportRowCreatedQuestion")
 
   @@index([status, publishedAt(sort: Desc), id(sort: Desc)])
+  @@index([status, createdAt(sort: Desc), id(sort: Desc)])
   @@index([categoryId, status])
   @@index([subcategoryId, status])
   @@index([difficulty, status])

@@ -29,14 +29,14 @@
   },
   "product": "prisma",
   "cli_install_type": "local",
-  "local_timestamp": "2026-11-12T14:57:41+06:00",
+  "local_timestamp": "2026-11-12T16:23:38+06:00",
   "project_hash": "faa485c1",
   "cli_path_hash": "7f8626fb",
   "endpoint": "https://checkpoint.prisma.io",
   "arch": "x64",
   "os": "linux",
-  "node_version": "v24.22.1",
-  "command": "generate",
+  "node_version": "v24.21.0",
+  "command": "migrate deploy",
   "schema_providers": [
     "postgresql"
   ],
