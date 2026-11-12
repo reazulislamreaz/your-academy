@@ -72,7 +72,7 @@ export default function ResultsPage() {
       {!list.isLoading && !list.isError && list.items.length > 0 ? (
         <ContentIn className="space-y-3">
           {list.items.map((attempt) => (
-            <Surface elevated key={attempt.id} className="p-4">
+            <Surface key={attempt.id} elevated interactive className="p-4">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
                   <div className="mb-1 flex flex-wrap gap-1.5">

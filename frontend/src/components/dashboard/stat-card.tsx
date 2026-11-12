@@ -26,7 +26,7 @@ export function StatCard({ label, value, hint, icon: Icon, tone = 'navy', classN
   return (
     <div
       className={cn(
-        'motion-hover-lift relative min-w-0 max-w-full overflow-hidden rounded-[16px] border border-[var(--line)] bg-white p-4 shadow-[var(--shadow-sm)] sm:p-5',
+        'motion-hover-lift relative min-w-0 max-w-full overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-white p-4 shadow-[var(--shadow-sm)] sm:p-5',
         className,
       )}
     >

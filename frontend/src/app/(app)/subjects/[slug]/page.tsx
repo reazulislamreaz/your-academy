@@ -79,7 +79,7 @@ export default function SubjectDetailPage() {
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
             {subject.children.map((topic) => (
-              <Surface elevated key={topic.id} className="p-4">
+              <Surface key={topic.id} elevated interactive className="p-4">
                 <h3 className="font-medium text-[var(--ink)]">{topic.name}</h3>
                 <div className="mt-3 flex flex-wrap gap-3 text-sm">
                   <Link

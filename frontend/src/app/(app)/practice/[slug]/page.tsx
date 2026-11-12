@@ -168,7 +168,7 @@ export default function PracticePlayerPage() {
         <>
           <div className="space-y-4">
             {set.questions.map((q, index) => (
-              <Surface elevated key={q.id} className="space-y-3 p-4">
+              <Surface key={q.id} elevated className="space-y-3 p-4">
                 <div className="flex items-start justify-between gap-2">
                   <h3 className="font-medium text-[var(--ink)]">
                     <span className="text-[var(--muted-strong)]">{index + 1}.</span> {q.title}

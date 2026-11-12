@@ -95,7 +95,7 @@ export default function ResultDetailPage() {
 
       <div className="space-y-4">
         {data.review.map((item, index) => (
-          <Surface elevated key={item.questionId} className="space-y-3 p-4">
+          <Surface key={item.questionId} elevated className="space-y-3 p-4">
             <div className="flex flex-wrap items-start justify-between gap-2">
               <h3 className="font-medium">
                 <span className="text-[var(--muted-strong)]">{index + 1}.</span> {item.title}

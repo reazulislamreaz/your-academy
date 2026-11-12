@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { isUnauthorized } from '@/features/auth/use-auth';
 import { apiFetch, apiFetchResult } from '@/lib/api/client';
 import type { BookmarkCollectionsPayload } from '@/lib/api/types';
@@ -314,10 +315,13 @@ export default function BookmarksPage() {
                 role="tabpanel"
                 id="bookmarks-panel-questions"
                 aria-labelledby="bookmarks-tab-questions"
-                className="divide-y divide-[var(--line)] border-y border-[var(--line)]"
+                className="divide-y divide-[var(--line)] overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] shadow-[var(--shadow-sm)]"
               >
                 {questionRows.map((b) => (
-                  <div key={b.id} className="flex flex-col gap-3 py-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div
+                    key={b.id}
+                    className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5"
+                  >
                     <Link href={`/questions/${b.question.id}`} className="min-w-0 flex-1 space-y-1">
                       <p className="font-medium text-[var(--ink)]">{b.question.title}</p>
                       <p className="text-sm text-[var(--muted-strong)]">
@@ -330,9 +334,9 @@ export default function BookmarksPage() {
                       <label className="sr-only" htmlFor={`move-${b.id}`}>
                         Move to folder
                       </label>
-                      <select
+                      <Select
                         id={`move-${b.id}`}
-                        className="h-9 max-w-[10rem] rounded-[var(--radius-sm)] border border-[var(--line)] bg-white px-2 text-xs font-medium text-[var(--ink)]"
+                        className="h-9 w-auto max-w-[10rem] px-2.5 pr-8 text-xs shadow-none"
                         value={b.collection?.id ?? 'uncategorized'}
                         disabled={moveQuestion.isPending}
                         onChange={(e) => {
@@ -349,7 +353,7 @@ export default function BookmarksPage() {
                             {c.name}
                           </option>
                         ))}
-                      </select>
+                      </Select>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -387,10 +391,13 @@ export default function BookmarksPage() {
           role="tabpanel"
           id="bookmarks-panel-documents"
           aria-labelledby="bookmarks-tab-documents"
-          className="divide-y divide-[var(--line)] border-y border-[var(--line)]"
+          className="divide-y divide-[var(--line)] overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] shadow-[var(--shadow-sm)]"
         >
           {documentRows.map((b) => (
-            <div key={b.id} className="flex items-start justify-between gap-3 py-4">
+            <div
+              key={b.id}
+              className="flex items-start justify-between gap-3 px-4 py-4 sm:px-5"
+            >
               <Link href={`/documents/${b.document.id}`} className="min-w-0 flex-1 space-y-1">
                 <p className="font-medium text-[var(--ink)]">{b.document.title}</p>
                 <p className="text-sm text-[var(--muted-strong)]">{b.document.visibility}</p>
