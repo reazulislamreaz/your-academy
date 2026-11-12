@@ -67,7 +67,7 @@ export function UpdatesMenu() {
       {open ? (
         <div
           id={panelId}
-          className="motion-pop absolute right-0 z-40 mt-2 w-[min(20rem,calc(100vw-1.5rem))] overflow-hidden rounded-[16px] border border-[var(--line)] bg-white shadow-[var(--shadow-lg)]"
+          className="motion-pop absolute right-0 z-40 mt-2 w-[min(20rem,calc(100vw-1.5rem))] overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-white shadow-[var(--shadow-lg)]"
         >
           <div className="border-b border-[var(--line)] px-4 py-3">
             <p className="font-display text-sm font-bold tracking-tight">Updates</p>

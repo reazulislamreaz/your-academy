@@ -134,7 +134,7 @@ function QuestionsContent() {
 
       {!list.isLoading && !list.isError && items.length > 0 ? (
         <>
-          <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)]">
+          <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] shadow-[var(--shadow-sm)]">
             {items.map((item) => (
               <ListRow
                 key={item.id}

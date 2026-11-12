@@ -46,7 +46,7 @@ function SidebarNav() {
                   >
                     <span
                       className={cn(
-                        'flex size-7 shrink-0 items-center justify-center rounded-[9px]',
+                        'flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)]',
                         active
                           ? 'bg-white/80 text-[var(--highlight)] shadow-[var(--shadow-sm)]'
                           : 'bg-transparent text-current',
@@ -69,7 +69,7 @@ function SidebarNav() {
             href="/admin/dashboard"
             className="learner-nav-link motion-nav-indicator flex items-center gap-2.5 rounded-[var(--radius)] px-3 py-2.5 text-sm font-medium text-[var(--ink-soft)] hover:bg-[var(--brand-wash)] hover:text-[var(--ink)]"
           >
-            <span className="flex size-7 shrink-0 items-center justify-center rounded-[9px]">
+            <span className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)]">
               <Shield className="size-4" aria-hidden />
             </span>
             Admin console

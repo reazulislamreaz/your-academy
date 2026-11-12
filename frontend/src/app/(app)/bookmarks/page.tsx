@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/layout/page-header';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { isUnauthorized } from '@/features/auth/use-auth';
@@ -37,6 +38,7 @@ export default function BookmarksPage() {
   const [folder, setFolder] = useState<FolderFilter>('all');
   const [newFolderName, setNewFolderName] = useState('');
   const [creatingFolder, setCreatingFolder] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   const collections = useQuery({
     queryKey: ['bookmark-collections'],
@@ -110,6 +112,7 @@ export default function BookmarksPage() {
     mutationFn: (id: string) => apiFetch(`/bookmarks/collections/${id}`, { method: 'DELETE' }),
     onSuccess: (_data, id) => {
       if (folder === id) setFolder('all');
+      setDeleteTarget(null);
       void qc.invalidateQueries({ queryKey: ['bookmark-collections'] });
       void qc.invalidateQueries({ queryKey: ['bookmarks'] });
     },
@@ -230,17 +233,9 @@ export default function BookmarksPage() {
                 <button
                   type="button"
                   aria-label={`Delete folder ${c.name}`}
-                  className="flex size-8 shrink-0 items-center justify-center rounded-[8px] text-[var(--muted-strong)] opacity-70 hover:bg-[var(--highlight-soft)] hover:text-[var(--highlight)] group-hover:opacity-100"
+                  className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-[var(--muted-strong)] opacity-70 hover:bg-[var(--highlight-soft)] hover:text-[var(--highlight)] group-hover:opacity-100"
                   disabled={deleteFolder.isPending}
-                  onClick={() => {
-                    if (
-                      window.confirm(
-                        `Delete folder “${c.name}”? Questions remain in All saved.`,
-                      )
-                    ) {
-                      deleteFolder.mutate(c.id);
-                    }
-                  }}
+                  onClick={() => setDeleteTarget({ id: c.id, name: c.name })}
                 >
                   <Trash2 className="size-3.5" aria-hidden />
                 </button>
@@ -422,6 +417,26 @@ export default function BookmarksPage() {
           {active.isFetchingNextPage ? 'Loading…' : 'Load more'}
         </Button>
       ) : null}
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="Delete folder?"
+        description={
+          deleteTarget
+            ? `Delete “${deleteTarget.name}”? Questions in it remain under All saved.`
+            : null
+        }
+        confirmLabel="Delete folder"
+        destructive
+        reversible
+        pending={deleteFolder.isPending}
+        onCancel={() => {
+          if (!deleteFolder.isPending) setDeleteTarget(null);
+        }}
+        onConfirm={() => {
+          if (deleteTarget) deleteFolder.mutate(deleteTarget.id);
+        }}
+      />
     </div>
   );
 }
@@ -445,7 +460,7 @@ function FolderNavButton({
       type="button"
       onClick={onClick}
       className={cn(
-        'flex w-full items-center gap-2 rounded-[10px] px-2.5 py-2 text-left text-sm transition-colors',
+        'flex w-full items-center gap-2 rounded-[var(--radius-sm)] px-2.5 py-2 text-left text-sm transition-colors',
         active
           ? 'bg-[var(--brand-wash-strong)] font-semibold text-[var(--ink)]'
           : 'text-[var(--ink-soft)] hover:bg-[var(--bg-muted)]',

@@ -424,12 +424,12 @@ export default function StudyHomePage() {
                 <li key={item.id}>
                   <Link
                     href={`/questions/${item.questionId}`}
-                    className="flex items-center justify-between gap-3 rounded-[10px] px-1.5 py-2.5 transition-colors hover:bg-[var(--bg-muted)]"
+                    className="flex items-center justify-between gap-3 rounded-[var(--radius-sm)] px-1.5 py-2.5 transition-colors hover:bg-[var(--bg-muted)]"
                   >
                     <span className="flex min-w-0 items-center gap-3">
                       <span
                         className={cn(
-                          'flex size-8 shrink-0 items-center justify-center rounded-[10px]',
+                          'flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)]',
                           item.isCorrect
                             ? 'bg-[var(--success-soft)] text-[var(--success)]'
                             : 'bg-[var(--highlight-soft)] text-[var(--highlight)]',
@@ -480,7 +480,7 @@ export default function StudyHomePage() {
                 <li key={cat.id}>
                   <Link
                     href={`/questions?categoryId=${cat.id}`}
-                    className="flex items-center justify-between gap-3 rounded-[10px] px-1.5 py-2 transition-colors hover:bg-[var(--bg-muted)]"
+                    className="flex items-center justify-between gap-3 rounded-[var(--radius-sm)] px-1.5 py-2 transition-colors hover:bg-[var(--bg-muted)]"
                   >
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-medium text-[var(--ink)]">
@@ -518,7 +518,7 @@ export default function StudyHomePage() {
                 <li key={item.id}>
                   <Link
                     href={`/news/${item.slug}`}
-                    className="block min-w-0 rounded-[10px] px-1.5 py-2.5 transition-colors hover:bg-[var(--bg-muted)]"
+                    className="block min-w-0 rounded-[var(--radius-sm)] px-1.5 py-2.5 transition-colors hover:bg-[var(--bg-muted)]"
                   >
                     <p className="truncate text-sm font-medium text-[var(--ink)]">{item.title}</p>
                     {item.summary ? (
@@ -559,7 +559,7 @@ export default function StudyHomePage() {
                 <li key={item.bookmarkId}>
                   <Link
                     href={`/questions/${item.id}`}
-                    className="flex min-w-0 items-center justify-between gap-3 rounded-[10px] px-1.5 py-2.5 transition-colors hover:bg-[var(--bg-muted)]"
+                    className="flex min-w-0 items-center justify-between gap-3 rounded-[var(--radius-sm)] px-1.5 py-2.5 transition-colors hover:bg-[var(--bg-muted)]"
                   >
                     <span className="min-w-0 truncate text-sm font-medium">{item.title}</span>
                     <Badge variant="outline" className="shrink-0">
@@ -572,7 +572,7 @@ export default function StudyHomePage() {
                 <li key={item.bookmarkId}>
                   <Link
                     href={`/documents/${item.id}`}
-                    className="block truncate rounded-[10px] px-1.5 py-2.5 text-sm font-medium transition-colors hover:bg-[var(--bg-muted)]"
+                    className="block truncate rounded-[var(--radius-sm)] px-1.5 py-2.5 text-sm font-medium transition-colors hover:bg-[var(--bg-muted)]"
                   >
                     {item.title}
                   </Link>

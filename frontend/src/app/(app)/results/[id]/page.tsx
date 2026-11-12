@@ -115,7 +115,7 @@ export default function ResultDetailPage() {
                   <div
                     key={opt.id}
                     className={cn(
-                      'rounded-[10px] border px-3 py-2 text-sm',
+                      'rounded-[var(--radius-sm)] border px-3 py-2 text-sm',
                       showCorrect
                         ? 'border-[var(--success)]/40 bg-[var(--success-soft)]'
                         : selected

@@ -20,7 +20,7 @@ export function QuickLink({ href, title, description, icon: Icon, className }: P
         className,
       )}
     >
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--highlight-soft)] text-[var(--highlight)]">
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius)] bg-[var(--highlight-soft)] text-[var(--highlight)]">
         <Icon className="size-4" aria-hidden strokeWidth={1.75} />
       </span>
       <span className="min-w-0 flex-1">

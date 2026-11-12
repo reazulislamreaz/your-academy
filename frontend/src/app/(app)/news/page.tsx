@@ -31,7 +31,7 @@ export default function NewsPage() {
       ) : null}
       {!list.isLoading && !list.isError && list.items.length > 0 ? (
         <ContentIn>
-          <ul className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)]">
+          <ul className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] shadow-[var(--shadow-sm)]">
             {list.items.map((item) => (
               <li key={item.id} className="list-row">
                 <Link href={`/news/${item.slug}`} className="group block px-4 py-4 sm:px-5 sm:py-5">

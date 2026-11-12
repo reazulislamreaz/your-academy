@@ -34,7 +34,7 @@ export function HomeStatCard({
         aria-hidden
         className="pointer-events-none absolute -top-10 -right-8 size-28 rounded-full bg-[var(--brand-wash)] opacity-80 transition-transform duration-[var(--duration-slow)] group-hover:scale-110"
       />
-      <span className="relative flex size-11 items-center justify-center rounded-[14px] bg-[var(--brand-wash-strong)] text-[var(--ink)] sm:size-12">
+      <span className="relative flex size-11 items-center justify-center rounded-[var(--radius)] bg-[var(--brand-wash-strong)] text-[var(--ink)] sm:size-12">
         <Icon className={cn('size-5 sm:size-6', iconClassName)} aria-hidden strokeWidth={1.75} />
       </span>
       <p className="relative mt-5 font-display text-3xl font-bold tracking-tight tabular-nums text-[var(--ink)] sm:text-[2.125rem]">

@@ -109,7 +109,7 @@ export function LearnerMobileNav() {
                         >
                           <span
                             className={cn(
-                              'flex size-8 shrink-0 items-center justify-center rounded-[10px]',
+                              'flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)]',
                               active
                                 ? 'bg-white/80 text-[var(--highlight)] shadow-[var(--shadow-sm)]'
                                 : 'bg-[var(--bg-muted)] text-current',
@@ -129,7 +129,7 @@ export function LearnerMobileNav() {
                   href="/admin/dashboard"
                   className="flex items-center gap-2.5 rounded-[var(--radius)] px-3 py-2.5 text-base font-medium text-[var(--ink-soft)] hover:bg-[var(--brand-wash)]"
                 >
-                  <span className="flex size-8 shrink-0 items-center justify-center rounded-[10px] bg-[var(--bg-muted)]">
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--bg-muted)]">
                     <Shield className="size-4" aria-hidden />
                   </span>
                   Admin console

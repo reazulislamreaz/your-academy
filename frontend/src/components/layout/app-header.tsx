@@ -43,6 +43,14 @@ export function AppHeader() {
           <span className="hidden lg:inline">Saved MCQ</span>
         </Link>
 
+        <Link
+          href="/questions"
+          aria-label="Search questions"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--line)] bg-white text-[var(--ink-soft)] shadow-[var(--shadow-sm)] hover:bg-[var(--bg-muted)] hover:text-[var(--ink)] sm:hidden"
+        >
+          <Search className="size-4" aria-hidden />
+        </Link>
+
         <form
           onSubmit={onSearch}
           role="search"

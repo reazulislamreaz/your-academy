@@ -44,34 +44,6 @@ export function SaveToCollectionDialog({ open, questionId, questionTitle, onClos
     enabled: open,
   });
 
-  useEffect(() => {
-    if (!open) {
-      setCreating(false);
-      setNewName('');
-      setError(null);
-      setSuccess(null);
-      return;
-    }
-    const prev = document.activeElement as HTMLElement | null;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prevOverflow;
-      prev?.focus?.();
-    };
-  }, [open, onClose]);
-
-  useEffect(() => {
-    if (!success) return;
-    const t = window.setTimeout(() => onClose(), 1400);
-    return () => window.clearTimeout(t);
-  }, [success, onClose]);
-
   function syncQuestionCache(result: SaveQuestionBookmarkResult) {
     qc.setQueryData<QuestionDetail>(['question', questionId], (prev) =>
       prev
@@ -100,7 +72,7 @@ export function SaveToCollectionDialog({ open, questionId, questionTitle, onClos
       setError(null);
       syncQuestionCache(result);
       setSuccess({
-        folderName: result.collection?.name ?? 'Saved Items',
+        folderName: result.collection?.name ?? 'Quick save',
         moved: result.moved,
         created: result.created,
       });
@@ -128,9 +100,62 @@ export function SaveToCollectionDialog({ open, questionId, questionTitle, onClos
     },
   });
 
-  if (!open) return null;
-
   const pending = save.isPending || unsave.isPending;
+
+  useEffect(() => {
+    if (!open) {
+      setCreating(false);
+      setNewName('');
+      setError(null);
+      setSuccess(null);
+      return;
+    }
+    const prev = document.activeElement as HTMLElement | null;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const focusClose = () => {
+      dialogRef.current?.querySelector<HTMLElement>('button[aria-label="Close"]')?.focus();
+    };
+    const focusId = window.requestAnimationFrame(focusClose);
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !pending) {
+        onClose();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const root = dialogRef.current;
+      if (!root) return;
+      const focusable = root.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      window.cancelAnimationFrame(focusId);
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+      prev?.focus?.();
+    };
+  }, [open, onClose, pending]);
+
+  useEffect(() => {
+    if (!success) return;
+    const t = window.setTimeout(() => onClose(), 1400);
+    return () => window.clearTimeout(t);
+  }, [success, onClose]);
+
+  if (!open) return null;
   const data = collections.data;
   const rows = [
     ...(data
@@ -138,7 +163,7 @@ export function SaveToCollectionDialog({ open, questionId, questionTitle, onClos
           {
             key: 'uncategorized',
             id: null as string | null,
-            name: data.uncategorized.name,
+            name: 'Quick save',
             questionCount: data.uncategorized.questionCount,
             active: Boolean(data.uncategorized.containsQuestion),
           },

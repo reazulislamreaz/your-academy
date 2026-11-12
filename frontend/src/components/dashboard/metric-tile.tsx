@@ -33,7 +33,7 @@ export function MetricTile({ label, value, suffix, icon: Icon, tone = 'navy', cl
     >
       <div
         className={cn(
-          'flex size-10 shrink-0 items-center justify-center rounded-[12px] sm:size-11',
+          'flex size-10 shrink-0 items-center justify-center rounded-[var(--radius)] sm:size-11',
           t.bg,
         )}
       >

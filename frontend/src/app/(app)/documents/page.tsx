@@ -59,7 +59,7 @@ export default function DocumentsPage() {
 
       {!list.isLoading && !list.isError && list.items.length > 0 ? (
         <ContentIn>
-          <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)]">
+          <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] shadow-[var(--shadow-sm)]">
             {list.items.map((doc) => (
               <ListRow
                 key={doc.id}

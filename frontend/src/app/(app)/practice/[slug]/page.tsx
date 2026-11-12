@@ -196,7 +196,7 @@ export default function PracticePlayerPage() {
                           }))
                         }
                         className={cn(
-                          'cursor-pointer rounded-[10px] border px-3 py-2 text-left text-sm transition-colors',
+                          'cursor-pointer rounded-[var(--radius-sm)] border px-3 py-2 text-left text-sm transition-colors',
                           selected
                             ? 'border-[var(--highlight)] bg-[var(--highlight-soft)] text-[var(--highlight)]'
                             : 'border-[var(--line)] hover:bg-[var(--bg-muted)]',
@@ -212,7 +212,7 @@ export default function PracticePlayerPage() {
             ))}
           </div>
 
-          <div className="sticky bottom-3 z-10 flex flex-wrap items-center gap-3 rounded-[12px] border border-[var(--line)] bg-[var(--bg-elevated)]/95 p-3 shadow-[var(--shadow-sm)] backdrop-blur">
+          <div className="sticky bottom-3 z-10 flex flex-wrap items-center gap-3 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)]/95 p-3 shadow-[var(--shadow)] backdrop-blur">
             <Button
               type="button"
               className="cursor-pointer"

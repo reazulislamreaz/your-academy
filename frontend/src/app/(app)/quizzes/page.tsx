@@ -31,15 +31,15 @@ function QuizzesContent() {
       ) : (
         <div className="space-y-8">
           <section className="space-y-3">
-            <h2 className="font-display text-base font-bold">Daily quizzes</h2>
+            <h2 className="font-display text-base font-bold tracking-tight text-[var(--ink)]">Daily quizzes</h2>
             <PracticeSetList kind="DAILY_QUIZ" isDaily />
           </section>
           <section className="space-y-3">
-            <h2 className="font-display text-base font-bold">Subject quizzes</h2>
+            <h2 className="font-display text-base font-bold tracking-tight text-[var(--ink)]">Subject quizzes</h2>
             <PracticeSetList kind="SUBJECT_QUIZ" />
           </section>
           <section className="space-y-3">
-            <h2 className="font-display text-base font-bold">Topic quizzes</h2>
+            <h2 className="font-display text-base font-bold tracking-tight text-[var(--ink)]">Topic quizzes</h2>
             <PracticeSetList kind="TOPIC_QUIZ" />
           </section>
         </div>
