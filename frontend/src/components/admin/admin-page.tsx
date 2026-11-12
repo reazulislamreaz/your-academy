@@ -59,11 +59,11 @@ export function AdminToolbar({ children, className }: AdminToolbarProps) {
   return (
     <div
       className={cn(
-        'rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] p-3 shadow-[var(--shadow-sm)] sm:p-4',
+        'ya-panel-shine relative overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] p-3 shadow-[var(--shadow-sm)] sm:p-4',
         className,
       )}
     >
-      {children}
+      <div className="relative z-[1]">{children}</div>
     </div>
   );
 }
@@ -117,7 +117,7 @@ export function AdminBulkBar({ count, children, className, label = 'selected' }:
   return (
     <div
       className={cn(
-        'sticky top-2 z-20 flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-lg)] border border-[var(--accent)]/25 bg-[var(--bg-elevated)] px-4 py-3 shadow-[var(--shadow)]',
+        'ya-glass sticky top-2 z-20 flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-lg)] border border-[var(--accent)]/30 bg-[var(--glass-bg)] px-4 py-3 shadow-[var(--shadow)]',
         className,
       )}
       role="status"

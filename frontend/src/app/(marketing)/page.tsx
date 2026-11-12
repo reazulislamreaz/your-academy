@@ -222,10 +222,10 @@ export default function HomePage() {
               <li key={name}>
                 <Link
                   href={href}
-                  className="group flex h-full flex-col items-center gap-2.5 rounded-[14px] border border-[var(--line)] bg-white px-2 py-5 text-center shadow-[var(--shadow-sm)] transition-all duration-[var(--duration-fast)] hover:-translate-y-0.5 hover:border-[var(--highlight)] hover:shadow-[var(--shadow)]"
+                  className="motion-hover-lift ya-panel-shine relative group flex h-full flex-col items-center gap-2.5 overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] px-2 py-5 text-center shadow-[var(--shadow-sm)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] hover:border-[var(--highlight)]/50"
                 >
-                  <Icon className="h-12 w-12" />
-                  <span>
+                  <Icon className="relative z-[1] h-12 w-12" />
+                  <span className="relative z-[1]">
                     <span className="block font-display text-sm leading-snug font-bold tracking-tight text-[var(--ink)] sm:text-[15px]">
                       {name}
                     </span>
@@ -245,7 +245,7 @@ export default function HomePage() {
       {/* Topic base question analysis */}
       <section className="pb-[var(--space-section)]">
         <Reveal className="mx-auto w-full max-w-[1280px] px-4 sm:px-6">
-          <div className="rounded-[20px] bg-[#eaf1fb] px-5 py-7 sm:px-8 sm:py-8">
+          <div className="rounded-[var(--radius-xl)] border border-[var(--line)] bg-[var(--info-soft)] px-5 py-7 shadow-[var(--shadow-sm)] sm:px-8 sm:py-8">
             <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,2.2fr)] lg:gap-10">
               <div className="space-y-4">
                 <span
@@ -267,10 +267,10 @@ export default function HomePage() {
                   <li key={name}>
                     <Link
                       href={href}
-                      className="group flex h-full flex-col items-center gap-2.5 rounded-[14px] border border-[var(--line)] bg-white px-2 py-5 text-center shadow-[var(--shadow-sm)] transition-all duration-[var(--duration-fast)] hover:-translate-y-0.5 hover:border-[var(--highlight)] hover:shadow-[var(--shadow)]"
+                      className="motion-hover-lift ya-panel-shine relative group flex h-full flex-col items-center gap-2.5 overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] px-2 py-5 text-center shadow-[var(--shadow-sm)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] hover:border-[var(--highlight)]/50"
                     >
-                      <Icon className="h-12 w-12" />
-                      <span className="font-display text-sm font-bold tracking-tight text-[var(--ink)] sm:text-[15px]">
+                      <Icon className="relative z-[1] h-12 w-12" />
+                      <span className="relative z-[1] font-display text-sm font-bold tracking-tight text-[var(--ink)] sm:text-[15px]">
                         {name}
                       </span>
                     </Link>
@@ -285,27 +285,29 @@ export default function HomePage() {
       {/* Why + Progress + CTA */}
       <section id="how-it-works" className="scroll-mt-24 pb-[var(--space-section)]">
         <Reveal className="motion-stagger mx-auto grid w-full max-w-[1280px] gap-5 px-4 sm:px-6 lg:grid-cols-3 lg:gap-6">
-          <div className="rounded-[18px] bg-[#e8f0fe] p-6 shadow-[var(--shadow-sm)] sm:p-7">
-            <h2 className="font-display text-xl font-bold tracking-tight text-[var(--ink)] sm:text-2xl">
-              Why Choose Your Academy?
-            </h2>
-            <ul className="mt-5 space-y-3.5">
-              {WHY_POINTS.map((point) => (
-                <li
-                  key={point}
-                  className="flex items-start gap-2.5 text-sm font-medium text-[var(--ink-soft)]"
-                >
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--info)] text-white">
-                    <Check className="h-3 w-3" strokeWidth={3} aria-hidden />
-                  </span>
-                  {point}
-                </li>
-              ))}
-            </ul>
+          <div className="ya-panel-shine relative overflow-hidden rounded-[var(--radius-xl)] border border-[var(--line)] bg-[var(--info-soft)] p-6 shadow-[var(--shadow-sm)] sm:p-7">
+            <div className="relative z-[1]">
+              <h2 className="font-display text-xl font-bold tracking-tight text-[var(--ink)] sm:text-2xl">
+                Why Choose Your Academy?
+              </h2>
+              <ul className="mt-5 space-y-3.5">
+                {WHY_POINTS.map((point) => (
+                  <li
+                    key={point}
+                    className="flex items-start gap-2.5 text-sm font-medium text-[var(--ink-soft)]"
+                  >
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--info)] text-white">
+                      <Check className="h-3 w-3" strokeWidth={3} aria-hidden />
+                    </span>
+                    {point}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
 
-          <div className="overflow-hidden rounded-[18px] border border-[var(--line)] bg-white shadow-[var(--shadow-sm)]">
-            <div className="flex items-center gap-2 bg-[#e8f0fe] px-5 py-3.5">
+          <div className="overflow-hidden rounded-[var(--radius-xl)] border border-[var(--line)] bg-[var(--bg-elevated)] shadow-[var(--shadow-sm)]">
+            <div className="flex items-center gap-2 border-b border-[var(--line)] bg-[var(--info-soft)] px-5 py-3.5">
               <BarChart3 className="h-5 w-5 text-[var(--info)]" aria-hidden />
               <h2 className="font-display text-lg font-bold tracking-tight text-[var(--ink)] sm:text-xl">
                 Track Your Progress
@@ -342,14 +344,14 @@ export default function HomePage() {
                     value: '82.7%',
                     label: 'Accuracy',
                     icon: Percent,
-                    tone: 'text-[#7c3aed] bg-[#f3e8ff]',
-                    valueClass: 'text-[#7c3aed]',
-                    labelClass: 'text-[#7c3aed]',
+                    tone: 'text-[var(--insight)] bg-[var(--insight-soft)]',
+                    valueClass: 'text-[var(--insight)]',
+                    labelClass: 'text-[var(--insight)]',
                   },
                 ].map(({ value, label, icon: Icon, tone, valueClass, labelClass }) => (
                   <div
                     key={label}
-                    className="space-y-1 rounded-[12px] border border-[var(--line)] bg-[var(--bg-desk)] px-1.5 py-2.5"
+                    className="space-y-1 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-desk)] px-1.5 py-2.5"
                   >
                     <span
                       className={`mx-auto flex h-8 w-8 items-center justify-center rounded-full ${tone}`}
@@ -416,14 +418,18 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="relative flex overflow-hidden rounded-[18px] bg-[var(--bg-inverse)] p-7 text-center text-white shadow-[var(--shadow-sm)]">
+          <div className="relative flex overflow-hidden rounded-[var(--radius-xl)] bg-[var(--bg-inverse)] p-7 text-center text-white shadow-[var(--shadow)]">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -left-10 top-0 h-40 w-40 rounded-full bg-[var(--highlight)]/20 blur-3xl"
+            />
             <Trophy
               aria-hidden
               className="absolute -right-4 -bottom-6 h-40 w-40 text-white/5"
               strokeWidth={1}
             />
             <div className="relative m-auto flex max-w-[16rem] flex-col items-center space-y-4">
-              <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10">
+              <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/10 backdrop-blur-sm">
                 <Trophy className="h-7 w-7" aria-hidden />
               </span>
               <h2 className="font-display text-2xl leading-tight font-bold tracking-tight">

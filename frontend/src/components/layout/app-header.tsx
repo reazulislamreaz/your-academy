@@ -54,7 +54,7 @@ export function AppHeader() {
 
   return (
     <header
-      className="sticky top-0 z-30 flex h-[var(--header-h,4.5rem)] shrink-0 items-center gap-2 border-b border-[var(--line)] bg-[var(--bg-elevated)] px-3 pt-[env(safe-area-inset-top,0px)] sm:gap-4 sm:px-5 lg:px-6"
+      className="ya-glass sticky top-0 z-30 flex h-[var(--header-h,4.5rem)] shrink-0 items-center gap-2 border-b border-[var(--glass-border)] bg-[var(--glass-bg)] px-3 pt-[env(safe-area-inset-top,0px)] sm:gap-4 sm:px-5 lg:px-6"
       style={{ boxShadow: 'var(--shadow-header)' } as CSSProperties}
     >
       {/* Left: logo + trial — keep chrome minimal on phones */}

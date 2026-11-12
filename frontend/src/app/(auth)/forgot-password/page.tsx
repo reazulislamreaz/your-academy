@@ -41,7 +41,7 @@ export default function ForgotPasswordPage() {
           Enter the email on your account. If it matches, we send a reset link.
         </p>
       </div>
-      <Surface className="p-6 sm:p-7">
+      <Surface elevated className="p-6 sm:p-7">
         {done ? (
           <Alert variant="success">
             If an account with that email exists, a reset link has been sent. Check your inbox — in

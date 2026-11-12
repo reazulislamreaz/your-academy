@@ -133,7 +133,7 @@ export function AdminMobileNav({ themeToggle }: { themeToggle?: ReactNode }) {
       : null;
 
   return (
-    <div className="sticky top-0 z-30 border-b border-[var(--line)] bg-[var(--bg-elevated)]/95 pt-[env(safe-area-inset-top,0px)] backdrop-blur-md lg:hidden">
+    <div className="ya-glass sticky top-0 z-30 border-b border-[var(--glass-border)] bg-[var(--glass-bg)] pt-[env(safe-area-inset-top,0px)] lg:hidden">
       <div className="flex h-14 items-center gap-2 px-3 sm:gap-3 sm:px-4">
         <BrandMark markOnly href="/" className="[&_img]:h-8" />
         <div className="min-w-0 flex-1">

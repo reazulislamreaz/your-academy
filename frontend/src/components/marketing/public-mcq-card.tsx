@@ -40,25 +40,25 @@ export function PublicMcqCard({
     <article
       id={`q-${question.id}`}
       className={cn(
-        'overflow-hidden rounded-[1.25rem] border border-[var(--line)] bg-white p-5 shadow-[var(--shadow)] sm:p-6',
+        'ya-panel-shine relative overflow-hidden rounded-[var(--radius-xl)] border border-[var(--line)] bg-[var(--bg-elevated)] p-5 shadow-[var(--shadow)] sm:p-6',
         className,
       )}
     >
-      <div className="space-y-3">
+      <div className="relative z-[1] space-y-3">
         <h2 className="font-reading text-lg leading-snug font-bold tracking-tight text-[var(--ink)] sm:text-xl">
           <span className="whitespace-pre-wrap break-words">{question.content}</span>
         </h2>
 
         {question.sourceLabel ? (
           <p>
-            <span className="inline-flex max-w-full rounded-md bg-[#dbe4f0] px-2.5 py-1 text-xs font-semibold text-[#334155]">
+            <span className="inline-flex max-w-full rounded-md bg-[var(--brand-wash-strong)] px-2.5 py-1 text-xs font-semibold text-[var(--ink-soft)]">
               [{question.sourceLabel}]
             </span>
           </p>
         ) : null}
       </div>
 
-      <ul className="mt-5 grid gap-2.5 sm:grid-cols-2">
+      <ul className="relative z-[1] mt-5 grid gap-2.5 sm:grid-cols-2">
         {question.options.map((opt) => {
           const isCorrect = opt.label === question.correctAnswerLabel;
           const highlight = answerVisible && isCorrect;
@@ -66,10 +66,10 @@ export function PublicMcqCard({
             <li
               key={opt.id}
               className={cn(
-                'rounded-[12px] border px-3.5 py-3 text-sm leading-relaxed transition-colors duration-200',
+                'rounded-[var(--radius)] border px-3.5 py-3 text-sm leading-relaxed transition-colors duration-200',
                 highlight
                   ? 'border-[var(--success)] bg-[var(--success-soft)] text-[var(--ink)]'
-                  : 'border-[var(--line)] bg-[#f7f8fa] text-[var(--ink-soft)]',
+                  : 'border-[var(--line)] bg-[var(--bg-desk)] text-[var(--ink-soft)]',
               )}
             >
               <span className="font-semibold text-[var(--ink)]">
@@ -81,7 +81,7 @@ export function PublicMcqCard({
         })}
       </ul>
 
-      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--line)] pt-4">
+      <div className="relative z-[1] mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--line)] pt-4">
         {loggedIn ? (
           <button
             type="button"
@@ -106,7 +106,7 @@ export function PublicMcqCard({
             <button
               type="button"
               onClick={onToggleAnswer}
-              className="inline-flex items-center gap-1.5 rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-sm font-medium text-[var(--ink-soft)] transition-colors hover:border-[var(--accent)] hover:bg-[var(--bg-muted)]"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--bg-elevated)] px-3 py-1.5 text-sm font-medium text-[var(--ink-soft)] transition-colors hover:border-[var(--accent)] hover:bg-[var(--bg-muted)]"
             >
               {answerVisible ? (
                 <>

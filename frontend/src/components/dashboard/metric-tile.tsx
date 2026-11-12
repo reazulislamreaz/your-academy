@@ -28,19 +28,19 @@ export function MetricTile({ label, value, suffix, icon: Icon, tone = 'navy', cl
   return (
     <div
       className={cn(
-        'motion-hover-lift flex min-w-0 items-center gap-3 rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] p-3.5 shadow-[var(--shadow-sm)] sm:p-4',
+        'motion-hover-lift ya-panel-shine relative flex min-w-0 items-center gap-3 overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] p-3.5 shadow-[var(--shadow-sm)] sm:p-4',
         className,
       )}
     >
       <div
         className={cn(
-          'flex size-10 shrink-0 items-center justify-center rounded-[var(--radius)] sm:size-11',
+          'relative z-[1] flex size-10 shrink-0 items-center justify-center rounded-[var(--radius)] sm:size-11',
           t.bg,
         )}
       >
         <Icon className={cn('size-4 sm:size-5', t.icon)} aria-hidden strokeWidth={1.75} />
       </div>
-      <div className="min-w-0">
+      <div className="relative z-[1] min-w-0">
         <p className="font-display text-xl font-bold tabular-nums text-[var(--ink)] sm:text-2xl">
           {value}
           {suffix ? (

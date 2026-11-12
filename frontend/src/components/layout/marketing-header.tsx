@@ -145,7 +145,7 @@ function MarketingHeaderInner() {
 
   return (
     <header
-      className="sticky top-0 z-30 border-b border-[var(--line)] bg-white/95 pt-[env(safe-area-inset-top,0px)] backdrop-blur-md"
+      className="ya-glass sticky top-0 z-30 border-b border-[var(--glass-border)] bg-[var(--glass-bg)] pt-[env(safe-area-inset-top,0px)]"
       style={{ '--header-h': '64px' } as CSSProperties}
     >
       <div className="mx-auto flex h-14 w-full max-w-[1280px] items-center gap-2 px-3 sm:h-16 sm:gap-3 sm:px-6">

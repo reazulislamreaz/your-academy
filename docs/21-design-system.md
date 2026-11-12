@@ -39,6 +39,11 @@ Do **not** drift into purple SaaS gradients, cream+terracotta serif kits, amber-
 | `--accent` | Secondary solid (navy) | `#002050` |
 | `--success` / `--danger` / `--warning` | Semantic | teal / deep red / amber |
 | `--shadow-header` | Sticky learner header | soft layered |
+| `--shadow-glow` | Soft depth ring (sparingly) | layered navy wash |
+| `--glass-bg` / `--glass-border` / `--glass-blur` | Sticky chrome translucency | light + Orbit dark pairs |
+| `--panel-shine` | Soft top highlight on elevated panels | light / dark variants |
+
+Utilities: `.ya-glass` (sticky headers / overlays), `.ya-panel` / `.ya-panel-shine` (elevated content panels). Prefer restrained glass — never neon glow kits.
 
 Page atmosphere (light shells): cool navy/red radial washes on desk canvas. Learner shell: `.learner-theme` charcoal overrides + `.learner-sidebar`; active nav is a soft grey pill (no bright red wash).
 
@@ -47,8 +52,8 @@ Page atmosphere (light shells): cool navy/red radial washes on desk canvas. Lear
 Scoped to `(app)` only. Toggle via header Sun/Moon (`LearnerThemeToggle`).  
 `data-theme="light"` (default) | `data-theme="dark"`. Persist: `localStorage` `ya-learner-color-scheme`. FOUC boot script in `(app)/layout`.
 
-**Light (default):** soft off-white desk `#F3F5F9`, white cards/sidebar, navy ink, blue/purple accents, soft shadows.  
-**Dark:** cool navy-charcoal `#0B1020` canvas, elevated `#141B2D` cards, soft borders, same semantic roles.
+**Light (default):** soft off-white desk `#F3F5F9`, white cards/sidebar, navy ink, blue/insight accents, refined layered shadows + subtle glass chrome.  
+**Dark:** cool navy-charcoal `#0B1020` canvas, elevated `#141B2D` cards, soft borders, translucent sticky chrome, same semantic roles.
 
 | Token | Role |
 |-------|------|
@@ -84,7 +89,8 @@ Bengali UI fonts are **out of scope** until i18n is approved.
 
 - Radius: `--radius-sm` 8 · `--radius` 12 · `--radius-lg` 16 · `--radius-xl` 22  
 - Prefer **12px controls** (`--radius`); reserve `rounded-full` for avatars, progress tracks, and small indicators — not primary buttons.
-- Shadows: `--shadow-sm` / `--shadow` / `--shadow-lg`
+- Shadows: `--shadow-sm` / `--shadow` / `--shadow-lg` / `--shadow-header` / `--shadow-glow`
+- Glass chrome: `--glass-*` + `.ya-glass`; panel lift: `.ya-panel-shine`
 - Section padding: `--space-section` (utility `.section-pad`)
 - Page inline: `--space-page` (utility `.page-pad`)
 

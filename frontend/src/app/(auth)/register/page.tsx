@@ -58,7 +58,7 @@ export default function RegisterPage() {
           Seven-day full-access trial begins at signup.
         </p>
       </div>
-      <Surface className="p-6 sm:p-7">
+      <Surface elevated className="p-6 sm:p-7">
         <form onSubmit={onSubmit} className="space-y-4">
           <Field>
             <Label htmlFor="name">Name</Label>

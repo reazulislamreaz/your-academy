@@ -55,7 +55,7 @@ function ResetForm() {
           Use at least 8 characters with a letter and a number.
         </p>
       </div>
-      <Surface className="p-6 sm:p-7">
+      <Surface elevated className="p-6 sm:p-7">
         <form onSubmit={onSubmit} className="space-y-4">
           {!token ? (
             <Alert variant="warning">

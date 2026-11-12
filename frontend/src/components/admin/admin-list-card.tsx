@@ -18,6 +18,7 @@ type Props = {
 export function AdminListCard({ title, meta, badges, actions, children, className }: Props) {
   return (
     <Surface
+      interactive
       className={cn(
         'admin-list-card flex flex-col gap-3 p-4 transition-[border-color,box-shadow] duration-150 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:p-5',
         className,

@@ -69,7 +69,7 @@ export function QuestionFilters({ categories }: Props) {
 
   return (
     <form
-      className="z-10 grid min-w-0 gap-3 rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)]/95 p-3 shadow-[var(--shadow-sm)] backdrop-blur-md sm:p-4 xl:sticky xl:top-[var(--header-h,4rem)] [&>*]:min-w-0"
+      className="ya-glass z-10 grid min-w-0 gap-3 rounded-[var(--radius-lg)] border border-[var(--glass-border)] bg-[var(--glass-bg)] p-3 shadow-[var(--shadow-sm)] sm:p-4 xl:sticky xl:top-[var(--header-h,4rem)] [&>*]:min-w-0"
       onSubmit={(e) => {
         e.preventDefault();
         apply();

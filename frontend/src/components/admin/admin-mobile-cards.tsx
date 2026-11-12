@@ -36,12 +36,12 @@ export function AdminMobileCard({
   return (
     <article
       className={cn(
-        'rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] p-3.5 shadow-[var(--shadow-sm)]',
+        'ya-panel-shine relative overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] p-3.5 shadow-[var(--shadow-sm)]',
         selected && 'border-[var(--accent)]/40 ring-1 ring-[var(--accent)]/25',
         className,
       )}
     >
-      <div className="flex gap-3">
+      <div className="relative z-[1] flex gap-3">
         {onToggleSelect ? (
           <label className="flex shrink-0 items-start pt-1">
             <span className="sr-only">{selectLabel ?? 'Select row'}</span>

@@ -14,8 +14,16 @@ const FOOTER_LINKS = [
  */
 export function SiteFooter() {
   return (
-    <footer id="contact" className="mt-auto bg-[var(--bg-inverse)] text-white">
-      <div className="mx-auto w-full max-w-[1280px] px-4 py-10 sm:px-6">
+    <footer id="contact" className="relative mt-auto overflow-hidden bg-[var(--bg-inverse)] text-white">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-40"
+        style={{
+          backgroundImage:
+            'radial-gradient(ellipse 50% 80% at 0% 100%, rgba(227,30,36,0.18), transparent 55%), radial-gradient(ellipse 40% 60% at 100% 0%, rgba(59,111,217,0.16), transparent 50%)',
+        }}
+      />
+      <div className="relative mx-auto w-full max-w-[1280px] px-4 py-10 sm:px-6">
         <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-2 text-center sm:text-left">
             <BrandMark inverse className="justify-center sm:justify-start" />
@@ -54,7 +62,7 @@ export function SiteFooter() {
         </div>
 
         <div className="mt-8 border-t border-white/15 pt-5 text-center">
-          <p className="text-xs text-white/55">© 2025 Your Academy. All rights reserved.</p>
+          <p className="text-xs text-white/55">© 2026 Your Academy. All rights reserved.</p>
         </div>
       </div>
     </footer>

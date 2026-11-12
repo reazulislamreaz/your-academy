@@ -26,7 +26,7 @@ export function EmptyState({
         'motion-fade-in flex flex-col gap-3 px-6 py-10',
         nested
           ? 'rounded-[var(--radius)] bg-[var(--bg-desk)]/70'
-          : 'rounded-[var(--radius-lg)] border border-dashed border-[var(--line-strong)] bg-[var(--bg-elevated)]',
+          : 'rounded-[var(--radius-lg)] border border-dashed border-[var(--line-strong)] bg-[var(--bg-elevated)] shadow-[var(--shadow-sm)]',
         align === 'center' ? 'items-center text-center' : 'items-start text-left',
         className,
       )}

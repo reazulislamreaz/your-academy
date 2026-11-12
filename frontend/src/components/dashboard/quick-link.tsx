@@ -16,7 +16,7 @@ export function QuickLink({ href, title, description, icon: Icon, className }: P
     <Link
       href={href}
       className={cn(
-        'motion-hover-lift group flex items-start gap-3 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-muted)]/40 p-3.5 transition-colors hover:border-[var(--line-strong)] hover:bg-[var(--bg-elevated)] hover:shadow-[var(--shadow-sm)] sm:p-4',
+        'motion-hover-lift group flex items-start gap-3 rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] p-3.5 shadow-[var(--shadow-sm)] transition-[border-color,box-shadow,background-color] hover:border-[var(--highlight)]/35 hover:shadow-[var(--shadow)] sm:p-4',
         className,
       )}
     >

@@ -171,10 +171,19 @@ export default function StudyHomePage() {
       {/* Orbit title block */}
       <div className="motion-rise flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0 space-y-1.5">
-          <h1 className="text-[clamp(1.75rem,4vw,2.25rem)] font-semibold tracking-tight text-[var(--ink)]">
+          <div className="flex items-center gap-2">
+            <span
+              className="inline-block h-[3px] w-6 shrink-0 rounded-full bg-[linear-gradient(90deg,var(--highlight),var(--accent))]"
+              aria-hidden
+            />
+            <p className="text-[0.6875rem] font-semibold tracking-[0.16em] text-[var(--muted)] uppercase">
+              Study desk
+            </p>
+          </div>
+          <h1 className="font-display text-[clamp(1.75rem,4vw,2.35rem)] font-bold tracking-[-0.02em] text-[var(--ink)]">
             Dashboard
           </h1>
-          <p className="max-w-xl text-sm leading-relaxed text-[var(--muted)] sm:text-[0.9375rem]">
+          <p className="max-w-xl text-sm leading-relaxed text-[var(--muted-strong)] sm:text-[0.9375rem]">
             Welcome back, {displayName}. {progressLine}
           </p>
         </div>

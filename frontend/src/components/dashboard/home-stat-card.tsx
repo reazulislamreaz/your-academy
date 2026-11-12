@@ -68,7 +68,7 @@ export function HomeStatCard({
   return (
     <div
       className={cn(
-        'motion-hover-lift group relative flex min-h-[210px] flex-col overflow-hidden rounded-[var(--radius-xl)] border border-[var(--line)] bg-[var(--bg-elevated)] p-5 shadow-[var(--shadow)] sm:p-6',
+        'motion-hover-lift ya-panel-shine group relative flex min-h-[210px] flex-col overflow-hidden rounded-[var(--radius-xl)] border border-[var(--line)] bg-[var(--bg-elevated)] p-5 shadow-[var(--shadow)] sm:p-6',
         className,
       )}
     >
