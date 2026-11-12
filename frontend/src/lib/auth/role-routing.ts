@@ -31,7 +31,7 @@ export function isLearnerAppPath(pathname: string): boolean {
   );
 }
 
-export function defaultPathForRole(role: AppRole | null | undefined): string {
+export function defaultPathForRole(role: AppRole | string | null | undefined): string {
   return role === 'ADMIN' ? '/admin/dashboard' : '/home';
 }
 

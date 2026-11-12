@@ -2,20 +2,16 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { useLogout, useMe } from '@/features/auth/use-auth';
 import { BrandMark } from './brand-mark';
 import { adminNavItems } from './admin-nav';
-import { Button } from '@/components/ui/button';
 
 const COLLAPSE_KEY = 'ya-admin-sidebar-collapsed';
 
 export function AdminSidebar() {
   const pathname = usePathname();
-  const me = useMe();
-  const logout = useLogout();
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
@@ -118,28 +114,6 @@ export function AdminSidebar() {
         })}
       </nav>
 
-      <div className={cn('space-y-2 border-t border-[var(--line)]', collapsed ? 'p-2' : 'p-3')}>
-        {!collapsed && me.data ? (
-          <p className="truncate px-2 text-xs text-[var(--muted)]" title={me.data.name}>
-            Signed in as <span className="font-medium text-[var(--ink-soft)]">{me.data.name}</span>
-          </p>
-        ) : null}
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className={cn(
-            'justify-start gap-2 text-[var(--muted)] hover:bg-[var(--brand-wash)] hover:text-[var(--ink)]',
-            collapsed ? 'w-full justify-center px-0' : 'w-full',
-          )}
-          disabled={logout.isPending}
-          onClick={() => logout.mutate()}
-          aria-label="Sign out"
-        >
-          <LogOut className="h-4 w-4" />
-          {!collapsed ? (logout.isPending ? 'Signing out…' : 'Sign out') : null}
-        </Button>
-      </div>
     </aside>
   );
 }

@@ -8,10 +8,15 @@ import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
-export type NavItem = { href: string; label: string; match?: 'exact' | 'prefix' };
+export type NavItem = {
+  href: string;
+  label: string;
+  match?: 'exact' | 'prefix';
+  id?: string;
+};
 
 function isActive(pathname: string, item: NavItem) {
-  const href = item.href.split('#')[0] || '/';
+  const href = item.href.split('?')[0]?.split('#')[0] || '/';
   if (item.match === 'exact') return pathname === href;
   if (href === '/') return pathname === '/';
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -21,6 +26,7 @@ export function MobileNav({
   items,
   trailing,
   leading,
+  activeId,
   /** Tailwind breakpoint class when the hamburger is shown (default: below xl for marketing). */
   breakpointClassName = 'xl:hidden',
   className,
@@ -29,6 +35,8 @@ export function MobileNav({
   trailing?: ReactNode;
   /** Optional block above links (e.g. mobile search). */
   leading?: ReactNode;
+  /** When set, only the item with this id is treated as active. */
+  activeId?: string | null;
   breakpointClassName?: string;
   className?: string;
 }) {
@@ -43,7 +51,7 @@ export function MobileNav({
 
   useEffect(() => {
     setOpen(false);
-  }, [pathname]);
+  }, [pathname, activeId]);
 
   useEffect(() => {
     if (!open) return;
@@ -80,16 +88,21 @@ export function MobileNav({
             <nav className="flex flex-col gap-1" aria-label="Mobile">
               {items.map((item) => {
                 const active =
-                  item.label === 'Home' ? pathname === '/' : isActive(pathname, item);
+                  activeId != null
+                    ? item.id === activeId
+                    : item.label === 'Home'
+                      ? pathname === '/'
+                      : isActive(pathname, item);
                 return (
                   <Link
-                    key={item.label}
+                    key={item.id ?? item.label}
                     href={item.href}
+                    aria-current={active ? 'page' : undefined}
                     className={cn(
-                      'rounded-[var(--radius)] px-3 py-3 text-base font-medium transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out)]',
+                      'rounded-[var(--radius)] px-3 py-3 text-base font-semibold transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out)]',
                       active
-                        ? 'bg-[var(--highlight)] text-white'
-                        : 'text-[var(--ink-soft)] hover:bg-[var(--bg-muted)] hover:text-[var(--ink)]',
+                        ? 'bg-[var(--accent-soft)] text-[var(--accent)] ring-1 ring-[var(--accent)]/20'
+                        : 'text-[var(--ink-soft)] hover:bg-[var(--brand-wash)] hover:text-[var(--ink)]',
                     )}
                   >
                     {item.label}
@@ -121,22 +134,29 @@ export function MobileNav({
   );
 }
 
-export function DesktopNav({ items }: { items: NavItem[] }) {
+export function DesktopNav({
+  items,
+  activeId,
+}: {
+  items: NavItem[];
+  activeId?: string | null;
+}) {
   const pathname = usePathname();
   return (
     <nav className="hidden items-center gap-1 md:flex" aria-label="Primary">
       {items.map((item) => {
-        const active = isActive(pathname, item);
+        const active =
+          activeId != null ? item.id === activeId : isActive(pathname, item);
         return (
           <Link
-            key={item.href}
+            key={item.id ?? `${item.label}-${item.href}`}
             href={item.href}
             aria-current={active ? 'page' : undefined}
             className={cn(
-              'motion-nav-indicator rounded-[var(--radius-sm)] px-3 py-2 text-sm font-medium transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out)]',
+              'motion-nav-indicator rounded-full px-3.5 py-2 text-sm font-semibold transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out)]',
               active
-                ? 'bg-[var(--highlight)] text-white'
-                : 'text-[var(--muted-strong)] hover:bg-[var(--bg-muted)] hover:text-[var(--ink)]',
+                ? 'bg-[var(--accent)] text-[var(--accent-fg)] shadow-[var(--shadow-sm)]'
+                : 'text-[var(--muted-strong)] hover:bg-[var(--brand-wash)] hover:text-[var(--ink)]',
             )}
           >
             {item.label}

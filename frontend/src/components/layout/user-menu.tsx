@@ -6,6 +6,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useIsAdmin, useLogout, useMe } from '@/features/auth/use-auth';
 import { Skeleton } from '@/components/ui/skeleton';
+import { defaultPathForRole } from '@/lib/auth/role-routing';
 import { cn } from '@/lib/utils';
 
 export function UserMenu({
@@ -41,17 +42,6 @@ export function UserMenu({
     };
   }, [open]);
 
-  if (loginOnly && (me.isLoading || !me.data)) {
-    return (
-      <Link href="/login">
-        <Button size="sm" className="rounded-full px-5">
-          <LogIn className="h-4 w-4" />
-          Login
-        </Button>
-      </Link>
-    );
-  }
-
   if (me.isLoading) {
     return <Skeleton className={variant === 'header' ? 'h-10 w-36 rounded-full' : compact ? 'h-9 w-24' : 'h-10 w-28'} />;
   }
@@ -79,6 +69,26 @@ export function UserMenu({
             Start free trial
           </Button>
         </Link>
+      </div>
+    );
+  }
+
+  /** Marketing header: Dashboard is a separate nav control — only account + sign out here. */
+  if (loginOnly) {
+    return (
+      <div className="flex items-center gap-2">
+        <p className="hidden max-w-[9rem] truncate text-sm font-semibold text-[var(--ink-soft)] lg:block">
+          {me.data.name}
+        </p>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="rounded-full"
+          disabled={logout.isPending}
+          onClick={() => logout.mutate()}
+        >
+          {logout.isPending ? 'Signing out…' : 'Sign out'}
+        </Button>
       </div>
     );
   }
@@ -134,15 +144,14 @@ export function UserMenu({
               <p className="truncate text-xs text-[var(--muted-strong)]">{me.data.whatsappNumber}</p>
             </div>
             <div className="flex flex-col p-1.5">
-              {isAdmin ? (
-                <Link
-                  href="/admin/dashboard"
-                  className="rounded-[var(--radius-sm)] px-3 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--bg-muted)]"
-                  onClick={() => setOpen(false)}
-                >
-                  Admin dashboard
-                </Link>
-              ) : (
+              <Link
+                href={defaultPathForRole(me.data.role)}
+                className="rounded-[var(--radius-sm)] px-3 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--bg-muted)]"
+                onClick={() => setOpen(false)}
+              >
+                Dashboard
+              </Link>
+              {!isAdmin ? (
                 <Link
                   href="/profile"
                   className="rounded-[var(--radius-sm)] px-3 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--bg-muted)]"
@@ -150,7 +159,7 @@ export function UserMenu({
                 >
                   Profile
                 </Link>
-              )}
+              ) : null}
               <button
                 type="button"
                 disabled={logout.isPending}
@@ -174,7 +183,7 @@ export function UserMenu({
     <div className={compact ? 'flex flex-col gap-2' : 'flex items-center gap-2'}>
       {!compact ? (
         <Link
-          href={isAdmin ? '/admin/dashboard' : '/profile'}
+          href={defaultPathForRole(me.data.role)}
           className="hidden max-w-[12rem] items-center gap-2 truncate text-sm font-medium text-[var(--ink-soft)] hover:text-[var(--ink)] lg:inline-flex"
           title={me.data.name}
         >
@@ -207,13 +216,11 @@ export function UserMenu({
           <p className="text-sm font-medium text-[var(--ink)]">{me.data.name}</p>
         </div>
       )}
-      {isAdmin ? (
-        <Link href="/admin/dashboard" className={compact ? 'w-full' : undefined}>
-          <Button variant="outline" size="sm" className={compact ? 'w-full' : undefined}>
-            Admin dashboard
-          </Button>
-        </Link>
-      ) : null}
+      <Link href={defaultPathForRole(me.data.role)} className={compact ? 'w-full' : undefined}>
+        <Button variant="outline" size="sm" className={compact ? 'w-full' : undefined}>
+          Dashboard
+        </Button>
+      </Link>
       <Button
         variant="ghost"
         size="sm"
