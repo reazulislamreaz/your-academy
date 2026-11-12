@@ -427,13 +427,14 @@ export class PublicService {
     };
   }
 
+  /** Prefer Admin collection/display name for public Exam Set titles. */
   private setTitle(batch: {
     displayName: string;
     examCategoryHint: string | null;
     subjectHint: string | null;
   }): string {
-    if (batch.examCategoryHint?.trim()) return batch.examCategoryHint.trim();
     if (batch.displayName?.trim()) return batch.displayName.trim();
+    if (batch.examCategoryHint?.trim()) return batch.examCategoryHint.trim();
     if (batch.subjectHint?.trim()) return batch.subjectHint.trim();
     return 'Question Set';
   }

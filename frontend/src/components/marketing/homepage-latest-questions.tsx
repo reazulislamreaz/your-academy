@@ -35,7 +35,7 @@ export function HomepageLatestQuestions({ limit = 6 }: { limit?: number }) {
               aria-hidden
             />
             <h2 className="font-display text-2xl font-bold tracking-tight text-[var(--ink)] sm:text-[2rem]">
-              Latest Exam Sets
+              Latest Collections
             </h2>
             <p className="text-sm text-[var(--muted-strong)] sm:text-base">
               Newest admin uploads appear first.
@@ -66,7 +66,7 @@ export function HomepageLatestQuestions({ limit = 6 }: { limit?: number }) {
 
         {!list.isLoading && !list.isError && items.length === 0 ? (
           <div className="rounded-[1.25rem] border border-dashed border-[var(--line)] bg-white px-6 py-12 text-center text-sm text-[var(--muted-strong)]">
-            No exam sets yet. Admin uploads appear here automatically.
+            No collections yet. Admin uploads appear here automatically.
           </div>
         ) : null}
 

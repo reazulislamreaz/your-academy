@@ -56,9 +56,9 @@ export function PublicQuestionBank({ initialQ = '', className }: Props) {
           <Input
             value={qInput}
             onChange={(e) => setQInput(e.target.value)}
-            placeholder="Search exams…"
+            placeholder="Search collections…"
             className="pl-9"
-            aria-label="Search exams"
+            aria-label="Search collections"
           />
         </div>
         <div className="flex gap-2">
@@ -97,9 +97,9 @@ export function PublicQuestionBank({ initialQ = '', className }: Props) {
       {!list.isLoading && !list.isError && sets.length === 0 ? (
         <div className="rounded-[1.25rem] border border-dashed border-[var(--line)] bg-white px-6 py-16 text-center">
           <FolderOpen className="mx-auto size-10 text-[var(--muted)] opacity-50" />
-          <p className="mt-3 font-display text-lg font-bold text-[var(--ink)]">No exams yet</p>
+          <p className="mt-3 font-display text-lg font-bold text-[var(--ink)]">No collections yet</p>
           <p className="mt-2 text-sm text-[var(--muted-strong)]">
-            Each admin upload appears here as its own exam set.
+            Each admin upload appears here as its own collection.
           </p>
         </div>
       ) : null}
@@ -131,7 +131,7 @@ export function PublicQuestionBank({ initialQ = '', className }: Props) {
             disabled={list.isFetchingNextPage}
             onClick={() => void list.fetchNextPage()}
           >
-            {list.isFetchingNextPage ? 'Loading…' : 'Load more exams'}
+            {list.isFetchingNextPage ? 'Loading…' : 'Load more collections'}
           </Button>
         </div>
       ) : null}

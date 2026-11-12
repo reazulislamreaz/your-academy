@@ -47,12 +47,6 @@ export function PublicMcqCard({
       <div className="space-y-3">
         <h2 className="font-reading text-lg leading-snug font-bold tracking-tight text-[var(--ink)] sm:text-xl">
           <span className="whitespace-pre-wrap break-words">{question.content}</span>
-          <span
-            className="ml-1.5 inline-block align-middle text-base text-[var(--highlight)]"
-            aria-hidden
-          >
-            ❤
-          </span>
         </h2>
 
         {question.sourceLabel ? (
