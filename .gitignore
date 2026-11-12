@@ -54,6 +54,9 @@ Thumbs.db
 .turbo/
 .eslintcache
 
+# Accidental HOME=/…/frontend corepack caches (wrong HOME during local tooling)
+**/200/
+
 # Docker volumes / local data
 docker/data/
 docker/certs/*.pem

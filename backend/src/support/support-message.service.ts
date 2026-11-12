@@ -32,7 +32,14 @@ export class SupportMessageService {
 
   private sanitizeBody(body: string | undefined | null): string | null {
     if (body == null) return null;
-    const cleaned = body.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '').trim();
+    // Strip C0 controls except TAB/LF/CR without embedding control chars in a regex literal.
+    const cleaned = [...body]
+      .filter((ch) => {
+        const code = ch.charCodeAt(0);
+        return code === 9 || code === 10 || code === 13 || code > 31;
+      })
+      .join('')
+      .trim();
     if (!cleaned) return null;
     return cleaned.slice(0, SUPPORT_MESSAGE_MAX_LEN);
   }

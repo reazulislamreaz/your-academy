@@ -149,7 +149,7 @@ export function toAsciiDigits(input: string): string {
 export function normalizeCorrectAnswer(raw: string): string | null {
   const v = raw.normalize('NFC').trim();
   if (!v) return null;
-  const compact = v.replace(/[.\s)）\]】]+$/g, '').replace(/^[(\[【]+/, '');
+  const compact = v.replace(/[.\s)\]）】]+$/g, '').replace(/^[([【]+/, '');
   const upper = compact.toUpperCase();
   const map: Record<string, string> = {
     A: 'A',

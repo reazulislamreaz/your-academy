@@ -11,6 +11,12 @@ export default tseslint.config(
       'docker/**',
       'docs/**',
       '**/next-env.d.ts',
+      // Accidental HOME=/…/frontend caches and vendored minified assets
+      '**/200/**',
+      '**/*.min.js',
+      '**/*.min.mjs',
+      '**/pdf.worker*.mjs',
+      '**/public/pdf.worker.min.mjs',
     ],
   },
   eslint.configs.recommended,

@@ -119,13 +119,11 @@ export function SupportChatWindow({
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- load once per conversation
   }, [conversation.id]);
 
   useEffect(() => {
     socket.joinConversation(conversation.id);
     return () => socket.leaveConversation(conversation.id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversation.id, socket.connected]);
 
   useEffect(() => {

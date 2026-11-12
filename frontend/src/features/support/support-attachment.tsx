@@ -47,7 +47,7 @@ export function SupportAttachmentBubble({
           )}
           aria-label={`View ${attachment.originalFilename}`}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element -- signed Cloudinary URL, short-lived */}
+          
           <img
             src={url}
             alt={attachment.originalFilename}
@@ -147,7 +147,7 @@ function ImageLightbox({
         className="relative flex max-h-[90vh] max-w-[min(56rem,100%)] flex-col items-center gap-3"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
+        
         <img
           src={src}
           alt={alt}
@@ -184,7 +184,6 @@ export function SupportPendingAttachmentPreview({
   return (
     <div className="flex items-center gap-2 border-t border-[var(--line)] px-3 py-2">
       {image ? (
-        // eslint-disable-next-line @next/next/no-img-element
         <img src={previewUrl} alt="" className="size-12 rounded-lg object-cover" />
       ) : (
         <div className="flex size-12 items-center justify-center rounded-lg bg-[var(--bg-muted)]">

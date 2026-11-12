@@ -25,7 +25,6 @@ export function UserAvatar({ name, avatarUrl, size = 'md', className }: UserAvat
   const src = avatarUrl && !failed ? avatarUrl : DEFAULT_AVATAR_SRC;
 
   return (
-    // eslint-disable-next-line @next/next/no-img-element -- signed Cloudinary URL or local default SVG
     <img
       src={src}
       alt={name ? `${name} profile` : 'User profile'}

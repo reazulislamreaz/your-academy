@@ -84,7 +84,6 @@ export default function PracticePlayerPage() {
     tick();
     const id = window.setInterval(tick, 1000);
     return () => window.clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- auto-submit only when timer hits 0
   }, [expiresAt, attemptId]);
 
   const answeredCount = useMemo(() => Object.keys(answers).length, [answers]);

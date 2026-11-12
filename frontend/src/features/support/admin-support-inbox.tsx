@@ -230,7 +230,6 @@ export function AdminSupportInbox() {
       cancelled = true;
       socket.leaveConversation(selectedId);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId, socket.connected]);
 
   useEffect(() => {
@@ -430,7 +429,6 @@ export function AdminSupportInbox() {
                       <span className="relative shrink-0">
                         <span className="flex size-11 items-center justify-center rounded-full bg-[var(--bg-muted)] text-sm font-semibold text-[var(--ink-soft)]">
                           {c.participantAvatarUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
                             <img
                               src={c.participantAvatarUrl}
                               alt=""
