@@ -8,6 +8,7 @@ import { Surface } from '@/components/ui/surface';
 import { ContentIn } from '@/components/ui/skeleton';
 import { AdminAuditTableSkeleton } from '@/components/skeletons';
 import { useCursorList } from '@/lib/hooks/use-cursor-list';
+import { AdminPage } from '@/components/admin/admin-page';
 
 type AuditRow = {
   id: string;
@@ -26,7 +27,7 @@ export default function AdminAuditPage() {
   });
 
   return (
-    <div className="space-y-8">
+    <AdminPage>
       <PageHeader
         eyebrow="Security"
         title="Audit log"
@@ -86,6 +87,6 @@ export default function AdminAuditPage() {
           />
         </ContentIn>
       ) : null}
-    </div>
+    </AdminPage>
   );
 }

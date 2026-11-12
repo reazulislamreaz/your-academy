@@ -19,6 +19,7 @@ import { apiFetch } from '@/lib/api/client';
 import type { AdminQuestionListItem } from '@/lib/api/admin-types';
 import { AdminQuestionsPageSkeleton } from '@/components/skeletons';
 import { useCursorList } from '@/lib/hooks/use-cursor-list';
+import { AdminPage } from '@/components/admin/admin-page';
 
 export default function AdminQuestionsPage() {
   return (
@@ -120,7 +121,7 @@ function AdminQuestionsContent() {
   }
 
   return (
-    <div className="space-y-8">
+    <AdminPage>
       <PageHeader
         eyebrow="Content"
         title="Questions"
@@ -342,6 +343,6 @@ function AdminQuestionsContent() {
           />
         </ContentIn>
       ) : null}
-    </div>
+    </AdminPage>
   );
 }

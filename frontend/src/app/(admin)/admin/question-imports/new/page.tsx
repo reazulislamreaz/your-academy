@@ -23,6 +23,7 @@ import { ApiError, apiFetch } from '@/lib/api/client';
 import { adminDownloadUrl, apiUploadForm } from '@/lib/api/upload';
 import type { CategoryNode } from '@/lib/api/types';
 import { cn } from '@/lib/utils';
+import { AdminPage } from '@/components/admin/admin-page';
 
 const STEPS = [
   { id: 1, title: 'Select file', hint: 'Excel or CSV' },
@@ -93,7 +94,7 @@ export default function NewQuestionImportPage() {
   const canContinueStep2 = Boolean(displayName.trim() && categoryName.trim());
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8">
+    <AdminPage className="mx-auto max-w-4xl">
       <PageHeader
         eyebrow="Bulk upload"
         title="New question collection"
@@ -371,6 +372,6 @@ export default function NewQuestionImportPage() {
           </div>
         </Surface>
       ) : null}
-    </div>
+    </AdminPage>
   );
 }

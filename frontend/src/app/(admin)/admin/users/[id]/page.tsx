@@ -14,6 +14,7 @@ import { ApiError, apiFetch } from '@/lib/api/client';
 import type { AdminUserDetail } from '@/lib/api/admin-activity-types';
 import { AdminUsersDetailPageSkeleton } from '@/components/skeletons';
 import { useState } from 'react';
+import { AdminPage } from '@/components/admin/admin-page';
 
 function formatDuration(seconds: number): string {
   if (seconds < 60) return `${seconds}s`;
@@ -60,7 +61,7 @@ export default function AdminUserDetailPage() {
   const { profile, subscription, study, observedEngagement, sessions, recentEvents } = detail.data;
 
   return (
-    <div className="space-y-8">
+    <AdminPage>
       <PageHeader
         eyebrow="People"
         title={profile.name}
@@ -250,7 +251,7 @@ export default function AdminUserDetailPage() {
           )}
         </Surface>
       </div>
-    </div>
+    </AdminPage>
   );
 }
 

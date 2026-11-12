@@ -19,15 +19,18 @@ export function PageHeader({ title, description, actions, className, eyebrow }: 
     >
       <div className="min-w-0 space-y-2">
         {eyebrow ? (
-          <p className="text-[0.6875rem] font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
-            {eyebrow}
-          </p>
+          <div className="flex items-center gap-2">
+            <span className="inline-block h-[3px] w-5 shrink-0 rounded-full bg-[var(--highlight)]" aria-hidden />
+            <p className="text-[0.6875rem] font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
+              {eyebrow}
+            </p>
+          </div>
         ) : null}
         <h1 className="break-words font-display text-[clamp(1.75rem,4vw,2.25rem)] font-bold tracking-tight text-[var(--ink)]">
           {title}
         </h1>
         {description ? (
-          <p className="max-w-2xl text-sm leading-relaxed text-[var(--muted)] sm:text-[0.9375rem]">
+          <p className="max-w-2xl text-sm leading-relaxed text-[var(--muted-strong)] sm:text-[0.9375rem]">
             {description}
           </p>
         ) : null}

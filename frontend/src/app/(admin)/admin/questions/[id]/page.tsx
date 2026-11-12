@@ -19,6 +19,7 @@ import { ApiError, apiFetch } from '@/lib/api/client';
 import type { AdminQuestionDetail } from '@/lib/api/admin-types';
 import type { CategoryNode } from '@/lib/api/types';
 import { AdminQuestionFormPageSkeleton } from '@/components/skeletons';
+import { AdminPage } from '@/components/admin/admin-page';
 
 export default function EditQuestionPage() {
   const params = useParams<{ id: string }>();
@@ -113,7 +114,7 @@ export default function EditQuestionPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <AdminPage>
       <PageHeader
         eyebrow="Content"
         title="Edit question"
@@ -197,6 +198,6 @@ export default function EditQuestionPage() {
           }}
         />
       </Surface>
-    </div>
+    </AdminPage>
   );
 }

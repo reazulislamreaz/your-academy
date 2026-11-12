@@ -11,6 +11,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { Suspense, useEffect, useMemo, useState } from 'react';
+import { AdminPage } from '@/components/admin/admin-page';
 import { PageHeader } from '@/components/layout/page-header';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -185,7 +186,7 @@ function QuestionImportDetailContent() {
   const canImport = data.status === 'VALIDATED' || data.status === 'FAILED';
 
   return (
-    <div className="space-y-8">
+    <AdminPage>
       <PageHeader
         eyebrow={data.batchCode}
         title={data.displayName}
@@ -576,7 +577,7 @@ function QuestionImportDetailContent() {
       <Link href="/admin/question-imports" className="text-sm font-semibold text-[var(--highlight)]">
         ← All collections
       </Link>
-    </div>
+    </AdminPage>
   );
 }
 

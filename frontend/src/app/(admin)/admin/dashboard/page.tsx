@@ -13,11 +13,13 @@ import {
   Plus,
   Users,
 } from 'lucide-react';
+import { AdminPage, AdminSection } from '@/components/admin/admin-page';
+import { AdminTable, AdminTableShell } from '@/components/admin/admin-table';
 import { BarChart } from '@/components/dashboard/bar-chart';
 import { QuickLink } from '@/components/dashboard/quick-link';
 import { StatCard } from '@/components/dashboard/stat-card';
 import { PageHeader } from '@/components/layout/page-header';
-import { Alert } from '@/components/ui/alert';
+import { LoadError } from '@/components/loading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Surface } from '@/components/ui/surface';
@@ -63,7 +65,7 @@ type Dashboard = {
 };
 
 export default function AdminDashboardPage() {
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['admin-dashboard'],
     queryFn: () => apiFetch<Dashboard>('/admin/dashboard'),
   });
@@ -72,20 +74,22 @@ export default function AdminDashboardPage() {
     return <AdminDashboardPageSkeleton />;
   }
   if (error || !data) {
-    return <Alert variant="danger">Admin access required.</Alert>;
+    return (
+      <LoadError message="Could not load the admin overview." onRetry={() => void refetch()} />
+    );
   }
 
   const browsingHours = Math.round(data.browsingSecondsTotal / 3600);
 
   return (
-    <div className="space-y-8">
+    <AdminPage>
       <PageHeader
-        eyebrow="Admin"
-        title="Platform overview"
-        description="Live KPIs, work queue, and recent platform activity."
+        eyebrow="Overview"
+        title="Platform console"
+        description="Work queue, live KPIs, and recent platform activity — optimized for daily operations."
         actions={
           <Link href="/admin/questions/new">
-            <Button size="sm" className="px-5">
+            <Button size="sm">
               <Plus className="h-4 w-4" />
               New question
             </Button>
@@ -93,11 +97,12 @@ export default function AdminDashboardPage() {
         }
       />
 
-      {/* Work queue first — ops focus before KPI grid */}
-      <section className="space-y-3">
-        <h2 className="font-display text-lg font-bold tracking-tight">Work queue</h2>
+      <AdminSection
+        title="Work queue"
+        description="Highest-priority ops items before the KPI grid."
+      >
         <div className="grid gap-4 md:grid-cols-3">
-          <Surface className="flex flex-col justify-between gap-4 p-5">
+          <Surface elevated className="flex flex-col justify-between gap-4 p-5">
             <div>
               <div className="flex items-center gap-2">
                 <Badge variant="highlight">Drafts</Badge>
@@ -116,7 +121,7 @@ export default function AdminDashboardPage() {
               </Button>
             </Link>
           </Surface>
-          <Surface className="flex flex-col justify-between gap-4 p-5">
+          <Surface elevated className="flex flex-col justify-between gap-4 p-5">
             <div>
               <div className="flex items-center gap-2">
                 <Badge variant="success">Trials</Badge>
@@ -134,7 +139,7 @@ export default function AdminDashboardPage() {
               </Button>
             </Link>
           </Surface>
-          <Surface className="flex flex-col justify-between gap-4 p-5">
+          <Surface elevated className="flex flex-col justify-between gap-4 p-5">
             <div>
               <div className="flex items-center gap-2">
                 <Badge variant="outline">Expired</Badge>
@@ -153,7 +158,7 @@ export default function AdminDashboardPage() {
             </Link>
           </Surface>
         </div>
-      </section>
+      </AdminSection>
 
       <div className="motion-stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
@@ -203,7 +208,7 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-        <Surface className="space-y-4 p-6">
+        <Surface elevated className="space-y-4 p-6">
           <div>
             <h2 className="font-display text-lg font-bold tracking-tight">Question bank health</h2>
             <p className="mt-1 text-sm text-[var(--muted-strong)]">Status mix from live question counts.</p>
@@ -230,7 +235,7 @@ export default function AdminDashboardPage() {
           />
         </Surface>
 
-        <Surface className="space-y-4 p-6">
+        <Surface elevated className="space-y-4 p-6">
           <h2 className="font-display text-lg font-bold tracking-tight">Quick actions</h2>
           <div className="grid gap-3">
             <QuickLink
@@ -238,6 +243,12 @@ export default function AdminDashboardPage() {
               title="Create MCQ"
               description="Draft a new question with options"
               icon={FileQuestion}
+            />
+            <QuickLink
+              href="/admin/question-imports/new"
+              title="Bulk upload"
+              description="Import a Google Sheet / Excel set"
+              icon={FileText}
             />
             <QuickLink
               href="/admin/categories"
@@ -257,18 +268,12 @@ export default function AdminDashboardPage() {
               description="Online users, trends, export"
               icon={Activity}
             />
-            <QuickLink
-              href="/admin/news"
-              title="Publish news"
-              description="Announcements and columns"
-              icon={Newspaper}
-            />
           </div>
         </Surface>
       </div>
 
       {data.topSubjects.length > 0 ? (
-        <Surface className="space-y-4 p-6">
+        <Surface elevated className="space-y-4 p-6">
           <div className="flex flex-wrap items-end justify-between gap-2">
             <div>
               <h2 className="font-display text-lg font-bold tracking-tight">Top subjects (7d)</h2>
@@ -292,52 +297,54 @@ export default function AdminDashboardPage() {
       ) : null}
 
       <div className="grid gap-5 lg:grid-cols-2">
-        <Surface className="overflow-hidden p-0">
-          <div className="flex items-center justify-between gap-2 border-b border-[var(--line)] px-3 py-4 sm:px-5">
-            <h2 className="min-w-0 truncate font-display text-base font-bold tracking-tight sm:text-lg">
-              Recent registrations
-            </h2>
-            <Link
-              href="/admin/users"
-              className="shrink-0 text-sm font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
-            >
-              View all
-            </Link>
-          </div>
-          <div className="min-w-0 w-full max-w-full overflow-x-auto">
-            <table className="w-full min-w-[28rem] text-left text-sm">
-              <thead className="bg-[var(--bg-desk)] text-xs font-semibold tracking-[0.08em] text-[var(--muted-strong)] uppercase">
-                <tr>
-                  <th className="px-3 py-3 font-semibold sm:px-5">User</th>
-                  <th className="px-3 py-3 font-semibold">Role</th>
-                  <th className="px-3 py-3 font-semibold">Status</th>
-                  <th className="px-3 py-3 font-semibold sm:px-5">Joined</th>
+        <AdminTableShell
+          minWidth="28rem"
+          header={
+            <>
+              <h2 className="font-display text-base font-bold tracking-tight sm:text-lg">
+                Recent registrations
+              </h2>
+              <Link
+                href="/admin/users"
+                className="text-sm font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
+              >
+                View all
+              </Link>
+            </>
+          }
+        >
+          <AdminTable>
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Joined</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.recentUsers.map((user) => (
+                <tr key={user.id}>
+                  <td className="max-w-[10rem] sm:max-w-none">
+                    <p className="truncate font-semibold text-[var(--ink)]">{user.name}</p>
+                    <p className="truncate text-xs text-[var(--muted-strong)]">{user.whatsappNumber}</p>
+                  </td>
+                  <td>
+                    <Badge variant="outline">{user.role}</Badge>
+                  </td>
+                  <td>
+                    <Badge variant={user.status === 'ACTIVE' ? 'success' : 'outline'}>
+                      {user.status}
+                    </Badge>
+                  </td>
+                  <td className="text-xs text-[var(--muted-strong)]">
+                    {new Date(user.createdAt).toLocaleDateString()}
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--line)]">
-                {data.recentUsers.map((user) => (
-                  <tr key={user.id} className="hover:bg-[var(--brand-wash)]">
-                    <td className="max-w-[10rem] px-3 py-3 sm:max-w-none sm:px-5">
-                      <p className="truncate font-semibold text-[var(--ink)]">{user.name}</p>
-                      <p className="truncate text-xs text-[var(--muted-strong)]">{user.whatsappNumber}</p>
-                    </td>
-                    <td className="px-3 py-3">
-                      <Badge variant="outline">{user.role}</Badge>
-                    </td>
-                    <td className="px-3 py-3">
-                      <Badge variant={user.status === 'ACTIVE' ? 'success' : 'outline'}>
-                        {user.status}
-                      </Badge>
-                    </td>
-                    <td className="px-5 py-3 text-xs text-[var(--muted-strong)]">
-                      {new Date(user.createdAt).toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Surface>
+              ))}
+            </tbody>
+          </AdminTable>
+        </AdminTableShell>
 
         <Surface className="overflow-hidden p-0">
           <div className="border-b border-[var(--line)] px-5 py-4">
@@ -348,7 +355,7 @@ export default function AdminDashboardPage() {
           ) : (
             <ul className="divide-y divide-[var(--line)]">
               {data.recentActivity.map((item) => (
-                <li key={item.id} className="px-5 py-3.5">
+                <li key={item.id} className="px-5 py-3.5 transition-colors hover:bg-[var(--brand-wash)]">
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge variant="default">{item.action}</Badge>
                     <span className="text-xs text-[var(--muted-strong)]">{item.entityType}</span>
@@ -366,6 +373,6 @@ export default function AdminDashboardPage() {
           )}
         </Surface>
       </div>
-    </div>
+    </AdminPage>
   );
 }

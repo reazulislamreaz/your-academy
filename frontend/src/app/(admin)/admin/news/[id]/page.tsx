@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
+import { AdminPage } from '@/components/admin/admin-page';
 import { PageHeader } from '@/components/layout/page-header';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -92,7 +93,7 @@ export default function EditNewsPage() {
   if (detail.error || !detail.data) return <Alert variant="danger">Article not found.</Alert>;
 
   return (
-    <div className="space-y-8">
+    <AdminPage>
       <PageHeader
         eyebrow="Content"
         title="Edit article"
@@ -205,11 +206,11 @@ export default function EditNewsPage() {
 
           {msg ? <Alert variant="success">{msg}</Alert> : null}
           {error ? <Alert variant="danger">{error}</Alert> : null}
-          <Button type="submit" disabled={save.isPending}>
+          <Button type="submit" loading={save.isPending}>
             {save.isPending ? 'Saving…' : 'Save changes'}
           </Button>
         </form>
       </Surface>
-    </div>
+    </AdminPage>
   );
 }

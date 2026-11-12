@@ -7,35 +7,11 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { adminNavItems } from './admin-nav';
+import { adminNavGroups, adminNavItems, isAdminNavActive } from './admin-nav';
 import { BrandMark } from './brand-mark';
 import { UserMenu } from './user-menu';
 
-const ADMIN_NAV_GROUPS = [
-  {
-    title: 'Console',
-    items: adminNavItems.filter((i) =>
-      ['/admin/dashboard', '/admin/support', '/admin/users', '/admin/activity', '/admin/audit'].includes(
-        i.href,
-      ),
-    ),
-  },
-  {
-    title: 'Content',
-    items: adminNavItems.filter((i) =>
-      [
-        '/admin/questions',
-        '/admin/question-imports',
-        '/admin/practice-sets',
-        '/admin/categories',
-        '/admin/news',
-        '/admin/documents',
-      ].includes(i.href),
-    ),
-  },
-] as const;
-
-/** Compact mobile admin chrome: logo + title + drawer (replaces the old horizontal chip strip). */
+/** Compact mobile admin chrome: logo + title + drawer. */
 export function AdminMobileNav() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -45,8 +21,7 @@ export function AdminMobileNav() {
   const panelRef = useRef<HTMLDivElement>(null);
 
   const activeLabel =
-    adminNavItems.find((i) => pathname === i.href || pathname.startsWith(`${i.href}/`))?.label ??
-    'Admin';
+    adminNavItems.find((i) => isAdminNavActive(pathname, i.href))?.label ?? 'Admin';
 
   useEffect(() => {
     setMounted(true);
@@ -107,7 +82,7 @@ export function AdminMobileNav() {
             className="motion-drawer-in fixed inset-x-0 top-[56px] bottom-0 z-[60] overflow-y-auto overscroll-contain border-t border-[var(--line)] bg-[var(--bg-elevated)] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[var(--shadow-lg)] lg:hidden"
           >
             <nav className="flex flex-col gap-5" aria-label="Admin sections">
-              {ADMIN_NAV_GROUPS.map((group) => (
+              {adminNavGroups.map((group) => (
                 <div key={group.title}>
                   <p className="px-3 pb-2 text-[0.6875rem] font-semibold tracking-[0.16em] text-[var(--muted)] uppercase">
                     {group.title}
@@ -115,8 +90,7 @@ export function AdminMobileNav() {
                   <div className="flex flex-col gap-0.5">
                     {group.items.map((item) => {
                       const Icon = item.icon;
-                      const active =
-                        pathname === item.href || pathname.startsWith(`${item.href}/`);
+                      const active = isAdminNavActive(pathname, item.href);
                       return (
                         <Link
                           key={item.href}
@@ -125,7 +99,7 @@ export function AdminMobileNav() {
                           className={cn(
                             'flex items-center gap-2.5 rounded-[var(--radius)] px-3 py-2.5 text-base font-medium',
                             active
-                              ? 'bg-[var(--accent-soft)] font-semibold text-[var(--accent)]'
+                              ? 'bg-[var(--highlight-soft)] font-semibold text-[var(--highlight)]'
                               : 'text-[var(--ink-soft)] hover:bg-[var(--brand-wash)] hover:text-[var(--ink)]',
                           )}
                         >
@@ -156,7 +130,7 @@ export function AdminMobileNav() {
       : null;
 
   return (
-    <div className="sticky top-0 z-30 border-b border-[var(--line)] bg-[var(--bg-elevated)] lg:hidden">
+    <div className="sticky top-0 z-30 border-b border-[var(--line)] bg-[var(--bg-elevated)]/95 backdrop-blur-md lg:hidden">
       <div className="flex h-14 items-center gap-3 px-3 sm:px-4">
         <BrandMark markOnly href="/" className="[&_img]:h-8" />
         <div className="min-w-0 flex-1">

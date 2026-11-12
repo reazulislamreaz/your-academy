@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { AdminPage } from '@/components/admin/admin-page';
 import { PageHeader } from '@/components/layout/page-header';
 import { Surface } from '@/components/ui/surface';
 import {
@@ -14,6 +15,7 @@ import {
 } from '@/features/admin/question-form';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import type { CategoryNode } from '@/lib/api/types';
+
 export default function NewQuestionPage() {
   const router = useRouter();
   const qc = useQueryClient();
@@ -41,7 +43,7 @@ export default function NewQuestionPage() {
   });
 
   return (
-    <div className="space-y-8">
+    <AdminPage>
       <PageHeader
         eyebrow="Content"
         title="New question"
@@ -52,7 +54,7 @@ export default function NewQuestionPage() {
           </Link>
         }
       />
-      <Surface className="p-6">
+      <Surface elevated className="p-6">
         {categories.isLoading ? (
           <div className="space-y-4" role="status" aria-busy="true" aria-live="polite">
             <span className="sr-only">Loading question form…</span>
@@ -78,6 +80,6 @@ export default function NewQuestionPage() {
           />
         )}
       </Surface>
-    </div>
+    </AdminPage>
   );
 }

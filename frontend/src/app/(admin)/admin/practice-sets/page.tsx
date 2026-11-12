@@ -20,6 +20,7 @@ import { ApiError, apiFetch } from '@/lib/api/client';
 import { examLabel, practiceKindLabel } from '@/lib/exam-tags';
 import { AdminPracticeSetsPageSkeleton } from '@/components/skeletons';
 import { useCursorList } from '@/lib/hooks/use-cursor-list';
+import { AdminPage } from '@/components/admin/admin-page';
 
 type AdminPracticeSet = {
   id: string;
@@ -114,7 +115,7 @@ export default function AdminPracticeSetsPage() {
   const items = list.items;
 
   return (
-    <div className="space-y-8">
+    <AdminPage>
       <PageHeader
         eyebrow="Content"
         title="Practice sets"
@@ -285,6 +286,6 @@ export default function AdminPracticeSetsPage() {
           />
         </ContentIn>
       ) : null}
-    </div>
+    </AdminPage>
   );
 }

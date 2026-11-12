@@ -21,6 +21,7 @@ import type { CategoryNode } from '@/lib/api/types';
 import { getStorageStatus, uploadViaSignedRequest } from '@/lib/cloudinary-upload';
 import { AdminDocumentsPageSkeleton } from '@/components/skeletons';
 import { useCursorList } from '@/lib/hooks/use-cursor-list';
+import { AdminPage } from '@/components/admin/admin-page';
 
 export default function AdminDocumentsPage() {
   const qc = useQueryClient();
@@ -113,7 +114,7 @@ export default function AdminDocumentsPage() {
   });
 
   return (
-    <div className="space-y-8">
+    <AdminPage>
       <PageHeader
         eyebrow="Content"
         title="Documents"
@@ -261,6 +262,6 @@ export default function AdminDocumentsPage() {
           />
         </ContentIn>
       ) : null}
-    </div>
+    </AdminPage>
   );
 }

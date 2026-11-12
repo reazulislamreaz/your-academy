@@ -137,6 +137,8 @@ Bengali UI fonts are **out of scope** until i18n is approved.
 
 Layout: `BrandMark`, `MarketingHeader`, `AppHeader`, `AdminSidebar`, `AdminMobileNav`, `SiteFooter`, `PageHeader`, `MobileNav` / `DesktopNav`.
 
+Admin primitives (`components/admin/`): `AdminPage`, `AdminSection`, `AdminToolbar`, `AdminTable` / `AdminTableShell` — use on every `/admin/*` route for spacing, filters, and tables.
+
 Study prefs (authoritative, DB): `PATCH /users/me/study-prefs` + `MeUser.study` — preferred root categories (max 3), onboarding completion, last opened/attempted question for Continue. `lib/study-prefs.ts` only has display helpers.
 
 List utility: `.list-row` in `globals.css` for hover/divider rhythm.
@@ -150,7 +152,7 @@ List utility: `.list-row` in `globals.css` for hover/divider rhythm.
 | `(marketing)` | Marketing header + footer | `/` |
 | `(auth)` | Split navy brand panel + form (desktop); stacked on mobile | `/login`, `/register`, … |
 | `(app)` | Learner shell (`.learner-theme` light/dark): collapsible sidebar + sticky header (theme toggle, pill search + ⌘K, Saved MCQ, updates, trial, profile) | `/home`, `/onboarding`, `/questions`, `/bookmarks`, `/news`, `/profile`, … |
-| `(admin)` | Navy sidebar + mobile tabs | `/admin/*` |
+| `(admin)` | `.admin-theme` navy inverse sidebar + light desk canvas; grouped Console/Content nav; mobile drawer | `/admin/*` |
 
 Root `layout.tsx` only mounts fonts + providers (no global header).
 

@@ -31,6 +31,7 @@ import type {
 import { ApiError, apiFetch } from '@/lib/api/client';
 import { AdminCategoriesPageSkeleton } from '@/components/skeletons';
 import { cn } from '@/lib/utils';
+import { AdminPage } from '@/components/admin/admin-page';
 
 type StatusFilter = 'all' | 'active' | 'inactive';
 type DialogState =
@@ -200,7 +201,7 @@ export default function AdminCategoriesPage() {
   }, [categories.data]);
 
   return (
-    <div className="space-y-6">
+    <AdminPage>
       <PageHeader
         eyebrow="Taxonomy"
         title="Categories"
@@ -560,7 +561,7 @@ export default function AdminCategoriesPage() {
         }}
         onConfirm={() => confirmAction.mutate()}
       />
-    </div>
+    </AdminPage>
   );
 }
 

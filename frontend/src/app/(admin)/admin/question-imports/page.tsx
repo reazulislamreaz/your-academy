@@ -40,6 +40,7 @@ import { EXAM_TRACKS } from '@/lib/exam-tags';
 import type { CategoryNode } from '@/lib/api/types';
 import { cn } from '@/lib/utils';
 import { AdminBulkUploadTableSkeleton, StatCardSkeleton } from '@/components/skeletons';
+import { AdminPage } from '@/components/admin/admin-page';
 
 export default function QuestionImportsHubPage() {
   const qc = useQueryClient();
@@ -108,7 +109,7 @@ export default function QuestionImportsHubPage() {
   const s = stats.data;
 
   return (
-    <div className="min-w-0 space-y-8">
+    <AdminPage>
       <PageHeader
         eyebrow="Content"
         title="Bulk question upload"
@@ -470,6 +471,6 @@ export default function QuestionImportsHubPage() {
           </Button>
         ) : null}
       </Surface>
-    </div>
+    </AdminPage>
   );
 }

@@ -19,6 +19,7 @@ import { AdminNewsPageSkeleton } from '@/components/skeletons';
 import { LoadMoreButton } from '@/components/ui/load-more-button';
 import { useCursorList } from '@/lib/hooks/use-cursor-list';
 import { ContentIn } from '@/components/ui/skeleton';
+import { AdminPage } from '@/components/admin/admin-page';
 
 function slugify(value: string) {
   return value
@@ -90,7 +91,7 @@ export default function AdminNewsPage() {
   });
 
   return (
-    <div className="space-y-8">
+    <AdminPage>
       <PageHeader
         eyebrow="Content"
         title="News"
@@ -204,6 +205,6 @@ export default function AdminNewsPage() {
           />
         </ContentIn>
       ) : null}
-    </div>
+    </AdminPage>
   );
 }

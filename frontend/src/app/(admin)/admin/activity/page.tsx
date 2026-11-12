@@ -25,6 +25,7 @@ import type {
 } from '@/lib/api/admin-activity-types';
 import { useCursorList } from '@/lib/hooks/use-cursor-list';
 import { Activity, Clock3, Users } from 'lucide-react';
+import { AdminPage } from '@/components/admin/admin-page';
 
 const EVENT_TYPES = [
   '',
@@ -166,7 +167,7 @@ function ActivityPageInner() {
   }
 
   return (
-    <div className="space-y-8">
+    <AdminPage>
       <PageHeader
         eyebrow="Analytics"
         title="Learner activity"
@@ -404,7 +405,7 @@ function ActivityPageInner() {
           </ContentIn>
         )}
       </Surface>
-    </div>
+    </AdminPage>
   );
 }
 
