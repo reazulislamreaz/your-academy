@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { Providers } from '@/components/providers';
-import { fontDisplay, fontReading, fontSans } from '@/lib/fonts';
+import { fontDisplay, fontLearner, fontReading, fontSans } from '@/lib/fonts';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -21,7 +21,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html
       lang="en"
       data-scroll-behavior="smooth"
-      className={`${fontSans.variable} ${fontDisplay.variable} ${fontReading.variable}`}
+      className={`${fontSans.variable} ${fontDisplay.variable} ${fontReading.variable} ${fontLearner.variable}`}
     >
       <body className="min-h-screen font-sans antialiased">
         <Providers>{children}</Providers>

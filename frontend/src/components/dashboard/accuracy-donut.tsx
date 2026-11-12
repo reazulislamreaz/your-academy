@@ -39,7 +39,7 @@ export function AccuracyDonut({ correct, incorrect }: Props) {
             cy={size / 2}
             r={r}
             fill="none"
-            stroke="var(--success)"
+            stroke="var(--viz-positive)"
             strokeWidth={stroke}
             strokeDasharray={`${correctLen} ${incorrectLen}`}
             strokeLinecap="butt"
@@ -49,7 +49,7 @@ export function AccuracyDonut({ correct, incorrect }: Props) {
             cy={size / 2}
             r={r}
             fill="none"
-            stroke="var(--highlight)"
+            stroke="var(--viz-negative)"
             strokeWidth={stroke}
             strokeDasharray={`${incorrectLen} ${correctLen}`}
             strokeDashoffset={-correctLen}
@@ -58,16 +58,16 @@ export function AccuracyDonut({ correct, incorrect }: Props) {
         </svg>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
           <span className="text-2xl font-bold tabular-nums text-[var(--ink)]">{accuracy}%</span>
-          <span className="text-xs font-medium text-[var(--muted-strong)]">Accuracy</span>
+          <span className="text-xs font-medium text-[var(--muted)]">Accuracy</span>
         </div>
       </div>
-      <div className="mt-3 flex items-center justify-center gap-4 text-xs font-medium text-[var(--muted-strong)]">
+      <div className="mt-3 flex items-center justify-center gap-4 text-xs font-medium text-[var(--muted)]">
         <span className="flex items-center gap-1.5">
-          <span className="size-2.5 rounded-full bg-[var(--success)]" />
+          <span className="size-2.5 rounded-full bg-[var(--viz-positive)]" />
           Correct {correct}
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="size-2.5 rounded-full bg-[var(--highlight)]" />
+          <span className="size-2.5 rounded-full bg-[var(--viz-negative)]" />
           Incorrect {incorrect}
         </span>
       </div>

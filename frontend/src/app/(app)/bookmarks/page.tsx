@@ -180,13 +180,13 @@ export default function BookmarksPage() {
             className={cn(
               'relative px-4 py-2.5 text-sm font-semibold transition-colors',
               tab === item.id
-                ? 'text-[var(--highlight)]'
-                : 'text-[var(--muted-strong)] hover:text-[var(--ink)]',
+                ? 'text-[var(--ink)]'
+                : 'text-[var(--muted)] hover:text-[var(--ink-soft)]',
             )}
           >
             {item.label}
             {tab === item.id ? (
-              <span className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-[var(--highlight)]" />
+              <span className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-[var(--accent)]" />
             ) : null}
           </button>
         ))}
@@ -209,7 +209,7 @@ export default function BookmarksPage() {
 
       {tab === 'questions' && !questions.isLoading && !questions.error ? (
         <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
-          <aside className="space-y-1 rounded-[var(--radius-lg)] border border-[var(--line)] bg-white/80 p-3 shadow-[var(--shadow-sm)] lg:sticky lg:top-24 lg:self-start">
+          <aside className="space-y-1 rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)]/90 p-3 shadow-[var(--shadow-sm)] lg:sticky lg:top-24 lg:self-start">
             <p className="mb-2 px-2 text-[0.6875rem] font-semibold tracking-[0.16em] text-[var(--muted)] uppercase">
               Folders
             </p>
@@ -234,7 +234,7 @@ export default function BookmarksPage() {
                 <button
                   type="button"
                   aria-label={`Delete folder ${c.name}`}
-                  className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-[var(--muted-strong)] opacity-70 hover:bg-[var(--highlight-soft)] hover:text-[var(--highlight)] group-hover:opacity-100"
+                  className="flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-[var(--muted)] opacity-70 hover:bg-[var(--danger-soft)] hover:text-[var(--danger)] group-hover:opacity-100"
                   disabled={deleteFolder.isPending}
                   onClick={() => setDeleteTarget({ id: c.id, name: c.name })}
                 >

@@ -4,7 +4,7 @@
 **Product:** Your Academy  
 **Direction:** “Exam desk” — cool paper surfaces, faint ruled texture, deep navy ink, **red** accent CTAs (`--highlight: #e31e24`). CSS tokens in `frontend/src/app/globals.css` are the source of truth.
 
-Do **not** drift into purple SaaS gradients, cream+terracotta serif kits, amber-as-primary kits, or neon dark dashboards.
+Do **not** drift into purple SaaS gradients, cream+terracotta serif kits, amber-as-primary kits, or neon glow kits. Learner `(app)` uses Orbit-style charcoal (DEC-027); marketing/auth/admin stay light.
 
 ---
 
@@ -13,7 +13,7 @@ Do **not** drift into purple SaaS gradients, cream+terracotta serif kits, amber-
 1. **Brand first on marketing** — “Your Academy” is the hero signal; supporting copy stays secondary.
 2. **One job per section** — avoid stat strips and card grids on heroes (stats may sit below the fold).
 3. **Surfaces with purpose** — `Surface` for forms/tables; open / list-row layouts for browse lists; reading column for MCQ/news/PDF detail.
-4. **Admin ≠ learner** — dense navy sidebar admin chrome; calmer app shell for study.
+4. **Admin ≠ learner** — dense navy sidebar admin chrome; charcoal Orbit learner shell (DEC-027).
 5. **Motion with restraint** — fade/rise + press feedback; honor `prefers-reduced-motion`.
 6. **Show the product** — marketing may include a static MCQ desk preview below the fold; never fabricate testimonials.
 7. **Honest entitlements** — locked answers use `EntitlementCallout`; never invent `isCorrect` client-side.
@@ -40,7 +40,38 @@ Do **not** drift into purple SaaS gradients, cream+terracotta serif kits, amber-
 | `--success` / `--danger` / `--warning` | Semantic | teal / deep red / amber |
 | `--shadow-header` | Sticky learner header | soft layered |
 
-Page atmosphere: cool navy/red radial washes on desk canvas (not decorative glow kits). Learner shell: `.learner-sidebar`, `.learner-nav-link` active rail.
+Page atmosphere (light shells): cool navy/red radial washes on desk canvas. Learner shell: `.learner-theme` charcoal overrides + `.learner-sidebar`; active nav is a soft grey pill (no bright red wash).
+
+### Learner dark tokens (`.learner-theme`, DEC-027)
+
+Cool **navy-charcoal** stack (not flat black). Every color has one job.
+
+| Token | Role | Approx |
+|-------|------|--------|
+| `--bg` / `--bg-desk` | Canvas | `#0B1020` |
+| `--bg-sidebar` | Rail | `#090E1A` |
+| `--bg-elevated` | Cards / panels | `#141B2D` |
+| `--bg-muted` / `--bg-soft` | Hover fills / nested | `#1C2640` / `#182238` |
+| `--ink` / `--ink-soft` | Primary / body text | `#F1F5F9` / `#D8DEE9` |
+| `--muted` / `--muted-strong` | Secondary / strong secondary | `#94A3B8` / `#CBD5E1` |
+| `--line` / `--line-strong` | Borders | slate @ 14% / 26% |
+| `--highlight` | **Primary** CTA (brand red) | `#E31E24` |
+| `--accent` / `--accent-blue` | **Secondary** — focus, selection, chrome | `#5B8DEF` |
+| `--success` | Correct / positive progress | soft green `#34D399` |
+| `--danger` | Incorrect / negative | soft red `#F07178` |
+| `--warning` | Alerts / pending | amber `#F0B429` |
+| `--info` | Helpful / neutral stats | blue (alias of accent) |
+| `--insight` | Learning insights / review | purple `#A78BFA` |
+| `--bookmark` | Saved MCQ gold | `#E8B84A` |
+| `--learn-*` | MCQ interaction aliases | selected / correct / incorrect / idle / review |
+| `--viz-*` | Charts: positive / negative / neutral / insight / achievement | semantic map |
+| `--focus-ring` | Keyboard / field focus halo | soft blue |
+
+**MCQ status map:** idle → muted · selected → accent blue · correct → green · incorrect → soft red · bookmarked → gold · completed → green · marked for review → purple.
+
+**KPI / chart map:** green = progress · red = weak performance · blue = neutral counts · purple = insights · amber/gold = achievements / bookmarks · brand red reserved for primary CTAs and premium locks.
+
+Collapse width: `--app-sidebar-collapsed-width`. Persist collapse in `localStorage` key `ya-learner-sidebar-collapsed`. Target text contrast ≥ 4.5:1 on elevated surfaces.
 
 ---
 
@@ -49,7 +80,8 @@ Page atmosphere: cool navy/red radial washes on desk canvas (not decorative glow
 | Role | Family | CSS var / class |
 |------|--------|-----------------|
 | Brand / headings | **Syne** | `--font-display` / `.font-display` |
-| UI / body | **Manrope** | `--font-sans` |
+| UI / body (marketing, auth, admin) | **Manrope** | `--font-sans` |
+| Learner shell UI | **Inter** | `--font-learner` under `.learner-theme` |
 | Long-form reading (MCQ, news) | **Source Serif 4** | `--font-reading` / `.font-reading` |
 
 Bengali UI fonts are **out of scope** until i18n is approved.
@@ -108,7 +140,7 @@ List utility: `.list-row` in `globals.css` for hover/divider rhythm.
 |-------|-------|--------|
 | `(marketing)` | Marketing header + footer | `/` |
 | `(auth)` | Split navy brand panel + form (desktop); stacked on mobile | `/login`, `/register`, … |
-| `(app)` | Premium learner shell: sidebar (`.learner-sidebar`) + sticky glass header (trial, Saved MCQ, search, updates, profile) | `/home`, `/onboarding`, `/questions`, `/bookmarks`, `/news`, `/profile`, … |
+| `(app)` | Dark charcoal Orbit shell (`.learner-theme`): collapsible sidebar + sticky header (pill search + ⌘K, Saved MCQ, updates, trial, profile) | `/home`, `/onboarding`, `/questions`, `/bookmarks`, `/news`, `/profile`, … |
 | `(admin)` | Navy sidebar + mobile tabs | `/admin/*` |
 
 Root `layout.tsx` only mounts fonts + providers (no global header).

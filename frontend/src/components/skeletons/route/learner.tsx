@@ -288,7 +288,7 @@ export function QuestionDetailPageSkeleton() {
         <SkLine className="h-4 w-40" />
         <SkLine className="h-3.5 w-full max-w-lg" />
       </Surface>
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-[var(--line)] bg-[var(--bg-elevated)]/95 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-md lg:left-[var(--app-sidebar-width)]">
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-[var(--line)] bg-[var(--bg-elevated)]/95 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-md lg:left-[var(--app-sidebar-current-width,var(--app-sidebar-width))]">
         <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-2 px-4 py-3 sm:px-6">
           <SkButton className="h-11 w-24" />
           <SkButton className="h-11 flex-1 sm:max-w-xs sm:flex-none sm:w-40" />

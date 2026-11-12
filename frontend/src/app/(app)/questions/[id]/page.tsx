@@ -121,12 +121,17 @@ function QuestionDetailContent() {
               <span className="truncate">{data.subcategory.name}</span>
             </>
           ) : null}
-          <Badge variant="highlight">{data.difficulty}</Badge>
+          <Badge variant="info">{data.difficulty}</Badge>
+          {data.bookmarked ? <Badge variant="bookmark">Saved</Badge> : null}
         </div>
         <Button
           variant="outline"
           size="sm"
-          className="min-h-10 shrink-0 gap-1.5"
+          className={
+            data.bookmarked
+              ? 'min-h-10 shrink-0 gap-1.5 border-[var(--bookmark)]/40 text-[var(--bookmark-fg)] hover:border-[var(--bookmark)] hover:bg-[var(--bookmark-soft)]'
+              : 'min-h-10 shrink-0 gap-1.5'
+          }
           onClick={() => setSaveOpen(true)}
         >
           <Bookmark
@@ -194,18 +199,18 @@ function QuestionDetailContent() {
       ) : null}
 
       {checked && data.explanation ? (
-        <Surface elevated className="motion-rise border-l-[3px] border-l-[var(--highlight)] p-5 sm:p-6">
-          <h2 className="text-xs font-semibold tracking-[0.14em] text-[var(--muted-strong)] uppercase">
+        <Surface elevated className="motion-rise border-l-[3px] border-l-[var(--info)] p-5 sm:p-6">
+          <h2 className="text-xs font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
             Explanation
           </h2>
-          <p className="font-reading mt-3 leading-relaxed text-[var(--muted-strong)]">
+          <p className="font-reading mt-3 leading-relaxed text-[var(--ink-soft)]">
             {data.explanation}
           </p>
         </Surface>
       ) : null}
 
       <div
-        className="fixed inset-x-0 bottom-0 z-20 border-t border-[var(--line)] bg-[var(--bg-elevated)]/95 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-md lg:left-[var(--app-sidebar-width)]"
+        className="fixed inset-x-0 bottom-0 z-20 border-t border-[var(--line)] bg-[var(--bg-elevated)]/95 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-md lg:left-[var(--app-sidebar-current-width,var(--app-sidebar-width))]"
         role="navigation"
         aria-label="Practice navigation"
       >

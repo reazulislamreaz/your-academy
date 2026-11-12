@@ -16,11 +16,11 @@ export function QuickLink({ href, title, description, icon: Icon, className }: P
     <Link
       href={href}
       className={cn(
-        'motion-hover-lift group flex items-start gap-3 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-desk)]/60 p-3.5 transition-colors hover:border-[var(--line-strong)] hover:bg-white hover:shadow-[var(--shadow-sm)] sm:p-4',
+        'motion-hover-lift group flex items-start gap-3 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-muted)]/40 p-3.5 transition-colors hover:border-[var(--line-strong)] hover:bg-[var(--bg-elevated)] hover:shadow-[var(--shadow-sm)] sm:p-4',
         className,
       )}
     >
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius)] bg-[var(--highlight-soft)] text-[var(--highlight)]">
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius)] bg-[var(--info-soft)] text-[var(--info)]">
         <Icon className="size-4" aria-hidden strokeWidth={1.75} />
       </span>
       <span className="min-w-0 flex-1">

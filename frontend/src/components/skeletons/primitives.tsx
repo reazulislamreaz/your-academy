@@ -83,7 +83,7 @@ export function MetricTileSkeletonExact({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        'flex min-w-0 items-center gap-2.5 rounded-[14px] border border-[var(--line)] bg-white p-3 shadow-[var(--shadow-sm)] sm:gap-3 sm:p-4',
+        'flex min-w-0 items-center gap-2.5 rounded-[14px] border border-[var(--line)] bg-[var(--bg-elevated)] p-3 shadow-[var(--shadow-sm)] sm:gap-3 sm:p-4',
         className,
       )}
     >
@@ -101,7 +101,7 @@ export function StatCardSkeletonExact({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        'relative min-w-0 overflow-hidden rounded-[16px] border border-[var(--line)] bg-white p-4 shadow-[var(--shadow-sm)] sm:p-5',
+        'relative min-w-0 overflow-hidden rounded-[16px] border border-[var(--line)] bg-[var(--bg-elevated)] p-4 shadow-[var(--shadow-sm)] sm:p-5',
         className,
       )}
     >

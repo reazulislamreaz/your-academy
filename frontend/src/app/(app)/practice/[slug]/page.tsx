@@ -198,8 +198,8 @@ export default function PracticePlayerPage() {
                         className={cn(
                           'cursor-pointer rounded-[var(--radius-sm)] border px-3 py-2 text-left text-sm transition-colors',
                           selected
-                            ? 'border-[var(--highlight)] bg-[var(--highlight-soft)] text-[var(--highlight)]'
-                            : 'border-[var(--line)] hover:bg-[var(--bg-muted)]',
+                            ? 'border-[var(--learn-selected)] bg-[var(--learn-selected-soft)] text-[var(--info-fg)]'
+                            : 'border-[var(--line)] text-[var(--ink-soft)] hover:bg-[var(--bg-muted)]',
                         )}
                       >
                         <span className="mr-2 font-semibold">{opt.label}.</span>

@@ -13,8 +13,12 @@ const badgeVariants = cva(
         danger: 'bg-[var(--danger-soft)] text-[var(--danger-fg)]',
         warning: 'bg-[var(--warning-soft)] text-[var(--warning-fg)]',
         info: 'bg-[var(--info-soft)] text-[var(--info-fg)]',
-        inverse: 'bg-[var(--bg-inverse)] text-white',
-        outline: 'border border-[var(--line-strong)] bg-white text-[var(--muted-strong)]',
+        /** Learning insight / marked for review */
+        insight: 'bg-[var(--insight-soft)] text-[var(--insight-fg)]',
+        /** Saved / bookmarked MCQ */
+        bookmark: 'bg-[var(--bookmark-soft)] text-[var(--bookmark-fg)]',
+        inverse: 'bg-[var(--bg-inverse)] text-[var(--bg)]',
+        outline: 'border border-[var(--line-strong)] bg-[var(--bg-elevated)] text-[var(--muted-strong)]',
       },
     },
     defaultVariants: { variant: 'default' },
@@ -28,3 +32,5 @@ export function Badge({
 }: HTMLAttributes<HTMLSpanElement> & VariantProps<typeof badgeVariants>) {
   return <span className={cn(badgeVariants({ variant }), className)} {...props} />;
 }
+
+export { badgeVariants };

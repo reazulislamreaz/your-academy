@@ -197,7 +197,7 @@ export function SaveToCollectionDialog({ open, questionId, questionTitle, onClos
         aria-labelledby={titleId}
         className={cn(
           'relative z-10 flex max-h-[min(36rem,92vh)] w-full flex-col overflow-hidden',
-          'rounded-t-[var(--radius-xl)] border border-[var(--line)] bg-white shadow-[var(--shadow-lg)]',
+          'rounded-t-[var(--radius-xl)] border border-[var(--line)] bg-[var(--bg-elevated)] shadow-[var(--shadow-lg)]',
           'motion-scale-in sm:max-w-md sm:rounded-[var(--radius-xl)]',
         )}
       >

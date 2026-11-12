@@ -49,6 +49,30 @@
   --info: #175cd3;
   --info-soft: #e0eaff;
   --info-fg: #1849a9;
+  --accent-soft: #e0eaff;
+  --bg-soft: #f5f8fc;
+  --insight: #6d28d9;
+  --insight-soft: #f3e8ff;
+  --insight-fg: #5b21b6;
+  --bookmark: #b45309;
+  --bookmark-soft: #fff4e5;
+  --bookmark-fg: #92400e;
+  --learn-correct: var(--success);
+  --learn-correct-soft: var(--success-soft);
+  --learn-incorrect: var(--danger);
+  --learn-incorrect-soft: var(--danger-soft);
+  --learn-selected: var(--info);
+  --learn-selected-soft: var(--info-soft);
+  --learn-idle: var(--muted);
+  --learn-bookmarked: var(--bookmark);
+  --learn-completed: var(--success);
+  --learn-review: var(--insight);
+  --viz-positive: var(--success);
+  --viz-negative: var(--danger);
+  --viz-neutral: var(--info);
+  --viz-insight: var(--insight);
+  --viz-achievement: var(--bookmark);
+  --focus-ring: 0 0 0 3px rgba(0, 32, 80, 0.18);
 
   /* Elevation — softer, layered depth */
   --shadow-sm: 0 1px 2px rgba(10, 31, 68, 0.04), 0 1px 1px rgba(10, 31, 68, 0.03);
@@ -68,8 +92,10 @@
 
   /* Shell geometry */
   --app-sidebar-width: 16.25rem;
+  --app-sidebar-collapsed-width: 4.75rem;
   --app-content-max: 72rem;
   --header-h: 3.75rem;
+  --accent-blue: #3b82f6;
 
   /* Motion */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
@@ -134,7 +160,7 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* Quiet desk paper wash for learner/admin canvases (GPU-cheap). */
+/* Quiet desk paper wash for admin / legacy light canvases (GPU-cheap). */
 .desk-canvas {
   background-color: var(--bg-desk);
   background-image:
@@ -144,32 +170,152 @@ body {
   background-attachment: local;
 }
 
-/* Learner sidebar surface */
-.learner-sidebar {
+/*
+  Learner dark theme (DEC-027) — premium navy-charcoal for (app) only.
+  Marketing / auth / admin keep light :root tokens.
+
+  Roles (every token has one job):
+  - Surfaces: layered cool navy charcoal (depth without flat black)
+  - Primary (--highlight): brand red CTAs
+  - Secondary (--accent): focus, selection, neutral stats
+  - Success / Danger / Warning / Info: semantic feedback
+  - Insight / Bookmark: learning-status accents (not chrome decoration)
+*/
+.learner-theme {
+  color-scheme: dark;
+
+  /* Surfaces — cool navy charcoal stack (canvas → card → hover) */
+  --bg: #0b1020;
+  --bg-desk: #0b1020;
+  --bg-sidebar: #090e1a;
+  --bg-elevated: #141b2d;
+  --bg-muted: #1c2640;
+  --bg-soft: #182238;
+  --bg-inverse: #e8edf7;
+
+  /* Text — AA+ on elevated surfaces */
+  --ink: #f1f5f9;
+  --ink-soft: #d8dee9;
+  --muted: #94a3b8;
+  --muted-strong: #cbd5e1;
+
+  /* Borders */
+  --line: rgba(148, 163, 184, 0.14);
+  --line-strong: rgba(148, 163, 184, 0.26);
+
+  /* Brand */
+  --highlight: #e31e24;
+  --highlight-fg: #ffffff;
+  --highlight-soft: rgba(227, 30, 36, 0.18);
+  --highlight-hover: rgba(227, 30, 36, 0.28);
+  --accent: #5b8def;
+  --accent-fg: #ffffff;
+  --accent-blue: #5b8def;
+  --accent-soft: rgba(91, 141, 239, 0.16);
+  --brand-wash: rgba(91, 141, 239, 0.06);
+  --brand-wash-strong: rgba(91, 141, 239, 0.12);
+
+  /* Semantic status */
+  --success: #34d399;
+  --success-soft: rgba(52, 211, 153, 0.14);
+  --success-fg: #a7f3d0;
+  --danger: #f07178;
+  --danger-soft: rgba(240, 113, 120, 0.15);
+  --danger-fg: #fecaca;
+  --warning: #f0b429;
+  --warning-soft: rgba(240, 180, 41, 0.15);
+  --warning-fg: #fde68a;
+  --info: #5b8def;
+  --info-soft: rgba(91, 141, 239, 0.16);
+  --info-fg: #bfdbfe;
+
+  /* Learning / insight accents (MCQ + analytics meaning) */
+  --insight: #a78bfa;
+  --insight-soft: rgba(167, 139, 250, 0.16);
+  --insight-fg: #ddd6fe;
+  --bookmark: #e8b84a;
+  --bookmark-soft: rgba(232, 184, 74, 0.16);
+  --bookmark-fg: #fde68a;
+
+  /* Learning interaction aliases */
+  --learn-correct: var(--success);
+  --learn-correct-soft: var(--success-soft);
+  --learn-incorrect: var(--danger);
+  --learn-incorrect-soft: var(--danger-soft);
+  --learn-selected: var(--accent);
+  --learn-selected-soft: var(--accent-soft);
+  --learn-idle: var(--muted);
+  --learn-bookmarked: var(--bookmark);
+  --learn-completed: var(--success);
+  --learn-review: var(--insight);
+
+  /* Data viz meanings */
+  --viz-positive: var(--success);
+  --viz-negative: var(--danger);
+  --viz-neutral: var(--info);
+  --viz-insight: var(--insight);
+  --viz-achievement: var(--bookmark);
+
+  /* Focus */
+  --focus-ring: 0 0 0 3px rgba(91, 141, 239, 0.35);
+
+  /* Elevation — soft depth, no neon glow */
+  --shadow-sm: 0 1px 0 rgba(255, 255, 255, 0.04);
+  --shadow: 0 10px 32px rgba(4, 8, 20, 0.45);
+  --shadow-lg: 0 24px 56px rgba(4, 8, 20, 0.55);
+  --shadow-header: 0 1px 0 rgba(148, 163, 184, 0.1);
+
+  --radius-sm: 10px;
+  --radius: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 22px;
+
+  background: var(--bg-desk);
+  color: var(--ink);
+  font-family: var(--font-learner), var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.learner-theme .font-display,
+.learner-theme .font-sans {
+  font-family: var(--font-learner), var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.learner-theme .desk-canvas {
+  background-color: var(--bg-desk);
+  background-image:
+    radial-gradient(ellipse 55% 42% at 100% -5%, rgba(91, 141, 239, 0.07), transparent 58%),
+    radial-gradient(ellipse 40% 35% at 0% 100%, rgba(167, 139, 250, 0.04), transparent 55%);
+}
+
+.learner-theme .learner-sidebar {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(251, 252, 254, 0.98)),
+    linear-gradient(180deg, rgba(20, 27, 45, 0.35), transparent 40%),
     var(--bg-sidebar);
   box-shadow: inset -1px 0 0 var(--line);
 }
 
-/* Active nav pill with left rail */
+.learner-theme :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.learner-theme .text-secondary {
+  color: var(--muted);
+}
+
+/* Learner sidebar surface (light fallback if used outside .learner-theme) */
+.learner-sidebar {
+  background: var(--bg-sidebar);
+  box-shadow: inset -1px 0 0 var(--line);
+}
+
+/* Active nav pill — soft fill; no colored left rail on dark Orbit chrome */
 .learner-nav-link {
   position: relative;
   transition:
     background-color var(--duration-fast) var(--ease-out),
     color var(--duration-fast) var(--ease-out),
     transform var(--duration-fast) var(--ease-out);
-}
-
-.learner-nav-link[data-active='true']::before {
-  content: '';
-  position: absolute;
-  top: 20%;
-  bottom: 20%;
-  left: 0;
-  width: 3px;
-  border-radius: 999px;
-  background: var(--highlight);
 }
 
 /* Prefer these for secondary copy instead of ultra-faint muted colors */
@@ -580,6 +726,17 @@ input:disabled {
     transparent 100%
   );
   pointer-events: none;
+}
+
+.learner-theme .skeleton::after {
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    transparent 35%,
+    color-mix(in srgb, #ffffff 12%, transparent) 50%,
+    transparent 65%,
+    transparent 100%
+  );
 }
 
 .skeleton-on-inverse {

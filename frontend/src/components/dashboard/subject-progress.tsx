@@ -37,10 +37,10 @@ export function SubjectProgress({ items }: Props) {
                   className={cn(
                     'h-full rounded-full transition-all',
                     row.accuracyPercent >= 70
-                      ? 'bg-[var(--success)]'
+                      ? 'bg-[var(--viz-positive)]'
                       : row.accuracyPercent >= 40
-                        ? 'bg-[var(--info)]'
-                        : 'bg-[var(--highlight)]',
+                        ? 'bg-[var(--viz-neutral)]'
+                        : 'bg-[var(--viz-negative)]',
                   )}
                   style={{ width: `${Math.max(4, row.accuracyPercent)}%` }}
                 />

@@ -11,7 +11,6 @@ import {
   FileText,
   Sparkles,
   Target,
-  Timer,
   XCircle,
 } from 'lucide-react';
 import { useEffect } from 'react';
@@ -71,13 +70,13 @@ function SectionTitle({
 }) {
   return (
     <div className="flex items-center justify-between gap-2">
-      <h2 className="min-w-0 truncate font-display text-[0.9375rem] font-bold tracking-tight text-[var(--ink)] sm:text-base">
+      <h2 className="min-w-0 truncate text-[0.9375rem] font-semibold tracking-tight text-[var(--ink)] sm:text-base">
         {title}
       </h2>
       {href && linkLabel ? (
         <Link
           href={href}
-          className="shrink-0 text-xs font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
+          className="shrink-0 text-xs font-semibold text-[var(--muted)] underline-offset-2 hover:text-[var(--ink)] hover:underline"
         >
           {linkLabel}
         </Link>
@@ -92,7 +91,7 @@ function TrendPill({ children, muted }: { children: string; muted?: boolean }) {
       className={cn(
         'inline-flex rounded-full px-3 py-1 text-xs font-semibold',
         muted
-          ? 'bg-[var(--bg-muted)] text-[var(--muted-strong)]'
+          ? 'bg-[var(--bg-muted)] text-[var(--muted)]'
           : 'bg-[var(--success-soft)] text-[var(--success-fg)]',
       )}
     >
@@ -173,21 +172,23 @@ export default function StudyHomePage() {
     ? `/questions/${last.id}${last.filterQs ? `?${last.filterQs}` : ''}`
     : '/questions';
 
+  const progressLine =
+    perf.weekAttempts > 0
+      ? `You checked ${perf.weekAttempts.toLocaleString()} MCQ${perf.weekAttempts === 1 ? '' : 's'} this week · ${perf.accuracyPercent}% overall accuracy`
+      : perf.uniqueQuestions > 0
+        ? `${perf.uniqueQuestions.toLocaleString()} unique MCQs practiced · ${perf.accuracyPercent}% accuracy`
+        : 'Start a check to unlock progress here.';
+
   return (
     <div className="flex w-full flex-col gap-7 pb-10 sm:gap-8">
-      {/* Welcome */}
+      {/* Orbit title block */}
       <div className="motion-rise flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0 space-y-2">
-          <p className="flex items-center gap-2.5 text-[0.6875rem] font-semibold tracking-[0.16em] text-[var(--highlight)] uppercase">
-            <span aria-hidden className="inline-block h-1 w-6 shrink-0 rounded-full bg-[var(--highlight)]" />
-            Study desk
-          </p>
-          <h1 className="font-display text-[clamp(1.75rem,4vw,2.25rem)] font-bold tracking-tight text-[var(--ink)]">
-            Welcome back, {displayName}
+        <div className="min-w-0 space-y-1.5">
+          <h1 className="text-[clamp(1.75rem,4vw,2.25rem)] font-semibold tracking-tight text-[var(--ink)]">
+            Dashboard
           </h1>
-          <p className="max-w-xl text-sm leading-relaxed text-[var(--muted-strong)] sm:text-[0.9375rem]">
-            Track your progress and practice every day. Your answers and folders stay private to this
-            account.
+          <p className="max-w-xl text-sm leading-relaxed text-[var(--muted)] sm:text-[0.9375rem]">
+            Welcome back, {displayName}. {progressLine}
           </p>
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
@@ -216,12 +217,14 @@ export default function StudyHomePage() {
         </Alert>
       ) : null}
 
+      {/* Two wide KPI cards */}
       {!statsFailed ? (
-        <div className="motion-stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="motion-stagger grid gap-4 md:grid-cols-2">
           <HomeStatCard
+            tone="neutral"
             icon={ClipboardCheck}
             value={perf.uniqueQuestions.toLocaleString()}
-            label="MCQs Solved"
+            label="MCQs practiced"
             subtitle="Unique questions you have checked"
             footer={
               <TrendPill muted={perf.weekAttempts === 0}>
@@ -233,55 +236,139 @@ export default function StudyHomePage() {
           />
 
           <HomeStatCard
+            tone="positive"
             icon={Target}
-            iconClassName="text-[var(--highlight)]"
             value={`${perf.accuracyPercent}%`}
-            label="Success Rate"
+            label="Success rate"
+            subtitle={
+              analyticsFailed
+                ? 'Accuracy across all checks'
+                : `Study time ${formatStudyHours(totalSec)} · week ${weekHoursLabel || '0'}`
+            }
             footer={
-              <div className="flex justify-start">
+              <div className="flex items-center justify-between gap-4">
+                <TrendPill muted={analyticsFailed || weekSec === 0}>
+                  {analyticsFailed
+                    ? 'Study time unavailable'
+                    : weekSec > 0
+                      ? `+${weekHoursLabel} study this week`
+                      : 'No study time this week'}
+                </TrendPill>
                 <ProgressRing
                   value={perf.accuracyPercent}
-                  size={84}
-                  stroke={8}
+                  size={72}
+                  stroke={7}
                   label={`${perf.accuracyPercent}%`}
-                  color="var(--ink)"
+                  color="var(--viz-positive)"
                   trackColor="var(--line)"
                 />
               </div>
             }
           />
-
-          <HomeStatCard
-            icon={Timer}
-            value={analyticsFailed ? '—' : formatStudyHours(totalSec)}
-            label="Study Time"
-            className="sm:col-span-2 xl:col-span-1"
-            footer={
-              <TrendPill muted={analyticsFailed || weekSec === 0}>
-                {analyticsFailed
-                  ? 'Study time unavailable'
-                  : weekSec > 0
-                    ? `+${weekHoursLabel} this week`
-                    : 'No study time this week'}
-              </TrendPill>
-            }
-          />
         </div>
       ) : null}
 
+      {/* Large recent practice panel */}
+      <Surface id="exam-history" elevated className="scroll-mt-24 space-y-4 p-4 sm:p-6">
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <h2 className="text-[0.9375rem] font-semibold tracking-tight text-[var(--ink)] sm:text-base">
+              Recent practice
+            </h2>
+            <p className="mt-0.5 text-xs text-[var(--muted)]">Latest answer checks from your account</p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <Link
+              href="/results"
+              className="text-xs font-semibold text-[var(--muted)] underline-offset-2 hover:text-[var(--ink)] hover:underline"
+            >
+              Quiz results
+            </Link>
+            <Badge variant="outline">{perf.recentAttempts.length}</Badge>
+          </div>
+        </div>
+        {statsFailed ? <Alert variant="danger">Could not load recent checks.</Alert> : null}
+        {stats.isLoading ? <HomeActivityListSkeleton rows={5} /> : null}
+        {!stats.isLoading && !statsFailed && perf.recentAttempts.length === 0 ? (
+          <EmptyState
+            nested
+            className="py-10"
+            title="No checks yet"
+            description="Results appear after you press Check answer on a practice question."
+            action={
+              <Link href="/questions">
+                <Button size="sm">Start a check</Button>
+              </Link>
+            }
+          />
+        ) : null}
+        {!stats.isLoading && !statsFailed && perf.recentAttempts.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[36rem] border-collapse text-left text-sm">
+              <thead>
+                <tr className="border-b border-[var(--line)] text-[0.6875rem] font-semibold tracking-[0.08em] text-[var(--muted)] uppercase">
+                  <th className="pb-3 pr-4 font-semibold">Question</th>
+                  <th className="pb-3 pr-4 font-semibold">Category</th>
+                  <th className="pb-3 pr-4 font-semibold">Result</th>
+                  <th className="pb-3 font-semibold">When</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--line)]">
+                {perf.recentAttempts.map((item) => (
+                  <tr key={item.id} className="group">
+                    <td className="py-3.5 pr-4">
+                      <Link
+                        href={`/questions/${item.questionId}`}
+                        className="flex items-center gap-3 font-medium text-[var(--ink)] transition-colors group-hover:text-[var(--ink-soft)]"
+                      >
+                        <span
+                          className={cn(
+                            'flex size-8 shrink-0 items-center justify-center rounded-full',
+                            item.isCorrect
+                              ? 'bg-[var(--learn-correct-soft)] text-[var(--learn-correct)]'
+                              : 'bg-[var(--learn-incorrect-soft)] text-[var(--learn-incorrect)]',
+                          )}
+                        >
+                          {item.isCorrect ? (
+                            <CheckCircle2 className="size-4" aria-hidden strokeWidth={1.75} />
+                          ) : (
+                            <XCircle className="size-4" aria-hidden strokeWidth={1.75} />
+                          )}
+                        </span>
+                        <span className="line-clamp-1">{item.title}</span>
+                      </Link>
+                    </td>
+                    <td className="py-3.5 pr-4 text-[var(--muted)]">{item.categoryName}</td>
+                    <td className="py-3.5 pr-4">
+                      <Badge variant={item.isCorrect ? 'success' : 'danger'}>
+                        {item.isCorrect ? 'Correct' : 'Wrong'}
+                      </Badge>
+                    </td>
+                    <td className="py-3.5 whitespace-nowrap text-[var(--muted)]">
+                      {new Date(item.createdAt).toLocaleString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
+      </Surface>
+
+      {/* Continue + quick actions + answer mix */}
       <div className="grid gap-4 lg:grid-cols-5">
         <Surface elevated className="space-y-5 p-4 sm:p-5 lg:col-span-3">
-          <SectionTitle title="Continue where you left off" href="/questions" linkLabel="Question bank" />
+          <SectionTitle title="Continue practice" href="/questions" linkLabel="Question bank" />
           {last ? (
-            <div className="rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-desk)] p-4">
+            <div className="rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-muted)]/50 p-4">
               <p className="text-[0.6875rem] font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
                 Last opened
               </p>
-              <p className="mt-1.5 font-display text-lg font-bold tracking-tight text-[var(--ink)] break-words">
+              <p className="mt-1.5 text-lg font-semibold tracking-tight text-[var(--ink)] break-words">
                 {last.title}
               </p>
               {last.categoryName ? (
-                <p className="mt-0.5 text-sm text-[var(--muted-strong)]">{last.categoryName}</p>
+                <p className="mt-0.5 text-sm text-[var(--muted)]">{last.categoryName}</p>
               ) : null}
               <Link href={resumeHref} className="mt-3 inline-flex">
                 <Button size="sm">
@@ -375,9 +462,9 @@ export default function StudyHomePage() {
                 formatValue={formatStudyMinutes}
                 emptyLabel="Study time appears while you browse with this account signed in."
                 data={[
-                  { label: 'Today', value: daySec, color: 'var(--highlight)' },
-                  { label: 'This week', value: weekSec, color: 'var(--info)' },
-                  { label: 'All time', value: totalSec, color: 'var(--bg-inverse)' },
+                  { label: 'Today', value: daySec, color: 'var(--viz-achievement)' },
+                  { label: 'This week', value: weekSec, color: 'var(--viz-neutral)' },
+                  { label: 'All time', value: totalSec, color: 'var(--viz-insight)' },
                 ]}
               />
             </ContentIn>
@@ -386,80 +473,6 @@ export default function StudyHomePage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Surface id="exam-history" elevated className="scroll-mt-24 space-y-3 p-4 sm:p-5">
-          <div className="flex items-center justify-between gap-2">
-            <h2 className="min-w-0 truncate font-display text-[0.9375rem] font-bold tracking-tight text-[var(--ink)] sm:text-base">
-              Recent answer checks
-            </h2>
-            <div className="flex shrink-0 items-center gap-2">
-              <Link
-                href="/results"
-                className="text-xs font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
-              >
-                Quiz results
-              </Link>
-              <Badge variant="outline">{perf.recentAttempts.length} shown</Badge>
-            </div>
-          </div>
-          {statsFailed ? <Alert variant="danger">Could not load recent checks.</Alert> : null}
-          {stats.isLoading ? <HomeActivityListSkeleton rows={4} /> : null}
-          {!stats.isLoading && !statsFailed && perf.recentAttempts.length === 0 ? (
-            <EmptyState
-              nested
-              className="py-8"
-              title="No checks yet"
-              description="Results appear after you press Check answer on a practice question."
-              action={
-                <Link href="/questions">
-                  <Button size="sm" variant="soft">
-                    Start a check
-                  </Button>
-                </Link>
-              }
-            />
-          ) : null}
-          {!stats.isLoading && !statsFailed && perf.recentAttempts.length > 0 ? (
-            <ul className="divide-y divide-[var(--line)]">
-              {perf.recentAttempts.map((item) => (
-                <li key={item.id}>
-                  <Link
-                    href={`/questions/${item.questionId}`}
-                    className="flex items-center justify-between gap-3 rounded-[var(--radius-sm)] px-1.5 py-2.5 transition-colors hover:bg-[var(--bg-muted)]"
-                  >
-                    <span className="flex min-w-0 items-center gap-3">
-                      <span
-                        className={cn(
-                          'flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)]',
-                          item.isCorrect
-                            ? 'bg-[var(--success-soft)] text-[var(--success)]'
-                            : 'bg-[var(--highlight-soft)] text-[var(--highlight)]',
-                        )}
-                      >
-                        {item.isCorrect ? (
-                          <CheckCircle2 className="size-4" aria-hidden />
-                        ) : (
-                          <XCircle className="size-4" aria-hidden />
-                        )}
-                      </span>
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm font-medium text-[var(--ink)]">
-                          {item.title}
-                        </span>
-                        <span className="block truncate text-xs text-[var(--muted-strong)]">
-                          {item.categoryName} · {new Date(item.createdAt).toLocaleString()}
-                        </span>
-                      </span>
-                    </span>
-                    <Badge variant={item.isCorrect ? 'success' : 'danger'} className="shrink-0">
-                      {item.isCorrect ? 'Correct' : 'Wrong'}
-                    </Badge>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </Surface>
-
         <Surface elevated className="space-y-3 p-4 sm:p-5">
           <SectionTitle
             title={preferredIds.length ? 'Your topics' : 'Recommended topics'}
@@ -486,7 +499,7 @@ export default function StudyHomePage() {
                       <span className="block truncate text-sm font-medium text-[var(--ink)]">
                         {cat.name}
                       </span>
-                      <span className="text-xs text-[var(--muted-strong)]">
+                      <span className="text-xs text-[var(--muted)]">
                         {cat.children.length} subtopics
                       </span>
                     </span>
@@ -499,9 +512,7 @@ export default function StudyHomePage() {
             </ul>
           )}
         </Surface>
-      </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
         <Surface elevated className="space-y-3 overflow-hidden p-4 sm:p-5">
           <SectionTitle title="Updates & circulars" href="/news" linkLabel="All news" />
           {news.isLoading ? <HomeActivityListSkeleton rows={3} /> : null}
@@ -522,7 +533,7 @@ export default function StudyHomePage() {
                   >
                     <p className="truncate text-sm font-medium text-[var(--ink)]">{item.title}</p>
                     {item.summary ? (
-                      <p className="mt-0.5 line-clamp-2 break-words text-xs text-[var(--muted-strong)]">
+                      <p className="mt-0.5 line-clamp-2 break-words text-xs text-[var(--muted)]">
                         {item.summary}
                       </p>
                     ) : null}
@@ -532,56 +543,56 @@ export default function StudyHomePage() {
             </ul>
           )}
         </Surface>
-
-        <Surface elevated className="space-y-3 overflow-hidden p-4 sm:p-5">
-          <SectionTitle title="Saved for later" href="/bookmarks" linkLabel="View all" />
-          {stats.isLoading ? <HomeActivityListSkeleton rows={3} /> : null}
-          {!stats.isLoading &&
-          (!stats.data ||
-            (stats.data.recentQuestions.length === 0 &&
-              stats.data.recentDocuments.length === 0)) ? (
-            <EmptyState
-              nested
-              className="py-8"
-              title="Nothing saved yet"
-              description="Bookmark questions or PDFs while you practice — they land here."
-              action={
-                <Link href="/questions">
-                  <Button size="sm" variant="soft">
-                    Browse questions
-                  </Button>
-                </Link>
-              }
-            />
-          ) : (
-            <ul className="divide-y divide-[var(--line)]">
-              {(stats.data?.recentQuestions ?? []).slice(0, 4).map((item) => (
-                <li key={item.bookmarkId}>
-                  <Link
-                    href={`/questions/${item.id}`}
-                    className="flex min-w-0 items-center justify-between gap-3 rounded-[var(--radius-sm)] px-1.5 py-2.5 transition-colors hover:bg-[var(--bg-muted)]"
-                  >
-                    <span className="min-w-0 truncate text-sm font-medium">{item.title}</span>
-                    <Badge variant="outline" className="shrink-0">
-                      {item.difficulty}
-                    </Badge>
-                  </Link>
-                </li>
-              ))}
-              {(stats.data?.recentDocuments ?? []).slice(0, 3).map((item) => (
-                <li key={item.bookmarkId}>
-                  <Link
-                    href={`/documents/${item.id}`}
-                    className="block truncate rounded-[var(--radius-sm)] px-1.5 py-2.5 text-sm font-medium transition-colors hover:bg-[var(--bg-muted)]"
-                  >
-                    {item.title}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Surface>
       </div>
+
+      <Surface elevated className="space-y-3 overflow-hidden p-4 sm:p-5">
+        <SectionTitle title="Saved for later" href="/bookmarks" linkLabel="View all" />
+        {stats.isLoading ? <HomeActivityListSkeleton rows={3} /> : null}
+        {!stats.isLoading &&
+        (!stats.data ||
+          (stats.data.recentQuestions.length === 0 &&
+            stats.data.recentDocuments.length === 0)) ? (
+          <EmptyState
+            nested
+            className="py-8"
+            title="Nothing saved yet"
+            description="Bookmark questions or PDFs while you practice — they land here."
+            action={
+              <Link href="/questions">
+                <Button size="sm" variant="soft">
+                  Browse questions
+                </Button>
+              </Link>
+            }
+          />
+        ) : (
+          <ul className="divide-y divide-[var(--line)] sm:columns-2 sm:gap-6">
+            {(stats.data?.recentQuestions ?? []).slice(0, 4).map((item) => (
+              <li key={item.bookmarkId} className="break-inside-avoid">
+                <Link
+                  href={`/questions/${item.id}`}
+                  className="flex min-w-0 items-center justify-between gap-3 rounded-[var(--radius-sm)] px-1.5 py-2.5 transition-colors hover:bg-[var(--bg-muted)]"
+                >
+                  <span className="min-w-0 truncate text-sm font-medium">{item.title}</span>
+                  <Badge variant="outline" className="shrink-0">
+                    {item.difficulty}
+                  </Badge>
+                </Link>
+              </li>
+            ))}
+            {(stats.data?.recentDocuments ?? []).slice(0, 3).map((item) => (
+              <li key={item.bookmarkId} className="break-inside-avoid">
+                <Link
+                  href={`/documents/${item.id}`}
+                  className="block truncate rounded-[var(--radius-sm)] px-1.5 py-2.5 text-sm font-medium transition-colors hover:bg-[var(--bg-muted)]"
+                >
+                  {item.title}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Surface>
     </div>
   );
 }

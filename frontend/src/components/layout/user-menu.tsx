@@ -123,7 +123,7 @@ export function UserMenu({
         {open ? (
           <div
             id={panelId}
-            className="motion-pop absolute right-0 z-40 mt-2 w-52 overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-white shadow-[var(--shadow-lg)]"
+            className="motion-pop absolute right-0 z-40 mt-2 w-52 overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] shadow-[var(--shadow-lg)]"
           >
             <div className="border-b border-[var(--line)] px-3 py-2.5">
               <p className="truncate text-sm font-semibold text-[var(--ink)]">{me.data.name}</p>

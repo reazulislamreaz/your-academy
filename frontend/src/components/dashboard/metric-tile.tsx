@@ -1,15 +1,16 @@
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type Tone = 'blue' | 'green' | 'teal' | 'amber' | 'red' | 'navy';
+type Tone = 'blue' | 'green' | 'teal' | 'amber' | 'red' | 'navy' | 'purple';
 
 const tones: Record<Tone, { bg: string; icon: string }> = {
-  blue: { bg: 'bg-[var(--info-soft)]', icon: 'text-[var(--info)]' },
-  green: { bg: 'bg-[var(--success-soft)]', icon: 'text-[var(--success)]' },
-  teal: { bg: 'bg-[var(--success-soft)]', icon: 'text-[var(--success)]' },
-  amber: { bg: 'bg-[#fff4e5]', icon: 'text-[var(--warning)]' },
-  red: { bg: 'bg-[var(--highlight-soft)]', icon: 'text-[var(--highlight)]' },
-  navy: { bg: 'bg-[var(--brand-wash-strong)]', icon: 'text-[var(--ink)]' },
+  blue: { bg: 'bg-[var(--info-soft)]', icon: 'text-[var(--viz-neutral)]' },
+  green: { bg: 'bg-[var(--success-soft)]', icon: 'text-[var(--viz-positive)]' },
+  teal: { bg: 'bg-[var(--success-soft)]', icon: 'text-[var(--viz-positive)]' },
+  amber: { bg: 'bg-[var(--bookmark-soft)]', icon: 'text-[var(--viz-achievement)]' },
+  red: { bg: 'bg-[var(--danger-soft)]', icon: 'text-[var(--viz-negative)]' },
+  navy: { bg: 'bg-[var(--brand-wash-strong)]', icon: 'text-[var(--ink-soft)]' },
+  purple: { bg: 'bg-[var(--insight-soft)]', icon: 'text-[var(--viz-insight)]' },
 };
 
 type Props = {
@@ -27,7 +28,7 @@ export function MetricTile({ label, value, suffix, icon: Icon, tone = 'navy', cl
   return (
     <div
       className={cn(
-        'motion-hover-lift flex min-w-0 items-center gap-3 rounded-[var(--radius-lg)] border border-[var(--line)] bg-white p-3.5 shadow-[var(--shadow-sm)] sm:p-4',
+        'motion-hover-lift flex min-w-0 items-center gap-3 rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] p-3.5 shadow-[var(--shadow-sm)] sm:p-4',
         className,
       )}
     >
@@ -43,10 +44,10 @@ export function MetricTile({ label, value, suffix, icon: Icon, tone = 'navy', cl
         <p className="font-display text-xl font-bold tabular-nums text-[var(--ink)] sm:text-2xl">
           {value}
           {suffix ? (
-            <span className="text-sm font-semibold text-[var(--muted-strong)]">{suffix}</span>
+            <span className="text-sm font-semibold text-[var(--muted)]">{suffix}</span>
           ) : null}
         </p>
-        <p className="truncate text-xs font-medium text-[var(--muted-strong)] sm:text-sm">{label}</p>
+        <p className="truncate text-xs font-medium text-[var(--muted)] sm:text-sm">{label}</p>
       </div>
     </div>
   );

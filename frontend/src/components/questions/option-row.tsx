@@ -13,6 +13,10 @@ type Props = {
   onSelect: () => void;
 };
 
+/**
+ * MCQ option — learning-status colors (DEC-027):
+ * idle = neutral, selected = accent blue, correct = soft green, incorrect = soft red.
+ */
 export function OptionRow({ label, content, state, disabled, onSelect }: Props) {
   const showCorrect = state === 'correct' || state === 'missed';
   const showWrong = state === 'incorrect';
@@ -27,11 +31,12 @@ export function OptionRow({ label, content, state, disabled, onSelect }: Props) 
       className={cn(
         'motion-press group flex w-full items-start gap-3 rounded-[var(--radius)] border px-4 py-3.5 text-left transition-[border-color,background-color,transform] duration-[var(--duration-fast)] ease-[var(--ease-out)]',
         state === 'idle' &&
-          'border-[var(--line)] bg-[var(--bg-elevated)] hover:border-[var(--line-strong)] hover:bg-[var(--brand-wash)]',
-        state === 'selected' && 'border-[var(--highlight)] bg-[var(--highlight-soft)] shadow-[var(--shadow-sm)]',
-        state === 'correct' && 'border-[var(--success)] bg-[var(--success-soft)]',
-        state === 'incorrect' && 'border-[var(--danger)] bg-[var(--danger-soft)]',
-        state === 'missed' && 'border-[var(--success)]/50 bg-[var(--success-soft)]/60',
+          'border-[var(--line)] bg-[var(--bg-elevated)] hover:border-[var(--line-strong)] hover:bg-[var(--bg-muted)]',
+        state === 'selected' &&
+          'border-[var(--learn-selected)] bg-[var(--learn-selected-soft)] shadow-[var(--shadow-sm)]',
+        state === 'correct' && 'border-[var(--learn-correct)] bg-[var(--learn-correct-soft)]',
+        state === 'incorrect' && 'border-[var(--learn-incorrect)] bg-[var(--learn-incorrect-soft)]',
+        state === 'missed' && 'border-[var(--learn-correct)]/55 bg-[var(--learn-correct-soft)]/70',
         disabled && state === 'idle' && 'opacity-80',
       )}
     >
@@ -39,10 +44,10 @@ export function OptionRow({ label, content, state, disabled, onSelect }: Props) 
         className={cn(
           'mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-xs font-bold',
           state === 'idle' && 'bg-[var(--bg-muted)] text-[var(--muted-strong)]',
-          state === 'selected' && 'bg-[var(--highlight)] text-white',
-          state === 'correct' && 'bg-[var(--success)] text-white',
-          state === 'incorrect' && 'bg-[var(--danger)] text-white',
-          state === 'missed' && 'bg-[var(--success)] text-white',
+          state === 'selected' && 'bg-[var(--learn-selected)] text-white',
+          state === 'correct' && 'bg-[var(--learn-correct)] text-[#06281c]',
+          state === 'incorrect' && 'bg-[var(--learn-incorrect)] text-white',
+          state === 'missed' && 'bg-[var(--learn-correct)] text-[#06281c]',
         )}
         aria-hidden
       >
@@ -54,13 +59,19 @@ export function OptionRow({ label, content, state, disabled, onSelect }: Props) 
         <span className="sr-only">{label}. </span>
         <span className="leading-relaxed text-[var(--ink-soft)]">{content}</span>
         {state === 'correct' ? (
-          <span className="mt-1 block text-xs font-semibold text-[var(--success)]">Correct answer</span>
+          <span className="mt-1 block text-xs font-semibold text-[var(--success-fg)]">
+            Correct answer
+          </span>
         ) : null}
         {state === 'incorrect' ? (
-          <span className="mt-1 block text-xs font-semibold text-[var(--danger)]">Your selection</span>
+          <span className="mt-1 block text-xs font-semibold text-[var(--danger-fg)]">
+            Your selection
+          </span>
         ) : null}
         {state === 'missed' ? (
-          <span className="mt-1 block text-xs font-semibold text-[var(--success)]">Correct answer</span>
+          <span className="mt-1 block text-xs font-semibold text-[var(--success-fg)]">
+            Correct answer
+          </span>
         ) : null}
       </span>
     </button>

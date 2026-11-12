@@ -110,17 +110,21 @@ export default function ResultDetailPage() {
             <div className="grid gap-2">
               {item.options.map((opt) => {
                 const selected = item.selectedOptionId === opt.id;
-                const showCorrect = data.answersVisible && opt.isCorrect;
+                const showCorrect = data.answersVisible && opt.isCorrect === true;
+                const showWrong =
+                  data.answersVisible && selected && opt.isCorrect === false;
                 return (
                   <div
                     key={opt.id}
                     className={cn(
                       'rounded-[var(--radius-sm)] border px-3 py-2 text-sm',
-                      showCorrect
-                        ? 'border-[var(--success)]/40 bg-[var(--success-soft)]'
-                        : selected
-                          ? 'border-[var(--highlight)]/40 bg-[var(--highlight-soft)]'
-                          : 'border-[var(--line)]',
+                      showCorrect && 'border-[var(--learn-correct)]/50 bg-[var(--learn-correct-soft)]',
+                      showWrong && 'border-[var(--learn-incorrect)]/45 bg-[var(--learn-incorrect-soft)]',
+                      selected &&
+                        !data.answersVisible &&
+                        'border-[var(--learn-selected)]/50 bg-[var(--learn-selected-soft)]',
+                      !showCorrect && !showWrong && !(selected && !data.answersVisible) &&
+                        'border-[var(--line)]',
                     )}
                   >
                     <span className="mr-2 font-semibold">{opt.label}.</span>

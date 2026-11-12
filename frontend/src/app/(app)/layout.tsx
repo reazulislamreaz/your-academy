@@ -5,7 +5,7 @@ import { PageShell } from '@/components/motion/page-shell';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="desk-canvas flex min-h-screen overflow-x-clip">
+    <div className="learner-theme desk-canvas flex min-h-screen overflow-x-clip">
       <div className="hidden lg:block">
         <div className="sticky top-0 h-screen">
           <AppSidebar />

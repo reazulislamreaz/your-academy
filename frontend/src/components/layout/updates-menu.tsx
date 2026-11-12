@@ -55,19 +55,19 @@ export function UpdatesMenu() {
         aria-label="Updates"
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          'relative flex h-10 w-10 items-center justify-center rounded-full border border-[var(--line)] bg-white text-[var(--ink-soft)] shadow-[var(--shadow-sm)] transition-colors hover:border-[var(--line-strong)] hover:bg-[var(--bg-muted)] hover:text-[var(--ink)]',
-          open && 'border-[var(--highlight)] text-[var(--highlight)]',
+          'relative flex h-10 w-10 items-center justify-center rounded-full border border-[var(--line)] bg-[var(--bg-elevated)] text-[var(--muted)] shadow-[var(--shadow-sm)] transition-colors hover:border-[var(--line-strong)] hover:bg-[var(--bg-muted)] hover:text-[var(--ink)]',
+          open && 'border-[var(--accent-blue)] text-[var(--accent-blue)]',
         )}
       >
-        <Bell className="h-4 w-4" strokeWidth={2} />
+        <Bell className="h-4 w-4" strokeWidth={1.75} />
         {showBadge ? (
-          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[var(--highlight)] ring-2 ring-white" />
+          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[var(--highlight)] ring-2 ring-[var(--bg-elevated)]" />
         ) : null}
       </button>
       {open ? (
         <div
           id={panelId}
-          className="motion-pop absolute right-0 z-40 mt-2 w-[min(20rem,calc(100vw-1.5rem))] overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-white shadow-[var(--shadow-lg)]"
+          className="motion-pop absolute right-0 z-40 mt-2 w-[min(20rem,calc(100vw-1.5rem))] overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] shadow-[var(--shadow-lg)]"
         >
           <div className="border-b border-[var(--line)] px-4 py-3">
             <p className="font-display text-sm font-bold tracking-tight">Updates</p>

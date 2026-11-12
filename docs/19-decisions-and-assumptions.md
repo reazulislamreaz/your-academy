@@ -22,6 +22,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | DEC-012 | Web auth via HTTP-only cookies + CSRF protection | CONFIRMED |
 | DEC-020 | pnpm workspaces + Turborepo | CONFIRMED |
 | DEC-026 | MCQ Save to Collection folders | CONFIRMED |
+| DEC-027 | Learner Orbit dark charcoal theme | CONFIRMED |
 
 ---
 
@@ -276,6 +277,15 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Question | Can learners organize saved MCQs into personal folders (Facebook-style Save to Collection)? |
 | Decision | **Yes for MCQs.** `BookmarkCollection` is private per user. A question is saved at most once per user (`@@unique([userId, questionId])`) and may sit in **one** collection or uncategorized (`collectionId` null). Re-saving / picking another folder **moves** the bookmark. Creating a folder + saving is one atomic flow. Deleting a folder uncategorizes its bookmarks (`ON DELETE SET NULL`). PDF bookmarks stay flat (no collections in v1). Caps: name ≤80 chars; ≤50 collections per user. |
 | Impact | Prisma migration, BookmarksModule APIs, question detail `collection`, Save modal UI, bookmarks page folders |
+| Status | **CONFIRMED** (product request 2026-11-12) |
+
+### DEC-027 — Learner Orbit dark charcoal theme
+
+| Field | Value |
+|-------|-------|
+| Question | Should the student app use a premium dark charcoal dashboard (Orbit-style reference)? |
+| Decision | **Yes for `(app)` learner routes only.** Theme via `.learner-theme` CSS variable overrides (cool navy-charcoal surfaces, not flat black). Marketing, auth, and admin remain light navy/red. Color roles: brand red primary CTAs; soft blue secondary/selection/focus; soft green correct/progress; soft red incorrect; amber warning; purple insight/review; gold bookmarks. Learning aliases `--learn-*` and chart aliases `--viz-*`. UI font Inter scoped to learner shell; Source Serif 4 kept for MCQ/news reading. Collapsible sidebar persisted in `localStorage`. No mock KPIs. |
+| Impact | `globals.css` learner tokens, `(app)/layout`, sidebar/header, OptionRow/Badge statuses, dashboard KPI/chart tones, home remapped to Orbit layout |
 | Status | **CONFIRMED** (product request 2026-11-12) |
 
 ### Deferred / NEEDS APPROVAL (explicitly out of Phase 1)

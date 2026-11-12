@@ -1,15 +1,16 @@
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type Tone = 'navy' | 'red' | 'blue' | 'teal' | 'amber' | 'slate';
+type Tone = 'navy' | 'red' | 'blue' | 'teal' | 'amber' | 'slate' | 'purple';
 
 const tones: Record<Tone, { icon: string; wash: string }> = {
-  navy: { icon: 'bg-[var(--bg-inverse)] text-white', wash: 'bg-[var(--brand-wash)]' },
-  red: { icon: 'bg-[var(--highlight)] text-white', wash: 'bg-[var(--highlight-soft)]' },
-  blue: { icon: 'bg-[var(--info)] text-white', wash: 'bg-[var(--info-soft)]' },
-  teal: { icon: 'bg-[var(--success)] text-white', wash: 'bg-[var(--success-soft)]' },
-  amber: { icon: 'bg-[var(--warning)] text-white', wash: 'bg-[var(--warning-soft)]' },
-  slate: { icon: 'bg-[var(--muted-strong)] text-white', wash: 'bg-[var(--bg-muted)]' },
+  navy: { icon: 'bg-[var(--bg-inverse)] text-[var(--bg)]', wash: 'bg-[var(--brand-wash)]' },
+  red: { icon: 'bg-[var(--danger)] text-white', wash: 'bg-[var(--danger-soft)]' },
+  blue: { icon: 'bg-[var(--viz-neutral)] text-white', wash: 'bg-[var(--info-soft)]' },
+  teal: { icon: 'bg-[var(--viz-positive)] text-[#06281c]', wash: 'bg-[var(--success-soft)]' },
+  amber: { icon: 'bg-[var(--viz-achievement)] text-[#1a1405]', wash: 'bg-[var(--bookmark-soft)]' },
+  slate: { icon: 'bg-[var(--muted)] text-white', wash: 'bg-[var(--bg-muted)]' },
+  purple: { icon: 'bg-[var(--viz-insight)] text-white', wash: 'bg-[var(--insight-soft)]' },
 };
 
 type Props = {
@@ -26,7 +27,7 @@ export function StatCard({ label, value, hint, icon: Icon, tone = 'navy', classN
   return (
     <div
       className={cn(
-        'motion-hover-lift relative min-w-0 max-w-full overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-white p-4 shadow-[var(--shadow-sm)] sm:p-5',
+        'motion-hover-lift relative min-w-0 max-w-full overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] p-4 shadow-[var(--shadow-sm)] sm:p-5',
         className,
       )}
     >
