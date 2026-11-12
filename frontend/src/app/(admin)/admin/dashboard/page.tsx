@@ -13,8 +13,15 @@ import {
   Plus,
   Users,
 } from 'lucide-react';
-import { AdminPage, AdminSection } from '@/components/admin/admin-page';
-import { AdminTable, AdminTableShell } from '@/components/admin/admin-table';
+import { AdminPage, AdminSection, AdminStatGrid } from '@/components/admin/admin-page';
+import { AdminUserStatus } from '@/components/admin/admin-status';
+import {
+  AdminEmptyRow,
+  AdminTable,
+  AdminTableShell,
+  AdminTd,
+  AdminTh,
+} from '@/components/admin/admin-table';
 import { BarChart } from '@/components/dashboard/bar-chart';
 import { QuickLink } from '@/components/dashboard/quick-link';
 import { StatCard } from '@/components/dashboard/stat-card';
@@ -160,143 +167,146 @@ export default function AdminDashboardPage() {
         </div>
       </AdminSection>
 
-      <div className="motion-stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label="Registered users"
-          value={data.users.total}
-          hint={`${data.users.newRegistrations24h} new (24h)`}
-          icon={Users}
-          tone="navy"
-        />
-        <StatCard
-          label="Online now"
-          value={data.users.online}
-          hint="Heartbeat within 90s"
-          icon={Activity}
-          tone="teal"
-        />
-        <StatCard
-          label="Trial active"
-          value={data.users.trialActive}
-          hint="Answers unlocked"
-          icon={Clock3}
-          tone="red"
-        />
-        <StatCard
-          label="Engagement today"
-          value={data.engagementToday.attempts}
-          hint={`${data.engagementToday.practiceCompletes} practice · ${Math.round(data.engagementToday.activeSeconds / 60)} active min`}
-          icon={Activity}
-          tone="amber"
-        />
-        <StatCard
-          label="Questions"
-          value={data.questions.total}
-          hint={`${data.questions.published} published`}
-          icon={FileQuestion}
-          tone="blue"
-        />
-        <StatCard label="Categories" value={data.categories} icon={FolderTree} tone="slate" />
-        <StatCard label="News posts" value={data.news} icon={Newspaper} tone="slate" />
-        <StatCard
-          label="Browsing hours"
-          value={browsingHours}
-          hint={`${data.documents} documents`}
-          icon={FileText}
-          tone="navy"
-        />
-      </div>
-
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-        <Surface elevated className="space-y-4 p-6">
-          <div>
-            <h2 className="font-display text-lg font-bold tracking-tight">Question bank health</h2>
-            <p className="mt-1 text-sm text-[var(--muted-strong)]">Status mix from live question counts.</p>
-          </div>
-          <BarChart
-            emptyLabel="No questions yet."
-            data={[
-              {
-                label: 'Published',
-                value: data.questions.published,
-                color: 'var(--success)',
-              },
-              {
-                label: 'Draft',
-                value: data.questions.draft,
-                color: 'var(--highlight)',
-              },
-              {
-                label: 'Archived',
-                value: data.questions.archived,
-                color: 'var(--muted)',
-              },
-            ]}
+      <AdminSection title="Key metrics" description="Live platform counts.">
+        <AdminStatGrid>
+          <StatCard
+            label="Registered users"
+            value={data.users.total}
+            hint={`${data.users.newRegistrations24h} new (24h)`}
+            icon={Users}
+            tone="navy"
           />
-        </Surface>
+          <StatCard
+            label="Online now"
+            value={data.users.online}
+            hint="Heartbeat within 90s"
+            icon={Activity}
+            tone="teal"
+          />
+          <StatCard
+            label="Trial active"
+            value={data.users.trialActive}
+            hint="Answers unlocked"
+            icon={Clock3}
+            tone="red"
+          />
+          <StatCard
+            label="Engagement today"
+            value={data.engagementToday.attempts}
+            hint={`${data.engagementToday.practiceCompletes} practice · ${Math.round(data.engagementToday.activeSeconds / 60)} active min`}
+            icon={Activity}
+            tone="amber"
+          />
+          <StatCard
+            label="Questions"
+            value={data.questions.total}
+            hint={`${data.questions.published} published`}
+            icon={FileQuestion}
+            tone="blue"
+          />
+          <StatCard label="Categories" value={data.categories} icon={FolderTree} tone="slate" />
+          <StatCard label="News posts" value={data.news} icon={Newspaper} tone="slate" />
+          <StatCard
+            label="Browsing hours"
+            value={browsingHours}
+            hint={`${data.documents} documents`}
+            icon={FileText}
+            tone="navy"
+          />
+        </AdminStatGrid>
+      </AdminSection>
 
-        <Surface elevated className="space-y-4 p-6">
-          <h2 className="font-display text-lg font-bold tracking-tight">Quick actions</h2>
-          <div className="grid gap-3">
-            <QuickLink
-              href="/admin/questions/new"
-              title="Create MCQ"
-              description="Draft a new question with options"
-              icon={FileQuestion}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+        <AdminSection
+          title="Question bank health"
+          description="Status mix from live question counts."
+        >
+          <Surface elevated className="p-5 sm:p-6">
+            <BarChart
+              emptyLabel="No questions yet."
+              data={[
+                {
+                  label: 'Published',
+                  value: data.questions.published,
+                  color: 'var(--success)',
+                },
+                {
+                  label: 'Draft',
+                  value: data.questions.draft,
+                  color: 'var(--highlight)',
+                },
+                {
+                  label: 'Archived',
+                  value: data.questions.archived,
+                  color: 'var(--muted)',
+                },
+              ]}
             />
-            <QuickLink
-              href="/admin/question-imports/new"
-              title="Bulk upload"
-              description="Import a Google Sheet / Excel set"
-              icon={FileText}
-            />
-            <QuickLink
-              href="/admin/categories"
-              title="Manage categories"
-              description="Subjects and topic tree"
-              icon={FolderTree}
-            />
-            <QuickLink
-              href="/admin/users"
-              title="User controls"
-              description="Search, suspend, reinstate"
-              icon={Users}
-            />
-            <QuickLink
-              href="/admin/activity"
-              title="Learner activity"
-              description="Online users, trends, export"
-              icon={Activity}
-            />
-          </div>
-        </Surface>
+          </Surface>
+        </AdminSection>
+
+        <AdminSection title="Quick actions" description="Jump to common admin tasks.">
+          <Surface elevated className="p-5 sm:p-6">
+            <div className="grid gap-3">
+              <QuickLink
+                href="/admin/questions/new"
+                title="Create MCQ"
+                description="Draft a new question with options"
+                icon={FileQuestion}
+              />
+              <QuickLink
+                href="/admin/question-imports/new"
+                title="Bulk upload"
+                description="Import a Google Sheet / Excel set"
+                icon={FileText}
+              />
+              <QuickLink
+                href="/admin/categories"
+                title="Manage categories"
+                description="Subjects and topic tree"
+                icon={FolderTree}
+              />
+              <QuickLink
+                href="/admin/users"
+                title="User controls"
+                description="Search, suspend, reinstate"
+                icon={Users}
+              />
+              <QuickLink
+                href="/admin/activity"
+                title="Learner activity"
+                description="Online users, trends, export"
+                icon={Activity}
+              />
+            </div>
+          </Surface>
+        </AdminSection>
       </div>
 
       {data.topSubjects.length > 0 ? (
-        <Surface elevated className="space-y-4 p-6">
-          <div className="flex flex-wrap items-end justify-between gap-2">
-            <div>
-              <h2 className="font-display text-lg font-bold tracking-tight">Top subjects (7d)</h2>
-              <p className="mt-1 text-sm text-[var(--muted-strong)]">
-                From real question attempts — not claimed intent.
-              </p>
-            </div>
+        <AdminSection
+          title="Top subjects (7d)"
+          description="From real question attempts — not claimed intent."
+          actions={
             <Link href="/admin/activity">
               <Button size="sm" variant="outline">
                 Open activity
               </Button>
             </Link>
-          </div>
-          <BarChart
-            data={data.topSubjects.map((s) => ({
-              label: s.name,
-              value: s.attempts,
-            }))}
-          />
-        </Surface>
+          }
+        >
+          <Surface elevated className="p-5 sm:p-6">
+            <BarChart
+              data={data.topSubjects.map((s) => ({
+                label: s.name,
+                value: s.attempts,
+              }))}
+            />
+          </Surface>
+        </AdminSection>
       ) : null}
 
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2">
         <AdminTableShell
           minWidth="28rem"
           header={
@@ -316,32 +326,41 @@ export default function AdminDashboardPage() {
           <AdminTable>
             <thead>
               <tr>
-                <th>User</th>
-                <th>Role</th>
-                <th>Status</th>
-                <th>Joined</th>
+                <AdminTh>User</AdminTh>
+                <AdminTh>Role</AdminTh>
+                <AdminTh>Status</AdminTh>
+                <AdminTh>Joined</AdminTh>
               </tr>
             </thead>
             <tbody>
-              {data.recentUsers.map((user) => (
-                <tr key={user.id}>
-                  <td className="max-w-[10rem] sm:max-w-none">
-                    <p className="truncate font-semibold text-[var(--ink)]">{user.name}</p>
-                    <p className="truncate text-xs text-[var(--muted-strong)]">{user.whatsappNumber}</p>
-                  </td>
-                  <td>
-                    <Badge variant="outline">{user.role}</Badge>
-                  </td>
-                  <td>
-                    <Badge variant={user.status === 'ACTIVE' ? 'success' : 'outline'}>
-                      {user.status}
-                    </Badge>
-                  </td>
-                  <td className="text-xs text-[var(--muted-strong)]">
-                    {new Date(user.createdAt).toLocaleDateString()}
-                  </td>
-                </tr>
-              ))}
+              {data.recentUsers.length === 0 ? (
+                <AdminEmptyRow colSpan={4}>No registrations yet.</AdminEmptyRow>
+              ) : (
+                data.recentUsers.map((user) => (
+                  <tr key={user.id}>
+                    <AdminTd className="max-w-[10rem] sm:max-w-none">
+                      <Link
+                        href={`/admin/users/${user.id}`}
+                        className="block truncate font-semibold text-[var(--ink)] hover:underline"
+                      >
+                        {user.name}
+                      </Link>
+                      <p className="truncate text-xs text-[var(--muted-strong)]">
+                        {user.whatsappNumber}
+                      </p>
+                    </AdminTd>
+                    <AdminTd>
+                      <Badge variant="outline">{user.role}</Badge>
+                    </AdminTd>
+                    <AdminTd>
+                      <AdminUserStatus status={user.status} />
+                    </AdminTd>
+                    <AdminTd muted className="text-xs">
+                      {new Date(user.createdAt).toLocaleDateString()}
+                    </AdminTd>
+                  </tr>
+                ))
+              )}
             </tbody>
           </AdminTable>
         </AdminTableShell>
@@ -355,7 +374,10 @@ export default function AdminDashboardPage() {
           ) : (
             <ul className="divide-y divide-[var(--line)]">
               {data.recentActivity.map((item) => (
-                <li key={item.id} className="px-5 py-3.5 transition-colors hover:bg-[var(--brand-wash)]">
+                <li
+                  key={item.id}
+                  className="px-5 py-3.5 transition-colors hover:bg-[var(--brand-wash)]"
+                >
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge variant="default">{item.action}</Badge>
                     <span className="text-xs text-[var(--muted-strong)]">{item.entityType}</span>

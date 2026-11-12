@@ -4,12 +4,12 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
+import { AdminFormPanel, AdminPage } from '@/components/admin/admin-page';
+import { AdminPublishStatus } from '@/components/admin/admin-status';
 import { PageHeader } from '@/components/layout/page-header';
 import { Alert } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ConfirmButton } from '@/components/ui/confirm-button';
-import { Surface } from '@/components/ui/surface';
 import {
   QuestionForm,
   toQuestionPayload,
@@ -19,7 +19,6 @@ import { ApiError, apiFetch } from '@/lib/api/client';
 import type { AdminQuestionDetail } from '@/lib/api/admin-types';
 import type { CategoryNode } from '@/lib/api/types';
 import { AdminQuestionFormPageSkeleton } from '@/components/skeletons';
-import { AdminPage } from '@/components/admin/admin-page';
 
 export default function EditQuestionPage() {
   const params = useParams<{ id: string }>();
@@ -114,27 +113,17 @@ export default function EditQuestionPage() {
   }
 
   return (
-    <AdminPage>
+    <AdminPage dense>
       <PageHeader
         eyebrow="Content"
         title="Edit question"
         description={detail.data.title}
         actions={
-          <div className="flex flex-wrap gap-2">
-            <Badge
-              variant={
-                detail.data.status === 'PUBLISHED'
-                  ? 'success'
-                  : detail.data.status === 'ARCHIVED'
-                    ? 'outline'
-                    : 'highlight'
-              }
-            >
-              {detail.data.status}
-            </Badge>
+          <div className="flex flex-wrap items-center gap-2">
+            <AdminPublishStatus status={detail.data.status} />
             <Link href="/admin/questions">
-              <Button variant="ghost" size="sm">
-                Back
+              <Button variant="outline" size="sm">
+                Back to list
               </Button>
             </Link>
           </div>
@@ -183,7 +172,7 @@ export default function EditQuestionPage() {
 
       {msg ? <Alert variant="success">{msg}</Alert> : null}
 
-      <Surface className="p-6">
+      <AdminFormPanel title="Question details" description="Update the stem, options, and classification.">
         <QuestionForm
           key={detail.data.id + detail.data.status}
           categories={categories.data ?? []}
@@ -197,7 +186,7 @@ export default function EditQuestionPage() {
             save.mutate(values);
           }}
         />
-      </Surface>
+      </AdminFormPanel>
     </AdminPage>
   );
 }

@@ -4,14 +4,13 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { AdminPage } from '@/components/admin/admin-page';
+import { AdminFormPanel, AdminPage } from '@/components/admin/admin-page';
+import { AdminPublishedFlag } from '@/components/admin/admin-status';
 import { PageHeader } from '@/components/layout/page-header';
 import { Alert } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Surface } from '@/components/ui/surface';
 import { Textarea } from '@/components/ui/textarea';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import type { AdminDocumentItem, AdminNewsDetail } from '@/lib/api/admin-types';
@@ -97,11 +96,20 @@ export default function EditNewsPage() {
       <PageHeader
         eyebrow="Content"
         title="Edit article"
+        description={`/${detail.data.slug}`}
         actions={
-          <div className="flex items-center gap-2">
-            <Badge variant={detail.data.isPublished ? 'success' : 'outline'}>
-              {detail.data.isPublished ? 'Published' : 'Draft'}
-            </Badge>
+          <div className="flex flex-wrap items-center gap-2">
+            <AdminPublishedFlag published={detail.data.isPublished} />
+            {!detail.data.isPublished ? (
+              <Button
+                size="sm"
+                variant="secondary"
+                disabled={publish.isPending}
+                onClick={() => publish.mutate()}
+              >
+                {publish.isPending ? 'Publishing…' : 'Publish'}
+              </Button>
+            ) : null}
             <Link href="/admin/news">
               <Button size="sm" variant="ghost">
                 Back
@@ -111,14 +119,17 @@ export default function EditNewsPage() {
         }
       />
 
-      {!detail.data.isPublished ? (
-        <Button size="sm" variant="secondary" onClick={() => publish.mutate()}>
-          Publish
-        </Button>
-      ) : null}
-
-      <Surface className="p-6">
+      <AdminFormPanel
+        title="Article details"
+        description="Update the copy, slug, and attached PDFs. Save to apply changes."
+        footer={
+          <Button type="submit" form="admin-news-edit" loading={save.isPending}>
+            {save.isPending ? 'Saving…' : 'Save changes'}
+          </Button>
+        }
+      >
         <form
+          id="admin-news-edit"
           className="space-y-4"
           onSubmit={(e) => {
             e.preventDefault();
@@ -153,12 +164,16 @@ export default function EditNewsPage() {
           <div className="space-y-3 border-t border-[var(--line)] pt-4">
             <Label>Attached PDFs</Label>
             <p className="text-sm text-[var(--muted-strong)]">
-              Select documents to show on the public article. Only published PDFs appear to learners.
+              Select documents to show on the public article. Only published PDFs appear to
+              learners.
             </p>
             {documents.isLoading ? (
               <div className="space-y-2">
                 {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="flex items-center justify-between gap-3 rounded-[10px] border border-[var(--line)] p-3">
+                  <div
+                    key={i}
+                    className="flex items-center justify-between gap-3 rounded-[var(--radius)] border border-[var(--line)] p-3"
+                  >
                     <div className="skeleton h-3.5 w-48 rounded-md" />
                     <div className="skeleton h-8 w-20 rounded-full" />
                   </div>
@@ -197,7 +212,10 @@ export default function EditNewsPage() {
             {!documents.isLoading && (documents.data?.length ?? 0) === 0 ? (
               <p className="text-sm text-[var(--muted-strong)]">
                 No documents yet.{' '}
-                <Link href="/admin/documents" className="font-semibold underline-offset-2 hover:underline">
+                <Link
+                  href="/admin/documents"
+                  className="font-semibold underline-offset-2 hover:underline"
+                >
                   Create one
                 </Link>
               </p>
@@ -206,11 +224,8 @@ export default function EditNewsPage() {
 
           {msg ? <Alert variant="success">{msg}</Alert> : null}
           {error ? <Alert variant="danger">{error}</Alert> : null}
-          <Button type="submit" loading={save.isPending}>
-            {save.isPending ? 'Saving…' : 'Save changes'}
-          </Button>
         </form>
-      </Surface>
+      </AdminFormPanel>
     </AdminPage>
   );
 }

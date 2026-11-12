@@ -13,6 +13,7 @@ import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { Surface } from '@/components/ui/surface';
 import { ContentIn } from '@/components/ui/skeleton';
 import { LoadMoreButton } from '@/components/ui/load-more-button';
@@ -25,7 +26,20 @@ import type {
 } from '@/lib/api/admin-activity-types';
 import { useCursorList } from '@/lib/hooks/use-cursor-list';
 import { Activity, Clock3, Users } from 'lucide-react';
-import { AdminPage } from '@/components/admin/admin-page';
+import {
+  AdminListMeta,
+  AdminPage,
+  AdminSection,
+  AdminStatGrid,
+  AdminToolbar,
+} from '@/components/admin/admin-page';
+import {
+  AdminEmptyRow,
+  AdminTable,
+  AdminTableShell,
+  AdminTd,
+  AdminTh,
+} from '@/components/admin/admin-table';
 
 const EVENT_TYPES = [
   '',
@@ -185,7 +199,7 @@ function ActivityPageInner() {
         }
       />
 
-      <div className="motion-stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <AdminStatGrid>
         <StatCard label="Registered" value={ov.registered} icon={Users} tone="navy" />
         <StatCard label="Online now" value={ov.online} icon={Activity} tone="teal" />
         <StatCard
@@ -202,13 +216,13 @@ function ActivityPageInner() {
           icon={Activity}
           tone="blue"
         />
-      </div>
+      </AdminStatGrid>
 
-      <Surface className="p-4 sm:p-5">
+      <Surface className="space-y-3 p-4 sm:p-5">
         <p className="text-xs font-semibold tracking-wide text-[var(--muted-strong)] uppercase">
           Presence buckets (distinct users with heartbeat)
         </p>
-        <div className="mt-3 flex flex-wrap gap-3 text-sm">
+        <div className="flex flex-wrap gap-2 text-sm">
           <Badge variant="outline">5m · {ov.onlineBuckets.m5}</Badge>
           <Badge variant="outline">15m · {ov.onlineBuckets.m15}</Badge>
           <Badge variant="outline">30m · {ov.onlineBuckets.m30}</Badge>
@@ -224,117 +238,140 @@ function ActivityPageInner() {
       </Surface>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Surface className="space-y-4 p-5">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="font-semibold text-[var(--ink)]">Online users</h2>
+        <AdminSection
+          title="Online users"
+          description="Sessions with a recent heartbeat."
+          actions={
             <form
-              className="flex gap-2"
               onSubmit={(e) => {
                 e.preventDefault();
               }}
             >
               <div className="relative">
-                <Search className="pointer-events-none absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-[var(--muted-strong)]" />
+                <Search
+                  className="pointer-events-none absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-[var(--muted-strong)]"
+                  aria-hidden
+                />
                 <Input
                   value={onlineQ}
                   onChange={(e) => setOnlineQ(e.target.value)}
                   placeholder="Search online"
+                  aria-label="Search online users"
                   className="h-9 w-44 pl-8 text-sm"
                 />
               </div>
             </form>
-          </div>
-          {online.isLoading ? (
-            <p className="text-sm text-[var(--muted-strong)]">Loading…</p>
-          ) : online.data?.items.length === 0 ? (
-            <p className="text-sm text-[var(--muted-strong)]">Nobody online in the heartbeat window.</p>
-          ) : (
-            <ul className="divide-y divide-[var(--line)]">
-              {online.data?.items.map((row) => (
-                <li key={row.sessionId} className="flex items-center justify-between gap-3 py-2.5 text-sm">
-                  <div className="min-w-0">
-                    <Link
-                      href={`/admin/users/${row.user.id}`}
-                      className="font-medium text-[var(--ink)] hover:underline"
-                    >
-                      {row.user.name}
-                    </Link>
-                    <p className="truncate text-xs text-[var(--muted-strong)]">
-                      {row.user.whatsappNumber}
-                    </p>
-                  </div>
-                  <div className="text-right text-xs text-[var(--muted-strong)]">
-                    <p>{formatDuration(row.accruedSeconds)} measured</p>
-                    <p>♥ {new Date(row.lastHeartbeatAt).toLocaleTimeString()}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Surface>
+          }
+        >
+          <Surface className="p-4 sm:p-5">
+            {online.isLoading ? (
+              <p className="text-sm text-[var(--muted-strong)]">Loading…</p>
+            ) : online.data?.items.length === 0 ? (
+              <p className="text-sm text-[var(--muted-strong)]">
+                Nobody online in the heartbeat window.
+              </p>
+            ) : (
+              <ul className="divide-y divide-[var(--line)]">
+                {online.data?.items.map((row) => (
+                  <li
+                    key={row.sessionId}
+                    className="flex items-center justify-between gap-3 py-2.5 text-sm first:pt-0 last:pb-0"
+                  >
+                    <div className="min-w-0">
+                      <Link
+                        href={`/admin/users/${row.user.id}`}
+                        className="font-medium text-[var(--ink)] hover:underline"
+                      >
+                        {row.user.name}
+                      </Link>
+                      <p className="truncate text-xs text-[var(--muted-strong)]">
+                        {row.user.whatsappNumber}
+                      </p>
+                    </div>
+                    <div className="text-right text-xs text-[var(--muted-strong)]">
+                      <p>{formatDuration(row.accruedSeconds)} measured</p>
+                      <p>♥ {new Date(row.lastHeartbeatAt).toLocaleTimeString()}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Surface>
+        </AdminSection>
 
-        <Surface className="space-y-4 p-5">
-          <div className="flex flex-wrap items-end justify-between gap-2">
-            <h2 className="font-semibold text-[var(--ink)]">Trends</h2>
-            <div className="flex flex-wrap gap-2">
-              {(['7', '14', '30', 'custom'] as const).map((r) => (
-                <Button
-                  key={r}
-                  size="sm"
-                  variant={range === r ? 'primary' : 'outline'}
-                  onClick={() => setRange(r)}
-                >
-                  {r === 'custom' ? 'Custom' : `${r}d`}
-                </Button>
-              ))}
-            </div>
-          </div>
-          {range === 'custom' ? (
-            <div className="flex flex-wrap gap-2">
-              <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-9 w-auto" />
-              <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-9 w-auto" />
-            </div>
-          ) : null}
-          {trends.isLoading ? (
-            <p className="text-sm text-[var(--muted-strong)]">Loading trends…</p>
-          ) : (
-            <div className="space-y-6">
-              <div>
-                <p className="mb-2 text-xs font-semibold text-[var(--muted-strong)] uppercase">
-                  Attempts / day
-                </p>
-                <BarChart data={attemptBars} />
+        <AdminSection
+          title="Trends"
+          description="Attempts and approximate active time."
+          actions={(['7', '14', '30', 'custom'] as const).map((r) => (
+            <Button
+              key={r}
+              size="sm"
+              variant={range === r ? 'primary' : 'outline'}
+              aria-pressed={range === r}
+              onClick={() => setRange(r)}
+            >
+              {r === 'custom' ? 'Custom' : `${r}d`}
+            </Button>
+          ))}
+        >
+          <Surface className="space-y-4 p-4 sm:p-5">
+            {range === 'custom' ? (
+              <div className="flex flex-wrap gap-2">
+                <Input
+                  type="date"
+                  value={from}
+                  onChange={(e) => setFrom(e.target.value)}
+                  className="h-9 w-auto"
+                  aria-label="From date"
+                />
+                <Input
+                  type="date"
+                  value={to}
+                  onChange={(e) => setTo(e.target.value)}
+                  className="h-9 w-auto"
+                  aria-label="To date"
+                />
               </div>
-              <div>
-                <p className="mb-2 text-xs font-semibold text-[var(--muted-strong)] uppercase">
-                  Active minutes / day (approx)
-                </p>
-                <BarChart data={activeBars} />
+            ) : null}
+            {trends.isLoading ? (
+              <p className="text-sm text-[var(--muted-strong)]">Loading trends…</p>
+            ) : (
+              <div className="space-y-6">
+                <div>
+                  <p className="mb-2 text-xs font-semibold text-[var(--muted-strong)] uppercase">
+                    Attempts / day
+                  </p>
+                  <BarChart data={attemptBars} />
+                </div>
+                <div>
+                  <p className="mb-2 text-xs font-semibold text-[var(--muted-strong)] uppercase">
+                    Active minutes / day (approx)
+                  </p>
+                  <BarChart data={activeBars} />
+                </div>
               </div>
-            </div>
-          )}
-        </Surface>
+            )}
+          </Surface>
+        </AdminSection>
       </div>
 
-      <Surface className="space-y-4 p-4 sm:p-5">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <h2 className="font-semibold text-[var(--ink)]">Event timeline</h2>
-            <p className="text-xs text-[var(--muted-strong)]">
-              LearningActivityEvent stream (no secrets / keystrokes).
-            </p>
-          </div>
-          <div className="flex flex-col gap-2 sm:flex-row">
+      <AdminSection
+        title="Event timeline"
+        description="LearningActivityEvent stream (no secrets / keystrokes)."
+      >
+        <AdminToolbar>
+          <div className="admin-filter-grid">
             <Input
               value={userId}
               onChange={(e) => setUserId(e.target.value)}
               placeholder="Filter user UUID"
-              className="h-9 sm:w-64"
+              className="h-10"
+              aria-label="Filter by user UUID"
             />
-            <select
+            <Select
               value={type}
               onChange={(e) => setType(e.target.value)}
-              className="h-9 rounded-[var(--radius)] border border-[var(--line-strong)] bg-[var(--bg-elevated)] px-3 text-sm"
+              className="h-10 w-full sm:w-52"
               aria-label="Event type"
             >
               {EVENT_TYPES.map((t) => (
@@ -342,9 +379,9 @@ function ActivityPageInner() {
                   {t || 'All types'}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
-        </div>
+        </AdminToolbar>
 
         {events.isLoading ? (
           <p className="text-sm text-[var(--muted-strong)]">Loading events…</p>
@@ -352,59 +389,72 @@ function ActivityPageInner() {
           <Alert variant="danger">Could not load events.</Alert>
         ) : (
           <ContentIn>
-            <div className="min-w-0 w-full max-w-full overflow-x-auto">
-              <table className="w-full min-w-[40rem] text-left text-sm">
-                <thead className="bg-[var(--bg-desk)] text-xs font-semibold tracking-[0.08em] text-[var(--muted-strong)] uppercase">
+            <AdminTableShell
+              minWidth="40rem"
+              header={
+                <AdminListMeta
+                  count={events.items.length}
+                  noun="event"
+                  hasMore={events.hasNextPage}
+                />
+              }
+              footer={
+                events.hasNextPage ? (
+                  <LoadMoreButton
+                    hasNextPage={events.hasNextPage}
+                    isFetchingNextPage={events.isFetchingNextPage}
+                    onLoadMore={() => void events.fetchNextPage()}
+                    className="flex justify-center"
+                  />
+                ) : undefined
+              }
+            >
+              <AdminTable>
+                <thead>
                   <tr>
-                    <th className="px-3 py-3">When</th>
-                    <th className="px-3 py-3">Type</th>
-                    <th className="px-3 py-3">User</th>
-                    <th className="px-3 py-3">Refs</th>
+                    <AdminTh>When</AdminTh>
+                    <AdminTh>Type</AdminTh>
+                    <AdminTh>User</AdminTh>
+                    <AdminTh>Refs</AdminTh>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[var(--line)]">
+                <tbody>
                   {events.items.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="px-3 py-8 text-center text-[var(--muted-strong)]">
-                        No events in this range.
-                      </td>
-                    </tr>
+                    <AdminEmptyRow colSpan={4}>No events in this range.</AdminEmptyRow>
                   ) : (
                     events.items.map((e) => (
                       <tr key={e.id}>
-                        <td className="px-3 py-2.5 text-xs text-[var(--muted-strong)] whitespace-nowrap">
+                        <AdminTd muted className="text-xs whitespace-nowrap">
                           {new Date(e.occurredAt).toLocaleString()}
-                        </td>
-                        <td className="px-3 py-2.5">
+                        </AdminTd>
+                        <AdminTd>
                           <Badge variant="outline">{e.type}</Badge>
-                        </td>
-                        <td className="px-3 py-2.5">
+                        </AdminTd>
+                        <AdminTd>
                           <Link
                             href={`/admin/users/${e.user.id}`}
-                            className="font-medium hover:underline"
+                            className="font-medium text-[var(--ink)] hover:underline"
                           >
                             {e.user.name}
                           </Link>
-                        </td>
-                        <td className="px-3 py-2.5 text-xs text-[var(--muted-strong)]">
-                          {[e.questionId && `Q ${e.questionId.slice(0, 8)}`, e.practiceSetId && `PS ${e.practiceSetId.slice(0, 8)}`]
+                        </AdminTd>
+                        <AdminTd muted className="text-xs">
+                          {[
+                            e.questionId && `Q ${e.questionId.slice(0, 8)}`,
+                            e.practiceSetId && `PS ${e.practiceSetId.slice(0, 8)}`,
+                          ]
                             .filter(Boolean)
                             .join(' · ') || '—'}
-                        </td>
+                        </AdminTd>
                       </tr>
                     ))
                   )}
                 </tbody>
-              </table>
-            </div>
-            <LoadMoreButton
-              hasNextPage={events.hasNextPage}
-              isFetchingNextPage={events.isFetchingNextPage}
-              onLoadMore={() => void events.fetchNextPage()}
-            />
+              </AdminTable>
+            </AdminTableShell>
           </ContentIn>
         )}
-      </Surface>
+      </AdminSection>
     </AdminPage>
   );
 }

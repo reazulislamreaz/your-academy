@@ -4,14 +4,17 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { Search } from 'lucide-react';
 import { useState } from 'react';
-import { AdminPage, AdminToolbar } from '@/components/admin/admin-page';
-import { AdminTable, AdminTableShell } from '@/components/admin/admin-table';
+import { AdminListMeta, AdminPage, AdminToolbar } from '@/components/admin/admin-page';
+import { AdminRowActions } from '@/components/admin/admin-row-actions';
+import { AdminUserStatus } from '@/components/admin/admin-status';
+import { AdminEmptyRow, AdminTable, AdminTableShell, AdminTd, AdminTh } from '@/components/admin/admin-table';
 import { PageHeader } from '@/components/layout/page-header';
 import { LoadError } from '@/components/loading';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ConfirmButton } from '@/components/ui/confirm-button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { LoadMoreButton } from '@/components/ui/load-more-button';
 import { Select } from '@/components/ui/select';
@@ -62,44 +65,45 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <AdminPage>
+    <AdminPage dense>
       <PageHeader
         eyebrow="People"
         title="Users"
-        description="Search learners, review engagement signals, and suspend or reinstate accounts."
+        description="Find learners by name, WhatsApp, or email. Suspend or reinstate accounts from the list or detail page."
       />
 
       <AdminToolbar>
         <form
-          className="flex flex-col gap-3 lg:flex-row lg:items-center"
+          className="admin-filter-grid"
           onSubmit={(e) => {
             e.preventDefault();
             setQApplied(q.trim());
           }}
         >
-          <div className="relative min-w-0 flex-1">
+          <div className="relative min-w-0">
             <Search
-              className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[var(--muted-strong)]"
+              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[var(--muted-strong)]"
               aria-hidden
             />
             <Input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Search name, WhatsApp, email"
-              className="pl-9"
+              placeholder="Search name, WhatsApp, or email"
+              className="h-10 pl-9"
+              aria-label="Search users"
             />
           </div>
           <Select
             value={status}
             onChange={(e) => setStatus(e.target.value as '' | 'ACTIVE' | 'SUSPENDED')}
-            className="lg:w-48"
+            className="h-10 w-full sm:w-44"
             aria-label="Filter by status"
           >
             <option value="">All statuses</option>
             <option value="ACTIVE">Active</option>
             <option value="SUSPENDED">Suspended</option>
           </Select>
-          <Button type="submit" variant="outline" className="sm:shrink-0">
+          <Button type="submit" variant="outline" className="h-10">
             Search
           </Button>
         </form>
@@ -112,138 +116,151 @@ export default function AdminUsersPage() {
       ) : null}
 
       {!list.isLoading && list.data ? (
-        <ContentIn>
-          <AdminTableShell
-            minWidth="48rem"
-            header={
-              <p className="text-sm text-[var(--muted-strong)]">
-                Showing {list.items.length} user{list.items.length === 1 ? '' : 's'}
-                {list.hasNextPage ? '+' : ''}
-                {qApplied ? ` for “${qApplied}”` : ''}
-              </p>
-            }
-          >
-            <AdminTable>
-              <thead>
-                <tr>
-                  <th>User</th>
-                  <th>Presence</th>
-                  <th>Access</th>
-                  <th>Attempts</th>
-                  <th>Joined</th>
-                  <th className="text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {list.items.length === 0 ? (
+        <ContentIn className="space-y-4">
+          {list.items.length === 0 ? (
+            <EmptyState
+              title="No users found"
+              description={
+                qApplied || status
+                  ? 'Try a different search or clear the status filter.'
+                  : 'Registered learners will appear here.'
+              }
+            />
+          ) : (
+            <AdminTableShell
+              minWidth="52rem"
+              header={
+                <AdminListMeta
+                  count={list.items.length}
+                  noun="user"
+                  hasMore={list.hasNextPage}
+                  query={qApplied || undefined}
+                />
+              }
+              footer={
+                <LoadMoreButton
+                  hasNextPage={list.hasNextPage}
+                  isFetchingNextPage={list.isFetchingNextPage}
+                  onLoadMore={() => void list.fetchNextPage()}
+                />
+              }
+            >
+              <AdminTable>
+                <thead>
                   <tr>
-                    <td colSpan={6} className="py-10 text-center text-[var(--muted-strong)]">
-                      No users match this search.
-                    </td>
+                    <AdminTh>User</AdminTh>
+                    <AdminTh>Presence</AdminTh>
+                    <AdminTh>Access</AdminTh>
+                    <AdminTh>Study</AdminTh>
+                    <AdminTh>Joined</AdminTh>
+                    <AdminTh align="right">Actions</AdminTh>
                   </tr>
-                ) : (
-                  list.items.map((user) => (
-                    <tr key={user.id}>
-                      <td className="max-w-[14rem] sm:max-w-none">
-                        <Link
-                          href={`/admin/users/${user.id}`}
-                          className="truncate font-semibold text-[var(--ink)] hover:underline"
-                        >
-                          {user.name}
-                        </Link>
-                        <p className="truncate text-xs text-[var(--muted-strong)]">
-                          {user.whatsappNumber}
-                          {user.email ? ` · ${user.email}` : ''}
-                        </p>
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          <Badge variant="outline">{user.role}</Badge>
-                          <Badge variant={user.status === 'ACTIVE' ? 'success' : 'danger'}>
-                            {user.status}
-                          </Badge>
-                        </div>
-                      </td>
-                      <td>
-                        {user.online ? (
-                          <Badge variant="success">Online</Badge>
-                        ) : (
-                          <span className="text-xs text-[var(--muted-strong)]">
-                            {user.lastHeartbeatAt
-                              ? `Last ${new Date(user.lastHeartbeatAt).toLocaleString()}`
-                              : 'No session'}
-                          </span>
-                        )}
-                      </td>
-                      <td className="text-xs">
-                        {user.subscription ? (
-                          <span className="font-medium text-[var(--ink)]">
-                            {user.subscription.plan.name}
-                          </span>
-                        ) : user.trialActive ? (
-                          <Badge variant="info">Trial</Badge>
-                        ) : (
-                          <span className="text-[var(--muted-strong)]">Trial ended</span>
-                        )}
-                      </td>
-                      <td className="text-xs text-[var(--muted-strong)]">
-                        {user.attemptCount} MCQ · {user.practiceAttemptCount} practice
-                      </td>
-                      <td className="text-xs text-[var(--muted-strong)]">
-                        {new Date(user.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="text-right">
-                        <div className="flex flex-wrap items-center justify-end gap-2">
-                          <Link href={`/admin/users/${user.id}`}>
-                            <Button size="sm" variant="outline">
-                              View
-                            </Button>
+                </thead>
+                <tbody>
+                  {list.items.length === 0 ? (
+                    <AdminEmptyRow colSpan={6}>No users match this search.</AdminEmptyRow>
+                  ) : (
+                    list.items.map((user) => (
+                      <tr key={user.id}>
+                        <AdminTd className="max-w-[16rem]">
+                          <Link
+                            href={`/admin/users/${user.id}`}
+                            className="truncate font-semibold text-[var(--ink)] hover:underline"
+                          >
+                            {user.name}
                           </Link>
-                          {user.role !== 'ADMIN' ? (
-                            user.status === 'ACTIVE' ? (
-                              <ConfirmButton
-                                size="sm"
-                                variant="ghost"
-                                confirmTitle="Suspend this user?"
-                                confirmMessage={`Suspend ${user.name}? They will not be able to sign in until reinstated.`}
-                                confirmLabel="Suspend"
-                                reversible
-                                onConfirm={() =>
-                                  updateStatus.mutateAsync({ id: user.id, status: 'SUSPENDED' })
-                                }
-                              >
-                                Suspend
-                              </ConfirmButton>
-                            ) : (
-                              <ConfirmButton
-                                size="sm"
-                                variant="secondary"
-                                confirmTitle="Reinstate this user?"
-                                confirmMessage={`Reinstate ${user.name} and restore sign-in access?`}
-                                confirmLabel="Reinstate"
-                                destructive={false}
-                                reversible
-                                onConfirm={() =>
-                                  updateStatus.mutateAsync({ id: user.id, status: 'ACTIVE' })
-                                }
-                              >
-                                Reinstate
-                              </ConfirmButton>
-                            )
+                          <p className="truncate text-xs text-[var(--muted-strong)]">
+                            {user.whatsappNumber}
+                            {user.email ? ` · ${user.email}` : ''}
+                          </p>
+                          <div className="mt-1.5 flex flex-wrap gap-1">
+                            <Badge variant="outline">{user.role}</Badge>
+                            <AdminUserStatus status={user.status} />
+                          </div>
+                        </AdminTd>
+                        <AdminTd>
+                          {user.online ? (
+                            <Badge variant="success">Online</Badge>
                           ) : (
-                            <span className="text-xs text-[var(--muted-strong)]">Protected</span>
+                            <span className="text-xs text-[var(--muted-strong)]">
+                              {user.lastHeartbeatAt
+                                ? `Last ${new Date(user.lastHeartbeatAt).toLocaleString()}`
+                                : 'No session'}
+                            </span>
                           )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </AdminTable>
-          </AdminTableShell>
-          <LoadMoreButton
-            hasNextPage={list.hasNextPage}
-            isFetchingNextPage={list.isFetchingNextPage}
-            onLoadMore={() => void list.fetchNextPage()}
-          />
+                        </AdminTd>
+                        <AdminTd className="text-xs">
+                          {user.subscription ? (
+                            <span className="font-medium text-[var(--ink)]">
+                              {user.subscription.plan.name}
+                            </span>
+                          ) : user.trialActive ? (
+                            <Badge variant="info">Trial</Badge>
+                          ) : (
+                            <span className="text-[var(--muted-strong)]">Trial ended</span>
+                          )}
+                        </AdminTd>
+                        <AdminTd muted className="text-xs whitespace-nowrap">
+                          {user.attemptCount} MCQ · {user.practiceAttemptCount} practice
+                        </AdminTd>
+                        <AdminTd muted className="text-xs whitespace-nowrap">
+                          {new Date(user.createdAt).toLocaleDateString()}
+                        </AdminTd>
+                        <AdminTd align="right">
+                          <AdminRowActions
+                            primary={
+                              <Link href={`/admin/users/${user.id}`}>
+                                <Button size="sm" variant="outline">
+                                  View
+                                </Button>
+                              </Link>
+                            }
+                          >
+                            {user.role !== 'ADMIN' ? (
+                              user.status === 'ACTIVE' ? (
+                                <ConfirmButton
+                                  size="sm"
+                                  variant="ghost"
+                                  confirmTitle="Suspend this user?"
+                                  confirmMessage={`Suspend ${user.name}? They will not be able to sign in until reinstated.`}
+                                  confirmLabel="Suspend"
+                                  reversible
+                                  onConfirm={() =>
+                                    updateStatus.mutateAsync({ id: user.id, status: 'SUSPENDED' })
+                                  }
+                                >
+                                  Suspend
+                                </ConfirmButton>
+                              ) : (
+                                <ConfirmButton
+                                  size="sm"
+                                  variant="ghost"
+                                  confirmTitle="Reinstate this user?"
+                                  confirmMessage={`Reinstate ${user.name} and restore sign-in access?`}
+                                  confirmLabel="Reinstate"
+                                  destructive={false}
+                                  reversible
+                                  onConfirm={() =>
+                                    updateStatus.mutateAsync({ id: user.id, status: 'ACTIVE' })
+                                  }
+                                >
+                                  Reinstate
+                                </ConfirmButton>
+                              )
+                            ) : (
+                              <Button size="sm" variant="ghost" disabled>
+                                Protected
+                              </Button>
+                            )}
+                          </AdminRowActions>
+                        </AdminTd>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </AdminTable>
+            </AdminTableShell>
+          )}
         </ContentIn>
       ) : null}
     </AdminPage>

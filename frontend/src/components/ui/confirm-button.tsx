@@ -36,7 +36,11 @@ export function ConfirmButton({
       <Button
         {...props}
         disabled={disabled || pending}
-        onClick={() => setOpen(true)}
+        onClick={(e) => {
+          // Keep parent click handlers (e.g. overflow menus) from unmounting this dialog.
+          e.stopPropagation();
+          setOpen(true);
+        }}
       >
         {pending ? 'Working…' : children}
       </Button>

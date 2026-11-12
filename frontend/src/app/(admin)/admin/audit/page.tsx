@@ -1,14 +1,20 @@
 'use client';
 
+import { AdminListMeta, AdminPage } from '@/components/admin/admin-page';
+import {
+  AdminEmptyRow,
+  AdminTable,
+  AdminTableShell,
+  AdminTd,
+  AdminTh,
+} from '@/components/admin/admin-table';
 import { PageHeader } from '@/components/layout/page-header';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { LoadMoreButton } from '@/components/ui/load-more-button';
-import { Surface } from '@/components/ui/surface';
 import { ContentIn } from '@/components/ui/skeleton';
 import { AdminAuditTableSkeleton } from '@/components/skeletons';
 import { useCursorList } from '@/lib/hooks/use-cursor-list';
-import { AdminPage } from '@/components/admin/admin-page';
 
 type AuditRow = {
   id: string;
@@ -27,7 +33,7 @@ export default function AdminAuditPage() {
   });
 
   return (
-    <AdminPage>
+    <AdminPage dense>
       <PageHeader
         eyebrow="Security"
         title="Audit log"
@@ -39,52 +45,54 @@ export default function AdminAuditPage() {
 
       {!list.isLoading && list.data ? (
         <ContentIn>
-          <Surface className="overflow-hidden p-0">
-            <div className="min-w-0 w-full max-w-full overflow-x-auto">
-              <table className="w-full min-w-[40rem] text-left text-sm">
-                <thead className="bg-[var(--bg-desk)] text-xs font-semibold tracking-[0.08em] text-[var(--muted-strong)] uppercase">
-                  <tr>
-                    <th className="px-4 py-3">When</th>
-                    <th className="px-4 py-3">Action</th>
-                    <th className="px-4 py-3">Entity</th>
-                    <th className="px-4 py-3">Actor</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[var(--line)]">
-                  {list.items.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="px-4 py-10 text-center text-[var(--muted-strong)]">
-                        No audit entries yet.
-                      </td>
+          <AdminTableShell
+            minWidth="40rem"
+            header={
+              <AdminListMeta count={list.items.length} noun="entry" hasMore={list.hasNextPage} />
+            }
+            footer={
+              list.hasNextPage ? (
+                <LoadMoreButton
+                  hasNextPage={list.hasNextPage}
+                  isFetchingNextPage={list.isFetchingNextPage}
+                  onLoadMore={() => void list.fetchNextPage()}
+                  className="flex justify-center"
+                />
+              ) : undefined
+            }
+          >
+            <AdminTable>
+              <thead>
+                <tr>
+                  <AdminTh>When</AdminTh>
+                  <AdminTh>Action</AdminTh>
+                  <AdminTh>Entity</AdminTh>
+                  <AdminTh>Actor</AdminTh>
+                </tr>
+              </thead>
+              <tbody>
+                {list.items.length === 0 ? (
+                  <AdminEmptyRow colSpan={4}>No audit entries yet.</AdminEmptyRow>
+                ) : (
+                  list.items.map((row) => (
+                    <tr key={row.id}>
+                      <AdminTd muted className="text-xs whitespace-nowrap">
+                        {new Date(row.createdAt).toLocaleString()}
+                      </AdminTd>
+                      <AdminTd>
+                        <Badge variant="outline">{row.action}</Badge>
+                      </AdminTd>
+                      <AdminTd muted className="text-xs">
+                        {row.entityType}
+                        {row.entityId ? ` · ${row.entityId.slice(0, 8)}` : ''}
+                      </AdminTd>
+                      <AdminTd>{row.actor ? row.actor.name : 'System'}</AdminTd>
                     </tr>
-                  ) : (
-                    list.items.map((row) => (
-                      <tr key={row.id}>
-                        <td className="px-4 py-3 text-xs text-[var(--muted-strong)] whitespace-nowrap">
-                          {new Date(row.createdAt).toLocaleString()}
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge variant="outline">{row.action}</Badge>
-                        </td>
-                        <td className="px-4 py-3 text-xs text-[var(--muted-strong)]">
-                          {row.entityType}
-                          {row.entityId ? ` · ${row.entityId.slice(0, 8)}` : ''}
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          {row.actor ? row.actor.name : 'System'}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </Surface>
-          <LoadMoreButton
-            hasNextPage={list.hasNextPage}
-            isFetchingNextPage={list.isFetchingNextPage}
-            onLoadMore={() => void list.fetchNextPage()}
-          />
+                  ))
+                )}
+              </tbody>
+            </AdminTable>
+          </AdminTableShell>
         </ContentIn>
       ) : null}
     </AdminPage>

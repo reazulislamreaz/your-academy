@@ -22,7 +22,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Surface } from '@/components/ui/surface';
-import { CategoryFormDialog, type CategoryFormMode } from '@/features/admin/categories/category-form-dialog';
+import {
+  CategoryFormDialog,
+  type CategoryFormMode,
+} from '@/features/admin/categories/category-form-dialog';
 import type {
   AdminCategoryChild,
   AdminCategoryNode,
@@ -31,7 +34,13 @@ import type {
 import { ApiError, apiFetch } from '@/lib/api/client';
 import { AdminCategoriesPageSkeleton } from '@/components/skeletons';
 import { cn } from '@/lib/utils';
-import { AdminPage } from '@/components/admin/admin-page';
+import {
+  AdminPage,
+  AdminSection,
+  AdminStatGrid,
+  AdminToolbar,
+} from '@/components/admin/admin-page';
+import { AdminRowActions } from '@/components/admin/admin-row-actions';
 
 type StatusFilter = 'all' | 'active' | 'inactive';
 type DialogState =
@@ -50,9 +59,7 @@ export default function AdminCategoriesPage() {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [dialog, setDialog] = useState<DialogState>(null);
   const [formError, setFormError] = useState<string | null>(null);
-  const [banner, setBanner] = useState<{ tone: 'success' | 'danger'; text: string } | null>(
-    null,
-  );
+  const [banner, setBanner] = useState<{ tone: 'success' | 'danger'; text: string } | null>(null);
 
   const categories = useQuery({
     queryKey: ['admin-categories'],
@@ -73,8 +80,7 @@ export default function AdminCategoriesPage() {
           );
         });
         const rootMatchesStatus =
-          status === 'all' ||
-          (status === 'active' ? root.isActive : !root.isActive);
+          status === 'all' || (status === 'active' ? root.isActive : !root.isActive);
         const rootMatchesQuery =
           !needle ||
           root.name.toLocaleLowerCase('bn').includes(needle) ||
@@ -229,7 +235,7 @@ export default function AdminCategoriesPage() {
         </Alert>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <AdminStatGrid className="sm:grid-cols-3 xl:grid-cols-3">
         <Surface className="p-4">
           <p className="text-xs font-semibold tracking-wide text-[var(--muted-strong)] uppercase">
             Categories
@@ -250,20 +256,23 @@ export default function AdminCategoriesPage() {
           </p>
           <p className="mt-1 font-display text-2xl font-bold tabular-nums">{totals.inactive}</p>
         </Surface>
-      </div>
+      </AdminStatGrid>
 
-      <Surface className="space-y-4 p-4 sm:p-5">
+      <AdminToolbar>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <div className="min-w-0 flex-1 space-y-2">
             <Label htmlFor="cat-search">Search</Label>
             <div className="relative">
-              <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[var(--muted-strong)]" />
+              <Search
+                className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[var(--muted-strong)]"
+                aria-hidden
+              />
               <Input
                 id="cat-search"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Search categories or subcategories…"
-                className="pl-9"
+                className="h-10 pl-9"
               />
             </div>
           </div>
@@ -271,6 +280,7 @@ export default function AdminCategoriesPage() {
             <Label htmlFor="cat-status-filter">Status</Label>
             <Select
               id="cat-status-filter"
+              className="h-10"
               value={status}
               onChange={(e) => setStatus(e.target.value as StatusFilter)}
             >
@@ -280,7 +290,16 @@ export default function AdminCategoriesPage() {
             </Select>
           </div>
         </div>
+      </AdminToolbar>
 
+      <AdminSection
+        title="Category tree"
+        description={
+          categories.data
+            ? `${filtered.length} of ${totals.categories} categories shown.`
+            : undefined
+        }
+      >
         {categories.isLoading ? <AdminCategoriesPageSkeleton omitHeader /> : null}
 
         {categories.isError ? (
@@ -322,9 +341,7 @@ export default function AdminCategoriesPage() {
                       className="mt-0.5 cursor-pointer rounded-[8px] p-1 text-[var(--muted-strong)] hover:bg-[var(--bg-muted)]"
                       aria-expanded={isOpen}
                       aria-label={isOpen ? 'Collapse subcategories' : 'Expand subcategories'}
-                      onClick={() =>
-                        setExpanded((e) => ({ ...e, [root.id]: !isOpen }))
-                      }
+                      onClick={() => setExpanded((e) => ({ ...e, [root.id]: !isOpen }))}
                     >
                       {isOpen ? (
                         <ChevronDown className="size-4" />
@@ -343,7 +360,9 @@ export default function AdminCategoriesPage() {
                         </Badge>
                       </div>
                       {root.description ? (
-                        <p className="mt-1 text-sm text-[var(--muted-strong)]">{root.description}</p>
+                        <p className="mt-1 text-sm text-[var(--muted-strong)]">
+                          {root.description}
+                        </p>
                       ) : null}
                       <p className="mt-2 text-xs font-medium text-[var(--muted-strong)]">
                         {root.subcategoryCount} subcategor
@@ -352,41 +371,46 @@ export default function AdminCategoriesPage() {
                         {root.questionCount} question{root.questionCount === 1 ? '' : 's'}
                       </p>
                     </div>
-                    <div className="flex flex-wrap gap-1.5">
+                    <AdminRowActions
+                      primary={
+                        <>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="cursor-pointer"
+                            onClick={() => openCreateChild(root.id)}
+                          >
+                            <Plus className="size-3.5" />
+                            Subcategory
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="cursor-pointer"
+                            onClick={() =>
+                              openEdit({
+                                id: root.id,
+                                name: root.name,
+                                slug: root.slug,
+                                description: root.description,
+                                isActive: root.isActive,
+                                sortOrder: root.sortOrder,
+                                parentId: null,
+                              })
+                            }
+                          >
+                            <Pencil className="size-3.5" />
+                            Edit
+                          </Button>
+                        </>
+                      }
+                    >
                       <Button
                         type="button"
                         size="sm"
-                        variant="outline"
-                        className="cursor-pointer"
-                        onClick={() => openCreateChild(root.id)}
-                      >
-                        <Plus className="size-3.5" />
-                        Subcategory
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        className="cursor-pointer"
-                        onClick={() =>
-                          openEdit({
-                            id: root.id,
-                            name: root.name,
-                            slug: root.slug,
-                            description: root.description,
-                            isActive: root.isActive,
-                            sortOrder: root.sortOrder,
-                            parentId: null,
-                          })
-                        }
-                      >
-                        <Pencil className="size-3.5" />
-                        Edit
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
+                        variant="ghost"
                         className="cursor-pointer"
                         onClick={() =>
                           setDialog({
@@ -431,7 +455,7 @@ export default function AdminCategoriesPage() {
                         <Trash2 className="size-3.5" />
                         Delete
                       </Button>
-                    </div>
+                    </AdminRowActions>
                   </div>
 
                   {isOpen ? (
@@ -507,7 +531,7 @@ export default function AdminCategoriesPage() {
             );
           })}
         </ul>
-      </Surface>
+      </AdminSection>
 
       <CategoryFormDialog
         open={dialog?.kind === 'form'}
@@ -579,7 +603,7 @@ function SubcategoryRow({
   return (
     <li
       className={cn(
-        'flex flex-wrap items-center justify-between gap-2 rounded-[12px] border border-[var(--line)] bg-white px-3 py-2.5',
+        'flex flex-wrap items-center justify-between gap-2 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] px-3 py-2.5',
       )}
     >
       <div className="min-w-0">
@@ -593,11 +617,20 @@ function SubcategoryRow({
           {child.questionCount} question{child.questionCount === 1 ? '' : 's'}
         </p>
       </div>
-      <div className="flex flex-wrap gap-1">
-        <Button type="button" size="sm" variant="ghost" className="cursor-pointer" onClick={onEdit}>
-          <Pencil className="size-3.5" />
-          Edit
-        </Button>
+      <AdminRowActions
+        primary={
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            className="cursor-pointer"
+            onClick={onEdit}
+          >
+            <Pencil className="size-3.5" />
+            Edit
+          </Button>
+        }
+      >
         <Button
           type="button"
           size="sm"
@@ -616,8 +649,9 @@ function SubcategoryRow({
           onClick={onDelete}
         >
           <Trash2 className="size-3.5" />
+          Delete
         </Button>
-      </div>
+      </AdminRowActions>
     </li>
   );
 }

@@ -107,6 +107,18 @@ Bengali UI fonts are **out of scope** until i18n is approved.
 | `Separator` | Dividers |
 | `Button` `loading` | Inline orbit loader; disables control |
 
+### `components/admin` (console kit)
+
+| Component | Use |
+|-----------|-----|
+| `AdminPage` / `AdminSection` | Page rhythm + titled blocks |
+| `AdminToolbar` / `AdminFormPanel` / `AdminBulkBar` | Filters, create forms, selection bar |
+| `AdminTableShell` / `AdminTable` / `AdminTh` / `AdminTd` | Dense data tables |
+| `AdminListCard` | Card list rows (practice sets, news, documents) |
+| `AdminRowActions` | Primary buttons + overflow menu |
+| `AdminPublishStatus` / `AdminUserStatus` / `AdminPublishedFlag` | Status chips |
+| `AdminListMeta` / `AdminStatGrid` | Count line + KPI grid |
+
 ### `components/loading` (unified system)
 
 | Component | Use |

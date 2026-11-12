@@ -476,6 +476,38 @@ body {
   background: var(--brand-wash);
 }
 
+.learner-theme.admin-theme[data-theme='dark'] .admin-table thead {
+  background: color-mix(in srgb, var(--bg-elevated) 70%, var(--bg-muted));
+}
+
+.learner-theme.admin-theme[data-theme='dark'] .admin-table tbody tr:hover {
+  background: color-mix(in srgb, var(--bg-muted) 65%, transparent);
+}
+
+.admin-list-card:hover {
+  border-color: color-mix(in srgb, var(--line-strong) 80%, var(--accent));
+  box-shadow: var(--shadow-sm);
+}
+
+.admin-filter-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .admin-filter-grid {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+  }
+}
+
+.admin-checkbox {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
 /* Active nav pill — soft fill; no colored left rail on dark Orbit chrome */
 .learner-nav-link {
   position: relative;

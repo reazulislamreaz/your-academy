@@ -12,7 +12,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { LoadMoreButton } from '@/components/ui/load-more-button';
 import { Select } from '@/components/ui/select';
-import { Surface } from '@/components/ui/surface';
 import { Textarea } from '@/components/ui/textarea';
 import { ContentIn } from '@/components/ui/skeleton';
 import { ApiError, apiFetch } from '@/lib/api/client';
@@ -21,7 +20,10 @@ import type { CategoryNode } from '@/lib/api/types';
 import { getStorageStatus, uploadViaSignedRequest } from '@/lib/cloudinary-upload';
 import { AdminDocumentsPageSkeleton } from '@/components/skeletons';
 import { useCursorList } from '@/lib/hooks/use-cursor-list';
-import { AdminPage } from '@/components/admin/admin-page';
+import { AdminFormPanel, AdminPage, AdminSection } from '@/components/admin/admin-page';
+import { AdminListCard } from '@/components/admin/admin-list-card';
+import { AdminRowActions } from '@/components/admin/admin-row-actions';
+import { AdminPublishedFlag } from '@/components/admin/admin-status';
 
 export default function AdminDocumentsPage() {
   const qc = useQueryClient();
@@ -87,7 +89,13 @@ export default function AdminDocumentsPage() {
     },
     onError: (err) => {
       setMsg(null);
-      setError(err instanceof ApiError ? err.message : err instanceof Error ? err.message : 'Create failed');
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : 'Create failed',
+      );
     },
   });
 
@@ -130,10 +138,18 @@ export default function AdminDocumentsPage() {
         </Alert>
       ) : null}
 
-      <Surface className="p-6">
-        <h2 className="font-display text-lg font-semibold">Add document</h2>
+      <AdminFormPanel
+        title="Add document"
+        description="Public published PDFs appear on the public columns page. Without Cloudinary, only metadata is saved."
+        footer={
+          <Button type="submit" form="admin-document-create" loading={create.isPending}>
+            {create.isPending ? 'Creating…' : 'Create'}
+          </Button>
+        }
+      >
         <form
-          className="mt-4 space-y-4"
+          id="admin-document-create"
+          className="space-y-4"
           onSubmit={(e) => {
             e.preventDefault();
             create.mutate();
@@ -154,11 +170,7 @@ export default function AdminDocumentsPage() {
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="cat">Category</Label>
-              <Select
-                id="cat"
-                value={categoryId}
-                onChange={(e) => setCategoryId(e.target.value)}
-              >
+              <Select id="cat" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
                 <option value="">None</option>
                 {categories.data?.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -187,81 +199,83 @@ export default function AdminDocumentsPage() {
           </label>
           {error ? <Alert variant="danger">{error}</Alert> : null}
           {msg ? <Alert variant="success">{msg}</Alert> : null}
-          <Button type="submit" loading={create.isPending}>
-            {create.isPending ? 'Creating…' : 'Create'}
-          </Button>
         </form>
-      </Surface>
+      </AdminFormPanel>
 
-      {list.isLoading ? <AdminDocumentsPageSkeleton omitHeader /> : null}
-      {!list.isLoading && list.items.length === 0 ? (
-        <EmptyState title="No documents" description="Create an entry above." />
-      ) : null}
+      <AdminSection title="Library" description="Publish, unpublish, or remove PDF entries.">
+        {list.isLoading ? <AdminDocumentsPageSkeleton omitHeader /> : null}
+        {!list.isLoading && list.items.length === 0 ? (
+          <EmptyState title="No documents" description="Create an entry above." />
+        ) : null}
 
-      {!list.isLoading && list.items.length > 0 ? (
-        <ContentIn>
-          <ul className="divide-y divide-[var(--line)] overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)]">
+        {!list.isLoading && list.items.length > 0 ? (
+          <ContentIn className="space-y-3">
             {list.items.map((doc) => (
-              <li
+              <AdminListCard
                 key={doc.id}
-                className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div>
-                  <p className="font-semibold">{doc.title}</p>
-                  <p className="text-sm text-[var(--muted-strong)]">
+                badges={
+                  <>
+                    <AdminPublishedFlag published={doc.isPublished} />
+                    <Badge variant={doc.visibility === 'PUBLIC' ? 'success' : 'outline'}>
+                      {doc.visibility}
+                    </Badge>
+                  </>
+                }
+                title={doc.title}
+                meta={
+                  <>
                     {doc.mediaAsset?.originalFilename ?? 'file'} ·{' '}
                     {doc.category?.name ?? 'Uncategorized'}
-                  </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant={doc.isPublished ? 'success' : 'outline'}>
-                    {doc.isPublished ? 'Published' : 'Draft'}
-                  </Badge>
-                  <Badge variant={doc.visibility === 'PUBLIC' ? 'success' : 'outline'}>
-                    {doc.visibility}
-                  </Badge>
-                  <Button size="sm" variant="outline" onClick={() => togglePublish.mutate(doc)}>
-                    {doc.isPublished ? 'Unpublish' : 'Publish'}
-                  </Button>
-                  {doc.visibility !== 'PUBLIC' ? (
-                    <Button
-                      size="sm"
-                      variant="soft"
-                      onClick={() =>
-                        apiFetch(`/admin/documents/${doc.id}`, {
-                          method: 'PATCH',
-                          body: JSON.stringify({ visibility: 'PUBLIC' }),
-                        }).then(() => {
-                          void qc.invalidateQueries({ queryKey: ['admin-documents'] });
-                          void qc.invalidateQueries({ queryKey: ['public-documents'] });
-                        })
-                      }
-                    >
-                      Make public
-                    </Button>
-                  ) : null}
-                  <ConfirmButton
-                    size="sm"
-                    variant="ghost"
-                    confirmTitle="Delete this document?"
-                    confirmMessage="Soft-delete this document?"
-                    confirmLabel="Delete"
-                    reversible={false}
-                    onConfirm={() => remove.mutateAsync(doc.id)}
+                  </>
+                }
+                actions={
+                  <AdminRowActions
+                    primary={
+                      <Button size="sm" variant="outline" onClick={() => togglePublish.mutate(doc)}>
+                        {doc.isPublished ? 'Unpublish' : 'Publish'}
+                      </Button>
+                    }
                   >
-                    Delete
-                  </ConfirmButton>
-                </div>
-              </li>
+                    {doc.visibility !== 'PUBLIC' ? (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() =>
+                          apiFetch(`/admin/documents/${doc.id}`, {
+                            method: 'PATCH',
+                            body: JSON.stringify({ visibility: 'PUBLIC' }),
+                          }).then(() => {
+                            void qc.invalidateQueries({ queryKey: ['admin-documents'] });
+                            void qc.invalidateQueries({ queryKey: ['public-documents'] });
+                          })
+                        }
+                      >
+                        Make public
+                      </Button>
+                    ) : null}
+                    <ConfirmButton
+                      size="sm"
+                      variant="ghost"
+                      confirmTitle="Delete this document?"
+                      confirmMessage="Soft-delete this document?"
+                      confirmLabel="Delete"
+                      reversible={false}
+                      onConfirm={() => remove.mutateAsync(doc.id)}
+                    >
+                      Delete
+                    </ConfirmButton>
+                  </AdminRowActions>
+                }
+              />
             ))}
-          </ul>
-          <LoadMoreButton
-            hasNextPage={list.hasNextPage}
-            isFetchingNextPage={list.isFetchingNextPage}
-            onLoadMore={() => void list.fetchNextPage()}
-          />
-        </ContentIn>
-      ) : null}
+            <LoadMoreButton
+              hasNextPage={list.hasNextPage}
+              isFetchingNextPage={list.isFetchingNextPage}
+              onLoadMore={() => void list.fetchNextPage()}
+            />
+          </ContentIn>
+        ) : null}
+      </AdminSection>
     </AdminPage>
   );
 }

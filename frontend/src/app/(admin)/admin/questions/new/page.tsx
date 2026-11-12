@@ -4,9 +4,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { AdminPage } from '@/components/admin/admin-page';
+import { AdminFormPanel, AdminPage } from '@/components/admin/admin-page';
 import { PageHeader } from '@/components/layout/page-header';
-import { Surface } from '@/components/ui/surface';
+import { Button } from '@/components/ui/button';
 import {
   QuestionForm,
   emptyQuestionForm,
@@ -49,12 +49,17 @@ export default function NewQuestionPage() {
         title="New question"
         description="Saved as a draft. Publish from the edit screen when ready."
         actions={
-          <Link href="/admin/questions" className="text-sm font-medium text-[var(--muted-strong)] hover:text-[var(--highlight)]">
-            Back to list
+          <Link href="/admin/questions">
+            <Button size="sm" variant="outline">
+              Back to list
+            </Button>
           </Link>
         }
       />
-      <Surface elevated className="p-6">
+      <AdminFormPanel
+        title="Question draft"
+        description="Fill in the stem, classification, and four options. You can publish after saving."
+      >
         {categories.isLoading ? (
           <div className="space-y-4" role="status" aria-busy="true" aria-live="polite">
             <span className="sr-only">Loading question form…</span>
@@ -79,7 +84,7 @@ export default function NewQuestionPage() {
             }}
           />
         )}
-      </Surface>
+      </AdminFormPanel>
     </AdminPage>
   );
 }

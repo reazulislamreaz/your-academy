@@ -357,7 +357,14 @@ export function AdminSupportInbox() {
       >
         <div className="space-y-3 border-b border-[var(--line)] p-4">
           <div className="flex items-center justify-between gap-2">
-            <h1 className="text-lg font-semibold tracking-tight text-[var(--ink)]">Messages</h1>
+            <div>
+              <p className="text-[0.6875rem] font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
+                Support
+              </p>
+              <h1 className="font-display text-lg font-bold tracking-tight text-[var(--ink)]">
+                Messages
+              </h1>
+            </div>
             <Badge variant="info">{items.filter((c) => c.adminUnreadCount > 0).length} unread</Badge>
           </div>
           <div className="relative">

@@ -3,7 +3,12 @@
 import Link from 'next/link';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { FileUp, Plus, Search } from 'lucide-react';
 import { Suspense, useEffect, useState } from 'react';
+import { AdminBulkBar, AdminListMeta, AdminPage, AdminToolbar } from '@/components/admin/admin-page';
+import { AdminRowActions } from '@/components/admin/admin-row-actions';
+import { AdminPublishStatus } from '@/components/admin/admin-status';
+import { AdminEmptyRow, AdminTable, AdminTableShell, AdminTd, AdminTh } from '@/components/admin/admin-table';
 import { PageHeader } from '@/components/layout/page-header';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -13,13 +18,11 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { LoadMoreButton } from '@/components/ui/load-more-button';
 import { Select } from '@/components/ui/select';
-import { Surface } from '@/components/ui/surface';
 import { ContentIn } from '@/components/ui/skeleton';
 import { apiFetch } from '@/lib/api/client';
 import type { AdminQuestionListItem } from '@/lib/api/admin-types';
 import { AdminQuestionsPageSkeleton } from '@/components/skeletons';
 import { useCursorList } from '@/lib/hooks/use-cursor-list';
-import { AdminPage } from '@/components/admin/admin-page';
 
 export default function AdminQuestionsPage() {
   return (
@@ -120,97 +123,114 @@ function AdminQuestionsContent() {
     });
   }
 
+  function applySearch(nextQ: string, nextStatus: string) {
+    const params = new URLSearchParams();
+    if (nextStatus) params.set('status', nextStatus);
+    if (nextQ.trim()) params.set('q', nextQ.trim());
+    const qs = params.toString();
+    router.replace(qs ? `/admin/questions?${qs}` : '/admin/questions');
+  }
+
   return (
-    <AdminPage>
+    <AdminPage dense>
       <PageHeader
         eyebrow="Content"
         title="Questions"
-        description="Create drafts, duplicate, publish, edit, and archive single-correct MCQs."
+        description="Search, publish, and archive MCQs. Use bulk upload for spreadsheet imports."
         actions={
           <div className="flex flex-wrap gap-2">
             <Link href="/admin/question-imports/new">
-              <Button variant="outline" className="px-5">
+              <Button variant="outline" size="sm">
+                <FileUp className="size-4" aria-hidden />
                 Bulk upload
               </Button>
             </Link>
             <Link href="/admin/questions/new">
-              <Button className="px-5">New question</Button>
+              <Button size="sm">
+                <Plus className="size-4" aria-hidden />
+                New question
+              </Button>
             </Link>
           </div>
         }
       />
 
-      <Surface className="flex flex-col gap-3 p-4 sm:flex-row sm:flex-wrap sm:items-center">
+      <AdminToolbar>
         <form
-          className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center"
+          className="admin-filter-grid"
           onSubmit={(e) => {
             e.preventDefault();
+            applySearch(qDraft, status);
             setQ(qDraft.trim());
             setSelected(new Set());
           }}
         >
-          <Input
-            value={qDraft}
-            onChange={(e) => setQDraft(e.target.value)}
-            placeholder="Search title, content, source note"
-            className="h-10 min-w-0 flex-1"
-          />
-          <Button type="submit" size="sm" variant="outline">
+          <div className="relative min-w-0">
+            <Search
+              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[var(--muted-strong)]"
+              aria-hidden
+            />
+            <Input
+              value={qDraft}
+              onChange={(e) => setQDraft(e.target.value)}
+              placeholder="Search title, content, or source note"
+              className="h-10 pl-9"
+              aria-label="Search questions"
+            />
+          </div>
+          <Select
+            id="status"
+            className="h-10 w-full sm:w-44"
+            value={status}
+            aria-label="Filter by status"
+            onChange={(e) => {
+              const next = e.target.value;
+              setStatus(next);
+              setSelected(new Set());
+              applySearch(qDraft, next);
+            }}
+          >
+            <option value="">All statuses</option>
+            <option value="DRAFT">Draft</option>
+            <option value="PUBLISHED">Published</option>
+            <option value="ARCHIVED">Archived</option>
+          </Select>
+          <Button type="submit" variant="outline" className="h-10 sm:w-auto">
             Search
           </Button>
         </form>
-        <label className="text-sm font-medium text-[var(--muted-strong)]" htmlFor="status">
-          Status
-        </label>
-        <Select
-          id="status"
-          className="h-10 w-auto min-w-[10rem]"
-          value={status}
-          onChange={(e) => {
-            setStatus(e.target.value);
-            setSelected(new Set());
-          }}
-        >
-          <option value="">All</option>
-          <option value="DRAFT">Draft</option>
-          <option value="PUBLISHED">Published</option>
-          <option value="ARCHIVED">Archived</option>
-        </Select>
-      </Surface>
+      </AdminToolbar>
 
       {bulkMsg ? <Alert variant="success">{bulkMsg}</Alert> : null}
 
-      {selected.size > 0 ? (
-        <Surface className="flex flex-wrap items-center justify-between gap-3 p-3">
-          <p className="text-sm text-[var(--ink-soft)]">
-            <span className="font-semibold tabular-nums">{selected.size}</span> selected
-          </p>
-          <ConfirmButton
-            size="sm"
-            variant="danger"
-            confirmTitle="Archive selected questions?"
-            confirmMessage={`Archive ${selected.size} question(s)? They leave the learner bank.`}
-            confirmLabel="Archive all"
-            reversible
-            onConfirm={() => bulkArchive.mutateAsync([...selected])}
-          >
-            Archive selected
-          </ConfirmButton>
-        </Surface>
-      ) : null}
+      <AdminBulkBar count={selected.size} label="questions selected">
+        <ConfirmButton
+          size="sm"
+          variant="danger"
+          confirmTitle="Archive selected questions?"
+          confirmMessage={`Archive ${selected.size} question(s)? They leave the learner bank.`}
+          confirmLabel="Archive all"
+          reversible
+          onConfirm={() => bulkArchive.mutateAsync([...selected])}
+        >
+          Archive selected
+        </ConfirmButton>
+      </AdminBulkBar>
 
       {list.isLoading ? <AdminQuestionsPageSkeleton omitHeader /> : null}
 
       {!list.isLoading && items.length === 0 ? (
         <EmptyState
-          title="No questions"
-          description="Create your first MCQ or import a spreadsheet."
+          title="No questions found"
+          description={
+            q || status
+              ? 'Try a different search or status filter.'
+              : 'Create your first MCQ or import a spreadsheet.'
+          }
           action={
             <div className="flex flex-wrap justify-center gap-2">
               <Link href="/admin/questions/new">
-                <Button size="sm">
-                  New question
-                </Button>
+                <Button size="sm">New question</Button>
               </Link>
               <Link href="/admin/question-imports/new">
                 <Button size="sm" variant="outline">
@@ -223,73 +243,101 @@ function AdminQuestionsContent() {
       ) : null}
 
       {!list.isLoading && items.length > 0 ? (
-        <ContentIn>
-          <Surface className="overflow-hidden p-0">
-            <div className="min-w-0 w-full max-w-full overflow-x-auto">
-              <table className="w-full min-w-[48rem] text-left text-sm">
-                <thead className="bg-[var(--bg-desk)] text-xs font-semibold tracking-[0.08em] text-[var(--muted-strong)] uppercase">
-                  <tr>
-                    <th className="px-3 py-3 sm:px-5">
-                      <input
-                        type="checkbox"
-                        checked={allSelected}
-                        onChange={toggleAll}
-                        aria-label="Select all on page"
-                      />
-                    </th>
-                    <th className="px-3 py-3 font-semibold">Question</th>
-                    <th className="px-3 py-3 font-semibold">Category</th>
-                    <th className="px-3 py-3 font-semibold">Difficulty</th>
-                    <th className="px-3 py-3 font-semibold">Status</th>
-                    <th className="px-5 py-3 text-right font-semibold">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[var(--line)]">
-                  {items.map((qItem) => (
-                    <tr key={qItem.id} className="hover:bg-[var(--brand-wash)]">
-                      <td className="px-3 py-3.5 sm:px-5">
+        <ContentIn className="space-y-4">
+          <AdminTableShell
+            minWidth="52rem"
+            header={
+              <AdminListMeta
+                count={items.length}
+                noun="question"
+                hasMore={list.hasNextPage}
+                query={q || undefined}
+              />
+            }
+            footer={
+              <LoadMoreButton
+                hasNextPage={list.hasNextPage}
+                isFetchingNextPage={list.isFetchingNextPage}
+                onLoadMore={() => void list.fetchNextPage()}
+              />
+            }
+          >
+            <AdminTable>
+              <thead>
+                <tr>
+                  <AdminTh className="w-10">
+                    <input
+                      type="checkbox"
+                      className="admin-checkbox"
+                      checked={allSelected}
+                      onChange={toggleAll}
+                      aria-label="Select all on page"
+                    />
+                  </AdminTh>
+                  <AdminTh>Question</AdminTh>
+                  <AdminTh>Category</AdminTh>
+                  <AdminTh>Difficulty</AdminTh>
+                  <AdminTh>Status</AdminTh>
+                  <AdminTh align="right">Actions</AdminTh>
+                </tr>
+              </thead>
+              <tbody>
+                {items.length === 0 ? (
+                  <AdminEmptyRow colSpan={6}>No questions match this filter.</AdminEmptyRow>
+                ) : (
+                  items.map((qItem) => (
+                    <tr key={qItem.id}>
+                      <AdminTd>
                         <input
                           type="checkbox"
+                          className="admin-checkbox"
                           checked={selected.has(qItem.id)}
                           onChange={() => toggleOne(qItem.id)}
                           aria-label={`Select ${qItem.title}`}
                         />
-                      </td>
-                      <td className="px-3 py-3.5">
+                      </AdminTd>
+                      <AdminTd>
                         <Link
                           href={`/admin/questions/${qItem.id}`}
-                          className="font-semibold text-[var(--ink)] hover:underline"
+                          className="line-clamp-2 font-semibold text-[var(--ink)] hover:underline"
                         >
                           {qItem.title}
                         </Link>
-                      </td>
-                      <td className="px-3 py-3.5 text-[var(--muted-strong)]">
-                        {qItem.category.name}
-                        {qItem.subcategory ? ` · ${qItem.subcategory.name}` : ''}
-                      </td>
-                      <td className="px-3 py-3.5">
+                      </AdminTd>
+                      <AdminTd muted>
+                        <span className="line-clamp-2">
+                          {qItem.category.name}
+                          {qItem.subcategory ? ` · ${qItem.subcategory.name}` : ''}
+                        </span>
+                      </AdminTd>
+                      <AdminTd>
                         <Badge variant="outline">{qItem.difficulty}</Badge>
-                      </td>
-                      <td className="px-3 py-3.5">
-                        <Badge
-                          variant={
-                            qItem.status === 'PUBLISHED'
-                              ? 'success'
-                              : qItem.status === 'ARCHIVED'
-                                ? 'outline'
-                                : 'highlight'
+                      </AdminTd>
+                      <AdminTd>
+                        <AdminPublishStatus status={qItem.status} />
+                      </AdminTd>
+                      <AdminTd align="right">
+                        <AdminRowActions
+                          primary={
+                            <>
+                              <Link href={`/admin/questions/${qItem.id}`}>
+                                <Button size="sm" variant="outline">
+                                  Edit
+                                </Button>
+                              </Link>
+                              {qItem.status !== 'PUBLISHED' ? (
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  disabled={publish.isPending}
+                                  onClick={() => publish.mutate(qItem.id)}
+                                >
+                                  Publish
+                                </Button>
+                              ) : null}
+                            </>
                           }
                         >
-                          {qItem.status}
-                        </Badge>
-                      </td>
-                      <td className="px-5 py-3.5">
-                        <div className="flex flex-wrap items-center justify-end gap-2">
-                          <Link href={`/admin/questions/${qItem.id}`}>
-                            <Button size="sm" variant="outline">
-                              Edit
-                            </Button>
-                          </Link>
                           {qItem.status === 'PUBLISHED' ? (
                             <Link href={`/questions/${qItem.id}`} target="_blank">
                               <Button size="sm" variant="ghost">
@@ -305,16 +353,6 @@ function AdminQuestionsContent() {
                           >
                             Duplicate
                           </Button>
-                          {qItem.status !== 'PUBLISHED' ? (
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              disabled={publish.isPending}
-                              onClick={() => publish.mutate(qItem.id)}
-                            >
-                              Publish
-                            </Button>
-                          ) : null}
                           {qItem.status !== 'ARCHIVED' ? (
                             <ConfirmButton
                               size="sm"
@@ -328,19 +366,14 @@ function AdminQuestionsContent() {
                               Archive
                             </ConfirmButton>
                           ) : null}
-                        </div>
-                      </td>
+                        </AdminRowActions>
+                      </AdminTd>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Surface>
-          <LoadMoreButton
-            hasNextPage={list.hasNextPage}
-            isFetchingNextPage={list.isFetchingNextPage}
-            onLoadMore={() => void list.fetchNextPage()}
-          />
+                  ))
+                )}
+              </tbody>
+            </AdminTable>
+          </AdminTableShell>
         </ContentIn>
       ) : null}
     </AdminPage>
