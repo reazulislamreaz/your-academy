@@ -153,6 +153,7 @@ model User {
   lastQuestion        Question?           @relation("UserLastQuestion", fields: [lastQuestionId], references: [id], onDelete: SetNull)
   questionBookmarks   QuestionBookmark[]
   documentBookmarks   DocumentBookmark[]
+  bookmarkCollections BookmarkCollection[]
   questionAttempts    QuestionAttempt[]
   practiceAttempts    PracticeAttempt[]
   createdPracticeSets PracticeSet[]       @relation("PracticeSetCreator")
@@ -399,17 +400,38 @@ model MediaAsset {
   @@map("media_assets")
 }
 
-model QuestionBookmark {
-  id         String   @id @default(uuid()) @db.Uuid
-  userId     String   @map("user_id") @db.Uuid
-  questionId String   @map("question_id") @db.Uuid
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+/// Learner-owned MCQ save folder (Facebook-style collection). Private per user.
+model BookmarkCollection {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  name      String   @db.VarChar(80)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookmarks QuestionBookmark[]
+
+  @@unique([userId, name])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("bookmark_collections")
+}
+
+model QuestionBookmark {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  questionId   String   @map("question_id") @db.Uuid
+  /// Null = Saved Items (uncategorized). At most one folder per user+question (DEC-026).
+  collectionId String?  @map("collection_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user       User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question   Question            @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  collection BookmarkCollection? @relation(fields: [collectionId], references: [id], onDelete: SetNull)
 
   @@unique([userId, questionId])
   @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, collectionId, createdAt(sort: Desc)])
+  @@index([collectionId])
   @@map("question_bookmarks")
 }
 

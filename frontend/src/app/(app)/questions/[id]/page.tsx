@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Bookmark, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { EntitlementCallout } from '@/components/access/entitlement-callout';
 import { OptionRow, type OptionRowState } from '@/components/questions/option-row';
@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Surface } from '@/components/ui/surface';
 import { Alert } from '@/components/ui/alert';
+import { SaveToCollectionDialog } from '@/features/bookmarks/save-to-collection-dialog';
 import { meQueryKey } from '@/features/auth/use-auth';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import type { MeUser, QuestionDetail } from '@/lib/api/types';
@@ -22,6 +23,7 @@ function QuestionDetailContent() {
   const qc = useQueryClient();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [checked, setChecked] = useState(false);
+  const [saveOpen, setSaveOpen] = useState(false);
 
   const filterQs = useMemo(() => {
     const sp = new URLSearchParams();
@@ -64,27 +66,6 @@ function QuestionDetailContent() {
   });
 
   // Resume pointer is written on Check (persistProgress) — avoid duplicate PATCH on every open.
-
-  const bookmark = useMutation({
-    mutationFn: async () => {
-      if (data?.bookmarked) {
-        await apiFetch(`/bookmarks/questions/${params.id}`, { method: 'DELETE' });
-        return false;
-      }
-      await apiFetch('/bookmarks/questions', {
-        method: 'POST',
-        body: JSON.stringify({ questionId: params.id }),
-      });
-      return true;
-    },
-    onSuccess: (bookmarked) => {
-      qc.setQueryData<QuestionDetail>(['question', params.id], (prev) =>
-        prev ? { ...prev, bookmarked } : prev,
-      );
-      void qc.invalidateQueries({ queryKey: ['bookmarks'] });
-      void qc.invalidateQueries({ queryKey: ['stats'] });
-    },
-  });
 
   if (isLoading) {
     return <QuestionDetailPageSkeleton />;
@@ -145,13 +126,28 @@ function QuestionDetailContent() {
         <Button
           variant="outline"
           size="sm"
-          className="min-h-10 shrink-0"
-          onClick={() => bookmark.mutate()}
-          disabled={bookmark.isPending}
+          className="min-h-10 shrink-0 gap-1.5"
+          onClick={() => setSaveOpen(true)}
         >
-          {bookmark.isPending ? 'Saving…' : data.bookmarked ? 'Remove save' : 'Save'}
+          <Bookmark
+            className="size-4"
+            aria-hidden
+            fill={data.bookmarked ? 'currentColor' : 'none'}
+          />
+          {data.bookmarked
+            ? data.collection?.name
+              ? `Saved · ${data.collection.name}`
+              : 'Saved'
+            : 'Save MCQ'}
         </Button>
       </div>
+
+      <SaveToCollectionDialog
+        open={saveOpen}
+        questionId={data.id}
+        questionTitle={data.title}
+        onClose={() => setSaveOpen(false)}
+      />
 
       <header className="motion-rise space-y-4 border-b border-[var(--line)] pb-6">
         <h1 className="font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-bold tracking-tight">

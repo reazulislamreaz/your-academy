@@ -11,8 +11,10 @@ PostgreSQL via Prisma. Migrations are the source of truth. **Never** use `prisma
 erDiagram
   User ||--o{ AuthSession : has
   User ||--o| UserSubscription : has
+  User ||--o{ BookmarkCollection : folders
   User ||--o{ QuestionBookmark : saves
   User ||--o{ DocumentBookmark : saves
+  BookmarkCollection ||--o{ QuestionBookmark : organizes
   User ||--o{ BrowsingSession : tracks
   User ||--o{ AuditLog : performs
   SubscriptionPlan ||--o{ UserSubscription : plans
@@ -210,16 +212,29 @@ PK: (newsId, documentId).
 
 **Indexes:** unique(publicId, resourceType); (uploadedById).
 
-### 3.10 QuestionBookmark
+### 3.10 BookmarkCollection (DEC-026)
+
+| Field | Type |
+|-------|------|
+| id | UUID PK |
+| userId | UUID FK → User ON DELETE CASCADE |
+| name | VARCHAR(80) |
+| createdAt | TIMESTAMPTZ |
+| updatedAt | TIMESTAMPTZ |
+
+**Unique:** (userId, name). **Indexes:** (userId, createdAt DESC). Private per user; max 50 folders enforced in service.
+
+### 3.10b QuestionBookmark
 
 | Field | Type |
 |-------|------|
 | id | UUID PK |
 | userId | UUID FK → User ON DELETE CASCADE |
 | questionId | UUID FK → Question ON DELETE CASCADE |
+| collectionId | UUID FK → BookmarkCollection ON DELETE SET NULL (nullable = uncategorized) |
 | createdAt | TIMESTAMPTZ |
 
-**Unique:** (userId, questionId). **Indexes:** (userId, createdAt DESC).
+**Unique:** (userId, questionId) — one folder (or uncategorized) per saved MCQ. **Indexes:** (userId, createdAt DESC), (userId, collectionId, createdAt DESC), (collectionId).
 
 ### 3.11 DocumentBookmark
 

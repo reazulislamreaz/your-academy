@@ -51,7 +51,41 @@ export type QuestionDetail = {
   subcategory?: { id: string; name: string; slug: string } | null;
   publishedAt?: string | null;
   bookmarked: boolean;
+  /** Present when saved into a named folder; null when uncategorized or unsaved. */
+  collection?: { id: string; name: string } | null;
   answersVisible: boolean;
+};
+
+export type BookmarkCollectionSummary = {
+  id: string;
+  name: string;
+  questionCount: number;
+  createdAt?: string;
+  updatedAt?: string;
+  containsQuestion?: boolean;
+};
+
+export type BookmarkCollectionsPayload = {
+  items: BookmarkCollectionSummary[];
+  uncategorized: {
+    id: null;
+    name: string;
+    questionCount: number;
+    containsQuestion?: boolean;
+  };
+  bookmarked: boolean;
+  activeCollectionId: string | null;
+};
+
+export type SaveQuestionBookmarkResult = {
+  id: string;
+  userId: string;
+  questionId: string;
+  collectionId: string | null;
+  createdAt: string;
+  collection: { id: string; name: string } | null;
+  created: boolean;
+  moved: boolean;
 };
 
 export type PracticeSetKind =

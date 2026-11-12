@@ -292,7 +292,11 @@ export class QuestionsService {
       where: {
         userId_questionId: { userId: user.userId, questionId: id },
       },
-      select: { id: true },
+      select: {
+        id: true,
+        collectionId: true,
+        collection: { select: { id: true, name: true } },
+      },
     });
 
     const options = question.options.map(({ id: oid, label, content, isCorrect, sortOrder }) =>
@@ -315,6 +319,7 @@ export class QuestionsService {
       explanation: canView ? (question.explanation ?? undefined) : undefined,
       publishedAt: question.publishedAt,
       bookmarked: Boolean(bookmark),
+      collection: bookmark?.collection ?? null,
       answersVisible: canView,
     };
   }

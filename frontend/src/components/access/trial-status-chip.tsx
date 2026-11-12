@@ -1,19 +1,15 @@
 'use client';
 
 import Link from 'next/link';
+import { Hourglass } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useMe } from '@/features/auth/use-auth';
 import { cn } from '@/lib/utils';
 
-function formatShort(ms: number): string {
+function formatDaysLeft(ms: number): string {
   if (ms <= 0) return 'Ended';
-  const totalSec = Math.floor(ms / 1000);
-  const days = Math.floor(totalSec / 86400);
-  const hours = Math.floor((totalSec % 86400) / 3600);
-  if (days > 0) return `${days}d left`;
-  if (hours > 0) return `${hours}h left`;
-  const mins = Math.floor((totalSec % 3600) / 60);
-  return `${mins}m left`;
+  const days = Math.max(1, Math.ceil(ms / 86_400_000));
+  return days === 1 ? '1 day left' : `${days} days left`;
 }
 
 export function TrialStatusChip({ className }: { className?: string }) {
@@ -35,19 +31,20 @@ export function TrialStatusChip({ className }: { className?: string }) {
     <Link
       href="/home"
       className={cn(
-        'motion-nav-indicator hidden items-center gap-1.5 rounded-[var(--radius-sm)] px-2.5 py-1 text-xs font-semibold tracking-wide md:inline-flex',
+        'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold tracking-wide transition-colors',
         active
-          ? 'bg-[var(--success-soft)] text-[var(--success)] hover:brightness-95'
-          : 'bg-[var(--highlight-soft)] text-[var(--highlight)] hover:brightness-95',
+          ? 'bg-[var(--highlight-soft)] text-[var(--highlight)] hover:bg-[var(--highlight-hover)]'
+          : 'bg-[var(--bg-muted)] text-[var(--muted-strong)] hover:bg-[var(--line)]',
         className,
       )}
-      title={active ? 'Trial includes answers and explanations' : 'Browse stays open; answers are premium'}
+      title={
+        active
+          ? 'Trial includes answers and explanations'
+          : 'Browse stays open; answers are premium'
+      }
     >
-      <span
-        className={cn('h-1.5 w-1.5 rounded-full', active ? 'bg-[var(--success)]' : 'bg-[var(--highlight)]')}
-        aria-hidden
-      />
-      {active ? `Trial · ${formatShort(remaining)}` : 'Trial ended'}
+      <Hourglass className="size-3.5 shrink-0" aria-hidden strokeWidth={2.25} />
+      {active ? formatDaysLeft(remaining) : 'Trial ended'}
     </Link>
   );
 }

@@ -96,6 +96,7 @@ Short title; full content; multiple options; exactly one correct; detailed expla
 | FR-E03 | List bookmarks with pagination; filter by type and category where applicable |
 | FR-E04 | Unique constraint per `(userId, resourceId, resourceType)` |
 | FR-E05 | Store references only — no duplicated question/PDF payloads |
+| FR-E06 | MCQ Save to Collection (DEC-026): create/rename/delete private folders; save/move MCQ into one folder or uncategorized; Facebook-style picker on question detail; PDF bookmarks remain flat |
 
 ---
 

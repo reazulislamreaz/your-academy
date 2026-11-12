@@ -21,6 +21,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | DEC-004 | Password reset delivered via email | CONFIRMED |
 | DEC-012 | Web auth via HTTP-only cookies + CSRF protection | CONFIRMED |
 | DEC-020 | pnpm workspaces + Turborepo | CONFIRMED |
+| DEC-026 | MCQ Save to Collection folders | CONFIRMED |
 
 ---
 
@@ -267,6 +268,15 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Decision | Append-only `LearningActivityEvent` (LOGIN/LOGOUT/QUESTION_ATTEMPT/PRACTICE_*/BOOKMARK_*/DOCUMENT_VIEW) written from learner paths; admin aggregates also use `BrowsingSession`, `QuestionAttempt`, `PracticeAttempt`, `AuditLog`. Prefer on-read aggregation in Phase 1; optional `UserDailyStudyRollup` later if slow. |
 | Impact | Schema migration, LearningActivityService, admin activity APIs/UI |
 | Status | **CONFIRMED** (Phase 1 admin analytics) |
+
+### DEC-026 — MCQ Save to Collection (folders)
+
+| Field | Value |
+|-------|-------|
+| Question | Can learners organize saved MCQs into personal folders (Facebook-style Save to Collection)? |
+| Decision | **Yes for MCQs.** `BookmarkCollection` is private per user. A question is saved at most once per user (`@@unique([userId, questionId])`) and may sit in **one** collection or uncategorized (`collectionId` null). Re-saving / picking another folder **moves** the bookmark. Creating a folder + saving is one atomic flow. Deleting a folder uncategorizes its bookmarks (`ON DELETE SET NULL`). PDF bookmarks stay flat (no collections in v1). Caps: name ≤80 chars; ≤50 collections per user. |
+| Impact | Prisma migration, BookmarksModule APIs, question detail `collection`, Save modal UI, bookmarks page folders |
+| Status | **CONFIRMED** (product request 2026-11-12) |
 
 ### Deferred / NEEDS APPROVAL (explicitly out of Phase 1)
 

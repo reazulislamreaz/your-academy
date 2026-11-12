@@ -234,14 +234,19 @@ Timed/untimed quizzes and model tests built from published questions. Review pay
 
 | Method | Endpoint | Description | Auth | Role |
 |--------|----------|-------------|------|------|
-| GET | `/bookmarks/questions` | List (`cursor`, `limit`, optional `categoryId`) | User | USER/ADMIN |
-| POST | `/bookmarks/questions` | `{ "questionId" }` | User | USER/ADMIN |
-| DELETE | `/bookmarks/questions/:questionId` | Remove | User | USER/ADMIN |
+| GET | `/bookmarks/collections` | List folders + uncategorized counts (`questionId?` for picker state) | User | USER/ADMIN |
+| POST | `/bookmarks/collections` | `{ "name" }` create folder | User | USER/ADMIN |
+| PATCH | `/bookmarks/collections/:id` | Rename `{ "name" }` | User | USER/ADMIN |
+| DELETE | `/bookmarks/collections/:id` | Delete folder (bookmarks become uncategorized) | User | USER/ADMIN |
+| GET | `/bookmarks/questions` | List (`cursor`, `limit`, optional `categoryId`, `collectionId` or `uncategorized`) | User | USER/ADMIN |
+| POST | `/bookmarks/questions` | Save/move `{ "questionId", "collectionId?", "newCollectionName?" }` (upsert; DEC-026) | User | USER/ADMIN |
+| PATCH | `/bookmarks/questions/:questionId` | Move `{ "collectionId": uuid\|null }` | User | USER/ADMIN |
+| DELETE | `/bookmarks/questions/:questionId` | Unsave | User | USER/ADMIN |
 | GET | `/bookmarks/documents` | List (`cursor`, `limit`) | User | USER/ADMIN |
 | POST | `/bookmarks/documents` | `{ "documentId" }` | User | USER/ADMIN |
 | DELETE | `/bookmarks/documents/:documentId` | Remove | User | USER/ADMIN |
 
-`409` on duplicate. Lists are owner-scoped. Document detail includes `bookmarked`.
+Question bookmark rows are owner-scoped; at most one folder per user+question. Re-save to the same folder is idempotent; another folder moves. Document bookmarks remain flat. Question detail includes `bookmarked` + `collection`. Document detail includes `bookmarked`.
 
 ---
 

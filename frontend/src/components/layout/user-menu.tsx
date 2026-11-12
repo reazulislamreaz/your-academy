@@ -1,15 +1,45 @@
 'use client';
 
 import Link from 'next/link';
-import { LogIn } from 'lucide-react';
+import { ChevronDown, LogIn, LogOut, UserRound } from 'lucide-react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useIsAdmin, useLogout, useMe } from '@/features/auth/use-auth';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
-export function UserMenu({ compact = false, loginOnly = false }: { compact?: boolean; loginOnly?: boolean }) {
+export function UserMenu({
+  compact = false,
+  loginOnly = false,
+  variant = 'default',
+}: {
+  compact?: boolean;
+  loginOnly?: boolean;
+  /** Header chip with avatar + name + dropdown (app shell). */
+  variant?: 'default' | 'header';
+}) {
   const me = useMe();
   const logout = useLogout();
   const isAdmin = useIsAdmin();
+  const [open, setOpen] = useState(false);
+  const panelId = useId();
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', onDoc);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDoc);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
 
   if (loginOnly && (me.isLoading || !me.data)) {
     return (
@@ -23,7 +53,7 @@ export function UserMenu({ compact = false, loginOnly = false }: { compact?: boo
   }
 
   if (me.isLoading) {
-    return <Skeleton className={compact ? 'h-9 w-24' : 'h-10 w-28'} />;
+    return <Skeleton className={variant === 'header' ? 'h-10 w-36 rounded-full' : compact ? 'h-9 w-24' : 'h-10 w-28'} />;
   }
 
   if (!me.data) {
@@ -49,6 +79,88 @@ export function UserMenu({ compact = false, loginOnly = false }: { compact?: boo
             Start free trial
           </Button>
         </Link>
+      </div>
+    );
+  }
+
+  if (variant === 'header') {
+    return (
+      <div className="relative" ref={rootRef}>
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={panelId}
+          aria-label="Account menu"
+          onClick={() => setOpen((v) => !v)}
+          className={cn(
+            'flex max-w-[14rem] items-center gap-2 rounded-full py-1 pr-2 pl-1 text-left transition-colors hover:bg-[var(--bg-muted)]',
+            open && 'bg-[var(--bg-muted)]',
+          )}
+        >
+          {me.data.avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- short-lived signed Cloudinary URL
+            <img
+              src={me.data.avatarUrl}
+              alt=""
+              width={36}
+              height={36}
+              decoding="async"
+              className="size-9 shrink-0 rounded-full object-cover"
+            />
+          ) : (
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[var(--brand-wash-strong)] text-[var(--ink)]">
+              <UserRound className="size-4" aria-hidden />
+            </span>
+          )}
+          <span className="hidden min-w-0 truncate text-sm font-semibold text-[var(--ink)] sm:inline">
+            {me.data.name}
+          </span>
+          <ChevronDown
+            className={cn('hidden size-4 shrink-0 text-[var(--muted-strong)] sm:block', open && 'rotate-180')}
+            aria-hidden
+          />
+        </button>
+        {open ? (
+          <div
+            id={panelId}
+            className="motion-pop absolute right-0 z-40 mt-2 w-52 overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-white shadow-[var(--shadow-lg)]"
+          >
+            <div className="border-b border-[var(--line)] px-3 py-2.5">
+              <p className="truncate text-sm font-semibold text-[var(--ink)]">{me.data.name}</p>
+              <p className="truncate text-xs text-[var(--muted-strong)]">{me.data.whatsappNumber}</p>
+            </div>
+            <div className="flex flex-col p-1.5">
+              <Link
+                href="/profile"
+                className="rounded-[var(--radius-sm)] px-3 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--bg-muted)]"
+                onClick={() => setOpen(false)}
+              >
+                Profile
+              </Link>
+              {isAdmin ? (
+                <Link
+                  href="/admin/dashboard"
+                  className="rounded-[var(--radius-sm)] px-3 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--bg-muted)]"
+                  onClick={() => setOpen(false)}
+                >
+                  Admin
+                </Link>
+              ) : null}
+              <button
+                type="button"
+                disabled={logout.isPending}
+                className="flex items-center gap-2 rounded-[var(--radius-sm)] px-3 py-2 text-left text-sm font-medium text-[var(--highlight)] hover:bg-[var(--highlight-soft)] disabled:opacity-60"
+                onClick={() => {
+                  setOpen(false);
+                  logout.mutate();
+                }}
+              >
+                <LogOut className="size-3.5" aria-hidden />
+                {logout.isPending ? 'Signing out…' : 'Sign out'}
+              </button>
+            </div>
+          </div>
+        ) : null}
       </div>
     );
   }

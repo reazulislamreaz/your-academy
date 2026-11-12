@@ -14,34 +14,23 @@ import {
 } from '@/components/skeletons/primitives';
 import { cn } from '@/lib/utils';
 
-/** `/home` — welcome strip, 8 metric tiles, continue/charts, results/topics, news/bookmarks. */
+/** `/home` — welcome, 3 KPI cards, continue/charts, results/topics, news/bookmarks. */
 export function HomePageSkeleton() {
   return (
-    <SkStatus label="Loading dashboard…" className="flex w-full flex-col gap-5 pb-10 sm:gap-6">
-      <Surface className="overflow-hidden border-l-[3px] border-l-[var(--highlight)] p-4 sm:p-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="min-w-0 flex-1 space-y-2">
-            <SkLine className="h-3 w-24" />
-            <SkTitle className="w-56 sm:w-72" />
-            <SkLine className="h-4 w-full max-w-xl" />
-            <Skeleton className="mt-1 h-8 w-40 rounded-full" />
-          </div>
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-            <SkPill className="h-11 w-full sm:w-40" />
-            <SkPill className="h-11 w-full sm:w-28" />
-          </div>
-        </div>
-        <SkLine className="mt-3 h-3 w-full max-w-lg" />
-      </Surface>
-
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <MetricTileSkeletonExact key={`kpi-a-${i}`} />
-        ))}
+    <SkStatus label="Loading dashboard…" className="flex w-full flex-col gap-6 pb-10 sm:gap-8">
+      <div className="space-y-2 pt-1">
+        <SkTitle className="h-8 w-72 sm:w-96" />
+        <SkLine className="h-4 w-64 max-w-full" />
       </div>
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <MetricTileSkeletonExact key={`kpi-b-${i}`} />
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Surface key={`kpi-${i}`} className="flex min-h-[220px] flex-col gap-3 p-5 sm:p-6">
+            <SkCircle className="size-12" />
+            <Skeleton className="mt-2 h-9 w-24" />
+            <SkLine className="h-4 w-28" />
+            <Skeleton className="mt-auto h-7 w-32 rounded-full" />
+          </Surface>
         ))}
       </div>
 

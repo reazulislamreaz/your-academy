@@ -4,21 +4,21 @@ import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import {
   ArrowRight,
-  BookMarked,
   BookOpen,
   CheckCircle2,
+  ClipboardCheck,
   ClipboardList,
-  Clock3,
   FileText,
-  Percent,
   Sparkles,
   Target,
+  Timer,
   XCircle,
 } from 'lucide-react';
 import { useEffect } from 'react';
 import { AccuracyDonut } from '@/components/dashboard/accuracy-donut';
 import { BarChart } from '@/components/dashboard/bar-chart';
-import { MetricTile } from '@/components/dashboard/metric-tile';
+import { HomeStatCard } from '@/components/dashboard/home-stat-card';
+import { ProgressRing } from '@/components/dashboard/progress-ring';
 import { SubjectProgress } from '@/components/dashboard/subject-progress';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -33,7 +33,6 @@ import {
 } from '@/components/skeletons';
 import { ContentIn } from '@/components/ui/skeleton';
 import { Surface } from '@/components/ui/surface';
-import { TrialCountdown } from '@/features/auth/trial-countdown';
 import { isUnauthorized, useMe } from '@/features/auth/use-auth';
 import { apiFetch } from '@/lib/api/client';
 import type {
@@ -42,7 +41,7 @@ import type {
   NewsListItem,
   UserStats,
 } from '@/lib/api/types';
-import { formatStudyMinutes } from '@/lib/study-prefs';
+import { formatStudyHours, formatStudyMinutes } from '@/lib/study-prefs';
 import { cn } from '@/lib/utils';
 
 function emptyPerformance(): UserStats['performance'] {
@@ -58,12 +57,6 @@ function emptyPerformance(): UserStats['performance'] {
     byCategory: [],
     recentAttempts: [],
   };
-}
-
-function greetingForHour(hour: number): string {
-  if (hour < 12) return 'Good morning';
-  if (hour < 17) return 'Good afternoon';
-  return 'Good evening';
 }
 
 function SectionTitle({
@@ -89,6 +82,14 @@ function SectionTitle({
         </Link>
       ) : null}
     </div>
+  );
+}
+
+function TrendPill({ children }: { children: string }) {
+  return (
+    <span className="inline-flex rounded-full bg-[var(--success-soft)] px-3 py-1 text-xs font-semibold text-[var(--success-fg)]">
+      {children}
+    </span>
   );
 }
 
@@ -146,7 +147,7 @@ export default function StudyHomePage() {
     );
   }
 
-  const firstName = me.data.name.split(' ')[0] || me.data.name;
+  const displayName = me.data.name;
   const last = me.data.study?.lastQuestion ?? null;
   const preferredIds = me.data.study?.preferredCategoryIds ?? [];
   const preferred =
@@ -160,59 +161,21 @@ export default function StudyHomePage() {
   const weekSec = analytics.data?.weekSeconds ?? 0;
   const totalSec = analytics.data?.totalSeconds ?? stats.data?.browsingSeconds ?? 0;
   const newsItems = (news.data ?? []).slice(0, 4);
-  const savedCount =
-    (stats.data?.questionBookmarks ?? 0) + (stats.data?.documentBookmarks ?? 0);
-  const hour = new Date().getHours();
-  const insight = statsFailed
-    ? 'Could not load practice stats right now — try refreshing.'
-    : perf.totalAttempts === 0
-      ? 'Check your first answer to unlock accuracy and subject progress.'
-      : perf.weekAttempts > 0
-        ? `This week: ${perf.weekAttempts} checks · ${perf.weekAccuracyPercent}% accuracy.`
-        : `Overall accuracy ${perf.accuracyPercent}% across ${perf.uniqueQuestions} questions.`;
+  const weekHoursLabel = formatStudyHours(weekSec).replace(' hrs', '').replace(' min', 'm');
 
   return (
-    <div className="flex w-full flex-col gap-5 pb-10 sm:gap-6">
+    <div className="flex w-full flex-col gap-6 pb-10 sm:gap-8">
       {/* Welcome */}
-      <Surface className="overflow-hidden border-l-[3px] border-l-[var(--highlight)] p-4 sm:p-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="min-w-0">
-            <p className="text-xs font-semibold tracking-[0.14em] text-[var(--muted-strong)] uppercase">
-              Study desk
-            </p>
-            <h1 className="mt-1 font-display text-2xl font-bold tracking-tight text-[var(--ink)] sm:text-3xl">
-              {greetingForHour(hour)}, {firstName}
-            </h1>
-            <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-[var(--muted-strong)]">{insight}</p>
-            <div className="mt-3">
-              <TrialCountdown
-                trialEndsAt={me.data.access.trialEndsAt}
-                isTrialActive={me.data.access.isTrialActive}
-              />
-            </div>
-          </div>
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-            <Link href={last ? `/questions/${last.id}${last.filterQs ? `?${last.filterQs}` : ''}` : '/questions'} className="w-full sm:w-auto">
-              <Button className="w-full px-5 sm:w-auto">
-                {last ? 'Resume practice' : 'Start practice'}
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-            <Link href="/profile" className="w-full sm:w-auto">
-              <Button variant="outline" className="w-full px-5 sm:w-auto">
-                Account
-              </Button>
-            </Link>
-          </div>
-        </div>
-        <p className="mt-3 text-xs text-[var(--muted-strong)] sm:text-sm">
-          {me.data.access.isTrialActive
-            ? 'Answers and explanations stay unlocked for the rest of your trial.'
-            : 'You can still browse, save, and practice — correct answers remain premium.'}
+      <div className="motion-rise min-w-0 pt-1">
+        <h1 className="font-display text-2xl font-bold tracking-tight text-[var(--ink)] sm:text-3xl md:text-[2rem]">
+          Welcome back, {displayName}! <span aria-hidden>👋</span>
+        </h1>
+        <p className="mt-1.5 text-sm text-[var(--muted-strong)] sm:text-base">
+          Track your progress and practice everyday.
         </p>
-      </Surface>
+      </div>
 
-      {/* Study metrics — single band to avoid double KPI density */}
+      {/* Primary KPIs */}
       {statsFailed || analyticsFailed ? (
         <Alert variant="danger">
           {statsFailed && analyticsFailed
@@ -223,42 +186,56 @@ export default function StudyHomePage() {
           Refresh the page to try again.
         </Alert>
       ) : null}
+
       {!statsFailed ? (
-        <div className="motion-stagger grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <MetricTile
-            label="Answered"
-            value={perf.uniqueQuestions}
+        <div className="motion-stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <HomeStatCard
+            icon={ClipboardCheck}
+            value={perf.uniqueQuestions.toLocaleString()}
+            label="MCQs Solved"
+            subtitle="(কতগুলো MCQ সমাধান করেছে)"
+            footer={
+              <TrendPill>
+                {perf.weekAttempts > 0
+                  ? `+${perf.weekAttempts.toLocaleString()} this week`
+                  : 'No checks this week'}
+              </TrendPill>
+            }
+          />
+
+          <HomeStatCard
             icon={Target}
-            tone="navy"
+            iconClassName="text-[var(--highlight)]"
+            value={`${perf.accuracyPercent}%`}
+            label="Success Rate"
+            footer={
+              <div className="flex justify-start">
+                <ProgressRing
+                  value={perf.accuracyPercent}
+                  size={88}
+                  stroke={8}
+                  label={`${perf.accuracyPercent}%`}
+                  color="var(--ink)"
+                  trackColor="var(--line)"
+                />
+              </div>
+            }
           />
-          <MetricTile
-            label="Accuracy"
-            value={perf.accuracyPercent}
-            suffix="%"
-            icon={Percent}
-            tone="green"
-          />
-          <MetricTile label="Correct" value={perf.correct} icon={CheckCircle2} tone="teal" />
-          <MetricTile label="Incorrect" value={perf.incorrect} icon={XCircle} tone="red" />
-          <MetricTile
-            label="Checks"
-            value={perf.totalAttempts}
-            icon={ClipboardList}
-            tone="blue"
-          />
-          <MetricTile
-            label="Week accuracy"
-            value={perf.weekAccuracyPercent}
-            suffix="%"
-            icon={Percent}
-            tone="amber"
-          />
-          <MetricTile label="Saved" value={savedCount} icon={BookMarked} tone="navy" />
-          <MetricTile
-            label="Study time"
-            value={analyticsFailed ? '—' : formatStudyMinutes(totalSec)}
-            icon={Clock3}
-            tone="blue"
+
+          <HomeStatCard
+            icon={Timer}
+            value={analyticsFailed ? '—' : formatStudyHours(totalSec)}
+            label="Study Time"
+            className="sm:col-span-2 xl:col-span-1"
+            footer={
+              <TrendPill>
+                {analyticsFailed
+                  ? 'Study time unavailable'
+                  : weekSec > 0
+                    ? `+${weekHoursLabel} this week`
+                    : 'No study time this week'}
+              </TrendPill>
+            }
           />
         </div>
       ) : null}
@@ -295,9 +272,7 @@ export default function StudyHomePage() {
               description="Open any MCQ and press Check answer. Accuracy, subject progress, and recent results will appear here."
               action={
                 <Link href="/questions">
-                  <Button size="sm">
-                    Browse questions
-                  </Button>
+                  <Button size="sm">Browse questions</Button>
                 </Link>
               }
             />
