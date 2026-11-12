@@ -171,8 +171,8 @@ body {
 }
 
 /*
-  Learner shell themes (DEC-027 / DEC-028) — scoped to (app) only.
-  Marketing / auth / admin keep :root tokens and are never toggled.
+  Orbit shell themes (DEC-027 / DEC-028) — scoped to (app) + (admin).
+  Marketing / auth keep :root tokens and are never toggled.
 
   data-theme="light" (default) | data-theme="dark"
   Persistence: localStorage `ya-learner-color-scheme`
@@ -388,34 +388,33 @@ body {
 }
 
 /*
-  Admin shell — dense navy console chrome (docs/21 §6).
-  Distinct from learner Orbit; no theme toggle.
+  Admin shell — layered on `.learner-theme` so light/dark Orbit tokens apply
+  to content; navy inverse sidebar stays distinct in both modes.
 */
 .admin-theme {
-  --radius-sm: 8px;
-  --radius: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
   --admin-sidebar: #001a3d;
   --admin-sidebar-elevated: #002555;
   --admin-sidebar-hover: rgba(255, 255, 255, 0.08);
   --admin-sidebar-active: rgba(255, 255, 255, 0.12);
   --admin-sidebar-ink: #f8fafc;
   --admin-sidebar-muted: #94a3b8;
-  background: var(--bg-desk);
-  color: var(--ink);
 }
 
-.admin-theme.desk-canvas {
-  background-color: #eef2f7;
-  background-image:
-    radial-gradient(ellipse 60% 40% at 100% -10%, rgba(227, 30, 36, 0.05), transparent 55%),
-    radial-gradient(ellipse 50% 35% at -5% 105%, rgba(0, 32, 80, 0.07), transparent 50%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.7), transparent 30%);
+.learner-theme.admin-theme[data-theme='dark'] {
+  --admin-sidebar: #070b16;
+  --admin-sidebar-elevated: #0f1628;
+  --admin-sidebar-hover: rgba(255, 255, 255, 0.07);
+  --admin-sidebar-active: rgba(255, 255, 255, 0.11);
+  --admin-sidebar-muted: #8b9bb4;
 }
 
 .admin-sidebar {
-  background: linear-gradient(180deg, var(--admin-sidebar-elevated) 0%, var(--admin-sidebar) 48%, #001433 100%);
+  background: linear-gradient(
+    180deg,
+    var(--admin-sidebar-elevated) 0%,
+    var(--admin-sidebar) 48%,
+    color-mix(in srgb, var(--admin-sidebar) 88%, #000) 100%
+  );
   color: var(--admin-sidebar-ink);
   box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.06);
 }

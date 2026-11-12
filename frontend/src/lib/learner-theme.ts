@@ -1,4 +1,7 @@
-/** Learner dashboard color scheme only — never applied to marketing/auth/admin. */
+/**
+ * Shared Orbit color scheme for learner + admin shells.
+ * Marketing / auth stay on `:root` tokens and are never toggled.
+ */
 
 export const LEARNER_THEME_STORAGE_KEY = 'ya-learner-color-scheme';
 

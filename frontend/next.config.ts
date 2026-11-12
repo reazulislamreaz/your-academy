@@ -5,6 +5,9 @@ const apiOrigin = process.env.API_INTERNAL_URL ?? 'http://localhost:5000';
 const nextConfig: NextConfig = {
   output: 'standalone',
   transpilePackages: ['@your-academy/shared', 'react-pdf', 'pdfjs-dist'],
+  // Root eslint.config uses typescript-eslint only — Next plugin rules referenced in
+  // disable comments are not registered. Typecheck + scoped lint remain the gates.
+  eslint: { ignoreDuringBuilds: true },
   // Socket.IO polling hits `/socket.io/?EIO=…`; don't 308-strip the trailing slash.
   skipTrailingSlashRedirect: true,
   webpack: (config) => {

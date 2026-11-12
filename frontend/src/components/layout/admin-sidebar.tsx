@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { BrandMark } from './brand-mark';
 import { adminNavGroups, isAdminNavActive } from './admin-nav';
@@ -11,7 +11,11 @@ import { UserMenu } from './user-menu';
 
 const COLLAPSE_KEY = 'ya-admin-sidebar-collapsed';
 
-export function AdminSidebar() {
+type Props = {
+  footerExtra?: ReactNode;
+};
+
+export function AdminSidebar({ footerExtra }: Props) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -130,7 +134,7 @@ export function AdminSidebar() {
       <div
         className={cn(
           'border-t border-white/10',
-          collapsed ? 'flex justify-center p-2' : 'flex items-center gap-2 px-3 py-3',
+          collapsed ? 'flex flex-col items-center gap-2 p-2' : 'flex items-center gap-2 px-3 py-3',
         )}
       >
         {!collapsed ? (
@@ -141,6 +145,7 @@ export function AdminSidebar() {
             ← Website
           </Link>
         ) : null}
+        {footerExtra}
         <UserMenu variant="header" menuPlacement="top" />
       </div>
     </aside>

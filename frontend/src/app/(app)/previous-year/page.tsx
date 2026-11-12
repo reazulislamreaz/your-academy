@@ -4,7 +4,6 @@ import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { PageHeader } from '@/components/layout/page-header';
 import { PracticeSetList } from '@/components/practice/practice-set-list';
-import { Alert } from '@/components/ui/alert';
 import { examLabel } from '@/lib/exam-tags';
 import { PracticeBrowsePageSkeleton } from '@/components/skeletons';
 

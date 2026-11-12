@@ -63,7 +63,7 @@ Scoped to `(app)` only. Toggle via header Sun/Moon (`LearnerThemeToggle`).
 
 Collapse width: `--app-sidebar-collapsed-width` (`ya-learner-sidebar-collapsed`). Target text contrast ≥ 4.5:1.
 
-Do **not** apply `data-theme` or this toggle outside `(app)`.
+Apply `data-theme` + Sun/Moon toggle on `(app)` and `(admin)` Orbit shells only — never marketing/auth.
 
 ---
 
@@ -152,7 +152,7 @@ List utility: `.list-row` in `globals.css` for hover/divider rhythm.
 | `(marketing)` | Marketing header + footer | `/` |
 | `(auth)` | Split navy brand panel + form (desktop); stacked on mobile | `/login`, `/register`, … |
 | `(app)` | Learner shell (`.learner-theme` light/dark): collapsible sidebar + sticky header (theme toggle, pill search + ⌘K, Saved MCQ, updates, trial, profile) | `/home`, `/onboarding`, `/questions`, `/bookmarks`, `/news`, `/profile`, … |
-| `(admin)` | `.admin-theme` navy inverse sidebar + light desk canvas; grouped Console/Content nav; mobile drawer | `/admin/*` |
+| `(admin)` | `.learner-theme.admin-theme` — same Orbit light/dark tokens as learner (shared `ya-learner-color-scheme` + Sun/Moon toggle); navy inverse sidebar; grouped Console/Content nav; mobile drawer | `/admin/*` |
 
 Root `layout.tsx` only mounts fonts + providers (no global header).
 

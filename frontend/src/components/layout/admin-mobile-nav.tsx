@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -12,7 +12,7 @@ import { BrandMark } from './brand-mark';
 import { UserMenu } from './user-menu';
 
 /** Compact mobile admin chrome: logo + title + drawer. */
-export function AdminMobileNav() {
+export function AdminMobileNav({ themeToggle }: { themeToggle?: ReactNode }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -139,6 +139,7 @@ export function AdminMobileNav() {
           </p>
           <p className="truncate text-sm font-semibold text-[var(--ink)]">{activeLabel}</p>
         </div>
+        {themeToggle}
         <UserMenu variant="header" />
         <Button
           ref={triggerRef}

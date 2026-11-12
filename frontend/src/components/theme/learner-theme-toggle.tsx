@@ -10,7 +10,7 @@ type Props = {
   showLabel?: boolean;
 };
 
-/** Sun / Moon switch — learner shell only. */
+/** Sun / Moon switch — learner + admin Orbit shells. */
 export function LearnerThemeToggle({ className, showLabel = false }: Props) {
   const { theme, toggleTheme } = useLearnerTheme();
   const isDark = theme === 'dark';

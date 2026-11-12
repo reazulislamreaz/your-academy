@@ -235,6 +235,24 @@ export class StorageService {
           ? 'authenticated'
           : 'upload';
 
+    // Authenticated/private RAW: delivery `sign_url` URLs commonly 401 when the
+    // public_id embeds an extension (e.g. `…/asset.pdf`). Use the Admin download
+    // API instead — verified to return application/pdf for those assets.
+    if (resourceType === 'raw' && type !== 'upload') {
+      const hasExtension = /\.[a-z0-9]+$/i.test(publicId);
+      return cloudinary.utils.private_download_url(
+        publicId,
+        // Empty format when extension is already part of public_id.
+        hasExtension ? '' : 'pdf',
+        {
+          resource_type: 'raw',
+          type,
+          expires_at: Math.floor(Date.now() / 1000) + ttl,
+          ...(opts.forceAttachment ? { attachment: true } : {}),
+        },
+      );
+    }
+
     return cloudinary.url(publicId, {
       resource_type: resourceType,
       type,

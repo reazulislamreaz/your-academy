@@ -6,9 +6,9 @@ import {
   useMemo,
   useRef,
   useState,
+  type ComponentType,
   type ReactNode,
 } from 'react';
-import { Document, Page, pdfjs } from 'react-pdf';
 import {
   ChevronLeft,
   ChevronRight,
@@ -21,13 +21,6 @@ import { Button } from '@/components/ui/button';
 import { PageLoader } from '@/components/loading';
 import { LoadError } from '@/components/loading';
 import { cn } from '@/lib/utils';
-import 'react-pdf/dist/Page/AnnotationLayer.css';
-import 'react-pdf/dist/Page/TextLayer.css';
-
-// Loaded only via `pdf-viewer-dynamic` (ssr: false). Guard anyway for safety.
-if (typeof window !== 'undefined') {
-  pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
-}
 
 type FitMode = 'width' | 'page' | 'custom';
 
@@ -43,13 +36,21 @@ const MIN_SCALE = 0.5;
 const MAX_SCALE = 2.5;
 const SCALE_STEP = 0.15;
 
+type PdfModules = {
+  Document: ComponentType<Record<string, unknown>>;
+  Page: ComponentType<Record<string, unknown>>;
+};
+
 /**
- * Full-page in-app PDF reader (PDF.js). No download / print / save controls.
- * Soft deterrents only — bytes can still be captured via DevTools (DEC-033).
+ * Full-page in-app PDF reader. react-pdf/pdfjs are loaded only after mount
+ * (never during SSR). Bytes are fetched via the API proxy as an ArrayBuffer
+ * so the browser never receives a storage URL.
  */
 export function PdfViewer({ fileUrl, title, className, toolbarExtra }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const [mods, setMods] = useState<PdfModules | null>(null);
+  const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
   const [numPages, setNumPages] = useState(0);
   const [page, setPage] = useState(1);
   const [fit, setFit] = useState<FitMode>('width');
@@ -59,6 +60,69 @@ export function PdfViewer({ fileUrl, title, className, toolbarExtra }: Props) {
   const [fullscreen, setFullscreen] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [libReady, setLibReady] = useState(false);
+
+  // Load pdf.js only in the browser after mount.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const [reactPdf] = await Promise.all([
+          import('react-pdf'),
+          import('./pdf-viewer-styles'),
+        ]);
+        reactPdf.pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+        if (!cancelled) {
+          setMods({
+            Document: reactPdf.Document as unknown as ComponentType<Record<string, unknown>>,
+            Page: reactPdf.Page as unknown as ComponentType<Record<string, unknown>>,
+          });
+          setLibReady(true);
+        }
+      } catch {
+        if (!cancelled) setLoadError('Could not initialize the PDF viewer.');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Fetch PDF bytes through our controlled proxy (no Cloudinary URL in the client).
+  useEffect(() => {
+    if (!libReady) return;
+    let cancelled = false;
+    const ctrl = new AbortController();
+    setPdfData(null);
+    setLoadError(null);
+    setNumPages(0);
+
+    void (async () => {
+      try {
+        const res = await fetch(fileUrl, {
+          credentials: 'include',
+          signal: ctrl.signal,
+          headers: { Accept: 'application/pdf' },
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        const buf = await res.arrayBuffer();
+        if (!cancelled) {
+          // Copy — pdf.js may transfer/detach the buffer.
+          setPdfData(buf.slice(0));
+        }
+      } catch (err) {
+        if (cancelled || (err instanceof DOMException && err.name === 'AbortError')) return;
+        setLoadError('Could not open this PDF.');
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      ctrl.abort();
+    };
+  }, [fileUrl, libReady, reloadKey]);
 
   const measure = useCallback(() => {
     const el = scrollerRef.current;
@@ -73,7 +137,7 @@ export function PdfViewer({ fileUrl, title, className, toolbarExtra }: Props) {
     const ro = new ResizeObserver(() => measure());
     if (scrollerRef.current) ro.observe(scrollerRef.current);
     return () => ro.disconnect();
-  }, [measure, fullscreen]);
+  }, [measure, fullscreen, pdfData]);
 
   useEffect(() => {
     const onFs = () => setFullscreen(Boolean(document.fullscreenElement));
@@ -81,28 +145,20 @@ export function PdfViewer({ fileUrl, title, className, toolbarExtra }: Props) {
     return () => document.removeEventListener('fullscreenchange', onFs);
   }, []);
 
-  // Soft: block Ctrl/Cmd+S and Ctrl/Cmd+P in this viewer surface.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const mod = e.ctrlKey || e.metaKey;
       if (!mod) return;
       const key = e.key.toLowerCase();
-      if (key === 's' || key === 'p') {
-        e.preventDefault();
-      }
+      if (key === 's' || key === 'p') e.preventDefault();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
   const pageProps = useMemo(() => {
-    if (fit === 'width' && pageWidth) {
-      return { width: pageWidth } as const;
-    }
-    if (fit === 'page' && pageHeight) {
-      // Fit a page into the visible scroller height (scroll for multi-page).
-      return { height: pageHeight } as const;
-    }
+    if (fit === 'width' && pageWidth) return { width: pageWidth } as const;
+    if (fit === 'page' && pageHeight) return { height: pageHeight } as const;
     return { scale } as const;
   }, [fit, pageWidth, pageHeight, scale]);
 
@@ -123,13 +179,10 @@ export function PdfViewer({ fileUrl, title, className, toolbarExtra }: Props) {
     const root = containerRef.current;
     if (!root) return;
     try {
-      if (document.fullscreenElement) {
-        await document.exitFullscreen();
-      } else {
-        await root.requestFullscreen();
-      }
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else await root.requestFullscreen();
     } catch {
-      // Fullscreen may be blocked by the browser — ignore.
+      /* fullscreen may be blocked */
     }
   };
 
@@ -150,6 +203,10 @@ export function PdfViewer({ fileUrl, title, className, toolbarExtra }: Props) {
     });
     setPage(best);
   };
+
+  const Document = mods?.Document;
+  const Page = mods?.Page;
+  const ready = Boolean(Document && Page && pdfData);
 
   return (
     <div
@@ -195,22 +252,10 @@ export function PdfViewer({ fileUrl, title, className, toolbarExtra }: Props) {
         </div>
 
         <div className="flex items-center gap-1">
-          <Button
-            type="button"
-            size="icon"
-            variant="ghost"
-            aria-label="Zoom out"
-            onClick={() => zoomBy(-SCALE_STEP)}
-          >
+          <Button type="button" size="icon" variant="ghost" aria-label="Zoom out" onClick={() => zoomBy(-SCALE_STEP)}>
             <ZoomOut className="size-4" />
           </Button>
-          <Button
-            type="button"
-            size="icon"
-            variant="ghost"
-            aria-label="Zoom in"
-            onClick={() => zoomBy(SCALE_STEP)}
-          >
+          <Button type="button" size="icon" variant="ghost" aria-label="Zoom in" onClick={() => zoomBy(SCALE_STEP)}>
             <ZoomIn className="size-4" />
           </Button>
           <Button
@@ -255,25 +300,25 @@ export function PdfViewer({ fileUrl, title, className, toolbarExtra }: Props) {
               setReloadKey((k) => k + 1);
             }}
           />
+        ) : !ready || !Document || !Page ? (
+          <PageLoader compact label="Loading PDF" />
         ) : (
           <Document
             key={`${fileUrl}-${reloadKey}`}
-            file={fileUrl}
-            loading={<PageLoader compact label="Loading PDF" />}
+            file={{ data: pdfData }}
+            loading={<PageLoader compact label="Rendering PDF" />}
             error={
               <LoadError
-                message="Could not open this PDF."
+                message="Could not render this PDF."
                 onRetry={() => setReloadKey((k) => k + 1)}
               />
             }
-            onLoadSuccess={(info) => {
+            onLoadSuccess={(info: { numPages: number }) => {
               setNumPages(info.numPages);
               setPage(1);
               setLoadError(null);
             }}
-            onLoadError={() => {
-              setLoadError('Could not open this PDF.');
-            }}
+            onLoadError={() => setLoadError('Could not render this PDF.')}
             className="mx-auto flex w-full max-w-[1200px] flex-col items-center gap-4"
           >
             {Array.from({ length: numPages }, (_, i) => {
