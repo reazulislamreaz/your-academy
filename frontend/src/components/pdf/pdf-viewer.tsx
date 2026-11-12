@@ -218,31 +218,35 @@ export function PdfViewer({ fileUrl, title, className, toolbarExtra }: Props) {
       )}
       onContextMenu={(e) => e.preventDefault()}
     >
-      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-[var(--line)] bg-[var(--bg-elevated)] px-3 py-2 sm:px-4">
-        <div className="mr-auto min-w-0">
+      <div className="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-[var(--line)] bg-[var(--bg-elevated)] px-2 py-2 sm:gap-2 sm:px-4">
+        <div className="mr-auto min-w-0 max-w-[40%] sm:max-w-none">
           {title ? (
-            <p className="truncate font-display text-sm font-semibold text-[var(--ink)]">{title}</p>
+            <p className="truncate font-display text-xs font-semibold text-[var(--ink)] sm:text-sm">
+              {title}
+            </p>
           ) : null}
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5 sm:gap-1">
           <Button
             type="button"
             size="icon"
             variant="ghost"
+            className="size-10"
             aria-label="Previous page"
             disabled={page <= 1}
             onClick={() => goPage(page - 1)}
           >
             <ChevronLeft className="size-4" />
           </Button>
-          <span className="min-w-[5.5rem] text-center text-xs font-semibold tabular-nums text-[var(--muted-strong)]">
+          <span className="min-w-[4.25rem] text-center text-xs font-semibold tabular-nums text-[var(--muted-strong)] sm:min-w-[5.5rem]">
             {numPages ? `${page} / ${numPages}` : '—'}
           </span>
           <Button
             type="button"
             size="icon"
             variant="ghost"
+            className="size-10"
             aria-label="Next page"
             disabled={!numPages || page >= numPages}
             onClick={() => goPage(page + 1)}
@@ -251,33 +255,50 @@ export function PdfViewer({ fileUrl, title, className, toolbarExtra }: Props) {
           </Button>
         </div>
 
-        <div className="flex items-center gap-1">
-          <Button type="button" size="icon" variant="ghost" aria-label="Zoom out" onClick={() => zoomBy(-SCALE_STEP)}>
+        <div className="flex items-center gap-0.5 sm:gap-1">
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            className="size-10"
+            aria-label="Zoom out"
+            onClick={() => zoomBy(-SCALE_STEP)}
+          >
             <ZoomOut className="size-4" />
-          </Button>
-          <Button type="button" size="icon" variant="ghost" aria-label="Zoom in" onClick={() => zoomBy(SCALE_STEP)}>
-            <ZoomIn className="size-4" />
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant={fit === 'width' ? 'soft' : 'outline'}
-            onClick={() => setFit('width')}
-          >
-            Fit width
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant={fit === 'page' ? 'soft' : 'outline'}
-            onClick={() => setFit('page')}
-          >
-            Fit page
           </Button>
           <Button
             type="button"
             size="icon"
             variant="ghost"
+            className="size-10"
+            aria-label="Zoom in"
+            onClick={() => zoomBy(SCALE_STEP)}
+          >
+            <ZoomIn className="size-4" />
+          </Button>
+          <div className="ya-pdf-toolbar-fit hidden items-center gap-1 sm:flex">
+            <Button
+              type="button"
+              size="sm"
+              variant={fit === 'width' ? 'soft' : 'outline'}
+              onClick={() => setFit('width')}
+            >
+              Fit width
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={fit === 'page' ? 'soft' : 'outline'}
+              onClick={() => setFit('page')}
+            >
+              Fit page
+            </Button>
+          </div>
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            className="size-10"
             aria-label={fullscreen ? 'Exit full screen' : 'Full screen'}
             onClick={() => void toggleFullscreen()}
           >

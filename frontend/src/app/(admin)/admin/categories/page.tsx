@@ -236,13 +236,13 @@ export default function AdminCategoriesPage() {
       ) : null}
 
       <AdminStatGrid className="sm:grid-cols-3 xl:grid-cols-3">
-        <Surface className="p-4">
+        <Surface className="p-3.5 sm:p-4">
           <p className="text-xs font-semibold tracking-wide text-[var(--muted-strong)] uppercase">
             Categories
           </p>
           <p className="mt-1 font-display text-2xl font-bold tabular-nums">{totals.categories}</p>
         </Surface>
-        <Surface className="p-4">
+        <Surface className="p-3.5 sm:p-4">
           <p className="text-xs font-semibold tracking-wide text-[var(--muted-strong)] uppercase">
             Subcategories
           </p>
@@ -250,7 +250,7 @@ export default function AdminCategoriesPage() {
             {totals.subcategories}
           </p>
         </Surface>
-        <Surface className="p-4">
+        <Surface className="p-3.5 sm:p-4">
           <p className="text-xs font-semibold tracking-wide text-[var(--muted-strong)] uppercase">
             Inactive
           </p>
@@ -334,11 +334,11 @@ export default function AdminCategoriesPage() {
             const isOpen = expanded[root.id] ?? true;
             return (
               <li key={root.id}>
-                <Surface elevated className="overflow-hidden">
-                  <div className="flex flex-wrap items-start gap-3 p-4 sm:p-5">
+                <Surface elevated>
+                  <div className="flex flex-wrap items-start gap-2 p-3.5 sm:gap-3 sm:p-5">
                     <button
                       type="button"
-                      className="mt-0.5 cursor-pointer rounded-[8px] p-1 text-[var(--muted-strong)] hover:bg-[var(--bg-muted)]"
+                      className="-m-1 flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-[8px] text-[var(--muted-strong)] hover:bg-[var(--bg-muted)] sm:m-0 sm:size-9"
                       aria-expanded={isOpen}
                       aria-label={isOpen ? 'Collapse subcategories' : 'Expand subcategories'}
                       onClick={() => setExpanded((e) => ({ ...e, [root.id]: !isOpen }))}
@@ -372,6 +372,7 @@ export default function AdminCategoriesPage() {
                       </p>
                     </div>
                     <AdminRowActions
+                      className="w-full justify-start sm:w-auto sm:justify-end [&_button]:min-h-10 sm:[&_button]:min-h-0"
                       primary={
                         <>
                           <Button
@@ -459,7 +460,7 @@ export default function AdminCategoriesPage() {
                   </div>
 
                   {isOpen ? (
-                    <div className="border-t border-[var(--line)] bg-[var(--bg-desk)] px-4 py-3 sm:px-5">
+                    <div className="rounded-b-[var(--radius-lg)] border-t border-[var(--line)] bg-[var(--bg-desk)] px-3 py-3 sm:px-5">
                       {root.children.length === 0 ? (
                         <p className="text-sm text-[var(--muted-strong)]">
                           No subcategories yet.{' '}
@@ -603,7 +604,7 @@ function SubcategoryRow({
   return (
     <li
       className={cn(
-        'flex flex-wrap items-center justify-between gap-2 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] px-3 py-2.5',
+        'flex flex-wrap items-center justify-between gap-x-2 gap-y-1 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] px-3 py-2.5',
       )}
     >
       <div className="min-w-0">
@@ -618,6 +619,7 @@ function SubcategoryRow({
         </p>
       </div>
       <AdminRowActions
+        className="w-full justify-start sm:w-auto sm:justify-end [&_button]:min-h-10 sm:[&_button]:min-h-0"
         primary={
           <Button
             type="button"

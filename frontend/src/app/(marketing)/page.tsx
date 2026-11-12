@@ -120,18 +120,18 @@ export default function HomePage() {
               Practice MCQs, Get Expert Solutions, and Boost Your Preparation for Govt. &amp; Bank
               Jobs.
             </p>
-            <div className="flex flex-wrap gap-3 pt-1">
-              <Link href="/register">
-                <Button size="lg" className="rounded-full px-7 shadow-md">
+            <div className="flex w-full max-w-md flex-col gap-3 pt-1 sm:max-w-none sm:flex-row sm:flex-wrap">
+              <Link href="/register" className="w-full sm:w-auto">
+                <Button size="lg" className="w-full rounded-full px-7 shadow-md sm:w-auto">
                   Start Practicing
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
-              <Link href="/preli-question-bank">
+              <Link href="/preli-question-bank" className="w-full sm:w-auto">
                 <Button
                   size="lg"
                   variant="outline"
-                  className="rounded-full border-white/55 bg-transparent px-7 text-white hover:border-white hover:bg-white/10"
+                  className="w-full rounded-full border-white/55 bg-transparent px-7 text-white hover:border-white hover:bg-white/10 sm:w-auto"
                 >
                   Explore Question Bank
                 </Button>

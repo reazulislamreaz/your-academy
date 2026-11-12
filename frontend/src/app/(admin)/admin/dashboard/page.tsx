@@ -13,6 +13,7 @@ import {
   Plus,
   Users,
 } from 'lucide-react';
+import { AdminMobileCard, AdminMobileCards } from '@/components/admin/admin-mobile-cards';
 import { AdminPage, AdminSection, AdminStatGrid } from '@/components/admin/admin-page';
 import { AdminUserStatus } from '@/components/admin/admin-status';
 import {
@@ -108,8 +109,8 @@ export default function AdminDashboardPage() {
         title="Work queue"
         description="Highest-priority ops items before the KPI grid."
       >
-        <div className="grid gap-4 md:grid-cols-3">
-          <Surface elevated className="flex flex-col justify-between gap-4 p-5">
+        <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-3">
+          <Surface elevated className="flex flex-col justify-between gap-4 p-4 sm:p-5">
             <div>
               <div className="flex items-center gap-2">
                 <Badge variant="highlight">Drafts</Badge>
@@ -128,7 +129,7 @@ export default function AdminDashboardPage() {
               </Button>
             </Link>
           </Surface>
-          <Surface elevated className="flex flex-col justify-between gap-4 p-5">
+          <Surface elevated className="flex flex-col justify-between gap-4 p-4 sm:p-5">
             <div>
               <div className="flex items-center gap-2">
                 <Badge variant="success">Trials</Badge>
@@ -146,7 +147,7 @@ export default function AdminDashboardPage() {
               </Button>
             </Link>
           </Surface>
-          <Surface elevated className="flex flex-col justify-between gap-4 p-5">
+          <Surface elevated className="flex flex-col justify-between gap-4 p-4 sm:p-5">
             <div>
               <div className="flex items-center gap-2">
                 <Badge variant="outline">Expired</Badge>
@@ -216,12 +217,12 @@ export default function AdminDashboardPage() {
         </AdminStatGrid>
       </AdminSection>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+      <div className="grid gap-5 sm:gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
         <AdminSection
           title="Question bank health"
           description="Status mix from live question counts."
         >
-          <Surface elevated className="p-5 sm:p-6">
+          <Surface elevated className="p-4 sm:p-6">
             <BarChart
               emptyLabel="No questions yet."
               data={[
@@ -246,7 +247,7 @@ export default function AdminDashboardPage() {
         </AdminSection>
 
         <AdminSection title="Quick actions" description="Jump to common admin tasks.">
-          <Surface elevated className="p-5 sm:p-6">
+          <Surface elevated className="p-4 sm:p-6">
             <div className="grid gap-3">
               <QuickLink
                 href="/admin/questions/new"
@@ -295,7 +296,7 @@ export default function AdminDashboardPage() {
             </Link>
           }
         >
-          <Surface elevated className="p-5 sm:p-6">
+          <Surface elevated className="p-4 sm:p-6">
             <BarChart
               data={data.topSubjects.map((s) => ({
                 label: s.name,
@@ -306,77 +307,122 @@ export default function AdminDashboardPage() {
         </AdminSection>
       ) : null}
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <AdminTableShell
-          minWidth="28rem"
-          header={
-            <>
-              <h2 className="font-display text-base font-bold tracking-tight sm:text-lg">
-                Recent registrations
-              </h2>
-              <Link
-                href="/admin/users"
-                className="text-sm font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
-              >
-                View all
-              </Link>
-            </>
-          }
-        >
-          <AdminTable>
-            <thead>
-              <tr>
-                <AdminTh>User</AdminTh>
-                <AdminTh>Role</AdminTh>
-                <AdminTh>Status</AdminTh>
-                <AdminTh>Joined</AdminTh>
-              </tr>
-            </thead>
-            <tbody>
-              {data.recentUsers.length === 0 ? (
-                <AdminEmptyRow colSpan={4}>No registrations yet.</AdminEmptyRow>
-              ) : (
-                data.recentUsers.map((user) => (
-                  <tr key={user.id}>
-                    <AdminTd className="max-w-[10rem] sm:max-w-none">
-                      <Link
-                        href={`/admin/users/${user.id}`}
-                        className="block truncate font-semibold text-[var(--ink)] hover:underline"
-                      >
-                        {user.name}
-                      </Link>
-                      <p className="truncate text-xs text-[var(--muted-strong)]">
-                        {user.whatsappNumber}
-                      </p>
-                    </AdminTd>
-                    <AdminTd>
+      <div className="grid gap-5 sm:gap-6 lg:grid-cols-2">
+        <div className="min-w-0 space-y-3">
+          <div className="flex items-center justify-between gap-2 md:hidden">
+            <h2 className="font-display text-base font-bold tracking-tight">
+              Recent registrations
+            </h2>
+            <Link
+              href="/admin/users"
+              className="text-sm font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
+            >
+              View all
+            </Link>
+          </div>
+          <AdminMobileCards>
+            {data.recentUsers.length === 0 ? (
+              <p className="rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] p-6 text-center text-sm text-[var(--muted-strong)]">
+                No registrations yet.
+              </p>
+            ) : (
+              data.recentUsers.map((user) => (
+                <AdminMobileCard
+                  key={`m-${user.id}`}
+                  badges={
+                    <>
                       <Badge variant="outline">{user.role}</Badge>
-                    </AdminTd>
-                    <AdminTd>
                       <AdminUserStatus status={user.status} />
-                    </AdminTd>
-                    <AdminTd muted className="text-xs">
-                      {new Date(user.createdAt).toLocaleDateString()}
-                    </AdminTd>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </AdminTable>
-        </AdminTableShell>
+                    </>
+                  }
+                  title={
+                    <Link href={`/admin/users/${user.id}`} className="hover:underline">
+                      {user.name}
+                    </Link>
+                  }
+                  meta={
+                    <>
+                      {user.whatsappNumber} · {new Date(user.createdAt).toLocaleDateString()}
+                    </>
+                  }
+                />
+              ))
+            )}
+          </AdminMobileCards>
+          <AdminTableShell
+            desktopOnly
+            minWidth="28rem"
+            header={
+              <>
+                <h2 className="font-display text-base font-bold tracking-tight sm:text-lg">
+                  Recent registrations
+                </h2>
+                <Link
+                  href="/admin/users"
+                  className="text-sm font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
+                >
+                  View all
+                </Link>
+              </>
+            }
+          >
+            <AdminTable>
+              <thead>
+                <tr>
+                  <AdminTh>User</AdminTh>
+                  <AdminTh>Role</AdminTh>
+                  <AdminTh>Status</AdminTh>
+                  <AdminTh>Joined</AdminTh>
+                </tr>
+              </thead>
+              <tbody>
+                {data.recentUsers.length === 0 ? (
+                  <AdminEmptyRow colSpan={4}>No registrations yet.</AdminEmptyRow>
+                ) : (
+                  data.recentUsers.map((user) => (
+                    <tr key={user.id}>
+                      <AdminTd className="max-w-[10rem] sm:max-w-none">
+                        <Link
+                          href={`/admin/users/${user.id}`}
+                          className="block truncate font-semibold text-[var(--ink)] hover:underline"
+                        >
+                          {user.name}
+                        </Link>
+                        <p className="truncate text-xs text-[var(--muted-strong)]">
+                          {user.whatsappNumber}
+                        </p>
+                      </AdminTd>
+                      <AdminTd>
+                        <Badge variant="outline">{user.role}</Badge>
+                      </AdminTd>
+                      <AdminTd>
+                        <AdminUserStatus status={user.status} />
+                      </AdminTd>
+                      <AdminTd muted className="text-xs">
+                        {new Date(user.createdAt).toLocaleDateString()}
+                      </AdminTd>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </AdminTable>
+          </AdminTableShell>
+        </div>
 
         <Surface className="overflow-hidden p-0">
-          <div className="border-b border-[var(--line)] px-5 py-4">
+          <div className="border-b border-[var(--line)] px-4 py-3.5 sm:px-5 sm:py-4">
             <h2 className="font-display text-lg font-bold tracking-tight">System activity</h2>
           </div>
           {data.recentActivity.length === 0 ? (
-            <p className="px-5 py-8 text-sm text-[var(--muted-strong)]">No audit events yet.</p>
+            <p className="px-4 py-8 text-sm text-[var(--muted-strong)] sm:px-5">
+              No audit events yet.
+            </p>
           ) : (
             <ul className="divide-y divide-[var(--line)]">
               {data.recentActivity.map((item) => (
                 <li
                   key={item.id}
-                  className="px-5 py-3.5 transition-colors hover:bg-[var(--brand-wash)]"
+                  className="px-4 py-3.5 transition-colors sm:px-5 hover:bg-[var(--brand-wash)]"
                 >
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge variant="default">{item.action}</Badge>

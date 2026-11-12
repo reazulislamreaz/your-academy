@@ -11,6 +11,11 @@ type ShellProps = {
   minWidth?: string;
 };
 
+type ShellPropsExtended = ShellProps & {
+  /** Hide the table body on small screens when a card list is rendered separately. */
+  desktopOnly?: boolean;
+};
+
 /** Elevated table panel with horizontal scroll + shared header/cell rhythm. */
 export function AdminTableShell({
   children,
@@ -18,19 +23,20 @@ export function AdminTableShell({
   header,
   footer,
   minWidth = '40rem',
-}: ShellProps) {
+  desktopOnly = false,
+}: ShellPropsExtended) {
   return (
-    <Surface className={cn('overflow-hidden p-0', className)}>
+    <Surface className={cn('overflow-hidden p-0', desktopOnly && 'hidden md:block', className)}>
       {header ? (
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--line)] px-4 py-3.5 sm:px-5">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--line)] px-3 py-3 sm:px-5 sm:py-3.5">
           {header}
         </div>
       ) : null}
-      <div className="min-w-0 w-full max-w-full overflow-x-auto">
+      <div className="admin-table-scroll min-w-0 w-full max-w-full overflow-x-auto overscroll-x-contain">
         <div style={{ minWidth }}>{children}</div>
       </div>
       {footer ? (
-        <div className="border-t border-[var(--line)] px-4 py-3 sm:px-5">{footer}</div>
+        <div className="border-t border-[var(--line)] px-3 py-3 sm:px-5">{footer}</div>
       ) : null}
     </Surface>
   );

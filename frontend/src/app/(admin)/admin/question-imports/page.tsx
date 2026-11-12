@@ -16,6 +16,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { AdminMobileCard, AdminMobileCards } from '@/components/admin/admin-mobile-cards';
 import { StatCard } from '@/components/dashboard/stat-card';
 import { PageHeader } from '@/components/layout/page-header';
 import { Alert } from '@/components/ui/alert';
@@ -115,6 +116,71 @@ export default function QuestionImportsHubPage() {
     },
   });
 
+  const renderActions = (item: UploadBatch, align: 'left' | 'right' = 'right') => (
+    <AdminRowActions
+      align={align}
+      primary={
+        <Link href={`/admin/question-imports/${item.id}`}>
+          <Button type="button" size="sm" variant="outline" className="cursor-pointer">
+            <Eye className="size-3.5" />
+            View
+          </Button>
+        </Link>
+      }
+    >
+      <a
+        className={menuLinkClass}
+        href={adminDownloadUrl(`/admin/question-imports/${item.id}/file`)}
+      >
+        <Download className="size-3.5" />
+        Original file
+      </a>
+      <a
+        className={menuLinkClass}
+        href={adminDownloadUrl(`/admin/question-imports/${item.id}/report`)}
+      >
+        <FileSpreadsheet className="size-3.5" />
+        Import report
+      </a>
+      {item.status === 'COMPLETED' ? (
+        <a
+          className={menuLinkClass}
+          href={adminDownloadUrl(`/admin/question-imports/${item.id}/export`)}
+        >
+          <Download className="size-3.5" />
+          Export questions
+        </a>
+      ) : null}
+      {item.status !== 'ARCHIVED' ? (
+        <ConfirmButton
+          size="sm"
+          variant="ghost"
+          className="w-full justify-start gap-2"
+          confirmTitle="Archive collection?"
+          confirmMessage={`Archive “${item.displayName}”? You can still view it later under archived status.`}
+          confirmLabel="Archive"
+          reversible
+          onConfirm={() => archive.mutateAsync(item.id)}
+        >
+          <Archive className="size-3.5" />
+          Archive
+        </ConfirmButton>
+      ) : null}
+      {item.status !== 'COMPLETED' && item.status !== 'IMPORTING' ? (
+        <ConfirmButton
+          size="sm"
+          variant="ghost"
+          className="w-full justify-start gap-2 text-[var(--danger)]"
+          confirmMessage="Delete this collection? This cannot be undone."
+          onConfirm={() => remove.mutateAsync(item.id)}
+        >
+          <Trash2 className="size-3.5" />
+          Delete
+        </ConfirmButton>
+      ) : null}
+    </AdminRowActions>
+  );
+
   const items = list.data?.pages.flatMap((p) => p.data) ?? [];
   const s = stats.data;
 
@@ -195,7 +261,7 @@ export default function QuestionImportsHubPage() {
               <Link
                 key={item.id}
                 href={`/admin/question-imports/${item.id}`}
-                className="admin-list-card min-w-0 max-w-full rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] p-4 shadow-[var(--shadow-sm)] transition-colors hover:border-[var(--highlight)]/40"
+                className="admin-list-card min-w-0 max-w-full rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] p-3.5 sm:p-4 shadow-[var(--shadow-sm)] transition-colors hover:border-[var(--highlight)]/40"
               >
                 <div className="mb-1 flex min-w-0 items-center gap-2">
                   <Badge variant={statusTone(item.status)} className="shrink-0">
@@ -223,8 +289,8 @@ export default function QuestionImportsHubPage() {
         description="Search, filter, and manage every uploaded batch."
       >
         <AdminToolbar>
-          <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6">
-            <Field className="min-w-0 sm:col-span-2 xl:col-span-2">
+          <div className="grid min-w-0 grid-cols-1 gap-3 min-[420px]:grid-cols-2 xl:grid-cols-6">
+            <Field className="min-w-0 min-[420px]:col-span-2 xl:col-span-2">
               <Label htmlFor="qi-q">Search</Label>
               <Input
                 id="qi-q"
@@ -326,154 +392,140 @@ export default function QuestionImportsHubPage() {
         ) : null}
 
         {items.length > 0 ? (
-          <AdminTableShell
-            minWidth="48rem"
-            header={
-              <AdminListMeta count={items.length} noun="collection" hasMore={list.hasNextPage} />
-            }
-            footer={
-              list.hasNextPage ? (
-                <div className="flex justify-center">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="cursor-pointer"
-                    disabled={list.isFetchingNextPage}
-                    onClick={() => void list.fetchNextPage()}
-                  >
-                    {list.isFetchingNextPage ? 'Loading…' : 'Load more'}
-                  </Button>
-                </div>
-              ) : undefined
-            }
-          >
-            <AdminTable>
-              <thead>
-                <tr>
-                  <AdminTh>Collection</AdminTh>
-                  <AdminTh>Subject / Exam</AdminTh>
-                  <AdminTh>Counts</AdminTh>
-                  <AdminTh>Uploaded</AdminTh>
-                  <AdminTh>Status</AdminTh>
-                  <AdminTh align="right">Actions</AdminTh>
-                </tr>
-              </thead>
-              <tbody>
-                {items.length === 0 ? (
-                  <AdminEmptyRow colSpan={6}>No collections match.</AdminEmptyRow>
-                ) : (
-                  items.map((item) => (
-                    <tr key={item.id}>
-                      <AdminTd className="max-w-[16rem] align-top">
-                        <Link
-                          href={`/admin/question-imports/${item.id}`}
-                          className="font-semibold text-[var(--ink)] hover:text-[var(--highlight)]"
-                        >
-                          {item.displayName}
-                        </Link>
-                        <p className="mt-0.5 font-mono text-xs text-[var(--muted-strong)]">
-                          {item.batchCode}
-                        </p>
-                        <p className="truncate text-xs text-[var(--muted-strong)]">
-                          {item.originalFilename}
-                        </p>
-                      </AdminTd>
-                      <AdminTd className="align-top text-[var(--ink-soft)]">
-                        <p className="font-medium">{item.subjectHint ?? '—'}</p>
-                        <p className="text-xs text-[var(--muted-strong)]">
-                          {item.examCategoryHint ?? '—'}
-                        </p>
-                      </AdminTd>
-                      <AdminTd className="align-top tabular-nums text-[var(--ink-soft)]">
-                        <p className="font-medium">{item.totalRows} total</p>
-                        <p className="text-xs text-[var(--muted-strong)]">
-                          {item.importedCount} in · {item.duplicateCount} dup · {item.invalidCount}{' '}
-                          bad
-                        </p>
-                      </AdminTd>
-                      <AdminTd className="align-top text-[var(--ink-soft)]">
-                        <p className="text-xs font-medium whitespace-nowrap">
-                          {new Date(item.createdAt).toLocaleString()}
-                        </p>
-                        <p className="text-xs text-[var(--muted-strong)]">{item.uploadedBy.name}</p>
-                      </AdminTd>
-                      <AdminTd className="align-top">
-                        <Badge variant={statusTone(item.status)}>{item.status}</Badge>
-                      </AdminTd>
-                      <AdminTd align="right" className="align-top">
-                        <AdminRowActions
-                          primary={
-                            <Link href={`/admin/question-imports/${item.id}`}>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                className="cursor-pointer"
-                              >
-                                <Eye className="size-3.5" />
-                                View
-                              </Button>
-                            </Link>
-                          }
-                        >
-                          <a
-                            className={menuLinkClass}
-                            href={adminDownloadUrl(`/admin/question-imports/${item.id}/file`)}
+          <>
+            <AdminListMeta
+              count={items.length}
+              noun="collection"
+              hasMore={list.hasNextPage}
+              className="md:hidden"
+            />
+            <AdminMobileCards>
+              {items.map((item) => (
+                <AdminMobileCard
+                  key={`m-${item.id}`}
+                  badges={<Badge variant={statusTone(item.status)}>{item.status}</Badge>}
+                  title={
+                    <Link
+                      href={`/admin/question-imports/${item.id}`}
+                      className="hover:text-[var(--highlight)]"
+                    >
+                      {item.displayName}
+                    </Link>
+                  }
+                  meta={
+                    <>
+                      <span className="font-mono">{item.batchCode}</span>
+                      <br />
+                      {[item.subjectHint, item.examCategoryHint].filter(Boolean).join(' · ') || '—'}
+                      <br />
+                      {item.totalRows} total · {item.importedCount} in · {item.duplicateCount} dup ·{' '}
+                      {item.invalidCount} bad
+                      <br />
+                      {new Date(item.createdAt).toLocaleDateString()} · {item.uploadedBy.name}
+                    </>
+                  }
+                  actions={renderActions(item, 'left')}
+                />
+              ))}
+              {list.hasNextPage ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full cursor-pointer"
+                  disabled={list.isFetchingNextPage}
+                  onClick={() => void list.fetchNextPage()}
+                >
+                  {list.isFetchingNextPage ? 'Loading…' : 'Load more'}
+                </Button>
+              ) : null}
+            </AdminMobileCards>
+            <AdminTableShell
+              desktopOnly
+              minWidth="48rem"
+              header={
+                <AdminListMeta count={items.length} noun="collection" hasMore={list.hasNextPage} />
+              }
+              footer={
+                list.hasNextPage ? (
+                  <div className="flex justify-center">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="cursor-pointer"
+                      disabled={list.isFetchingNextPage}
+                      onClick={() => void list.fetchNextPage()}
+                    >
+                      {list.isFetchingNextPage ? 'Loading…' : 'Load more'}
+                    </Button>
+                  </div>
+                ) : undefined
+              }
+            >
+              <AdminTable>
+                <thead>
+                  <tr>
+                    <AdminTh>Collection</AdminTh>
+                    <AdminTh>Subject / Exam</AdminTh>
+                    <AdminTh>Counts</AdminTh>
+                    <AdminTh>Uploaded</AdminTh>
+                    <AdminTh>Status</AdminTh>
+                    <AdminTh align="right">Actions</AdminTh>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.length === 0 ? (
+                    <AdminEmptyRow colSpan={6}>No collections match.</AdminEmptyRow>
+                  ) : (
+                    items.map((item) => (
+                      <tr key={item.id}>
+                        <AdminTd className="max-w-[16rem] align-top">
+                          <Link
+                            href={`/admin/question-imports/${item.id}`}
+                            className="font-semibold text-[var(--ink)] hover:text-[var(--highlight)]"
                           >
-                            <Download className="size-3.5" />
-                            Original file
-                          </a>
-                          <a
-                            className={menuLinkClass}
-                            href={adminDownloadUrl(`/admin/question-imports/${item.id}/report`)}
-                          >
-                            <FileSpreadsheet className="size-3.5" />
-                            Import report
-                          </a>
-                          {item.status === 'COMPLETED' ? (
-                            <a
-                              className={menuLinkClass}
-                              href={adminDownloadUrl(`/admin/question-imports/${item.id}/export`)}
-                            >
-                              <Download className="size-3.5" />
-                              Export questions
-                            </a>
-                          ) : null}
-                          {item.status !== 'ARCHIVED' ? (
-                            <ConfirmButton
-                              size="sm"
-                              variant="ghost"
-                              className="w-full justify-start gap-2"
-                              confirmTitle="Archive collection?"
-                              confirmMessage={`Archive “${item.displayName}”? You can still view it later under archived status.`}
-                              confirmLabel="Archive"
-                              reversible
-                              onConfirm={() => archive.mutateAsync(item.id)}
-                            >
-                              <Archive className="size-3.5" />
-                              Archive
-                            </ConfirmButton>
-                          ) : null}
-                          {item.status !== 'COMPLETED' && item.status !== 'IMPORTING' ? (
-                            <ConfirmButton
-                              size="sm"
-                              variant="ghost"
-                              className="w-full justify-start gap-2 text-[var(--danger)]"
-                              confirmMessage="Delete this collection? This cannot be undone."
-                              onConfirm={() => remove.mutateAsync(item.id)}
-                            >
-                              <Trash2 className="size-3.5" />
-                              Delete
-                            </ConfirmButton>
-                          ) : null}
-                        </AdminRowActions>
-                      </AdminTd>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </AdminTable>
-          </AdminTableShell>
+                            {item.displayName}
+                          </Link>
+                          <p className="mt-0.5 font-mono text-xs text-[var(--muted-strong)]">
+                            {item.batchCode}
+                          </p>
+                          <p className="truncate text-xs text-[var(--muted-strong)]">
+                            {item.originalFilename}
+                          </p>
+                        </AdminTd>
+                        <AdminTd className="align-top text-[var(--ink-soft)]">
+                          <p className="font-medium">{item.subjectHint ?? '—'}</p>
+                          <p className="text-xs text-[var(--muted-strong)]">
+                            {item.examCategoryHint ?? '—'}
+                          </p>
+                        </AdminTd>
+                        <AdminTd className="align-top tabular-nums text-[var(--ink-soft)]">
+                          <p className="font-medium">{item.totalRows} total</p>
+                          <p className="text-xs text-[var(--muted-strong)]">
+                            {item.importedCount} in · {item.duplicateCount} dup ·{' '}
+                            {item.invalidCount} bad
+                          </p>
+                        </AdminTd>
+                        <AdminTd className="align-top text-[var(--ink-soft)]">
+                          <p className="text-xs font-medium whitespace-nowrap">
+                            {new Date(item.createdAt).toLocaleString()}
+                          </p>
+                          <p className="text-xs text-[var(--muted-strong)]">
+                            {item.uploadedBy.name}
+                          </p>
+                        </AdminTd>
+                        <AdminTd className="align-top">
+                          <Badge variant={statusTone(item.status)}>{item.status}</Badge>
+                        </AdminTd>
+                        <AdminTd align="right" className="align-top">
+                          {renderActions(item)}
+                        </AdminTd>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </AdminTable>
+            </AdminTableShell>
+          </>
         ) : null}
       </AdminSection>
     </AdminPage>

@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { Search } from 'lucide-react';
 import { useState } from 'react';
+import { AdminMobileCard, AdminMobileCards } from '@/components/admin/admin-mobile-cards';
 import { AdminListMeta, AdminPage, AdminToolbar } from '@/components/admin/admin-page';
 import { AdminRowActions } from '@/components/admin/admin-row-actions';
 import { AdminUserStatus } from '@/components/admin/admin-status';
@@ -127,7 +128,90 @@ export default function AdminUsersPage() {
               }
             />
           ) : (
+            <>
+            <AdminListMeta
+              className="md:hidden"
+              count={list.items.length}
+              noun="user"
+              hasMore={list.hasNextPage}
+              query={qApplied || undefined}
+            />
+            <AdminMobileCards>
+              {list.items.map((user) => (
+                <AdminMobileCard
+                  key={`m-${user.id}`}
+                  badges={
+                    <>
+                      <Badge variant="outline">{user.role}</Badge>
+                      <AdminUserStatus status={user.status} />
+                      {user.online ? <Badge variant="success">Online</Badge> : null}
+                    </>
+                  }
+                  title={
+                    <Link href={`/admin/users/${user.id}`} className="hover:underline">
+                      {user.name}
+                    </Link>
+                  }
+                  meta={
+                    <>
+                      {user.whatsappNumber}
+                      {user.email ? ` · ${user.email}` : ''}
+                      <br />
+                      {user.subscription
+                        ? user.subscription.plan.name
+                        : user.trialActive
+                          ? 'Trial active'
+                          : 'Trial ended'}
+                      {' · '}
+                      {user.attemptCount} MCQ · {user.practiceAttemptCount} practice
+                    </>
+                  }
+                  actions={
+                    <>
+                      <Link href={`/admin/users/${user.id}`}>
+                        <Button size="sm" variant="outline">
+                          View
+                        </Button>
+                      </Link>
+                      {user.role !== 'ADMIN' ? (
+                        user.status === 'ACTIVE' ? (
+                          <ConfirmButton
+                            size="sm"
+                            variant="ghost"
+                            confirmTitle="Suspend this user?"
+                            confirmMessage={`Suspend ${user.name}? They will not be able to sign in until reinstated.`}
+                            confirmLabel="Suspend"
+                            reversible
+                            onConfirm={() =>
+                              updateStatus.mutateAsync({ id: user.id, status: 'SUSPENDED' })
+                            }
+                          >
+                            Suspend
+                          </ConfirmButton>
+                        ) : (
+                          <ConfirmButton
+                            size="sm"
+                            variant="ghost"
+                            confirmTitle="Reinstate this user?"
+                            confirmMessage={`Reinstate ${user.name} and restore sign-in access?`}
+                            confirmLabel="Reinstate"
+                            destructive={false}
+                            reversible
+                            onConfirm={() =>
+                              updateStatus.mutateAsync({ id: user.id, status: 'ACTIVE' })
+                            }
+                          >
+                            Reinstate
+                          </ConfirmButton>
+                        )
+                      ) : null}
+                    </>
+                  }
+                />
+              ))}
+            </AdminMobileCards>
             <AdminTableShell
+              desktopOnly
               minWidth="52rem"
               header={
                 <AdminListMeta
@@ -260,6 +344,14 @@ export default function AdminUsersPage() {
                 </tbody>
               </AdminTable>
             </AdminTableShell>
+            <div className="md:hidden">
+              <LoadMoreButton
+                hasNextPage={list.hasNextPage}
+                isFetchingNextPage={list.isFetchingNextPage}
+                onLoadMore={() => void list.fetchNextPage()}
+              />
+            </div>
+            </>
           )}
         </ContentIn>
       ) : null}

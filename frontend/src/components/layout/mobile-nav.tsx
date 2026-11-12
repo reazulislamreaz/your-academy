@@ -3,10 +3,11 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
-import { useEffect, useId, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { MobileDrawerBackdrop, MobileDrawerPanel } from './mobile-drawer';
 
 export type NavItem = {
   href: string;
@@ -44,6 +45,8 @@ export function MobileNav({
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
   const panelId = useId();
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -55,8 +58,30 @@ export function MobileNav({
 
   useEffect(() => {
     if (!open) return;
+    const panel = panelRef.current;
+    panel
+      ?.querySelectorAll<HTMLElement>('a[href], button:not([disabled])')?.[0]
+      ?.focus();
+
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
+      if (e.key === 'Escape') {
+        setOpen(false);
+        return;
+      }
+      if (e.key !== 'Tab' || !panel) return;
+      const nodes = panel.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      if (nodes.length === 0) return;
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     // Portaled panel can't inherit --header-h from <header> (backdrop-filter
     // also traps position:fixed), so sync measured header height to :root.
@@ -71,47 +96,54 @@ export function MobileNav({
     return () => {
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = prevOverflow;
+      triggerRef.current?.focus();
     };
   }, [open]);
 
   const panel =
     open && mounted
       ? createPortal(
-          <div
-            id={panelId}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Navigation menu"
-            className="motion-drawer-in fixed inset-x-0 top-[var(--header-h,4.5rem)] bottom-0 z-[60] overflow-y-auto overscroll-contain border-t border-[var(--line)] bg-[var(--bg-elevated)] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[var(--shadow-lg)]"
-          >
-            {leading ? <div className="mb-4">{leading}</div> : null}
-            <nav className="flex flex-col gap-1" aria-label="Mobile">
-              {items.map((item) => {
-                const active =
-                  activeId != null
-                    ? item.id === activeId
-                    : item.label === 'Home'
-                      ? pathname === '/'
-                      : isActive(pathname, item);
-                return (
-                  <Link
-                    key={item.id ?? item.label}
-                    href={item.href}
-                    aria-current={active ? 'page' : undefined}
-                    className={cn(
-                      'rounded-[var(--radius)] px-3 py-3 text-base font-semibold transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out)]',
-                      active
-                        ? 'bg-[var(--accent-soft)] text-[var(--accent)] ring-1 ring-[var(--accent)]/20'
-                        : 'text-[var(--ink-soft)] hover:bg-[var(--brand-wash)] hover:text-[var(--ink)]',
-                    )}
-                  >
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </nav>
-            {trailing ? <div className="mt-6 flex flex-col gap-2">{trailing}</div> : null}
-          </div>,
+          <>
+            <MobileDrawerBackdrop onClose={() => setOpen(false)} className="xl:hidden" />
+            <MobileDrawerPanel
+              id={panelId}
+              label="Navigation menu"
+              panelRef={panelRef}
+              className="xl:hidden"
+            >
+              {leading ? <div className="mb-4">{leading}</div> : null}
+              <nav className="flex flex-col gap-1" aria-label="Mobile">
+                {items.map((item) => {
+                  const active =
+                    activeId != null
+                      ? item.id === activeId
+                      : item.label === 'Home'
+                        ? pathname === '/'
+                        : isActive(pathname, item);
+                  return (
+                    <Link
+                      key={item.id ?? item.label}
+                      href={item.href}
+                      aria-current={active ? 'page' : undefined}
+                      className={cn(
+                        'min-h-11 rounded-[var(--radius)] px-3 py-3 text-base font-semibold transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out)]',
+                        active
+                          ? 'bg-[var(--accent-soft)] text-[var(--accent)] ring-1 ring-[var(--accent)]/20'
+                          : 'text-[var(--ink-soft)] hover:bg-[var(--brand-wash)] hover:text-[var(--ink)]',
+                      )}
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </nav>
+              {trailing ? (
+                <div className="mt-6 flex flex-col gap-2 [&_a]:min-h-11 [&_button]:min-h-11">
+                  {trailing}
+                </div>
+              ) : null}
+            </MobileDrawerPanel>
+          </>,
           document.body,
         )
       : null;
@@ -119,9 +151,11 @@ export function MobileNav({
   return (
     <div className={cn(breakpointClassName, className)}>
       <Button
+        ref={triggerRef}
         type="button"
         variant="ghost"
         size="icon"
+        className="size-11"
         aria-expanded={open}
         aria-controls={panelId}
         aria-label={open ? 'Close menu' : 'Open menu'}

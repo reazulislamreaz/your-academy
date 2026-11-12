@@ -54,11 +54,11 @@ export function AppHeader() {
 
   return (
     <header
-      className="sticky top-0 z-30 flex h-[var(--header-h,4.5rem)] shrink-0 items-center gap-3 border-b border-[var(--line)] bg-[var(--bg-elevated)] px-3 sm:gap-4 sm:px-5 lg:px-6"
+      className="sticky top-0 z-30 flex h-[var(--header-h,4.5rem)] shrink-0 items-center gap-2 border-b border-[var(--line)] bg-[var(--bg-elevated)] px-3 pt-[env(safe-area-inset-top,0px)] sm:gap-4 sm:px-5 lg:px-6"
       style={{ boxShadow: 'var(--shadow-header)' } as CSSProperties}
     >
-      {/* Left: logo + trial */}
-      <div className="flex min-w-0 shrink-0 items-center gap-3 sm:gap-4">
+      {/* Left: logo + trial — keep chrome minimal on phones */}
+      <div className="flex min-w-0 shrink-0 items-center gap-2.5 sm:gap-4">
         <BrandMark
           href="/"
           markOnly
@@ -70,11 +70,11 @@ export function AppHeader() {
           inverse={inverseLogo}
           className="hidden lg:inline-flex [&_img]:h-10"
         />
-        <TrialStatusChip className="hidden min-[400px]:inline-flex" />
+        <TrialStatusChip className="hidden min-[480px]:inline-flex" />
       </div>
 
-      {/* Right utilities */}
-      <div className="ml-auto flex min-w-0 flex-1 items-center justify-end gap-2 sm:gap-2.5 md:gap-3">
+      {/* Right utilities — phone: search + menu; denser tools from sm+ */}
+      <div className="ml-auto flex min-w-0 flex-1 items-center justify-end gap-1.5 sm:gap-2.5 md:gap-3">
         <Link
           href="/bookmarks"
           className="hidden h-10 items-center gap-2 rounded-full border border-[var(--line-strong)] bg-[var(--bg-muted)] px-3.5 text-sm font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--bg-soft)] md:inline-flex"
@@ -90,7 +90,7 @@ export function AppHeader() {
         <Link
           href="/questions"
           aria-label="Search questions"
-          className="flex size-10 items-center justify-center rounded-[12px] border border-[var(--line)] bg-[var(--bg-muted)] text-[var(--ink-soft)] transition-colors hover:bg-[var(--bg-soft)] hover:text-[var(--ink)] sm:hidden"
+          className="flex size-11 items-center justify-center rounded-[12px] border border-[var(--line)] bg-[var(--bg-muted)] text-[var(--ink-soft)] transition-colors hover:bg-[var(--bg-soft)] hover:text-[var(--ink)] sm:hidden"
         >
           <Search className="size-[18px]" aria-hidden strokeWidth={1.75} />
         </Link>
@@ -121,12 +121,18 @@ export function AppHeader() {
           </div>
         </form>
 
-        <UpdatesMenu />
+        <div className="hidden sm:block">
+          <UpdatesMenu />
+        </div>
         <div className="hidden sm:block">
           <MessagesMenu />
         </div>
-        <LearnerThemeToggle className="rounded-[12px] border-[var(--line)] bg-[var(--bg-muted)] shadow-none" />
-        <UserMenu variant="header" />
+        <div className="hidden sm:block">
+          <LearnerThemeToggle className="rounded-[12px] border-[var(--line)] bg-[var(--bg-muted)] shadow-none" />
+        </div>
+        <div className="hidden sm:block">
+          <UserMenu variant="header" />
+        </div>
         <LearnerMobileNav />
       </div>
     </header>

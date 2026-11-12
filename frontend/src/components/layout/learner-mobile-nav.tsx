@@ -2,10 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X } from 'lucide-react';
+import { Bell, Bookmark, Menu, MessageCircle, X } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
+import { LearnerThemeToggle } from '@/components/theme/learner-theme-toggle';
+import { MobileDrawerBackdrop, MobileDrawerPanel } from './mobile-drawer';
 import { UserMenu } from './user-menu';
 import { learnerLinkActive, learnerNavGroups } from './learner-nav';
 import { cn } from '@/lib/utils';
@@ -74,57 +76,86 @@ export function LearnerMobileNav() {
   const panel =
     open && mounted
       ? createPortal(
-          <div
-            ref={panelRef}
-            id={panelId}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Study navigation"
-            className="motion-drawer-in fixed inset-x-0 top-[var(--header-h,3.75rem)] bottom-0 z-[60] overflow-y-auto overscroll-contain border-t border-[var(--line)] bg-[var(--bg-elevated)] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[var(--shadow-lg)]"
-          >
-            <nav className="flex flex-col gap-5" aria-label="Mobile study">
-              {learnerNavGroups.map((group) => (
-                <div key={group.title}>
-                  <p className="px-3 pb-2 text-[0.6875rem] font-semibold tracking-[0.16em] text-[var(--muted)] uppercase">
-                    {group.title}
-                  </p>
-                  <div className="flex flex-col gap-0.5">
-                    {group.items.map((item) => {
-                      const Icon = item.icon;
-                      const active = learnerLinkActive(pathname, item);
-                      return (
-                        <Link
-                          key={`${item.label}-${item.href}`}
-                          href={item.href}
-                          aria-current={active ? 'page' : undefined}
-                          data-active={active ? 'true' : 'false'}
-                          className={cn(
-                            'learner-nav-link flex items-center gap-2.5 rounded-[var(--radius)] px-3 py-2.5 text-base font-medium',
-                            active
-                              ? 'bg-[var(--bg-muted)] font-semibold text-[var(--ink)]'
-                              : 'text-[var(--muted)] hover:bg-[var(--brand-wash)] hover:text-[var(--ink-soft)]',
-                          )}
-                        >
-                          <span
+          <>
+            <MobileDrawerBackdrop onClose={() => setOpen(false)} />
+            <MobileDrawerPanel
+              id={panelId}
+              label="Study navigation"
+              panelRef={panelRef}
+              className="lg:hidden"
+            >
+              <div className="mb-4 flex flex-wrap items-center gap-2 rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-muted)] p-3">
+                <LearnerThemeToggle showLabel className="bg-[var(--bg-elevated)]" />
+                <Link
+                  href="/bookmarks"
+                  className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-[12px] border border-[var(--line)] bg-[var(--bg-elevated)] px-3 text-sm font-semibold text-[var(--ink)]"
+                  onClick={() => setOpen(false)}
+                >
+                  <Bookmark className="size-4" aria-hidden />
+                  Saved
+                </Link>
+                <Link
+                  href="/news"
+                  className="inline-flex size-11 items-center justify-center rounded-[12px] border border-[var(--line)] bg-[var(--bg-elevated)] text-[var(--ink-soft)]"
+                  aria-label="Updates"
+                  onClick={() => setOpen(false)}
+                >
+                  <Bell className="size-4" aria-hidden />
+                </Link>
+                <Link
+                  href="/profile"
+                  className="inline-flex size-11 items-center justify-center rounded-[12px] border border-[var(--line)] bg-[var(--bg-elevated)] text-[var(--ink-soft)]"
+                  aria-label="Messages / profile"
+                  onClick={() => setOpen(false)}
+                >
+                  <MessageCircle className="size-4" aria-hidden />
+                </Link>
+              </div>
+
+              <nav className="flex flex-col gap-5" aria-label="Mobile study">
+                {learnerNavGroups.map((group) => (
+                  <div key={group.title}>
+                    <p className="px-3 pb-2 text-[0.6875rem] font-semibold tracking-[0.16em] text-[var(--muted)] uppercase">
+                      {group.title}
+                    </p>
+                    <div className="flex flex-col gap-0.5">
+                      {group.items.map((item) => {
+                        const Icon = item.icon;
+                        const active = learnerLinkActive(pathname, item);
+                        return (
+                          <Link
+                            key={`${item.label}-${item.href}`}
+                            href={item.href}
+                            aria-current={active ? 'page' : undefined}
+                            data-active={active ? 'true' : 'false'}
                             className={cn(
-                              'flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)]',
-                              active ? 'text-[var(--ink)]' : 'text-current',
+                              'learner-nav-link flex min-h-11 items-center gap-2.5 rounded-[var(--radius)] px-3 py-2.5 text-base font-medium',
+                              active
+                                ? 'bg-[var(--bg-muted)] font-semibold text-[var(--ink)]'
+                                : 'text-[var(--muted)] hover:bg-[var(--brand-wash)] hover:text-[var(--ink-soft)]',
                             )}
                           >
-                            <Icon className="size-4" aria-hidden />
-                          </span>
-                          {item.label}
-                        </Link>
-                      );
-                    })}
+                            <span
+                              className={cn(
+                                'flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)]',
+                                active ? 'text-[var(--ink)]' : 'text-current',
+                              )}
+                            >
+                              <Icon className="size-4" aria-hidden />
+                            </span>
+                            {item.label}
+                          </Link>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </nav>
-            <div className="mt-6 border-t border-[var(--line)] pt-4">
-              <UserMenu compact />
-            </div>
-          </div>,
+                ))}
+              </nav>
+              <div className="mt-6 border-t border-[var(--line)] pt-4">
+                <UserMenu compact />
+              </div>
+            </MobileDrawerPanel>
+          </>,
           document.body,
         )
       : null;
@@ -136,6 +167,7 @@ export function LearnerMobileNav() {
         type="button"
         variant="ghost"
         size="icon"
+        className="size-11"
         aria-expanded={open}
         aria-controls={panelId}
         aria-label={open ? 'Close menu' : 'Open menu'}

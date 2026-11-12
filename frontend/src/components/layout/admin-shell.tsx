@@ -35,7 +35,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             'flex min-w-0 flex-1 flex-col',
             isMessaging
               ? 'min-h-0 overflow-hidden p-0'
-              : 'mx-auto w-full max-w-7xl px-3 py-5 sm:px-6 sm:py-8 lg:px-8',
+              : 'mx-auto w-full max-w-7xl px-3 py-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-8 lg:px-8',
           )}
         >
           {isMessaging ? children : <PageShell>{children}</PageShell>}

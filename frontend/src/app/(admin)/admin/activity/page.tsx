@@ -26,6 +26,7 @@ import type {
 } from '@/lib/api/admin-activity-types';
 import { useCursorList } from '@/lib/hooks/use-cursor-list';
 import { Activity, Clock3, Users } from 'lucide-react';
+import { AdminMobileCard, AdminMobileCards } from '@/components/admin/admin-mobile-cards';
 import {
   AdminListMeta,
   AdminPage,
@@ -218,7 +219,7 @@ function ActivityPageInner() {
         />
       </AdminStatGrid>
 
-      <Surface className="space-y-3 p-4 sm:p-5">
+      <Surface className="space-y-3 p-3.5 sm:p-5">
         <p className="text-xs font-semibold tracking-wide text-[var(--muted-strong)] uppercase">
           Presence buckets (distinct users with heartbeat)
         </p>
@@ -243,6 +244,7 @@ function ActivityPageInner() {
           description="Sessions with a recent heartbeat."
           actions={
             <form
+              className="w-full sm:w-auto"
               onSubmit={(e) => {
                 e.preventDefault();
               }}
@@ -257,13 +259,13 @@ function ActivityPageInner() {
                   onChange={(e) => setOnlineQ(e.target.value)}
                   placeholder="Search online"
                   aria-label="Search online users"
-                  className="h-9 w-44 pl-8 text-sm"
+                  className="h-10 w-full pl-8 text-sm sm:h-9 sm:w-44"
                 />
               </div>
             </form>
           }
         >
-          <Surface className="p-4 sm:p-5">
+          <Surface className="p-3.5 sm:p-5">
             {online.isLoading ? (
               <p className="text-sm text-[var(--muted-strong)]">Loading…</p>
             ) : online.data?.items.length === 0 ? (
@@ -314,21 +316,21 @@ function ActivityPageInner() {
             </Button>
           ))}
         >
-          <Surface className="space-y-4 p-4 sm:p-5">
+          <Surface className="space-y-4 p-3.5 sm:p-5">
             {range === 'custom' ? (
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-1 gap-2 min-[400px]:grid-cols-2 sm:flex sm:flex-wrap">
                 <Input
                   type="date"
                   value={from}
                   onChange={(e) => setFrom(e.target.value)}
-                  className="h-9 w-auto"
+                  className="h-10 w-full sm:h-9 sm:w-auto"
                   aria-label="From date"
                 />
                 <Input
                   type="date"
                   value={to}
                   onChange={(e) => setTo(e.target.value)}
-                  className="h-9 w-auto"
+                  className="h-10 w-full sm:h-9 sm:w-auto"
                   aria-label="To date"
                 />
               </div>
@@ -389,7 +391,60 @@ function ActivityPageInner() {
           <Alert variant="danger">Could not load events.</Alert>
         ) : (
           <ContentIn>
+            <AdminListMeta
+              count={events.items.length}
+              noun="event"
+              hasMore={events.hasNextPage}
+              className="mb-3 md:hidden"
+            />
+            <AdminMobileCards>
+              {events.items.length === 0 ? (
+                <p className="rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] p-6 text-center text-sm text-[var(--muted-strong)]">
+                  No events in this range.
+                </p>
+              ) : (
+                events.items.map((e) => {
+                  const refs = [
+                    e.questionId && `Q ${e.questionId.slice(0, 8)}`,
+                    e.practiceSetId && `PS ${e.practiceSetId.slice(0, 8)}`,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ');
+                  return (
+                    <AdminMobileCard
+                      key={`m-${e.id}`}
+                      badges={<Badge variant="outline">{e.type}</Badge>}
+                      title={
+                        <Link href={`/admin/users/${e.user.id}`} className="hover:underline">
+                          {e.user.name}
+                        </Link>
+                      }
+                      meta={
+                        <>
+                          {new Date(e.occurredAt).toLocaleString()}
+                          {refs ? (
+                            <>
+                              <br />
+                              {refs}
+                            </>
+                          ) : null}
+                        </>
+                      }
+                    />
+                  );
+                })
+              )}
+              {events.hasNextPage ? (
+                <LoadMoreButton
+                  hasNextPage={events.hasNextPage}
+                  isFetchingNextPage={events.isFetchingNextPage}
+                  onLoadMore={() => void events.fetchNextPage()}
+                  className="flex justify-center pt-1"
+                />
+              ) : null}
+            </AdminMobileCards>
             <AdminTableShell
+              desktopOnly
               minWidth="40rem"
               header={
                 <AdminListMeta

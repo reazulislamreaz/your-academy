@@ -72,29 +72,31 @@ export default function PublicDocumentDetailPage() {
   }
 
   return (
-    <div className="fixed inset-x-0 bottom-0 top-[var(--header-h)] z-40 flex flex-col bg-[var(--bg)]">
-      <div className="flex shrink-0 items-center gap-3 border-b border-[var(--line)] bg-[var(--bg-elevated)] px-3 py-2 sm:px-4">
+    <div className="fixed inset-x-0 bottom-0 top-[var(--header-h)] z-40 flex flex-col bg-[var(--bg)] pb-[env(safe-area-inset-bottom,0px)]">
+      <div className="flex shrink-0 items-center gap-2 border-b border-[var(--line)] bg-[var(--bg-elevated)] px-2 py-2 sm:gap-3 sm:px-4">
         <Link
           href="/news"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--muted-strong)] hover:text-[var(--highlight)]"
+          className="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-[var(--radius)] px-2 text-sm font-medium text-[var(--muted-strong)] hover:bg-[var(--bg-muted)] hover:text-[var(--highlight)]"
         >
           <ArrowLeft className="size-4" aria-hidden />
-          কলাম
+          <span className="hidden min-[360px]:inline">কলাম</span>
         </Link>
         <div className="min-w-0 flex-1">
-          <h1 className="truncate font-display text-base font-semibold tracking-tight text-[var(--ink)] sm:text-lg">
+          <h1 className="truncate font-display text-sm font-semibold tracking-tight text-[var(--ink)] sm:text-lg">
             {data.title}
           </h1>
           {data.description ? (
-            <p className="truncate text-xs text-[var(--muted-strong)]">{data.description}</p>
+            <p className="hidden truncate text-xs text-[var(--muted-strong)] sm:block">
+              {data.description}
+            </p>
           ) : null}
         </div>
       </div>
 
+      {/* Title already shown in page chrome — avoid duplicate on narrow toolbars */}
       <PdfViewer
         className="min-h-0 flex-1 rounded-none border-0 shadow-none"
         fileUrl={publicDocumentFileUrl(data.id)}
-        title={data.title}
       />
     </div>
   );

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { adminNavGroups, adminNavItems, isAdminNavActive } from './admin-nav';
 import { BrandMark } from './brand-mark';
+import { MobileDrawerBackdrop, MobileDrawerPanel } from './mobile-drawer';
 import { UserMenu } from './user-menu';
 
 /** Compact mobile admin chrome: logo + title + drawer. */
@@ -73,65 +74,67 @@ export function AdminMobileNav({ themeToggle }: { themeToggle?: ReactNode }) {
   const panel =
     open && mounted
       ? createPortal(
-          <div
-            ref={panelRef}
-            id={panelId}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Admin navigation"
-            className="motion-drawer-in fixed inset-x-0 top-[56px] bottom-0 z-[60] overflow-y-auto overscroll-contain border-t border-[var(--line)] bg-[var(--bg-elevated)] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[var(--shadow-lg)] lg:hidden"
-          >
-            <nav className="flex flex-col gap-5" aria-label="Admin sections">
-              {adminNavGroups.map((group) => (
-                <div key={group.title}>
-                  <p className="px-3 pb-2 text-[0.6875rem] font-semibold tracking-[0.16em] text-[var(--muted)] uppercase">
-                    {group.title}
-                  </p>
-                  <div className="flex flex-col gap-0.5">
-                    {group.items.map((item) => {
-                      const Icon = item.icon;
-                      const active = isAdminNavActive(pathname, item.href);
-                      return (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          aria-current={active ? 'page' : undefined}
-                          className={cn(
-                            'flex items-center gap-2.5 rounded-[var(--radius)] px-3 py-2.5 text-base font-medium',
-                            active
-                              ? 'bg-[var(--highlight-soft)] font-semibold text-[var(--highlight)]'
-                              : 'text-[var(--ink-soft)] hover:bg-[var(--brand-wash)] hover:text-[var(--ink)]',
-                          )}
-                        >
-                          <span className="flex size-8 shrink-0 items-center justify-center">
-                            <Icon className="size-4" aria-hidden strokeWidth={1.75} />
-                          </span>
-                          {item.label}
-                        </Link>
-                      );
-                    })}
+          <>
+            <MobileDrawerBackdrop onClose={() => setOpen(false)} />
+            <MobileDrawerPanel
+              id={panelId}
+              label="Admin navigation"
+              panelRef={panelRef}
+              topVar="var(--header-h, 56px)"
+              className="lg:hidden"
+            >
+              <nav className="flex flex-col gap-5" aria-label="Admin sections">
+                {adminNavGroups.map((group) => (
+                  <div key={group.title}>
+                    <p className="px-3 pb-2 text-[0.6875rem] font-semibold tracking-[0.16em] text-[var(--muted)] uppercase">
+                      {group.title}
+                    </p>
+                    <div className="flex flex-col gap-0.5">
+                      {group.items.map((item) => {
+                        const Icon = item.icon;
+                        const active = isAdminNavActive(pathname, item.href);
+                        return (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            aria-current={active ? 'page' : undefined}
+                            className={cn(
+                              'flex min-h-11 items-center gap-2.5 rounded-[var(--radius)] px-3 py-2.5 text-base font-medium',
+                              active
+                                ? 'bg-[var(--highlight-soft)] font-semibold text-[var(--highlight)]'
+                                : 'text-[var(--ink-soft)] hover:bg-[var(--brand-wash)] hover:text-[var(--ink)]',
+                            )}
+                          >
+                            <span className="flex size-8 shrink-0 items-center justify-center">
+                              <Icon className="size-4" aria-hidden strokeWidth={1.75} />
+                            </span>
+                            {item.label}
+                          </Link>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </nav>
+                ))}
+              </nav>
 
-            <div className="mt-6 border-t border-[var(--line)] pt-4">
-              <Link
-                href="/"
-                className="block px-3 text-sm font-semibold text-[var(--accent)] hover:underline"
-                onClick={() => setOpen(false)}
-              >
-                ← Back to website
-              </Link>
-            </div>
-          </div>,
+              <div className="mt-6 border-t border-[var(--line)] pt-4">
+                <Link
+                  href="/"
+                  className="block min-h-11 px-3 py-2.5 text-sm font-semibold text-[var(--accent)] hover:underline"
+                  onClick={() => setOpen(false)}
+                >
+                  ← Back to website
+                </Link>
+              </div>
+            </MobileDrawerPanel>
+          </>,
           document.body,
         )
       : null;
 
   return (
-    <div className="sticky top-0 z-30 border-b border-[var(--line)] bg-[var(--bg-elevated)]/95 backdrop-blur-md lg:hidden">
-      <div className="flex h-14 items-center gap-3 px-3 sm:px-4">
+    <div className="sticky top-0 z-30 border-b border-[var(--line)] bg-[var(--bg-elevated)]/95 pt-[env(safe-area-inset-top,0px)] backdrop-blur-md lg:hidden">
+      <div className="flex h-14 items-center gap-2 px-3 sm:gap-3 sm:px-4">
         <BrandMark markOnly href="/" className="[&_img]:h-8" />
         <div className="min-w-0 flex-1">
           <p className="truncate text-[0.65rem] font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
@@ -146,7 +149,7 @@ export function AdminMobileNav({ themeToggle }: { themeToggle?: ReactNode }) {
           type="button"
           variant="ghost"
           size="icon"
-          className="shrink-0"
+          className="size-11 shrink-0"
           aria-expanded={open}
           aria-controls={panelId}
           aria-label={open ? 'Close menu' : 'Open menu'}

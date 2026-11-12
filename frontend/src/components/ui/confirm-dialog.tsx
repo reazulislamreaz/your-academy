@@ -80,7 +80,7 @@ export function ConfirmDialog({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center">
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:items-center sm:p-4">
       <button
         type="button"
         aria-label="Dismiss"
@@ -98,8 +98,8 @@ export function ConfirmDialog({
         aria-labelledby={titleId}
         aria-describedby={descId}
         className={cn(
-          'relative z-10 w-full max-w-md rounded-[var(--radius-lg)] border border-[var(--line)]',
-          'motion-scale-in bg-[var(--bg-elevated)] p-5 shadow-[var(--shadow-lg)] sm:p-6',
+          'relative z-10 max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-[var(--radius-lg)] border border-[var(--line)]',
+          'motion-scale-in bg-[var(--bg-elevated)] p-4 shadow-[var(--shadow-lg)] sm:p-6',
         )}
       >
         <h2 id={titleId} className="font-display text-lg font-semibold text-[var(--ink)]">
@@ -113,7 +113,7 @@ export function ConfirmDialog({
             {reversible ? 'This can be reversed later.' : 'This action cannot be undone.'}
           </p>
         ) : null}
-        <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end [&>button]:w-full sm:[&>button]:w-auto">
           <Button
             ref={cancelRef}
             type="button"

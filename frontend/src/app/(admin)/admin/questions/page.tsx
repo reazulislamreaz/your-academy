@@ -5,6 +5,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FileUp, Plus, Search } from 'lucide-react';
 import { Suspense, useEffect, useState } from 'react';
+import { AdminMobileCard, AdminMobileCards } from '@/components/admin/admin-mobile-cards';
 import { AdminBulkBar, AdminListMeta, AdminPage, AdminToolbar } from '@/components/admin/admin-page';
 import { AdminRowActions } from '@/components/admin/admin-row-actions';
 import { AdminPublishStatus } from '@/components/admin/admin-status';
@@ -244,7 +245,89 @@ function AdminQuestionsContent() {
 
       {!list.isLoading && items.length > 0 ? (
         <ContentIn className="space-y-4">
+          <AdminListMeta
+            className="md:hidden"
+            count={items.length}
+            noun="question"
+            hasMore={list.hasNextPage}
+            query={q || undefined}
+          />
+          <AdminMobileCards>
+            {items.map((qItem) => (
+              <AdminMobileCard
+                key={`m-${qItem.id}`}
+                selected={selected.has(qItem.id)}
+                onToggleSelect={() => toggleOne(qItem.id)}
+                selectLabel={`Select ${qItem.title}`}
+                badges={
+                  <>
+                    <AdminPublishStatus status={qItem.status} />
+                    <Badge variant="outline">{qItem.difficulty}</Badge>
+                  </>
+                }
+                title={
+                  <Link href={`/admin/questions/${qItem.id}`} className="hover:underline">
+                    {qItem.title}
+                  </Link>
+                }
+                meta={
+                  <>
+                    {qItem.category.name}
+                    {qItem.subcategory ? ` · ${qItem.subcategory.name}` : ''}
+                  </>
+                }
+                actions={
+                  <>
+                    <Link href={`/admin/questions/${qItem.id}`}>
+                      <Button size="sm" variant="outline">
+                        Edit
+                      </Button>
+                    </Link>
+                    {qItem.status !== 'PUBLISHED' ? (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        disabled={publish.isPending}
+                        onClick={() => publish.mutate(qItem.id)}
+                      >
+                        Publish
+                      </Button>
+                    ) : (
+                      <Link href={`/questions/${qItem.id}`} target="_blank">
+                        <Button size="sm" variant="ghost">
+                          Preview
+                        </Button>
+                      </Link>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      disabled={duplicate.isPending}
+                      onClick={() => duplicate.mutate(qItem.id)}
+                    >
+                      Duplicate
+                    </Button>
+                    {qItem.status !== 'ARCHIVED' ? (
+                      <ConfirmButton
+                        size="sm"
+                        variant="ghost"
+                        confirmTitle="Archive this question?"
+                        confirmMessage="Archive this question? It will leave the learner bank."
+                        confirmLabel="Archive"
+                        reversible
+                        onConfirm={() => archive.mutateAsync(qItem.id)}
+                      >
+                        Archive
+                      </ConfirmButton>
+                    ) : null}
+                  </>
+                }
+              />
+            ))}
+          </AdminMobileCards>
+
           <AdminTableShell
+            desktopOnly
             minWidth="52rem"
             header={
               <AdminListMeta
@@ -374,6 +457,14 @@ function AdminQuestionsContent() {
               </tbody>
             </AdminTable>
           </AdminTableShell>
+
+          <div className="md:hidden">
+            <LoadMoreButton
+              hasNextPage={list.hasNextPage}
+              isFetchingNextPage={list.isFetchingNextPage}
+              onLoadMore={() => void list.fetchNextPage()}
+            />
+          </div>
         </ContentIn>
       ) : null}
     </AdminPage>

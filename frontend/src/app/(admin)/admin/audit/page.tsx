@@ -1,5 +1,6 @@
 'use client';
 
+import { AdminMobileCard, AdminMobileCards } from '@/components/admin/admin-mobile-cards';
 import { AdminListMeta, AdminPage } from '@/components/admin/admin-page';
 import {
   AdminEmptyRow,
@@ -45,7 +46,45 @@ export default function AdminAuditPage() {
 
       {!list.isLoading && list.data ? (
         <ContentIn>
+          <AdminListMeta
+            count={list.items.length}
+            noun="entry"
+            hasMore={list.hasNextPage}
+            className="mb-3 md:hidden"
+          />
+          <AdminMobileCards>
+            {list.items.length === 0 ? (
+              <p className="rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] p-6 text-center text-sm text-[var(--muted-strong)]">
+                No audit entries yet.
+              </p>
+            ) : (
+              list.items.map((row) => (
+                <AdminMobileCard
+                  key={`m-${row.id}`}
+                  badges={<Badge variant="outline">{row.action}</Badge>}
+                  title={row.actor ? row.actor.name : 'System'}
+                  meta={
+                    <>
+                      {row.entityType}
+                      {row.entityId ? ` · ${row.entityId.slice(0, 8)}` : ''}
+                      <br />
+                      {new Date(row.createdAt).toLocaleString()}
+                    </>
+                  }
+                />
+              ))
+            )}
+            {list.hasNextPage ? (
+              <LoadMoreButton
+                hasNextPage={list.hasNextPage}
+                isFetchingNextPage={list.isFetchingNextPage}
+                onLoadMore={() => void list.fetchNextPage()}
+                className="flex justify-center pt-1"
+              />
+            ) : null}
+          </AdminMobileCards>
           <AdminTableShell
+            desktopOnly
             minWidth="40rem"
             header={
               <AdminListMeta count={list.items.length} noun="entry" hasMore={list.hasNextPage} />

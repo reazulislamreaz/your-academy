@@ -91,7 +91,7 @@ export function FormDialog({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center">
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:items-center sm:p-4">
       <button
         type="button"
         aria-label="Dismiss"
@@ -109,13 +109,13 @@ export function FormDialog({
         aria-labelledby={titleId}
         aria-describedby={description ? descId : undefined}
         className={cn(
-          'relative z-10 w-full max-w-lg rounded-[var(--radius-lg)] border border-[var(--line)]',
+          'relative z-10 flex max-h-[calc(100dvh-1.5rem)] w-full max-w-lg flex-col overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] sm:max-h-[calc(100dvh-2rem)]',
           'motion-scale-in bg-[var(--bg-elevated)] shadow-[var(--shadow-lg)]',
           className,
         )}
       >
-        <div className="flex items-start justify-between gap-3 border-b border-[var(--line)] px-5 py-4">
-          <div>
+        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-[var(--line)] px-4 py-3.5 sm:px-5 sm:py-4">
+          <div className="min-w-0">
             <h2 id={titleId} className="font-display text-lg font-semibold text-[var(--ink)]">
               {title}
             </h2>
@@ -137,14 +137,16 @@ export function FormDialog({
             <X className="size-4" />
           </Button>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-4 px-5 py-4">
-          {children}
-          {error ? (
-            <p className="text-sm font-medium text-[var(--danger-fg)]" role="alert">
-              {error}
-            </p>
-          ) : null}
-          <div className="flex flex-col-reverse gap-2 border-t border-[var(--line)] pt-4 sm:flex-row sm:justify-end">
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5">
+            {children}
+            {error ? (
+              <p className="text-sm font-medium text-[var(--danger-fg)]" role="alert">
+                {error}
+              </p>
+            ) : null}
+          </div>
+          <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-[var(--line)] px-4 py-3 sm:flex-row sm:justify-end sm:px-5 [&>button]:w-full sm:[&>button]:w-auto">
             <Button type="button" variant="outline" disabled={pending} onClick={onClose}>
               {cancelLabel}
             </Button>

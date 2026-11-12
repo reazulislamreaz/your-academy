@@ -382,7 +382,7 @@ export function AdminSupportInbox() {
                 type="button"
                 onClick={() => setFilter(f.id)}
                 className={cn(
-                  'rounded-full px-3 py-1 text-xs font-semibold transition-colors',
+                  'rounded-full px-3 py-2 text-xs font-semibold transition-colors',
                   filter === f.id
                     ? 'bg-[var(--accent)] text-[var(--accent-fg)]'
                     : 'bg-[var(--bg-muted)] text-[var(--muted-strong)] hover:bg-[var(--brand-wash)]',

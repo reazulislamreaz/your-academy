@@ -13,11 +13,11 @@ export function PageHeader({ title, description, actions, className, eyebrow }: 
   return (
     <div
       className={cn(
-        'flex flex-col gap-4 border-b border-[var(--line)]/80 pb-6 sm:flex-row sm:items-end sm:justify-between',
+        'page-header-mobile-tight flex flex-col gap-3 border-b border-[var(--line)]/80 pb-5 sm:flex-row sm:items-end sm:justify-between sm:gap-4 sm:pb-6',
         className,
       )}
     >
-      <div className="min-w-0 space-y-2">
+      <div className="min-w-0 space-y-1.5 sm:space-y-2">
         {eyebrow ? (
           <div className="flex items-center gap-2">
             <span className="inline-block h-[3px] w-5 shrink-0 rounded-full bg-[var(--highlight)]" aria-hidden />
@@ -26,7 +26,7 @@ export function PageHeader({ title, description, actions, className, eyebrow }: 
             </p>
           </div>
         ) : null}
-        <h1 className="break-words font-display text-[clamp(1.75rem,4vw,2.25rem)] font-bold tracking-tight text-[var(--ink)]">
+        <h1 className="break-words font-display text-[clamp(1.5rem,5.5vw,2.25rem)] font-bold tracking-tight text-[var(--ink)]">
           {title}
         </h1>
         {description ? (
@@ -36,7 +36,7 @@ export function PageHeader({ title, description, actions, className, eyebrow }: 
         ) : null}
       </div>
       {actions ? (
-        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:shrink-0">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:shrink-0 [&_a]:min-h-10 [&_button]:min-h-10">
           {actions}
         </div>
       ) : null}

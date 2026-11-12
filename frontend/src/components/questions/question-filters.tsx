@@ -85,11 +85,16 @@ export function QuestionFilters({ categories }: Props) {
             placeholder="Title or content"
           />
         </Field>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
           <Button type="submit" disabled={pending}>
             {pending ? 'Filtering…' : 'Apply'}
           </Button>
-          <Button type="button" variant="ghost" disabled={pending} onClick={() => apply({ clear: true })}>
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={pending}
+            onClick={() => apply({ clear: true })}
+          >
             Clear
           </Button>
         </div>

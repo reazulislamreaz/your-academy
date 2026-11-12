@@ -48,20 +48,20 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         <p className="relative text-xs text-white/40">Your Academy · MCQ practice</p>
       </aside>
 
-      <div className="flex min-h-screen flex-col bg-[var(--bg)]">
-        <header className="flex items-center justify-between px-6 py-5 lg:px-10">
+      <div className="flex min-h-screen flex-col bg-[var(--bg)] pt-[env(safe-area-inset-top,0px)]">
+        <header className="flex items-center justify-between px-4 py-4 sm:px-6 sm:py-5 lg:px-10">
           <div className="lg:hidden">
-            <BrandMark />
+            <BrandMark className="[&_img]:h-8" />
           </div>
           <div className="hidden lg:block" />
           <Link
             href="/"
-            className="text-sm font-medium text-[var(--muted-strong)] hover:text-[var(--highlight)]"
+            className="min-h-11 text-sm font-medium leading-[2.75rem] text-[var(--muted-strong)] hover:text-[var(--highlight)]"
           >
             Back home
           </Link>
         </header>
-        <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-6 pb-16 lg:max-w-lg lg:px-10">
+        <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 pb-[max(4rem,env(safe-area-inset-bottom))] sm:px-6 lg:max-w-lg lg:px-10">
           <PageShell>{children}</PageShell>
         </main>
       </div>
