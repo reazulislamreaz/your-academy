@@ -51,7 +51,7 @@ export default function NewsDetailPage() {
         {data.body}
       </p>
       {data.documents.length > 0 ? (
-        <Surface className="p-5">
+        <Surface elevated className="p-5">
           <h2 className="text-xs font-semibold tracking-[0.14em] text-[var(--muted-strong)] uppercase">
             Attached PDFs
           </h2>

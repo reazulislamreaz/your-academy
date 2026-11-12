@@ -113,7 +113,7 @@ export default function OnboardingPage() {
       {error ? <Alert variant="danger">{error}</Alert> : null}
 
       {step === 1 ? (
-        <Surface className="space-y-4 p-6">
+        <Surface elevated className="space-y-4 p-6">
           {categories.isLoading ? <HomeActivityListSkeleton rows={4} /> : null}
           {categories.data && categories.data.length === 0 ? (
             <p className="text-sm text-[var(--muted-strong)]">No categories yet — you can skip this step.</p>
@@ -152,7 +152,7 @@ export default function OnboardingPage() {
           </div>
         </Surface>
       ) : (
-        <Surface className="space-y-5 p-6">
+        <Surface elevated className="space-y-5 p-6">
           <ol className="space-y-4">
             <li className="flex gap-3">
               <span className="font-display text-sm font-bold text-[var(--highlight)]">01</span>

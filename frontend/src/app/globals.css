@@ -1,19 +1,20 @@
 @import 'tailwindcss';
 
 /*
-  Your Academy design tokens — "navy + red" refresh
-  Deep navy panels (#0A1F44), bright red CTAs (#E63946), clean white surfaces.
+  Your Academy design tokens — premium navy + red learner desk
+  Surfaces: cool paper desk, white elevated panels, deep navy ink, red CTAs.
   Avoid: amber highlighter, purple SaaS gradients, cream+terracotta serif kits,
-  neon dark mode.
+  neon dark mode, glow kits.
 */
 
 :root {
   /* Surfaces */
   --bg: #ffffff;
   --bg-elevated: #ffffff;
-  --bg-muted: #f1f5f9;
+  --bg-muted: #eef2f7;
   --bg-inverse: #002050;
-  --bg-desk: #f5f7fb;
+  --bg-desk: #eef2f7;
+  --bg-sidebar: #fbfcfe;
 
   /* Ink — keep secondary text above AA on white (~4.5:1+) */
   --ink: #002050;
@@ -49,24 +50,26 @@
   --info-soft: #e0eaff;
   --info-fg: #1849a9;
 
-  /* Elevation */
-  --shadow-sm: 0 1px 2px rgba(10, 31, 68, 0.06);
-  --shadow: 0 10px 30px rgba(10, 31, 68, 0.09);
-  --shadow-lg: 0 24px 48px rgba(10, 31, 68, 0.14);
+  /* Elevation — softer, layered depth */
+  --shadow-sm: 0 1px 2px rgba(10, 31, 68, 0.04), 0 1px 1px rgba(10, 31, 68, 0.03);
+  --shadow: 0 8px 24px rgba(10, 31, 68, 0.07), 0 2px 6px rgba(10, 31, 68, 0.04);
+  --shadow-lg: 0 20px 48px rgba(10, 31, 68, 0.12), 0 4px 12px rgba(10, 31, 68, 0.05);
+  --shadow-header: 0 1px 0 rgba(10, 31, 68, 0.04), 0 8px 24px rgba(10, 31, 68, 0.04);
 
   /* Radius scale */
   --radius-sm: 8px;
   --radius: 12px;
   --radius-lg: 16px;
-  --radius-xl: 22px;
+  --radius-xl: 20px;
 
   /* Spacing rhythm */
   --space-section: clamp(3rem, 6vw, 5.5rem);
   --space-page: clamp(1.25rem, 3vw, 2rem);
 
   /* Shell geometry */
-  --app-sidebar-width: 15.5rem;
-  --header-h: 3.5rem;
+  --app-sidebar-width: 16.25rem;
+  --app-content-max: 72rem;
+  --header-h: 3.75rem;
 
   /* Motion */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
@@ -135,14 +138,38 @@ body {
 .desk-canvas {
   background-color: var(--bg-desk);
   background-image:
-    linear-gradient(rgba(0, 32, 80, 0.035) 1px, transparent 1px),
-    radial-gradient(ellipse 80% 50% at 100% 0%, rgba(227, 30, 36, 0.04), transparent 55%),
-    radial-gradient(ellipse 60% 40% at 0% 100%, rgba(0, 32, 80, 0.05), transparent 50%);
-  background-size:
-    100% 28px,
-    100% 100%,
-    100% 100%;
+    radial-gradient(ellipse 70% 45% at 100% -10%, rgba(227, 30, 36, 0.055), transparent 55%),
+    radial-gradient(ellipse 55% 40% at -5% 100%, rgba(0, 32, 80, 0.06), transparent 50%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.55), transparent 28%);
   background-attachment: local;
+}
+
+/* Learner sidebar surface */
+.learner-sidebar {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(251, 252, 254, 0.98)),
+    var(--bg-sidebar);
+  box-shadow: inset -1px 0 0 var(--line);
+}
+
+/* Active nav pill with left rail */
+.learner-nav-link {
+  position: relative;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+
+.learner-nav-link[data-active='true']::before {
+  content: '';
+  position: absolute;
+  top: 20%;
+  bottom: 20%;
+  left: 0;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--highlight);
 }
 
 /* Prefer these for secondary copy instead of ultra-faint muted colors */

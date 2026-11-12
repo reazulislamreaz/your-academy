@@ -38,7 +38,7 @@ export default function SubjectsPage() {
       {!categories.isLoading && !categories.isError && (categories.data?.length ?? 0) > 0 ? (
       <ContentIn className="motion-stagger grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {(categories.data ?? []).map((subject) => (
-          <Surface key={subject.id} className="motion-hover-lift p-4 sm:p-5">
+          <Surface elevated key={subject.id} className="motion-hover-lift p-4 sm:p-5">
             <h2 className="font-display text-lg font-semibold tracking-tight text-[var(--ink)]">
               <Link
                 href={`/subjects/${subject.slug}`}

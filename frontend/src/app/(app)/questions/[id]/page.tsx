@@ -194,7 +194,7 @@ function QuestionDetailContent() {
       ) : null}
 
       {checked && data.explanation ? (
-        <Surface className="motion-rise border-l-[3px] border-l-[var(--highlight)] p-5 sm:p-6">
+        <Surface elevated className="motion-rise border-l-[3px] border-l-[var(--highlight)] p-5 sm:p-6">
           <h2 className="text-xs font-semibold tracking-[0.14em] text-[var(--muted-strong)] uppercase">
             Explanation
           </h2>

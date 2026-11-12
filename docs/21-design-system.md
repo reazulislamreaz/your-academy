@@ -24,21 +24,23 @@ Do **not** drift into purple SaaS gradients, cream+terracotta serif kits, amber-
 
 | Token | Role | Value (reference) |
 |-------|------|-------------------|
-| `--bg` | Page | `#F1F4F8` |
-| `--bg-desk` | Desk wash / admin canvas | `#E9EEF5` |
+| `--bg` | Page | `#FFFFFF` |
+| `--bg-desk` | Learner/admin canvas | `#EEF2F7` |
+| `--bg-sidebar` | Learner sidebar | `#FBFCFE` |
 | `--bg-elevated` | Panels | `#FFFFFF` |
-| `--bg-muted` | Soft fill | `#E6EBF2` |
-| `--bg-inverse` | Admin / dark panels | `#0B1F33` |
-| `--ink` | Primary text | `#0B1F33` |
-| `--muted` | Secondary text | `#5C6B7A` |
-| `--line` | Borders | `#D5DCE5` |
+| `--bg-muted` | Soft fill | `#EEF2F7` |
+| `--bg-inverse` | Admin / dark panels | `#002050` |
+| `--ink` | Primary text | `#002050` |
+| `--muted` / `--muted-strong` | Secondary text | `#46566B` / `#334155` |
+| `--line` | Borders | `#E2E8F0` |
 | `--highlight` | Primary CTA (brand red) | `#E31E24` |
 | `--highlight-soft` | Soft accent | `#FDECEC` |
 | `--highlight-hover` | Soft button hover | `#FADCDC` |
 | `--accent` | Secondary solid (navy) | `#002050` |
 | `--success` / `--danger` / `--warning` | Semantic | teal / deep red / amber |
+| `--shadow-header` | Sticky learner header | soft layered |
 
-Page atmosphere: fixed faint horizontal rules + cool navy/amber radial washes (not decorative glow kits).
+Page atmosphere: cool navy/red radial washes on desk canvas (not decorative glow kits). Learner shell: `.learner-sidebar`, `.learner-nav-link` active rail.
 
 ---
 
@@ -106,7 +108,7 @@ List utility: `.list-row` in `globals.css` for hover/divider rhythm.
 |-------|-------|--------|
 | `(marketing)` | Marketing header + footer | `/` |
 | `(auth)` | Split navy brand panel + form (desktop); stacked on mobile | `/login`, `/register`, … |
-| `(app)` | Learner header (+ trial chip) | `/home`, `/onboarding`, `/questions`, `/bookmarks`, `/news`, `/profile`, … |
+| `(app)` | Premium learner shell: sidebar (`.learner-sidebar`) + sticky glass header (trial, Saved MCQ, search, updates, profile) | `/home`, `/onboarding`, `/questions`, `/bookmarks`, `/news`, `/profile`, … |
 | `(admin)` | Navy sidebar + mobile tabs | `/admin/*` |
 
 Root `layout.tsx` only mounts fonts + providers (no global header).

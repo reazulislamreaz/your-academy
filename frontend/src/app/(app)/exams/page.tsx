@@ -15,7 +15,7 @@ export default function ExamsPage() {
       />
       <div className="motion-stagger grid gap-3 sm:grid-cols-2">
         {EXAM_TRACKS.map((track) => (
-          <Surface key={track.tag} className="motion-hover-lift p-4 sm:p-5">
+          <Surface elevated key={track.tag} className="motion-hover-lift p-4 sm:p-5">
             <h2 className="font-display text-base font-semibold tracking-tight text-[var(--ink)]">
               {track.label}
             </h2>

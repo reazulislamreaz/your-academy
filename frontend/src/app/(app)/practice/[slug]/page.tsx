@@ -144,7 +144,7 @@ export default function PracticePlayerPage() {
       </div>
 
       {!attemptId ? (
-        <Surface className="space-y-4 p-5">
+        <Surface elevated className="space-y-4 p-5">
           <p className="text-sm text-[var(--muted-strong)]">
             Start the attempt to answer questions
             {set.durationSeconds
@@ -168,7 +168,7 @@ export default function PracticePlayerPage() {
         <>
           <div className="space-y-4">
             {set.questions.map((q, index) => (
-              <Surface key={q.id} className="space-y-3 p-4">
+              <Surface elevated key={q.id} className="space-y-3 p-4">
                 <div className="flex items-start justify-between gap-2">
                   <h3 className="font-medium text-[var(--ink)]">
                     <span className="text-[var(--muted-strong)]">{index + 1}.</span> {q.title}

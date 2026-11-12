@@ -16,15 +16,15 @@ function SidebarNav() {
   const isAdmin = me.data?.role === 'ADMIN';
 
   return (
-    <aside className="flex h-full w-[var(--app-sidebar-width,15.5rem)] shrink-0 flex-col border-r border-[var(--line)] bg-white">
-      <div className="flex h-16 shrink-0 items-center border-b border-[var(--line)] px-4">
-        <BrandMark href="/home" />
+    <aside className="learner-sidebar flex h-full w-[var(--app-sidebar-width,16.25rem)] shrink-0 flex-col">
+      <div className="flex h-[var(--header-h,3.75rem)] shrink-0 items-center px-5">
+        <BrandMark href="/home" className="[&_img]:h-10" />
       </div>
 
-      <nav className="flex flex-1 flex-col gap-4 overflow-y-auto p-3" aria-label="Study">
+      <nav className="flex flex-1 flex-col gap-5 overflow-y-auto px-3 pb-4" aria-label="Study">
         {learnerNavGroups.map((group) => (
           <div key={group.title}>
-            <p className="px-2.5 pb-1.5 text-xs font-semibold tracking-[0.12em] text-[var(--muted-strong)] uppercase">
+            <p className="px-3 pb-2 text-[0.6875rem] font-semibold tracking-[0.16em] text-[var(--muted)] uppercase">
               {group.title}
             </p>
             <div className="flex flex-col gap-0.5">
@@ -35,14 +35,25 @@ function SidebarNav() {
                   <Link
                     key={`${item.label}-${item.href}`}
                     href={item.href}
+                    aria-current={active ? 'page' : undefined}
+                    data-active={active ? 'true' : 'false'}
                     className={cn(
-                      'motion-nav-indicator flex items-center gap-2.5 rounded-[10px] px-2.5 py-2 text-sm font-medium',
+                      'learner-nav-link motion-nav-indicator flex items-center gap-2.5 rounded-[var(--radius)] px-3 py-2.5 text-sm font-medium',
                       active
-                        ? 'bg-[var(--highlight-soft)] text-[var(--highlight)]'
-                        : 'text-[var(--ink-soft)] hover:bg-[var(--bg-muted)] hover:text-[var(--ink)]',
+                        ? 'bg-[var(--highlight-soft)] font-semibold text-[var(--highlight)]'
+                        : 'text-[var(--ink-soft)] hover:bg-[var(--brand-wash)] hover:text-[var(--ink)]',
                     )}
                   >
-                    <Icon className="size-4 shrink-0 opacity-90" aria-hidden />
+                    <span
+                      className={cn(
+                        'flex size-7 shrink-0 items-center justify-center rounded-[9px]',
+                        active
+                          ? 'bg-white/80 text-[var(--highlight)] shadow-[var(--shadow-sm)]'
+                          : 'bg-transparent text-current',
+                      )}
+                    >
+                      <Icon className="size-4" aria-hidden strokeWidth={active ? 2.25 : 2} />
+                    </span>
                     <span className="truncate">{item.label}</span>
                   </Link>
                 );
@@ -56,13 +67,21 @@ function SidebarNav() {
         <div className="border-t border-[var(--line)] p-3">
           <Link
             href="/admin/dashboard"
-            className="motion-nav-indicator flex items-center gap-2.5 rounded-[10px] px-2.5 py-2 text-sm font-medium text-[var(--ink-soft)] hover:bg-[var(--bg-muted)] hover:text-[var(--ink)]"
+            className="learner-nav-link motion-nav-indicator flex items-center gap-2.5 rounded-[var(--radius)] px-3 py-2.5 text-sm font-medium text-[var(--ink-soft)] hover:bg-[var(--brand-wash)] hover:text-[var(--ink)]"
           >
-            <Shield className="size-4 shrink-0 opacity-90" aria-hidden />
+            <span className="flex size-7 shrink-0 items-center justify-center rounded-[9px]">
+              <Shield className="size-4" aria-hidden />
+            </span>
             Admin console
           </Link>
         </div>
-      ) : null}
+      ) : (
+        <div className="border-t border-[var(--line)] px-4 py-3">
+          <p className="text-[0.6875rem] leading-relaxed text-[var(--muted)]">
+            Practice daily. Answers stay private to your account.
+          </p>
+        </div>
+      )}
     </aside>
   );
 }
@@ -71,7 +90,7 @@ export function AppSidebar() {
   return (
     <Suspense
       fallback={
-        <aside className="flex h-full w-[var(--app-sidebar-width,15.5rem)] shrink-0 border-r border-[var(--line)] bg-white" />
+        <aside className="learner-sidebar flex h-full w-[var(--app-sidebar-width,16.25rem)] shrink-0" />
       }
     >
       <SidebarNav />

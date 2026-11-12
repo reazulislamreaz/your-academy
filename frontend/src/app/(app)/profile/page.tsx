@@ -171,7 +171,7 @@ export default function ProfilePage() {
         }
       />
 
-      <Surface className="space-y-4 border-l-[3px] border-l-[var(--highlight)] p-5 sm:p-6">
+      <Surface elevated className="space-y-4 border-l-[3px] border-l-[var(--highlight)] p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex min-w-0 items-start gap-3">
             {user.avatarUrl ? (
@@ -257,7 +257,7 @@ export default function ProfilePage() {
 
       {stats.data &&
       (stats.data.recentQuestions.length > 0 || stats.data.recentDocuments.length > 0) ? (
-        <Surface className="space-y-5 p-5 sm:p-6">
+        <Surface elevated className="space-y-5 p-5 sm:p-6">
           <div className="flex items-center justify-between gap-3">
             <h2 className="font-display text-lg font-bold tracking-tight">Recent saves</h2>
             <Link
@@ -308,7 +308,7 @@ export default function ProfilePage() {
         </Surface>
       ) : null}
 
-      <Surface className="p-5 sm:p-6">
+      <Surface elevated className="p-5 sm:p-6">
         <h2 className="font-display text-lg font-bold tracking-tight">Profile details</h2>
         <p className="mt-1 text-sm text-[var(--muted-strong)]">
           WhatsApp login is fixed at{' '}
@@ -374,7 +374,7 @@ export default function ProfilePage() {
         </div>
       </Surface>
 
-      <Surface className="p-5 sm:p-6">
+      <Surface elevated className="p-5 sm:p-6">
         <h2 className="font-display text-lg font-bold tracking-tight">Change password</h2>
         <p className="mt-1 text-sm text-[var(--muted-strong)]">
           Use at least 8 characters. You stay signed in after a successful change.

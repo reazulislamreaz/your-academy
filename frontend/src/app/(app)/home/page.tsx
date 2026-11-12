@@ -19,6 +19,7 @@ import { AccuracyDonut } from '@/components/dashboard/accuracy-donut';
 import { BarChart } from '@/components/dashboard/bar-chart';
 import { HomeStatCard } from '@/components/dashboard/home-stat-card';
 import { ProgressRing } from '@/components/dashboard/progress-ring';
+import { QuickLink } from '@/components/dashboard/quick-link';
 import { SubjectProgress } from '@/components/dashboard/subject-progress';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -70,7 +71,7 @@ function SectionTitle({
 }) {
   return (
     <div className="flex items-center justify-between gap-2">
-      <h2 className="min-w-0 truncate font-display text-base font-bold tracking-tight text-[var(--ink)]">
+      <h2 className="min-w-0 truncate font-display text-[0.9375rem] font-bold tracking-tight text-[var(--ink)] sm:text-base">
         {title}
       </h2>
       {href && linkLabel ? (
@@ -85,9 +86,16 @@ function SectionTitle({
   );
 }
 
-function TrendPill({ children }: { children: string }) {
+function TrendPill({ children, muted }: { children: string; muted?: boolean }) {
   return (
-    <span className="inline-flex rounded-full bg-[var(--success-soft)] px-3 py-1 text-xs font-semibold text-[var(--success-fg)]">
+    <span
+      className={cn(
+        'inline-flex rounded-full px-3 py-1 text-xs font-semibold',
+        muted
+          ? 'bg-[var(--bg-muted)] text-[var(--muted-strong)]'
+          : 'bg-[var(--success-soft)] text-[var(--success-fg)]',
+      )}
+    >
       {children}
     </span>
   );
@@ -120,7 +128,6 @@ export default function StudyHomePage() {
     enabled: Boolean(me.data),
   });
 
-  // Profile / deep links → /home#exam-history (recent MCQ answer checks)
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const scrollToHash = () => {
@@ -162,20 +169,42 @@ export default function StudyHomePage() {
   const totalSec = analytics.data?.totalSeconds ?? stats.data?.browsingSeconds ?? 0;
   const newsItems = (news.data ?? []).slice(0, 4);
   const weekHoursLabel = formatStudyHours(weekSec).replace(' hrs', '').replace(' min', 'm');
+  const resumeHref = last
+    ? `/questions/${last.id}${last.filterQs ? `?${last.filterQs}` : ''}`
+    : '/questions';
 
   return (
-    <div className="flex w-full flex-col gap-6 pb-10 sm:gap-8">
+    <div className="flex w-full flex-col gap-7 pb-10 sm:gap-8">
       {/* Welcome */}
-      <div className="motion-rise min-w-0 pt-1">
-        <h1 className="font-display text-2xl font-bold tracking-tight text-[var(--ink)] sm:text-3xl md:text-[2rem]">
-          Welcome back, {displayName}! <span aria-hidden>👋</span>
-        </h1>
-        <p className="mt-1.5 text-sm text-[var(--muted-strong)] sm:text-base">
-          Track your progress and practice everyday.
-        </p>
+      <div className="motion-rise flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0 space-y-2">
+          <p className="flex items-center gap-2.5 text-[0.6875rem] font-semibold tracking-[0.16em] text-[var(--highlight)] uppercase">
+            <span aria-hidden className="inline-block h-1 w-6 shrink-0 rounded-full bg-[var(--highlight)]" />
+            Study desk
+          </p>
+          <h1 className="font-display text-[clamp(1.75rem,4vw,2.25rem)] font-bold tracking-tight text-[var(--ink)]">
+            Welcome back, {displayName}
+          </h1>
+          <p className="max-w-xl text-sm leading-relaxed text-[var(--muted-strong)] sm:text-[0.9375rem]">
+            Track your progress and practice every day. Your answers and folders stay private to this
+            account.
+          </p>
+        </div>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+          <Link href={resumeHref} className="w-full sm:w-auto">
+            <Button className="w-full px-5 sm:w-auto">
+              {last ? 'Resume practice' : 'Start practice'}
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </Link>
+          <Link href="/profile" className="w-full sm:w-auto">
+            <Button variant="outline" className="w-full px-5 sm:w-auto">
+              Account
+            </Button>
+          </Link>
+        </div>
       </div>
 
-      {/* Primary KPIs */}
       {statsFailed || analyticsFailed ? (
         <Alert variant="danger">
           {statsFailed && analyticsFailed
@@ -193,9 +222,9 @@ export default function StudyHomePage() {
             icon={ClipboardCheck}
             value={perf.uniqueQuestions.toLocaleString()}
             label="MCQs Solved"
-            subtitle="(কতগুলো MCQ সমাধান করেছে)"
+            subtitle="Unique questions you have checked"
             footer={
-              <TrendPill>
+              <TrendPill muted={perf.weekAttempts === 0}>
                 {perf.weekAttempts > 0
                   ? `+${perf.weekAttempts.toLocaleString()} this week`
                   : 'No checks this week'}
@@ -212,7 +241,7 @@ export default function StudyHomePage() {
               <div className="flex justify-start">
                 <ProgressRing
                   value={perf.accuracyPercent}
-                  size={88}
+                  size={84}
                   stroke={8}
                   label={`${perf.accuracyPercent}%`}
                   color="var(--ink)"
@@ -228,7 +257,7 @@ export default function StudyHomePage() {
             label="Study Time"
             className="sm:col-span-2 xl:col-span-1"
             footer={
-              <TrendPill>
+              <TrendPill muted={analyticsFailed || weekSec === 0}>
                 {analyticsFailed
                   ? 'Study time unavailable'
                   : weekSec > 0
@@ -240,25 +269,21 @@ export default function StudyHomePage() {
         </div>
       ) : null}
 
-      {/* Continue + shortcuts */}
       <div className="grid gap-4 lg:grid-cols-5">
-        <Surface className="space-y-4 p-4 sm:p-5 lg:col-span-3">
+        <Surface elevated className="space-y-5 p-4 sm:p-5 lg:col-span-3">
           <SectionTitle title="Continue where you left off" href="/questions" linkLabel="Question bank" />
           {last ? (
             <div className="rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-desk)] p-4">
-              <p className="text-xs font-medium tracking-wide text-[var(--muted-strong)] uppercase">
+              <p className="text-[0.6875rem] font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
                 Last opened
               </p>
-              <p className="mt-1 font-display text-lg font-bold tracking-tight text-[var(--ink)] break-words">
+              <p className="mt-1.5 font-display text-lg font-bold tracking-tight text-[var(--ink)] break-words">
                 {last.title}
               </p>
               {last.categoryName ? (
                 <p className="mt-0.5 text-sm text-[var(--muted-strong)]">{last.categoryName}</p>
               ) : null}
-              <Link
-                href={`/questions/${last.id}${last.filterQs ? `?${last.filterQs}` : ''}`}
-                className="mt-3 inline-flex"
-              >
+              <Link href={resumeHref} className="mt-3 inline-flex">
                 <Button size="sm">
                   Resume
                   <ArrowRight className="h-4 w-4" />
@@ -267,6 +292,7 @@ export default function StudyHomePage() {
             </div>
           ) : (
             <EmptyState
+              nested
               className="py-8"
               title="No practice history yet"
               description="Open any MCQ and press Check answer. Accuracy, subject progress, and recent results will appear here."
@@ -279,59 +305,43 @@ export default function StudyHomePage() {
           )}
 
           <div>
-            <h3 className="mb-2 text-xs font-semibold tracking-[0.12em] text-[var(--muted-strong)] uppercase">
+            <h3 className="mb-3 text-[0.6875rem] font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
               Quick actions
             </h3>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {[
-                {
-                  href: '/questions',
-                  title: 'Question bank',
-                  desc: 'Subject, topic, and exam-track MCQs',
-                  icon: BookOpen,
-                },
-                {
-                  href: '/model-tests',
-                  title: 'Model tests',
-                  desc: 'Timed mocks with score review',
-                  icon: ClipboardList,
-                },
-                {
-                  href: '/exams',
-                  title: 'Govt job prep',
-                  desc: 'BCS, bank, NTRCA, and more',
-                  icon: FileText,
-                },
-                {
-                  href: '/quizzes',
-                  title: 'Quiz center',
-                  desc: preferredIds.length
+            <div className="grid gap-2.5 sm:grid-cols-2">
+              <QuickLink
+                href="/questions"
+                title="Question bank"
+                description="Subject, topic, and exam-track MCQs"
+                icon={BookOpen}
+              />
+              <QuickLink
+                href="/model-tests"
+                title="Model tests"
+                description="Timed mocks with score review"
+                icon={ClipboardList}
+              />
+              <QuickLink
+                href="/exams"
+                title="Govt job prep"
+                description="BCS, bank, NTRCA, and more"
+                icon={FileText}
+              />
+              <QuickLink
+                href="/quizzes"
+                title="Quiz center"
+                description={
+                  preferredIds.length
                     ? `${preferredIds.length} preferred subjects ready`
-                    : 'Daily, subject, and topic quizzes',
-                  icon: Sparkles,
-                },
-              ].map((item) => (
-                <Link
-                  key={item.title}
-                  href={item.href}
-                  className="flex items-center gap-3 rounded-[10px] border border-transparent px-2.5 py-2.5 transition-colors hover:border-[var(--line)] hover:bg-[var(--bg-muted)]"
-                >
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--highlight-soft)] text-[var(--highlight)]">
-                    <item.icon className="size-4" aria-hidden />
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block truncate text-sm font-semibold text-[var(--ink)]">
-                      {item.title}
-                    </span>
-                    <span className="block truncate text-xs text-[var(--muted-strong)]">{item.desc}</span>
-                  </span>
-                </Link>
-              ))}
+                    : 'Daily, subject, and topic quizzes'
+                }
+                icon={Sparkles}
+              />
             </div>
           </div>
         </Surface>
 
-        <Surface className="space-y-3 p-4 sm:p-5 lg:col-span-2">
+        <Surface elevated className="space-y-3 p-4 sm:p-5 lg:col-span-2">
           <SectionTitle title="Answer mix" />
           {stats.isLoading ? (
             <HomeAnswerMixSkeleton />
@@ -343,9 +353,8 @@ export default function StudyHomePage() {
         </Surface>
       </div>
 
-      {/* Subject + study time */}
       <div className="grid gap-4 md:grid-cols-2">
-        <Surface className="space-y-3 p-4 sm:p-5">
+        <Surface elevated className="space-y-3 p-4 sm:p-5">
           <SectionTitle title="Subject performance" href="/onboarding" linkLabel="My topics" />
           {stats.isLoading ? (
             <HomeSubjectProgressSkeleton />
@@ -356,7 +365,7 @@ export default function StudyHomePage() {
           )}
         </Surface>
 
-        <Surface className="space-y-3 p-4 sm:p-5">
+        <Surface elevated className="space-y-3 p-4 sm:p-5">
           <SectionTitle title="Study time" />
           {analytics.isLoading ? (
             <HomeStudyTimeSkeleton />
@@ -376,11 +385,10 @@ export default function StudyHomePage() {
         </Surface>
       </div>
 
-      {/* Results + topics */}
       <div className="grid gap-4 lg:grid-cols-2">
-        <Surface id="exam-history" className="scroll-mt-24 space-y-3 p-4 sm:p-5">
+        <Surface id="exam-history" elevated className="scroll-mt-24 space-y-3 p-4 sm:p-5">
           <div className="flex items-center justify-between gap-2">
-            <h2 className="min-w-0 truncate font-display text-base font-bold tracking-tight text-[var(--ink)]">
+            <h2 className="min-w-0 truncate font-display text-[0.9375rem] font-bold tracking-tight text-[var(--ink)] sm:text-base">
               Recent answer checks
             </h2>
             <div className="flex shrink-0 items-center gap-2">
@@ -397,6 +405,7 @@ export default function StudyHomePage() {
           {stats.isLoading ? <HomeActivityListSkeleton rows={4} /> : null}
           {!stats.isLoading && !statsFailed && perf.recentAttempts.length === 0 ? (
             <EmptyState
+              nested
               className="py-8"
               title="No checks yet"
               description="Results appear after you press Check answer on a practice question."
@@ -415,12 +424,12 @@ export default function StudyHomePage() {
                 <li key={item.id}>
                   <Link
                     href={`/questions/${item.questionId}`}
-                    className="flex items-center justify-between gap-3 rounded-[8px] px-1.5 py-2.5 hover:bg-[var(--bg-muted)]"
+                    className="flex items-center justify-between gap-3 rounded-[10px] px-1.5 py-2.5 transition-colors hover:bg-[var(--bg-muted)]"
                   >
                     <span className="flex min-w-0 items-center gap-3">
                       <span
                         className={cn(
-                          'flex size-8 shrink-0 items-center justify-center rounded-[8px]',
+                          'flex size-8 shrink-0 items-center justify-center rounded-[10px]',
                           item.isCorrect
                             ? 'bg-[var(--success-soft)] text-[var(--success)]'
                             : 'bg-[var(--highlight-soft)] text-[var(--highlight)]',
@@ -451,7 +460,7 @@ export default function StudyHomePage() {
           ) : null}
         </Surface>
 
-        <Surface className="space-y-3 p-4 sm:p-5">
+        <Surface elevated className="space-y-3 p-4 sm:p-5">
           <SectionTitle
             title={preferredIds.length ? 'Your topics' : 'Recommended topics'}
             href="/onboarding"
@@ -460,6 +469,7 @@ export default function StudyHomePage() {
           {categories.isLoading ? <HomeActivityListSkeleton rows={4} /> : null}
           {!categories.isLoading && suggestions.length === 0 ? (
             <EmptyState
+              nested
               className="py-8"
               title="No categories yet"
               description="Topics appear once the question bank has published categories."
@@ -470,7 +480,7 @@ export default function StudyHomePage() {
                 <li key={cat.id}>
                   <Link
                     href={`/questions?categoryId=${cat.id}`}
-                    className="flex items-center justify-between gap-3 rounded-[8px] px-1.5 py-2 hover:bg-[var(--bg-muted)]"
+                    className="flex items-center justify-between gap-3 rounded-[10px] px-1.5 py-2 transition-colors hover:bg-[var(--bg-muted)]"
                   >
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-medium text-[var(--ink)]">
@@ -491,13 +501,13 @@ export default function StudyHomePage() {
         </Surface>
       </div>
 
-      {/* News + bookmarks */}
       <div className="grid gap-4 lg:grid-cols-2">
-        <Surface className="space-y-3 overflow-hidden p-4 sm:p-5">
+        <Surface elevated className="space-y-3 overflow-hidden p-4 sm:p-5">
           <SectionTitle title="Updates & circulars" href="/news" linkLabel="All news" />
           {news.isLoading ? <HomeActivityListSkeleton rows={3} /> : null}
           {!news.isLoading && newsItems.length === 0 ? (
             <EmptyState
+              nested
               className="py-8"
               title="No published news"
               description="Exam notices and circulars will show up here when published."
@@ -508,7 +518,7 @@ export default function StudyHomePage() {
                 <li key={item.id}>
                   <Link
                     href={`/news/${item.slug}`}
-                    className="block min-w-0 rounded-[8px] px-1.5 py-2.5 hover:bg-[var(--bg-muted)]"
+                    className="block min-w-0 rounded-[10px] px-1.5 py-2.5 transition-colors hover:bg-[var(--bg-muted)]"
                   >
                     <p className="truncate text-sm font-medium text-[var(--ink)]">{item.title}</p>
                     {item.summary ? (
@@ -523,7 +533,7 @@ export default function StudyHomePage() {
           )}
         </Surface>
 
-        <Surface className="space-y-3 overflow-hidden p-4 sm:p-5">
+        <Surface elevated className="space-y-3 overflow-hidden p-4 sm:p-5">
           <SectionTitle title="Saved for later" href="/bookmarks" linkLabel="View all" />
           {stats.isLoading ? <HomeActivityListSkeleton rows={3} /> : null}
           {!stats.isLoading &&
@@ -531,6 +541,7 @@ export default function StudyHomePage() {
             (stats.data.recentQuestions.length === 0 &&
               stats.data.recentDocuments.length === 0)) ? (
             <EmptyState
+              nested
               className="py-8"
               title="Nothing saved yet"
               description="Bookmark questions or PDFs while you practice — they land here."
@@ -548,7 +559,7 @@ export default function StudyHomePage() {
                 <li key={item.bookmarkId}>
                   <Link
                     href={`/questions/${item.id}`}
-                    className="flex min-w-0 items-center justify-between gap-3 px-1.5 py-2.5 hover:bg-[var(--bg-muted)]"
+                    className="flex min-w-0 items-center justify-between gap-3 rounded-[10px] px-1.5 py-2.5 transition-colors hover:bg-[var(--bg-muted)]"
                   >
                     <span className="min-w-0 truncate text-sm font-medium">{item.title}</span>
                     <Badge variant="outline" className="shrink-0">
@@ -561,7 +572,7 @@ export default function StudyHomePage() {
                 <li key={item.bookmarkId}>
                   <Link
                     href={`/documents/${item.id}`}
-                    className="block truncate px-1.5 py-2.5 text-sm font-medium hover:bg-[var(--bg-muted)]"
+                    className="block truncate rounded-[10px] px-1.5 py-2.5 text-sm font-medium transition-colors hover:bg-[var(--bg-muted)]"
                   >
                     {item.title}
                   </Link>

@@ -149,7 +149,7 @@ export default function BookmarksPage() {
     <div className="space-y-8">
       <PageHeader
         eyebrow="Library"
-        title="Saved items"
+        title="Saved questions"
         description="Organize MCQs into personal folders. PDFs stay in a flat list."
       />
 
@@ -204,9 +204,9 @@ export default function BookmarksPage() {
       ) : null}
 
       {tab === 'questions' && !questions.isLoading && !questions.error ? (
-        <div className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
-          <aside className="space-y-1 lg:sticky lg:top-24 lg:self-start">
-            <p className="mb-2 px-2 text-xs font-semibold tracking-[0.12em] text-[var(--muted-strong)] uppercase">
+        <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
+          <aside className="space-y-1 rounded-[var(--radius-lg)] border border-[var(--line)] bg-white/80 p-3 shadow-[var(--shadow-sm)] lg:sticky lg:top-24 lg:self-start">
+            <p className="mb-2 px-2 text-[0.6875rem] font-semibold tracking-[0.16em] text-[var(--muted)] uppercase">
               Folders
             </p>
             <FolderNavButton
@@ -217,12 +217,6 @@ export default function BookmarksPage() {
                 folderOptions.reduce((sum, c) => sum + c.questionCount, 0)
               }
               onClick={() => setFolder('all')}
-            />
-            <FolderNavButton
-              active={folder === 'uncategorized'}
-              label="Saved Items"
-              count={collections.data?.uncategorized.questionCount ?? 0}
-              onClick={() => setFolder('uncategorized')}
             />
             {folderOptions.map((c) => (
               <div key={c.id} className="group flex items-center gap-1">
@@ -241,7 +235,7 @@ export default function BookmarksPage() {
                   onClick={() => {
                     if (
                       window.confirm(
-                        `Delete folder “${c.name}”? Questions stay saved under Saved Items.`,
+                        `Delete folder “${c.name}”? Questions remain in All saved.`,
                       )
                     ) {
                       deleteFolder.mutate(c.id);
@@ -333,7 +327,7 @@ export default function BookmarksPage() {
                       <p className="font-medium text-[var(--ink)]">{b.question.title}</p>
                       <p className="text-sm text-[var(--muted-strong)]">
                         {b.question.category.name}
-                        {b.collection ? ` · ${b.collection.name}` : ' · Saved Items'}
+                        {b.collection ? ` · ${b.collection.name}` : ''}
                       </p>
                     </Link>
                     <div className="flex shrink-0 flex-wrap items-center gap-2">
@@ -354,7 +348,7 @@ export default function BookmarksPage() {
                           });
                         }}
                       >
-                        <option value="uncategorized">Saved Items</option>
+                        <option value="uncategorized">No folder</option>
                         {folderOptions.map((c) => (
                           <option key={c.id} value={c.id}>
                             {c.name}

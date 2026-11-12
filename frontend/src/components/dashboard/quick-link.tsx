@@ -16,12 +16,12 @@ export function QuickLink({ href, title, description, icon: Icon, className }: P
     <Link
       href={href}
       className={cn(
-        'motion-hover-lift group flex items-start gap-3 rounded-[14px] border border-[var(--line)] bg-white p-4 shadow-[var(--shadow-sm)] hover:border-[var(--highlight)]',
+        'motion-hover-lift group flex items-start gap-3 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-desk)]/60 p-3.5 transition-colors hover:border-[var(--line-strong)] hover:bg-white hover:shadow-[var(--shadow-sm)] sm:p-4',
         className,
       )}
     >
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--highlight-soft)] text-[var(--highlight)]">
-        <Icon className="h-5 w-5" aria-hidden />
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--highlight-soft)] text-[var(--highlight)]">
+        <Icon className="size-4" aria-hidden strokeWidth={1.75} />
       </span>
       <span className="min-w-0 flex-1">
         <span className="flex items-center justify-between gap-2">
@@ -29,11 +29,13 @@ export function QuickLink({ href, title, description, icon: Icon, className }: P
             {title}
           </span>
           <ArrowRight
-            className="h-4 w-4 shrink-0 text-[var(--muted)] transition-transform group-hover:translate-x-0.5 group-hover:text-[var(--highlight)]"
+            className="size-4 shrink-0 text-[var(--muted)] transition-transform duration-[var(--duration-fast)] group-hover:translate-x-0.5 group-hover:text-[var(--highlight)]"
             aria-hidden
           />
         </span>
-        <span className="mt-1 block text-sm leading-relaxed text-[var(--muted-strong)]">{description}</span>
+        <span className="mt-1 block text-xs leading-relaxed text-[var(--muted-strong)] sm:text-sm">
+          {description}
+        </span>
       </span>
     </Link>
   );

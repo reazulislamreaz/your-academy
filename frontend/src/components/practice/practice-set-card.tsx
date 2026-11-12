@@ -10,7 +10,7 @@ export function PracticeSetCard({ set }: { set: PracticeSetListItem }) {
     set.durationSeconds != null ? Math.max(1, Math.round(set.durationSeconds / 60)) : null;
 
   return (
-    <Surface interactive className="p-4 hover:border-[var(--highlight)]/40">
+    <Surface elevated interactive className="p-4 hover:border-[var(--highlight)]/35">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0 space-y-1">
           <div className="flex flex-wrap gap-1.5">

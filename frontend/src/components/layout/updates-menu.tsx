@@ -55,13 +55,13 @@ export function UpdatesMenu() {
         aria-label="Updates"
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          'relative flex h-10 w-10 items-center justify-center rounded-full border border-[var(--line)] bg-white text-[var(--ink-soft)] transition-colors hover:border-[var(--highlight)] hover:text-[var(--highlight)]',
+          'relative flex h-10 w-10 items-center justify-center rounded-full border border-[var(--line)] bg-white text-[var(--ink-soft)] shadow-[var(--shadow-sm)] transition-colors hover:border-[var(--line-strong)] hover:bg-[var(--bg-muted)] hover:text-[var(--ink)]',
           open && 'border-[var(--highlight)] text-[var(--highlight)]',
         )}
       >
-        <Bell className="h-4 w-4" />
+        <Bell className="h-4 w-4" strokeWidth={2} />
         {showBadge ? (
-          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[var(--highlight)]" />
+          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[var(--highlight)] ring-2 ring-white" />
         ) : null}
       </button>
       {open ? (

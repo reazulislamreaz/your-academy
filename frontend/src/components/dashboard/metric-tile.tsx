@@ -21,29 +21,29 @@ type Props = {
   className?: string;
 };
 
-/** Compact QBook-style metric tile (icon chip + value + label). */
-export function MetricTile({ label, value, suffix, icon: Icon, tone = 'blue', className }: Props) {
+/** Compact metric tile aligned with learner home KPI language. */
+export function MetricTile({ label, value, suffix, icon: Icon, tone = 'navy', className }: Props) {
   const t = tones[tone];
   return (
     <div
       className={cn(
-        'motion-hover-lift flex min-w-0 items-center gap-2.5 rounded-[14px] border border-[var(--line)] bg-white p-3 shadow-[var(--shadow-sm)] sm:gap-3 sm:p-4',
+        'motion-hover-lift flex min-w-0 items-center gap-3 rounded-[var(--radius-lg)] border border-[var(--line)] bg-white p-3.5 shadow-[var(--shadow-sm)] sm:p-4',
         className,
       )}
     >
       <div
         className={cn(
-          'flex size-9 shrink-0 items-center justify-center rounded-lg sm:size-10',
+          'flex size-10 shrink-0 items-center justify-center rounded-[12px] sm:size-11',
           t.bg,
         )}
       >
-        <Icon className={cn('size-4 sm:size-5', t.icon)} aria-hidden />
+        <Icon className={cn('size-4 sm:size-5', t.icon)} aria-hidden strokeWidth={1.75} />
       </div>
       <div className="min-w-0">
-        <p className="text-xl font-bold tabular-nums text-[var(--ink)] sm:text-2xl">
+        <p className="font-display text-xl font-bold tabular-nums text-[var(--ink)] sm:text-2xl">
           {value}
           {suffix ? (
-            <span className="text-sm font-normal text-[var(--muted-strong)]">{suffix}</span>
+            <span className="text-sm font-semibold text-[var(--muted-strong)]">{suffix}</span>
           ) : null}
         </p>
         <p className="truncate text-xs font-medium text-[var(--muted-strong)] sm:text-sm">{label}</p>

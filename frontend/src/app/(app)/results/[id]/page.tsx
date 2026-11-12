@@ -54,7 +54,7 @@ export default function ResultDetailPage() {
         description="Score summary and answer review for this attempt."
       />
 
-      <Surface className="grid gap-4 p-5 sm:grid-cols-4">
+      <Surface elevated className="grid gap-4 p-5 sm:grid-cols-4">
         <div>
           <p className="text-xs text-[var(--muted-strong)]">Score</p>
           <p className="font-display text-2xl font-bold tabular-nums">
@@ -95,7 +95,7 @@ export default function ResultDetailPage() {
 
       <div className="space-y-4">
         {data.review.map((item, index) => (
-          <Surface key={item.questionId} className="space-y-3 p-4">
+          <Surface elevated key={item.questionId} className="space-y-3 p-4">
             <div className="flex flex-wrap items-start justify-between gap-2">
               <h3 className="font-medium">
                 <span className="text-[var(--muted-strong)]">{index + 1}.</span> {item.title}

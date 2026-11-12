@@ -100,7 +100,7 @@ export default function DocumentDetailPage() {
           <p className="text-[var(--muted-strong)] leading-relaxed break-words">{data.description}</p>
         ) : null}
       </header>
-      <Surface className="space-y-4 p-5 sm:p-6">
+      <Surface elevated className="space-y-4 p-5 sm:p-6">
         <p className="text-sm text-[var(--muted-strong)]">
           File: {data.mediaAsset.originalFilename ?? 'document'} · {data.mediaAsset.mimeType} ·{' '}
           {Math.max(1, Math.round(data.mediaAsset.bytes / 1024))} KB

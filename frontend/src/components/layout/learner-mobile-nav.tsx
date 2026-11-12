@@ -82,12 +82,12 @@ export function LearnerMobileNav() {
             role="dialog"
             aria-modal="true"
             aria-label="Study navigation"
-            className="motion-drawer-in fixed inset-x-0 top-[var(--header-h,3.5rem)] bottom-0 z-[60] overflow-y-auto overscroll-contain border-t border-[var(--line)] bg-[var(--bg-elevated)] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[var(--shadow-lg)]"
+            className="motion-drawer-in fixed inset-x-0 top-[var(--header-h,3.75rem)] bottom-0 z-[60] overflow-y-auto overscroll-contain border-t border-[var(--line)] bg-[var(--bg-elevated)] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[var(--shadow-lg)]"
           >
             <nav className="flex flex-col gap-5" aria-label="Mobile study">
               {learnerNavGroups.map((group) => (
                 <div key={group.title}>
-                  <p className="px-2.5 pb-1.5 text-xs font-semibold tracking-[0.12em] text-[var(--muted-strong)] uppercase">
+                  <p className="px-3 pb-2 text-[0.6875rem] font-semibold tracking-[0.16em] text-[var(--muted)] uppercase">
                     {group.title}
                   </p>
                   <div className="flex flex-col gap-0.5">
@@ -99,14 +99,24 @@ export function LearnerMobileNav() {
                           key={`${item.label}-${item.href}`}
                           href={item.href}
                           aria-current={active ? 'page' : undefined}
+                          data-active={active ? 'true' : 'false'}
                           className={cn(
-                            'flex items-center gap-2.5 rounded-[var(--radius)] px-3 py-2.5 text-base font-medium',
+                            'learner-nav-link flex items-center gap-2.5 rounded-[var(--radius)] px-3 py-2.5 text-base font-medium',
                             active
-                              ? 'bg-[var(--highlight-soft)] text-[var(--highlight)]'
-                              : 'text-[var(--ink-soft)] hover:bg-[var(--bg-muted)] hover:text-[var(--ink)]',
+                              ? 'bg-[var(--highlight-soft)] font-semibold text-[var(--highlight)]'
+                              : 'text-[var(--ink-soft)] hover:bg-[var(--brand-wash)] hover:text-[var(--ink)]',
                           )}
                         >
-                          <Icon className="size-4 shrink-0 opacity-90" aria-hidden />
+                          <span
+                            className={cn(
+                              'flex size-8 shrink-0 items-center justify-center rounded-[10px]',
+                              active
+                                ? 'bg-white/80 text-[var(--highlight)] shadow-[var(--shadow-sm)]'
+                                : 'bg-[var(--bg-muted)] text-current',
+                            )}
+                          >
+                            <Icon className="size-4" aria-hidden />
+                          </span>
                           {item.label}
                         </Link>
                       );
@@ -117,9 +127,11 @@ export function LearnerMobileNav() {
               {me.data?.role === 'ADMIN' ? (
                 <Link
                   href="/admin/dashboard"
-                  className="flex items-center gap-2.5 rounded-[var(--radius)] px-3 py-2.5 text-base font-medium text-[var(--ink-soft)] hover:bg-[var(--bg-muted)]"
+                  className="flex items-center gap-2.5 rounded-[var(--radius)] px-3 py-2.5 text-base font-medium text-[var(--ink-soft)] hover:bg-[var(--brand-wash)]"
                 >
-                  <Shield className="size-4 shrink-0" aria-hidden />
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-[10px] bg-[var(--bg-muted)]">
+                    <Shield className="size-4" aria-hidden />
+                  </span>
                   Admin console
                 </Link>
               ) : null}

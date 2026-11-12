@@ -18,9 +18,16 @@ import { cn } from '@/lib/utils';
 export function HomePageSkeleton() {
   return (
     <SkStatus label="Loading dashboard…" className="flex w-full flex-col gap-6 pb-10 sm:gap-8">
-      <div className="space-y-2 pt-1">
-        <SkTitle className="h-8 w-72 sm:w-96" />
-        <SkLine className="h-4 w-64 max-w-full" />
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-2 pt-1">
+          <SkLine className="h-3 w-24" />
+          <SkTitle className="h-8 w-72 sm:w-96" />
+          <SkLine className="h-4 w-64 max-w-full" />
+        </div>
+        <div className="flex gap-2">
+          <SkPill className="h-11 w-36" />
+          <SkPill className="h-11 w-28" />
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
