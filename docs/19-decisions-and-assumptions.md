@@ -30,7 +30,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | DEC-020 | pnpm workspaces + Turborepo | CONFIRMED |
 | DEC-026 | MCQ Save to Collection folders | CONFIRMED |
 | DEC-027 | Learner Orbit dark charcoal theme | CONFIRMED |
-| DEC-037 | Platform-wide Hind Siliguri bilingual typography | CONFIRMED |
+| DEC-037 | Platform-wide Anek Latin + Anek Bangla bilingual typography | CONFIRMED |
 | DEC-028 | Learner dashboard light/dark toggle | CONFIRMED |
 | DEC-029 | Real-time support messaging (Socket.IO) | CONFIRMED |
 | DEC-030 | Role-exclusive dashboard routing (ADMIN vs learner) | CONFIRMED |
@@ -339,7 +339,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Field | Value |
 |-------|-------|
 | Question | Should the student app use a premium dark charcoal dashboard (Orbit-style reference)? |
-| Decision | **Yes for `(app)` learner routes only.** Theme via `.learner-theme` CSS variable overrides (cool navy-charcoal surfaces, not flat black). Marketing, auth, and admin remain light navy/red. Color roles: brand red primary CTAs; soft blue secondary/selection/focus; soft green correct/progress; soft red incorrect; amber warning; purple insight/review; gold bookmarks. Learning aliases `--learn-*` and chart aliases `--viz-*`. **Typography (2026-11-14):** platform-wide **Hind Siliguri** (Bn+Latin) replaces Inter / Syne / Manrope / Source Serif 4 for consistent bilingual UI and MCQ reading. Collapsible sidebar persisted in `localStorage`. No mock KPIs. |
+| Decision | **Yes for `(app)` learner routes only.** Theme via `.learner-theme` CSS variable overrides (cool navy-charcoal surfaces, not flat black). Marketing, auth, and admin remain light navy/red. Color roles: brand red primary CTAs; soft blue secondary/selection/focus; soft green correct/progress; soft red incorrect; amber warning; purple insight/review; gold bookmarks. Learning aliases `--learn-*` and chart aliases `--viz-*`. **Typography (DEC-037):** platform-wide **Anek Latin + Anek Bangla**. Collapsible sidebar persisted in `localStorage`. No mock KPIs. |
 | Impact | `globals.css` learner tokens, `(app)/layout`, sidebar/header, OptionRow/Badge statuses, dashboard KPI/chart tones, home remapped to Orbit layout |
 | Status | **CONFIRMED** (product request 2026-11-12) |
 
@@ -348,9 +348,9 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Field | Value |
 |-------|-------|
 | Question | How should Bengali and English UI/educational text share a consistent type system? |
-| Decision | **Hind Siliguri** is the single primary family (Latin + Bengali) for marketing, auth, admin, learner, and MCQ/news reading. Loaded once via `next/font` (`fontPrimary` → `--font-primary`); display/sans/reading/learner aliases all resolve to it. Bengali-safe line-heights and min-height controls; prose utilities `.type-prose*` / `.type-mcq-option`. No decorative Bengali display fonts for body UI. |
+| Decision | **Anek Latin + Anek Bangla** (Ek Type multi-script family) is the premium bilingual stack for marketing, auth, admin, learner, and MCQ/news reading. Loaded via `next/font`; CSS `--font-stack` uses Latin first then Bangla fallback so mixed strings share one design voice. Hind Siliguri / Inter+Noto / Baloo rejected (plain, mismatched, or playful). Bengali-safe line-heights, refined scale, min-height controls; prose utilities `.type-prose*` / `.type-mcq-option`. |
 | Impact | `frontend/src/lib/fonts.ts`, `globals.css`, shared UI controls, MCQ/reading surfaces, `docs/21-design-system.md` |
-| Status | **CONFIRMED** (product request 2026-11-14) |
+| Status | **CONFIRMED** (product request 2026-11-14; upgraded pairing same day) |
 
 ### DEC-028 — Learner dashboard light / dark toggle
 

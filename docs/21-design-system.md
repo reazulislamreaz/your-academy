@@ -74,19 +74,21 @@ Apply `data-theme` + Sun/Moon toggle on `(app)` and `(admin)` Orbit shells only 
 
 ## 3. Typography (`lib/fonts.ts` + `next/font`)
 
-**Primary bilingual family: Hind Siliguri** (Latin + Bengali), loaded once via `fontPrimary` → `--font-primary`.  
-All role aliases (`--font-sans`, `--font-display`, `--font-reading`, `--font-learner`) resolve to the same family so mixed Bn/En UI stays consistent.
+**Premium bilingual stack: Anek Latin + Anek Bangla** (Ek Type / Google Fonts multi-script family).  
+Loaded via `fontLatin` + `fontBengali` → `--font-latin` / `--font-bengali`. CSS `--font-stack` = Latin first, Bangla fallback (per-glyph), so mixed Bn/En shares one design voice.
+
+Compared & rejected for this product: Hind Siliguri (serviceable but plain), Inter + Noto Sans Bengali (readable but mismatched DNA), Baloo Da 2 (too playful).
 
 | Role | Family | CSS var / class |
 |------|--------|-----------------|
-| UI / body (all shells) | **Hind Siliguri** | `--font-sans` / `.font-sans` |
-| Brand / headings | **Hind Siliguri** 600–700 | `--font-display` / `.font-display` |
-| Learner shell UI | **Hind Siliguri** | `--font-learner` (same primary) |
-| Educational reading (MCQ, news) | **Hind Siliguri** | `--font-reading` / `.font-reading`, `.type-prose` |
+| UI / body (all shells) | **Anek** stack | `--font-sans` / `.font-sans` |
+| Brand / headings | **Anek** 700–800 | `--font-display` / `.font-display` |
+| Learner shell UI | **Anek** stack | `--font-learner` |
+| Educational reading (MCQ, news) | **Anek** stack | `--font-reading` / `.type-prose` |
 
-**Scale / leading (Bengali-safe):** `--leading-tight` 1.35 · `--leading-snug` 1.45 · `--leading-normal` 1.65 · `--leading-relaxed` 1.75.  
-Utilities: `.type-prose`, `.type-prose-title`, `.type-mcq-option`, `.type-meta`, `.type-label`, `.ya-control` (min-height controls).  
-Weights used: 300–700. `font-display: swap`. Do not introduce decorative Bengali display fonts for body UI.
+**Scale / leading (Bengali-safe):** `--leading-tight` 1.32 · `--leading-snug` 1.42 · `--leading-normal` 1.68 · `--leading-relaxed` 1.8.  
+Base size `1.0625rem`. Utilities: `.type-prose`, `.type-prose-title`, `.type-mcq-option`, `.type-meta`, `.type-label`, `.ya-control`.  
+Variable fonts (`weight: 'variable'`) for efficient loading; UI uses 400–800. `font-display: swap`. No decorative Bengali display fonts for body UI.
 
 ---
 

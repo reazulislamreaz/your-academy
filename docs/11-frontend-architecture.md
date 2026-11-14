@@ -107,7 +107,7 @@ lib/api/auth.ts
 
 - **Source of truth:** [`docs/21-design-system.md`](21-design-system.md) (“exam desk” navy + amber)
 - Tailwind v4 + CSS variables in `frontend/src/app/globals.css`
-- `next/font`: Hind Siliguri (primary bilingual UI + reading; Latin + Bengali)
+- `next/font`: Anek Latin + Anek Bangla (matched bilingual UI + reading stack)
 - Primitives in `frontend/src/components/ui/*` (CVA); layout shells in `components/layout/*`
 - Route-group shells: `(marketing)` / `(auth)` / `(app)` / `(admin)`
 - **Admin vs learner separation:** `(admin)` uses `AdminSidebar` / `AdminMobileNav` / `AdminGate` only — no learner `/home` or study-nav links. `(app)` is the learner shell; admins may deep-link to it (DEC-014) via an explicit “Admin console” escape hatch, not the reverse. Post-login: `ADMIN` → `/admin/dashboard`, `USER` → `/home` (`postLoginPath` + middleware soft role check). API `RolesGuard` remains the authz boundary.

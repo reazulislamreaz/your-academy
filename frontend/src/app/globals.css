@@ -111,31 +111,35 @@
   --duration-slow: 360ms;
 
   /*
-    Bilingual typography (Hind Siliguri via --font-primary).
-    Line-heights leave room for Bengali matras / conjuncts.
+    Premium bilingual typography — Anek Latin + Anek Bangla (DEC-037).
+    Stack: Latin first for English glyphs, Bangla fallback for Bengali.
+    Line-heights leave room for matras / conjuncts.
   */
-  --font-sans: var(--font-primary);
-  --font-display: var(--font-primary);
-  --font-reading: var(--font-primary);
-  --font-learner: var(--font-primary);
+  --font-stack: var(--font-latin), var(--font-bengali), 'Anek Latin', 'Anek Bangla',
+    ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-stack);
+  --font-display: var(--font-stack);
+  --font-reading: var(--font-stack);
+  --font-learner: var(--font-stack);
+  --font-primary: var(--font-stack);
 
   --text-xs: 0.8125rem;
   --text-sm: 0.9375rem;
-  --text-base: 1rem;
-  --text-lg: 1.125rem;
-  --text-xl: 1.25rem;
-  --text-2xl: 1.5rem;
-  --text-3xl: 1.875rem;
-  --text-4xl: 2.25rem;
-  --text-5xl: clamp(2.5rem, 5vw, 3.5rem);
+  --text-base: 1.0625rem;
+  --text-lg: 1.1875rem;
+  --text-xl: 1.3125rem;
+  --text-2xl: 1.625rem;
+  --text-3xl: 2rem;
+  --text-4xl: 2.375rem;
+  --text-5xl: clamp(2.625rem, 5.5vw, 3.75rem);
 
-  --leading-tight: 1.35;
-  --leading-snug: 1.45;
-  --leading-normal: 1.65;
-  --leading-relaxed: 1.75;
+  --leading-tight: 1.32;
+  --leading-snug: 1.42;
+  --leading-normal: 1.68;
+  --leading-relaxed: 1.8;
 
-  --tracking-display: -0.01em;
-  --tracking-ui: 0;
+  --tracking-display: -0.015em;
+  --tracking-ui: 0.005em;
 
   color-scheme: light;
 }
@@ -151,9 +155,9 @@
   --color-highlight: var(--highlight);
   --color-danger: var(--danger);
   --color-success: var(--success);
-  --font-sans: var(--font-primary), 'Hind Siliguri', ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-primary), 'Hind Siliguri', ui-sans-serif, system-ui, sans-serif;
-  --font-reading: var(--font-primary), 'Hind Siliguri', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-stack);
+  --font-display: var(--font-stack);
+  --font-reading: var(--font-stack);
 }
 
 * {
@@ -171,13 +175,13 @@ body {
   overflow-x: clip;
   color: var(--ink);
   background: var(--bg);
-  font-family: var(--font-primary), 'Hind Siliguri', ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-stack);
   font-size: var(--text-base);
   line-height: var(--leading-normal);
   letter-spacing: var(--tracking-ui);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  font-feature-settings: 'kern' 1;
+  font-feature-settings: 'kern' 1, 'liga' 1;
 }
 
 /* Quiet desk paper wash for admin / legacy light canvases (GPU-cheap). */
@@ -277,13 +281,13 @@ body {
 
   background: var(--bg-desk);
   color: var(--ink);
-  font-family: var(--font-primary), 'Hind Siliguri', ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-stack);
 }
 
 .learner-theme .font-display,
 .learner-theme .font-sans,
 .learner-theme .font-reading {
-  font-family: var(--font-primary), 'Hind Siliguri', ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-stack);
 }
 
 .learner-theme :focus-visible {
@@ -725,41 +729,44 @@ input:disabled {
 }
 
 .font-display {
-  font-family: var(--font-primary), 'Hind Siliguri', ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-stack);
   letter-spacing: var(--tracking-display);
   line-height: var(--leading-snug);
+  font-weight: 700;
 }
 
 .font-reading {
-  font-family: var(--font-primary), 'Hind Siliguri', ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-stack);
   line-height: var(--leading-relaxed);
 }
 
 .font-sans {
-  font-family: var(--font-primary), 'Hind Siliguri', ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-stack);
 }
 
 /* Educational long-form — MCQ stems, explanations, news body */
 .type-prose {
-  font-family: var(--font-primary), 'Hind Siliguri', ui-sans-serif, system-ui, sans-serif;
-  font-size: 1.0625rem;
+  font-family: var(--font-stack);
+  font-size: 1.125rem;
   line-height: var(--leading-relaxed);
   font-weight: 400;
+  letter-spacing: 0.01em;
 }
 
 .type-prose-title {
-  font-family: var(--font-primary), 'Hind Siliguri', ui-sans-serif, system-ui, sans-serif;
-  font-size: clamp(1.125rem, 2.4vw, 1.35rem);
+  font-family: var(--font-stack);
+  font-size: clamp(1.1875rem, 2.5vw, 1.4375rem);
   line-height: var(--leading-snug);
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: var(--tracking-display);
 }
 
 .type-mcq-option {
-  font-family: var(--font-primary), 'Hind Siliguri', ui-sans-serif, system-ui, sans-serif;
-  font-size: 1rem;
+  font-family: var(--font-stack);
+  font-size: 1.0625rem;
   line-height: var(--leading-relaxed);
   font-weight: 400;
+  letter-spacing: 0.005em;
 }
 
 .type-meta {
