@@ -50,6 +50,7 @@ export default function EditQuestionPage() {
       explanation: q.explanation ?? '',
       categoryId: q.categoryId,
       subcategoryId: q.subcategoryId ?? '',
+      questionDate: q.questionDate ? q.questionDate.slice(0, 10) : '',
       difficulty: q.difficulty as QuestionFormValues['difficulty'],
       options,
       correct,

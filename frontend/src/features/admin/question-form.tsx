@@ -16,6 +16,8 @@ export type QuestionFormValues = {
   explanation: string;
   categoryId: string;
   subcategoryId: string;
+  /** ISO date YYYY-MM-DD */
+  questionDate: string;
   difficulty: 'EASY' | 'MEDIUM' | 'HARD';
   options: string[];
   correct: string;
@@ -37,6 +39,7 @@ export function emptyQuestionForm(categoryId = ''): QuestionFormValues {
     explanation: '',
     categoryId,
     subcategoryId: '',
+    questionDate: '',
     difficulty: 'MEDIUM',
     options: ['', '', '', ''],
     correct: 'A',
@@ -112,7 +115,7 @@ export function QuestionForm({
             Classification
           </h3>
         </div>
-        <div className="grid gap-3 md:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Field>
             <Label htmlFor="category">Category</Label>
             <Select
@@ -162,6 +165,15 @@ export function QuestionForm({
               <option value="MEDIUM">Medium</option>
               <option value="HARD">Hard</option>
             </Select>
+          </Field>
+          <Field>
+            <Label htmlFor="question-date">Question date</Label>
+            <Input
+              id="question-date"
+              type="date"
+              value={values.questionDate}
+              onChange={(e) => setValues((v) => ({ ...v, questionDate: e.target.value }))}
+            />
           </Field>
         </div>
       </section>
@@ -228,6 +240,7 @@ export function toQuestionPayload(values: QuestionFormValues) {
     categoryId: values.categoryId,
     subcategoryId: values.subcategoryId || undefined,
     difficulty: values.difficulty,
+    questionDate: values.questionDate || undefined,
     options: values.options.map((text, i) => ({
       label: labels[i],
       content: text,

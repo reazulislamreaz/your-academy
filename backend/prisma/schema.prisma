@@ -275,8 +275,10 @@ model Question {
   sourceNote     String?        @map("source_note") @db.VarChar(240)
   /// Excel `প্রশ্ন নং` / serial from the upload sheet.
   sourceSerial   String?        @map("source_serial") @db.VarChar(32)
-  /// Exam year extracted from sheet (e.g. 2026) for public year filters.
+  /// Exam year extracted from sheet / derived from questionDate (public year filters).
   examYear       String?        @map("exam_year") @db.VarChar(16)
+  /// Actual exam / question date set by admin (sort + year filter source of truth).
+  questionDate   DateTime?      @map("question_date") @db.Timestamptz(3)
   /// Section heading that preceded this MCQ in the Excel sheet (first-column preamble rows).
   sectionTitle   String?        @map("section_title") @db.VarChar(500)
   /// SHA-256 of normalized question text for cross-file duplicate detection (DEC-024).
@@ -308,6 +310,8 @@ model Question {
   @@index([subcategoryId, status])
   @@index([difficulty, status])
   @@index([examYear, status])
+  @@index([status, questionDate(sort: Desc), id(sort: Desc)])
+  @@index([questionDate(sort: Desc), status])
   @@index([examTags], type: Gin)
   @@index([contentHash])
   @@index([uploadBatchId])
@@ -726,8 +730,10 @@ model QuestionUploadBatch {
   examCategoryHint   String?              @map("exam_category_hint") @db.VarChar(120)
   /// First-column text above the MCQ header row (shown before questions on the set page).
   sheetPreamble      String?              @map("sheet_preamble")
-  /// Primary exam year for this collection (public year filter).
+  /// Primary exam year for this collection (public year filter; derived from questionDate when set).
   examYear           String?              @map("exam_year") @db.VarChar(16)
+  /// Collection question date (newest / primary); used for public set sorting.
+  questionDate       DateTime?            @map("question_date") @db.Timestamptz(3)
   duplicateFileBatchId String?            @map("duplicate_file_batch_id") @db.Uuid
   errorMessage       String?              @map("error_message")
   uploadedById       String               @map("uploaded_by_id") @db.Uuid
@@ -742,6 +748,7 @@ model QuestionUploadBatch {
   placements QuestionUploadBatchPlacement[]
 
   @@index([status, createdAt(sort: Desc)])
+  @@index([status, questionDate(sort: Desc), id(sort: Desc)])
   @@index([fileSha256])
   @@index([uploadedById, createdAt(sort: Desc)])
   @@index([examYear])
@@ -787,6 +794,8 @@ model QuestionImportRow {
   difficulty         String?                 @db.VarChar(16)
   examCategory       String?                 @map("exam_category") @db.VarChar(120)
   examYear           String?                 @map("exam_year") @db.VarChar(32)
+  /// Per-row question date from Excel / admin correction (ISO date stored as timestamptz).
+  questionDate       DateTime?               @map("question_date") @db.Timestamptz(3)
   source             String?                 @db.VarChar(240)
   sectionTitle       String?                 @map("section_title") @db.VarChar(500)
   errorMessage       String?                 @map("error_message") @db.VarChar(500)

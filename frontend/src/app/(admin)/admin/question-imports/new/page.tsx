@@ -35,6 +35,7 @@ const TEMPLATE_COLUMNS = [
   'প্রশ্ন নং',
   'প্রশ্ন',
   'পরীক্ষার নাম ও সাল',
+  'প্রশ্নের তারিখ',
   'ক',
   'খ',
   'গ',
@@ -52,6 +53,7 @@ export default function NewQuestionImportPage() {
   const [file, setFile] = useState<File | null>(null);
   const [displayName, setDisplayName] = useState('');
   const [categoryName, setCategoryName] = useState('');
+  const [questionDate, setQuestionDate] = useState('');
   const [placementSubcategoryIds, setPlacementSubcategoryIds] = useState<string[]>([]);
   const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -97,6 +99,9 @@ export default function NewQuestionImportPage() {
       if (placementSubcategoryIds.length) {
         form.append('placementSubcategoryIds', JSON.stringify(placementSubcategoryIds));
       }
+      if (questionDate.trim()) {
+        form.append('questionDate', questionDate.trim());
+      }
       setProgress(55);
       const result = await apiUploadForm<UploadBatch>('/admin/question-imports/upload', form);
       setProgress(100);
@@ -114,7 +119,9 @@ export default function NewQuestionImportPage() {
   });
 
   const canContinueStep1 = Boolean(file);
-  const canContinueStep2 = Boolean(displayName.trim() && categoryName.trim());
+  const canContinueStep2 = Boolean(
+    displayName.trim() && categoryName.trim() && questionDate.trim(),
+  );
 
   return (
     <AdminPage className="mx-auto max-w-4xl">
@@ -247,6 +254,21 @@ export default function NewQuestionImportPage() {
                 required
               />
             </Field>
+            <Field>
+              <Label htmlFor="question-date">Question date</Label>
+              <Input
+                id="question-date"
+                type="date"
+                value={questionDate}
+                onChange={(e) => setQuestionDate(e.target.value)}
+                required
+              />
+              <p className="mt-1.5 text-xs text-[var(--muted-strong)]">
+                Default for every row missing <span className="font-medium">প্রশ্নের তারিখ</span> in
+                Excel. Per-row dates in the file override this.
+              </p>
+            </Field>
+
             <Field>
               <Label htmlFor="category">Category</Label>
               <div className="flex gap-2">

@@ -23,6 +23,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | DEC-032 | Admin PUBLIC documents on পত্রিকার গুরুত্বপূর্ণ কলাম | CONFIRMED |
 | DEC-033 | In-app PDF viewer; no download UI; API byte proxy | CONFIRMED |
 | DEC-034 | Excel serial/preamble/sections + multi-subcategory placements + year chips | CONFIRMED |
+| DEC-036 | Question.questionDate for admin upload/create; public sort/filter by date | CONFIRMED |
 | DEC-035 | Exam timer, progress save, detailed results, performance tracking on PracticeSet | CONFIRMED |
 | DEC-004 | Password reset delivered via email | CONFIRMED |
 | DEC-012 | Web auth via HTTP-only cookies + CSRF protection | CONFIRMED |
@@ -79,7 +80,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Field | Value |
 |-------|-------|
 | Question | Product brief 2026-11-14: hide category badge after MCQ stem; show Excel `প্রশ্ন নং`; show first-column sheet preamble before MCQs + mid-sheet section headers; allow selecting up to 8 subcategories on upload so one Excel appears in multiple homepage/bank slots; year chips (2026/2025/2024…) beside category filters. |
-| Decision | **Yes.** Persist `Question.sourceSerial` / `examYear` / `sectionTitle`, batch `sheetPreamble` / `examYear`, and junction `QuestionUploadBatchPlacement` (max 8). Parser keeps preamble above header and mid-sheet first-column section rows. Public cards omit `sourceLabel`; set page shows preamble + section breaks; Preli bank filters by `year` + placement `subcategoryId`. Homepage topic tiles resolve to subcategory placement filters when categories exist. |
+| Decision | **Yes.** Persist `Question.sourceSerial` / `examYear` / `sectionTitle`, batch `sheetPreamble` / `examYear`, and junction `QuestionUploadBatchPlacement` (max 8). Parser keeps preamble above header and mid-sheet first-column section rows. Public cards omit `sourceLabel`; set page shows preamble + section breaks; Preli bank filters by `year` + placement `subcategoryId`. Homepage topic tiles resolve to subcategory placement filters when categories exist. **UI (revised):** Preli bank shows Search + **All Subcategories** dropdown + **All Years** dropdown (same Select pattern; years from published `examYear` only, never hard-coded or chip rows). Main-category filter removed from Preli. |
 | Impact | Prisma migration `20261114120000_question_serial_sections_placements`, excel-parser, question-import upload, PublicModule, Preli/admin/marketing UI |
 | Status | **CONFIRMED** (product request 2026-11-14) |
 
@@ -367,6 +368,15 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Decision | **No cross-dashboard access.** After login, `ADMIN` → `/admin/dashboard` only; `USER` → `/home`. Middleware + `LearnerGate` / `AdminGate` block the other shell even via direct URL or `?next=`. Learner nav never exposes admin console links. Backend `/api/v1/admin/*` (and admin mutations) stay behind `JwtAuthGuard` + `RolesGuard(ADMIN)`. Learner content APIs may still authorize admins where DEC-014 applies (answer privacy bypass); UI dashboards remain exclusive. |
 | Impact | `middleware.ts`, `role-routing.ts`, `postLoginPath`, `(app)`/`(admin)` gates, nav/user-menu cleanup |
 | Status | **CONFIRMED** (product request 2026-11-12) |
+
+### DEC-036 — Question date (`questionDate`)
+
+| Field | Value |
+|-------|-------|
+| Question | Should admins set a real calendar date per question (manual + bulk), and should public Preli sorting/year filters use that date instead of upload `createdAt`? |
+| Decision | **Yes.** Add optional `Question.questionDate` / `QuestionImportRow.questionDate` / batch `questionDate` (timestamptz). Excel column `প্রশ্নের তারিখ` (+ English aliases); bulk configure step requires a default date applied when rows omit it. `examYear` remains denormalized (`YYYY` from `questionDate`) for filters. Public question-set list sorts by `questionDate DESC` (nulls last), then `createdAt`; year filter matches `questionDate` year and legacy `examYear`. |
+| Impact | Prisma migration `20261114160000_question_date`, excel-parser, question-import, questions DTOs/form, PublicModule years/list |
+| Status | **CONFIRMED** (product request 2026-11-14) |
 
 ### Deferred / NEEDS APPROVAL (explicitly out of Phase 1)
 

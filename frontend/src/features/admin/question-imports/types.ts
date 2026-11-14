@@ -16,6 +16,7 @@ export type UploadBatch = {
   topicHint?: string | null;
   examCategoryHint?: string | null;
   examYear?: string | null;
+  questionDate?: string | null;
   sheetPreamble?: string | null;
   errorMessage?: string | null;
   createdAt: string;
@@ -47,6 +48,8 @@ export type ImportRow = {
   subjectName?: string | null;
   topicName?: string | null;
   examCategory?: string | null;
+  examYear?: string | null;
+  questionDate?: string | null;
   errorMessage?: string | null;
 };
 

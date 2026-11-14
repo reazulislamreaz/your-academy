@@ -1,4 +1,4 @@
-import { IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsOptional, IsString, MaxLength, ValidateIf } from 'class-validator';
 
 export class UpdateBatchDto {
   @IsOptional()
@@ -24,4 +24,11 @@ export class UpdateBatchDto {
   @IsString()
   @MaxLength(120)
   examCategoryHint?: string | null;
+
+  @IsOptional()
+  @ValidateIf((_, v) => v !== null)
+  @IsString()
+  @MaxLength(32)
+  /** Collection default / primary question date (YYYY-MM-DD). */
+  questionDate?: string | null;
 }

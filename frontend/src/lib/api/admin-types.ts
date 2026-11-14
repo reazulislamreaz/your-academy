@@ -18,6 +18,8 @@ export type AdminQuestionDetail = {
   difficulty: string;
   categoryId: string;
   subcategoryId?: string | null;
+  questionDate?: string | null;
+  examYear?: string | null;
   options: Array<{
     id: string;
     label: string;

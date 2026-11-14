@@ -51,6 +51,12 @@ export class CreateQuestionDto {
   @IsEnum(Difficulty)
   difficulty?: Difficulty;
 
+  @IsOptional()
+  @IsString()
+  @MaxLength(32)
+  /** ISO date YYYY-MM-DD (question / exam date). */
+  questionDate?: string;
+
   @IsArray()
   @ArrayMinSize(2)
   @ValidateNested({ each: true })

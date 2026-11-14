@@ -1,12 +1,13 @@
 import { Readable } from 'stream';
 import ExcelJS from 'exceljs';
+import { parseQuestionDate, toIsoDateString } from './question-date.util';
 
 /**
  * Canonical Google Sheets MCQ template (Bangla).
  * Reference: docs.google.com/spreadsheets/d/1DSgHK73WHMZhRL2yz8qhH3hTdfopT7RK
  *
  * Columns:
- *   প্রশ্ন নং | প্রশ্ন | পরীক্ষার নাম ও সাল | ক | খ | গ | ঘ | উত্তর
+ *   প্রশ্ন নং | প্রশ্ন | পরীক্ষার নাম ও সাল | প্রশ্নের তারিখ | ক | খ | গ | ঘ | উত্তর
  *
  * Subject / Topic / Difficulty are supplied via upload collection metadata
  * (or optional English alias columns if present).
@@ -15,6 +16,7 @@ export const TEMPLATE_HEADERS = [
   'প্রশ্ন নং',
   'প্রশ্ন',
   'পরীক্ষার নাম ও সাল',
+  'প্রশ্নের তারিখ',
   'ক',
   'খ',
   'গ',
@@ -37,6 +39,8 @@ export type ParsedImportRow = {
   difficulty: string;
   examCategory: string;
   examYear: string;
+  /** ISO date YYYY-MM-DD when present / parseable. */
+  questionDate: string;
   source: string;
   /** Section heading from a first-column-only row that preceded this MCQ. */
   sectionTitle: string;
@@ -52,6 +56,9 @@ type FieldKey = keyof Omit<ParsedImportRow, 'rowNumber'>;
 
 function cellText(value: ExcelJS.CellValue | undefined): string {
   if (value == null) return '';
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return toIsoDateString(value) ?? '';
+  }
   if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
     return String(value).trim();
   }
@@ -88,6 +95,8 @@ const HEADER_ALIASES: Record<string, FieldKey> = {
   'পরীক্ষার নাম ও সাল': 'examCategory',
   'পরীক্ষার নাম': 'examCategory',
   'পরীক্ষা': 'examCategory',
+  'প্রশ্নের তারিখ': 'questionDate',
+  তারিখ: 'questionDate',
   ক: 'optionA',
   খ: 'optionB',
   গ: 'optionC',
@@ -133,6 +142,9 @@ const HEADER_ALIASES: Record<string, FieldKey> = {
   'exam name and year': 'examCategory',
   'exam year': 'examYear',
   year: 'examYear',
+  'question date': 'questionDate',
+  'exam date': 'questionDate',
+  date: 'questionDate',
   source: 'source',
 };
 
@@ -221,6 +233,7 @@ function emptyParsed(rowNumber: number): ParsedImportRow {
     difficulty: '',
     examCategory: '',
     examYear: '',
+    questionDate: '',
     source: '',
     sectionTitle: '',
   };
@@ -335,6 +348,21 @@ export async function parseQuestionWorkbook(
       parsed.examYear = split.examYear;
     }
 
+    // Normalize question date → ISO YYYY-MM-DD; derive examYear when missing.
+    if (parsed.questionDate) {
+      const parsedDate = parseQuestionDate(parsed.questionDate);
+      if (parsedDate) {
+        parsed.questionDate = parsedDate.isoDate;
+        if (!parsed.examYear) parsed.examYear = parsedDate.examYear;
+      }
+    } else if (parsed.examYear) {
+      const fromYear = parseQuestionDate(parsed.examYear);
+      if (fromYear) {
+        parsed.questionDate = fromYear.isoDate;
+        parsed.examYear = fromYear.examYear;
+      }
+    }
+
     const isEmptyMcq =
       !parsed.question &&
       !parsed.optionA &&
@@ -369,6 +397,7 @@ export async function buildTemplateBuffer(): Promise<Buffer> {
     '১',
     '‘পরাগলী মহাভারত’ খ্যাত গ্রন্থের অনুবাদকের নাম কী?',
     '৩১তম বিসিএস',
+    '2012-04-15',
     'সঞ্জয়',
     'কবীন্দ্র পরমেশ্বর',
     'শ্রীকর নন্দী',
@@ -379,6 +408,7 @@ export async function buildTemplateBuffer(): Promise<Buffer> {
     '২',
     'What idea does the passage present about the value of time?',
     'বিশ্ববিদ্যালয় মঞ্জুরি কমিশন: ২০২৬',
+    '2026-01-10',
     'Time is valuable only when used for work',
     'Time should be measured strictly by hours and days',
     'The value of time depends on how rich and meaningful moments are',
@@ -389,6 +419,7 @@ export async function buildTemplateBuffer(): Promise<Buffer> {
     '৩',
     'সন্ধি কাকে বলে?',
     'BCS Preliminary: 2024',
+    '18.03.2024',
     'পরপর দুই ধ্বনির মিলন',
     'শুধু সমাস',
     'শুধু প্রত্যয়',
@@ -396,7 +427,7 @@ export async function buildTemplateBuffer(): Promise<Buffer> {
     'ক',
   ]);
 
-  const widths = [10, 48, 36, 28, 28, 28, 28, 10];
+  const widths = [10, 48, 36, 14, 28, 28, 28, 28, 10];
   sheet.columns.forEach((col, i) => {
     col.width = widths[i] ?? 18;
   });

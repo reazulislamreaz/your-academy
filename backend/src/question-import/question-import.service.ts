@@ -28,6 +28,11 @@ import {
   parseQuestionWorkbook,
   TEMPLATE_HEADERS,
 } from './excel-parser';
+import {
+  examYearFromDate,
+  parseQuestionDate,
+  toIsoDateString,
+} from './question-date.util';
 import { hashFileBuffer, hashQuestionContent, slugifyBatchCode } from './question-normalize';
 
 const MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
@@ -168,9 +173,31 @@ export class QuestionImportService {
       subjectHint?: string | null;
       topicHint?: string | null;
       examCategoryHint?: string | null;
+      questionDate?: string | null;
     },
   ) {
     await this.getBatch(id);
+    let questionDate: Date | null | undefined;
+    let examYear: string | null | undefined;
+    if (dto.questionDate !== undefined) {
+      if (dto.questionDate == null || dto.questionDate === '') {
+        questionDate = null;
+        examYear = null;
+      } else {
+        const parsed = parseQuestionDate(dto.questionDate);
+        if (!parsed) {
+          throw new BadRequestException(
+            createErrorResponse(
+              'INVALID_QUESTION_DATE',
+              'questionDate must be a valid date (YYYY-MM-DD)',
+              newRequestId(),
+            ),
+          );
+        }
+        questionDate = parsed.date;
+        examYear = parsed.examYear;
+      }
+    }
     return this.prisma.questionUploadBatch.update({
       where: { id },
       data: {
@@ -187,10 +214,67 @@ export class QuestionImportService {
         ...(dto.examCategoryHint !== undefined
           ? { examCategoryHint: dto.examCategoryHint?.trim().slice(0, 120) || null }
           : {}),
+        ...(questionDate !== undefined ? { questionDate, examYear: examYear ?? null } : {}),
       },
       include: {
         uploadedBy: { select: { id: true, name: true } },
       },
+    });
+  }
+
+  /** Correct a single import row before confirm (e.g. question date). */
+  async updateImportRow(
+    batchId: string,
+    rowId: string,
+    dto: { questionDate?: string | null },
+  ) {
+    const batch = await this.getBatch(batchId);
+    if (
+      batch.status !== QuestionUploadStatus.VALIDATED &&
+      batch.status !== QuestionUploadStatus.FAILED
+    ) {
+      throw new BadRequestException(
+        createErrorResponse(
+          'BATCH_NOT_EDITABLE',
+          'Only validated batches can have rows edited',
+          newRequestId(),
+        ),
+      );
+    }
+    const row = await this.prisma.questionImportRow.findFirst({
+      where: { id: rowId, batchId },
+    });
+    if (!row) {
+      throw new NotFoundException(
+        createErrorResponse('IMPORT_ROW_NOT_FOUND', 'Import row not found', newRequestId()),
+      );
+    }
+
+    let questionDate: Date | null = row.questionDate;
+    let examYear: string | null = row.examYear;
+    if (dto.questionDate !== undefined) {
+      if (dto.questionDate == null || dto.questionDate === '') {
+        questionDate = null;
+        examYear = null;
+      } else {
+        const parsed = parseQuestionDate(dto.questionDate);
+        if (!parsed) {
+          throw new BadRequestException(
+            createErrorResponse(
+              'INVALID_QUESTION_DATE',
+              'questionDate must be a valid date (YYYY-MM-DD)',
+              newRequestId(),
+            ),
+          );
+        }
+        questionDate = parsed.date;
+        examYear = parsed.examYear;
+      }
+    }
+
+    return this.prisma.questionImportRow.update({
+      where: { id: rowId },
+      data: { questionDate, examYear },
     });
   }
 
@@ -258,6 +342,8 @@ export class QuestionImportService {
       examCategoryHint?: string;
       /** Extra subcategory IDs so this batch appears in multiple bank/homepage slots (max 8). */
       placementSubcategoryIds?: string[];
+      /** Default question date applied when Excel rows omit প্রশ্নের তারিখ. */
+      questionDate?: string;
     },
   ) {
     if (!file?.buffer?.length) {
@@ -444,17 +530,22 @@ export class QuestionImportService {
     const resolvedTopicHint =
       placementRows[0]?.name?.trim() || collectionTopic || '';
 
+    const defaultQuestionDate = parseQuestionDate(input.questionDate ?? null);
+
     const yearCounts = new Map<string, number>();
     for (const row of parsed) {
-      const y = row.examYear?.trim();
+      const y = row.examYear?.trim() || parseQuestionDate(row.questionDate)?.examYear;
       if (!y) continue;
       yearCounts.set(y, (yearCounts.get(y) ?? 0) + 1);
     }
     const batchExamYear =
+      defaultQuestionDate?.examYear ??
       [...yearCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ??
       this.extractYearHint(displayName) ??
       this.extractYearHint(sheetPreamble ?? '') ??
       null;
+
+    let batchQuestionDate: Date | null = defaultQuestionDate?.date ?? null;
 
     const rowCreates: Prisma.QuestionImportRowCreateManyInput[] = [];
     let validCount = 0;
@@ -508,6 +599,40 @@ export class QuestionImportService {
         // Subcategory may be created on import if category exists — allow VALID without topic id.
       }
 
+      let rowQuestionDate: Date | null = null;
+      let rowExamYear: string | null = row.examYear?.trim() || null;
+      if (row.questionDate?.trim()) {
+        const parsedDate = parseQuestionDate(row.questionDate);
+        if (!parsedDate) {
+          errors.push(
+            `Column "প্রশ্নের তারিখ": invalid date "${row.questionDate}" (use YYYY-MM-DD)`,
+          );
+        } else {
+          rowQuestionDate = parsedDate.date;
+          rowExamYear = parsedDate.examYear;
+        }
+      } else if (rowExamYear) {
+        const fromYear = parseQuestionDate(rowExamYear);
+        if (fromYear) {
+          rowQuestionDate = fromYear.date;
+          rowExamYear = fromYear.examYear;
+        }
+      } else if (defaultQuestionDate) {
+        rowQuestionDate = defaultQuestionDate.date;
+        rowExamYear = defaultQuestionDate.examYear;
+      } else {
+        errors.push(
+          'Question date is required — add "প্রশ্নের তারিখ" in Excel or set a default date in the upload form',
+        );
+      }
+
+      if (
+        rowQuestionDate &&
+        (!batchQuestionDate || rowQuestionDate.getTime() > batchQuestionDate.getTime())
+      ) {
+        batchQuestionDate = rowQuestionDate;
+      }
+
       const serial = row.serial?.trim().slice(0, 32) || null;
       const sectionTitle = row.sectionTitle?.trim().slice(0, 500) || null;
 
@@ -531,7 +656,8 @@ export class QuestionImportService {
           topicName: topicName || null,
           difficulty: row.difficulty || null,
           examCategory: examCategory || null,
-          examYear: row.examYear || null,
+          examYear: rowExamYear,
+          questionDate: rowQuestionDate,
           source: row.source || null,
           sectionTitle,
           errorMessage: `Row ${row.rowNumber}: ${errors.join('; ')}`.slice(0, 500),
@@ -560,7 +686,8 @@ export class QuestionImportService {
           topicName,
           difficulty: difficulty!,
           examCategory: examCategory || null,
-          examYear: row.examYear || null,
+          examYear: rowExamYear,
+          questionDate: rowQuestionDate,
           source: row.source || null,
           sectionTitle,
           errorMessage: `Row ${row.rowNumber}: Duplicate of row ${priorInFile} in this file`,
@@ -589,7 +716,8 @@ export class QuestionImportService {
           topicName,
           difficulty: difficulty!,
           examCategory: examCategory || null,
-          examYear: row.examYear || null,
+          examYear: rowExamYear,
+          questionDate: rowQuestionDate,
           source: row.source || null,
           sectionTitle,
           existingQuestionId: existing.id,
@@ -618,7 +746,8 @@ export class QuestionImportService {
         topicName,
         difficulty: difficulty!,
         examCategory: examCategory || null,
-        examYear: row.examYear || null,
+        examYear: rowExamYear,
+        questionDate: rowQuestionDate,
         source: row.source || null,
         sectionTitle,
       });
@@ -645,7 +774,8 @@ export class QuestionImportService {
           topicHint: resolvedTopicHint || null,
           examCategoryHint: collectionExam || null,
           sheetPreamble,
-          examYear: batchExamYear,
+          examYear: batchExamYear ?? examYearFromDate(batchQuestionDate),
+          questionDate: batchQuestionDate,
           duplicateFileBatchId: existingFile?.id ?? null,
           uploadedById: user.userId,
           ...(placementRows.length
@@ -710,7 +840,7 @@ export class QuestionImportService {
   private async runImport(user: RequestUser, batchId: string, skipDuplicates: boolean) {
     const batch = await this.prisma.questionUploadBatch.findUniqueOrThrow({
       where: { id: batchId },
-      select: { id: true, examYear: true, examCategoryHint: true },
+      select: { id: true, examYear: true, examCategoryHint: true, questionDate: true },
     });
     const categoryIndex = await this.buildCategoryIndex();
     const rows = await this.prisma.questionImportRow.findMany({
@@ -773,10 +903,22 @@ export class QuestionImportService {
 
             const difficulty = (parseDifficulty(row.difficulty) ?? 'MEDIUM') as Difficulty;
             const examTag = mapExamCategoryToTag(row.examCategory);
+            const questionDate =
+              row.questionDate ??
+              parseQuestionDate(row.examYear)?.date ??
+              batch.questionDate ??
+              null;
+            const examYear =
+              examYearFromDate(questionDate) ??
+              row.examYear?.trim().slice(0, 16) ??
+              batch.examYear ??
+              null;
+
             const sourceParts = [
               row.examCategory?.trim(),
               row.source?.trim(),
-              row.examYear?.trim() ? `Year ${row.examYear.trim()}` : null,
+              examYear ? `Year ${examYear}` : null,
+              questionDate ? toIsoDateString(questionDate) : null,
               `Batch ${batchId.slice(0, 8)}`,
             ].filter(Boolean);
 
@@ -801,7 +943,8 @@ export class QuestionImportService {
                 examTags: examTag ? [examTag] : [],
                 sourceNote: sourceParts.join(' · ').slice(0, 240),
                 sourceSerial: row.serial?.trim().slice(0, 32) || null,
-                examYear: row.examYear?.trim().slice(0, 16) || batch.examYear || null,
+                examYear,
+                questionDate,
                 sectionTitle: row.sectionTitle?.trim().slice(0, 500) || null,
                 contentHash: row.contentHash,
                 uploadBatchId: batchId,
@@ -857,7 +1000,13 @@ export class QuestionImportService {
       where: { batchId, status: QuestionImportRowStatus.DUPLICATE },
     });
 
-    return this.prisma.questionUploadBatch.update({
+    const newest = await this.prisma.question.findFirst({
+      where: { uploadBatchId: batchId, deletedAt: null, questionDate: { not: null } },
+      orderBy: [{ questionDate: 'desc' }, { id: 'desc' }],
+      select: { questionDate: true, examYear: true },
+    });
+
+    await this.prisma.questionUploadBatch.update({
       where: { id: batchId },
       data: {
         status: QuestionUploadStatus.COMPLETED,
@@ -867,11 +1016,16 @@ export class QuestionImportService {
         invalidCount,
         duplicateCount,
         importedAt: new Date(),
-      },
-      include: {
-        uploadedBy: { select: { id: true, name: true } },
+        ...(newest?.questionDate
+          ? {
+              questionDate: newest.questionDate,
+              examYear: newest.examYear ?? examYearFromDate(newest.questionDate),
+            }
+          : {}),
       },
     });
+
+    return this.getBatch(batchId);
   }
 
   async archiveBatch(id: string) {

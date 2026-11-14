@@ -67,7 +67,7 @@ export class PublicController {
     res.send(file.buffer);
   }
 
-  /** Distinct years for Preli bank year chips. */
+  /** Distinct published exam years for Preli bank year chips (dynamic; no hard-coded list). */
   @Get('question-sets/years')
   async questionSetYears() {
     return createSuccessResponse(await this.publicService.listQuestionSetYears(), newRequestId());

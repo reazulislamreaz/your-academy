@@ -44,6 +44,13 @@ export class UpdateQuestionDto {
   difficulty?: Difficulty;
 
   @IsOptional()
+  @ValidateIf((_, v) => v !== null && v !== undefined)
+  @IsString()
+  @MaxLength(32)
+  /** ISO date YYYY-MM-DD, or null to clear. */
+  questionDate?: string | null;
+
+  @IsOptional()
   @IsArray()
   @ArrayMinSize(2)
   @ValidateNested({ each: true })

@@ -11,6 +11,15 @@ const BN_LABEL: Record<string, string> = {
   D: 'ঘ',
 };
 
+/** Normalize admin-entered exam year / question-date year to a 4-digit calendar year. */
+function normalizeExamYear(raw: string | null | undefined): string | null {
+  if (!raw?.trim()) return null;
+  const t = raw.trim();
+  if (/^\d{4}$/.test(t)) return t;
+  const match = t.match(/(?:^|[^\d])(\d{4})(?:[^\d]|$)/) ?? t.match(/^(\d{4})/);
+  return match?.[1] ?? null;
+}
+
 export type PublicQuestionCard = {
   id: string;
   title: string;
@@ -83,9 +92,23 @@ export class PublicService {
     return { questions, categories, news, documents, questionSets };
   }
 
-  /** Distinct exam years available on published collections (for year filter chips). */
+  /**
+   * Distinct years for Preli year filter.
+   * Prefer `questionDate` (admin question date); fall back to denormalized `examYear`.
+   * Never hard-coded.
+   */
   async listQuestionSetYears(): Promise<string[]> {
-    const [batchYears, questionYears] = await Promise.all([
+    const [datedQuestions, batchYears, questionYears] = await Promise.all([
+      this.prisma.question.findMany({
+        where: {
+          status: QuestionStatus.PUBLISHED,
+          deletedAt: null,
+          uploadBatchId: { not: null },
+          questionDate: { not: null },
+        },
+        distinct: ['questionDate'],
+        select: { questionDate: true },
+      }),
       this.prisma.questionUploadBatch.findMany({
         where: {
           status: { in: [QuestionUploadStatus.COMPLETED, QuestionUploadStatus.ARCHIVED] },
@@ -107,8 +130,12 @@ export class PublicService {
       }),
     ]);
     const years = new Set<string>();
+    for (const row of datedQuestions) {
+      if (row.questionDate) years.add(String(row.questionDate.getUTCFullYear()));
+    }
     for (const row of [...batchYears, ...questionYears]) {
-      if (row.examYear?.trim()) years.add(row.examYear.trim());
+      const normalized = normalizeExamYear(row.examYear);
+      if (normalized) years.add(normalized);
     }
     return [...years].sort((a, b) => Number(b) - Number(a) || b.localeCompare(a));
   }
@@ -133,11 +160,27 @@ export class PublicService {
       deletedAt: null,
     };
 
+    const yearStart = year ? new Date(Date.UTC(Number(year), 0, 1)) : null;
+    const yearEnd = year ? new Date(Date.UTC(Number(year) + 1, 0, 1)) : null;
     const yearMatch: Prisma.QuestionUploadBatchWhereInput | undefined = year
       ? {
           OR: [
+            {
+              questionDate: { gte: yearStart!, lt: yearEnd! },
+              questions: { some: liveQuestion },
+            },
             { examYear: year, questions: { some: liveQuestion } },
+            { examYear: { startsWith: year }, questions: { some: liveQuestion } },
+            {
+              questions: {
+                some: {
+                  ...liveQuestion,
+                  questionDate: { gte: yearStart!, lt: yearEnd! },
+                },
+              },
+            },
             { questions: { some: { ...liveQuestion, examYear: year } } },
+            { questions: { some: { ...liveQuestion, examYear: { startsWith: year } } } },
           ],
         }
       : { questions: { some: liveQuestion } };
@@ -184,7 +227,11 @@ export class PublicService {
       where,
       take: limit + 1,
       ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {}),
-      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      orderBy: [
+        { questionDate: { sort: 'desc', nulls: 'last' } },
+        { createdAt: 'desc' },
+        { id: 'desc' },
+      ],
       select: {
         id: true,
         batchCode: true,
@@ -194,6 +241,7 @@ export class PublicService {
         topicHint: true,
         examCategoryHint: true,
         examYear: true,
+        questionDate: true,
         sheetPreamble: true,
         createdAt: true,
         importedAt: true,
@@ -209,7 +257,12 @@ export class PublicService {
         _count: {
           select: {
             questions: {
-              where: year ? { ...liveQuestion, examYear: year } : liveQuestion,
+              where: year
+                ? {
+                    ...liveQuestion,
+                    OR: [{ examYear: year }, { examYear: { startsWith: year } }],
+                  }
+                : liveQuestion,
             },
           },
         },

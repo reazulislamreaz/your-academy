@@ -12,6 +12,7 @@ import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../database/prisma.service';
 import { LearningActivityService } from '../learning-activity/learning-activity.service';
 import { AccessControlService } from '../subscriptions/access-control.service';
+import { parseQuestionDate } from '../question-import/question-date.util';
 import type { CreateQuestionDto } from './dto/create-question.dto';
 import type { UpdateQuestionDto } from './dto/update-question.dto';
 
@@ -24,9 +25,28 @@ export class QuestionsService {
     private readonly learningActivity: LearningActivityService,
   ) {}
 
+  private resolveQuestionDate(raw: string | null | undefined): {
+    questionDate: Date | null;
+    examYear: string | null;
+  } {
+    if (raw == null || raw === '') return { questionDate: null, examYear: null };
+    const parsed = parseQuestionDate(raw);
+    if (!parsed) {
+      throw new UnprocessableEntityException(
+        createErrorResponse(
+          'INVALID_QUESTION_DATE',
+          'questionDate must be a valid date (YYYY-MM-DD)',
+          newRequestId(),
+        ),
+      );
+    }
+    return { questionDate: parsed.date, examYear: parsed.examYear };
+  }
+
   async createDraft(user: RequestUser, dto: CreateQuestionDto) {
     await this.assertCategoryPair(dto.categoryId, dto.subcategoryId);
     this.assertOptionShape(dto.options, false);
+    const { questionDate, examYear } = this.resolveQuestionDate(dto.questionDate);
 
     return this.prisma.question.create({
       data: {
@@ -37,6 +57,8 @@ export class QuestionsService {
         subcategoryId: dto.subcategoryId,
         difficulty: dto.difficulty ?? Difficulty.MEDIUM,
         status: QuestionStatus.DRAFT,
+        questionDate,
+        examYear,
         createdById: user.userId,
         options: {
           create: dto.options.map((o, index) => ({
@@ -81,6 +103,9 @@ export class QuestionsService {
         });
       }
 
+      const datePatch =
+        dto.questionDate !== undefined ? this.resolveQuestionDate(dto.questionDate) : null;
+
       return tx.question.update({
         where: { id },
         data: {
@@ -90,6 +115,9 @@ export class QuestionsService {
           ...(dto.categoryId ? { categoryId: dto.categoryId } : {}),
           ...(dto.subcategoryId !== undefined ? { subcategoryId: dto.subcategoryId } : {}),
           ...(dto.difficulty ? { difficulty: dto.difficulty } : {}),
+          ...(datePatch
+            ? { questionDate: datePatch.questionDate, examYear: datePatch.examYear }
+            : {}),
         },
         include: { options: { orderBy: { sortOrder: 'asc' } } },
       });

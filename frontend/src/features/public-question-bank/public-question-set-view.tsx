@@ -15,6 +15,7 @@ import {
   listPublicSetQuestions,
 } from '@/lib/api/public-questions';
 import { AnswerVisibilityToggle } from './answer-visibility-toggle';
+import { ExamInfoCard } from './exam-info-card';
 import { useAnswerVisibility } from './use-answer-visibility';
 import { cn } from '@/lib/utils';
 
@@ -46,7 +47,6 @@ export function PublicQuestionSetView({ setId, className }: Props) {
   });
 
   const items = list.data?.pages.flatMap((p) => p.data) ?? [];
-  const total = list.data?.pages[0]?.pagination?.total ?? setQry.data?.questionCount ?? null;
   const individualMode = visibility.mode === 'hide-all';
 
   return (
@@ -65,7 +65,6 @@ export function PublicQuestionSetView({ setId, className }: Props) {
         <div className="space-y-3 rounded-[1rem] border border-[var(--line)] bg-[var(--bg-elevated)] px-5 py-5 shadow-[var(--shadow-sm)]">
           <Skeleton className="h-3 w-24" />
           <Skeleton className="h-8 w-2/3 max-w-lg" />
-          <Skeleton className="h-3.5 w-48" />
         </div>
       ) : null}
       {setQry.isError ? (
@@ -79,16 +78,8 @@ export function PublicQuestionSetView({ setId, className }: Props) {
           <h1 className="font-display text-[clamp(1.5rem,3vw,2rem)] font-bold tracking-tight text-[var(--ink)]">
             {setQry.data.title}
           </h1>
-          <p className="text-sm text-[var(--muted-strong)]">
-            {total != null ? `${total.toLocaleString()} questions` : null}
-            {setQry.data.examYear ? ` · ${setQry.data.examYear}` : ''}
-            {setQry.data.subject ? ` · ${setQry.data.subject}` : ''}
-            {setQry.data.topic ? ` · ${setQry.data.topic}` : ''}
-          </p>
           {setQry.data.sheetPreamble ? (
-            <div className="rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--info-soft)] px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap text-[var(--ink-soft)]">
-              {setQry.data.sheetPreamble}
-            </div>
+            <ExamInfoCard preamble={setQry.data.sheetPreamble} />
           ) : null}
         </header>
       ) : null}

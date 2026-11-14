@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { Search, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
@@ -42,7 +43,8 @@ function useDebouncedValue<T>(value: T, delayMs = 300): T {
   return debounced;
 }
 
-const FALLBACK_YEARS = ['2026', '2025', '2024', '2023', '2022'];
+const filterControlClass =
+  'h-12 min-w-0 rounded-full border-[var(--line)] bg-[var(--bg-muted)] px-4 shadow-none';
 
 /** Preli landing: Exam Sets only (name + upload date). Questions live on the set page. */
 export function PublicQuestionBank({
@@ -52,6 +54,8 @@ export function PublicQuestionBank({
   initialYear = '',
   className,
 }: Props) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [qInput, setQInput] = useState(initialQ);
   const [categoryId, setCategoryId] = useState(initialCategoryId);
   const [subcategoryId, setSubcategoryId] = useState(initialSubcategoryId);
@@ -70,17 +74,74 @@ export function PublicQuestionBank({
     staleTime: 60_000,
   });
 
+  /** Main categories only (API returns roots with nested children). */
+  const rootCategories = useMemo(() => categories.data ?? [], [categories.data]);
+
+  const selectedCategory = useMemo(
+    () => rootCategories.find((c) => c.id === categoryId) ?? null,
+    [rootCategories, categoryId],
+  );
+
+  /** Subcategories of the selected main category only. */
+  const subcategoryOptions = useMemo(() => {
+    const children = selectedCategory?.children ?? [];
+    return [...children].sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }),
+    );
+  }, [selectedCategory]);
+
   const yearOptions = useMemo(() => {
-    const fromApi = yearsQ.data ?? [];
-    return [...new Set([...fromApi, ...FALLBACK_YEARS])].sort(
+    const fromApi = (yearsQ.data ?? []).map((y) => y.trim()).filter(Boolean);
+    return [...new Set(fromApi)].sort(
       (a, b) => Number(b) - Number(a) || b.localeCompare(a),
     );
   }, [yearsQ.data]);
 
-  const selectedCategory = useMemo(
-    () => (categories.data ?? []).find((c) => c.id === categoryId),
-    [categories.data, categoryId],
-  );
+  // If category changes / loads, drop subcategory that is not a child of the selection.
+  useEffect(() => {
+    if (categories.isLoading || categories.isError) return;
+    if (!subcategoryId) return;
+    if (!selectedCategory) {
+      // Subcategory without a valid parent category — try to recover parent from tree.
+      const parent = rootCategories.find((c) =>
+        c.children.some((child) => child.id === subcategoryId),
+      );
+      if (parent) {
+        setCategoryId(parent.id);
+        return;
+      }
+      setSubcategoryId('');
+      return;
+    }
+    if (!selectedCategory.children.some((c) => c.id === subcategoryId)) {
+      setSubcategoryId('');
+    }
+  }, [
+    categories.isLoading,
+    categories.isError,
+    subcategoryId,
+    selectedCategory,
+    rootCategories,
+  ]);
+
+  // Drop invalid year once catalog loads.
+  useEffect(() => {
+    if (yearsQ.isLoading || yearsQ.isError) return;
+    if (year && yearOptions.length > 0 && !yearOptions.includes(year)) {
+      setYear('');
+    }
+  }, [yearsQ.isLoading, yearsQ.isError, year, yearOptions]);
+
+  // Sync shareable URL with active filters.
+  useEffect(() => {
+    const sp = new URLSearchParams();
+    if (q) sp.set('q', q);
+    if (categoryId) sp.set('categoryId', categoryId);
+    if (subcategoryId) sp.set('subcategoryId', subcategoryId);
+    if (year) sp.set('year', year);
+    const next = sp.toString() ? `${pathname}?${sp}` : pathname;
+    router.replace(next, { scroll: false });
+  }, [q, categoryId, subcategoryId, year, pathname, router]);
 
   const list = useInfiniteQuery({
     queryKey: ['public-question-sets', q, categoryId, subcategoryId, year],
@@ -101,127 +162,152 @@ export function PublicQuestionBank({
   const total = list.data?.pages[0]?.pagination?.total;
   const hasFilters = Boolean(q || categoryId || subcategoryId || year);
 
+  const clearFilters = () => {
+    setQInput('');
+    setCategoryId('');
+    setSubcategoryId('');
+    setYear('');
+  };
+
+  const onCategoryChange = (nextCategoryId: string) => {
+    setCategoryId(nextCategoryId);
+    setSubcategoryId('');
+  };
+
   return (
     <div className={cn('space-y-5', className)}>
       <div className="rounded-[1.25rem] border border-[var(--line)] bg-white p-3 shadow-[var(--shadow-sm)] sm:p-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-          <div className="relative min-w-0 flex-1">
-            <Search
-              className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-[var(--muted)]"
-              aria-hidden
-            />
-            <input
-              value={qInput}
-              onChange={(e) => setQInput(e.target.value)}
-              placeholder="Search collections by name…"
-              aria-label="Search collections"
-              className={cn(
-                'h-12 w-full rounded-full border border-[var(--line)] bg-[var(--bg-muted)]',
-                'pr-11 pl-11 text-sm text-[var(--ink)] outline-none',
-                'placeholder:text-[var(--muted-strong)]',
-                'transition-[border-color,box-shadow,background-color] duration-[var(--duration-fast)]',
-                'focus:border-[var(--accent)] focus:bg-white focus:shadow-[var(--focus-ring)]',
-              )}
-            />
-            {qInput ? (
-              <button
-                type="button"
-                aria-label="Clear search"
-                className="absolute top-1/2 right-3 flex size-7 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-[var(--muted)] transition-colors hover:bg-[var(--bg-soft)] hover:text-[var(--ink)]"
-                onClick={() => setQInput('')}
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+            <div className="relative min-w-0 flex-1">
+              <Search
+                className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-[var(--muted)]"
+                aria-hidden
+              />
+              <input
+                value={qInput}
+                onChange={(e) => setQInput(e.target.value)}
+                placeholder="Search collections by name…"
+                aria-label="Search collections by title"
+                className={cn(
+                  'h-12 w-full rounded-full border border-[var(--line)] bg-[var(--bg-muted)]',
+                  'pr-11 pl-11 text-sm text-[var(--ink)] outline-none',
+                  'placeholder:text-[var(--muted-strong)]',
+                  'transition-[border-color,box-shadow,background-color] duration-[var(--duration-fast)]',
+                  'focus:border-[var(--accent)] focus:bg-white focus:shadow-[var(--focus-ring)]',
+                )}
+              />
+              {qInput ? (
+                <button
+                  type="button"
+                  aria-label="Clear search"
+                  className="absolute top-1/2 right-3 flex size-7 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-[var(--muted)] transition-colors hover:bg-[var(--bg-soft)] hover:text-[var(--ink)]"
+                  onClick={() => setQInput('')}
+                >
+                  <X className="size-4" aria-hidden />
+                </button>
+              ) : null}
+            </div>
+
+            <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:shrink-0">
+              <label htmlFor="preli-category" className="sr-only">
+                Filter by category
+              </label>
+              <Select
+                id="preli-category"
+                value={categoryId}
+                onChange={(e) => onCategoryChange(e.target.value)}
+                disabled={categories.isLoading}
+                className={cn(
+                  filterControlClass,
+                  'flex-1 sm:min-w-[11rem] lg:w-[13rem] lg:flex-none',
+                  categoryId &&
+                    'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]',
+                )}
+                aria-label="Filter by category"
               >
-                <X className="size-4" aria-hidden />
-              </button>
-            ) : null}
-          </div>
+                <option value="">All Categories</option>
+                {rootCategories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </Select>
 
-          <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto">
-            <label htmlFor="preli-category" className="sr-only">
-              Filter by category
-            </label>
-            <Select
-              id="preli-category"
-              value={categoryId}
-              onChange={(e) => {
-                setCategoryId(e.target.value);
-                setSubcategoryId('');
-              }}
-              className="h-12 min-w-0 flex-1 rounded-full border-[var(--line)] bg-[var(--bg-muted)] px-4 shadow-none sm:min-w-[12rem] lg:w-[14rem] lg:flex-none"
-              aria-label="Filter by category"
-            >
-              <option value="">All categories</option>
-              {(categories.data ?? []).map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </Select>
-
-            {selectedCategory && selectedCategory.children.length > 0 ? (
+              <label htmlFor="preli-subcategory" className="sr-only">
+                Filter by subcategory
+              </label>
               <Select
                 id="preli-subcategory"
                 value={subcategoryId}
                 onChange={(e) => setSubcategoryId(e.target.value)}
-                className="h-12 min-w-0 flex-1 rounded-full border-[var(--line)] bg-[var(--bg-muted)] px-4 shadow-none sm:min-w-[11rem] lg:w-[13rem] lg:flex-none"
+                disabled={categories.isLoading || !categoryId || subcategoryOptions.length === 0}
+                className={cn(
+                  filterControlClass,
+                  'flex-1 sm:min-w-[11rem] lg:w-[14rem] lg:flex-none',
+                  subcategoryId &&
+                    'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]',
+                )}
                 aria-label="Filter by subcategory"
               >
-                <option value="">All subcategories</option>
-                {selectedCategory.children.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
+                <option value="">All Subcategories</option>
+                {subcategoryOptions.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
                   </option>
                 ))}
               </Select>
-            ) : null}
 
-            <div
-              className="flex flex-wrap items-center gap-1.5"
-              role="group"
-              aria-label="Filter by year"
-            >
-              {yearOptions.slice(0, 5).map((y) => (
-                <button
-                  key={y}
-                  type="button"
-                  onClick={() => setYear(year === y ? '' : y)}
-                  className={cn(
-                    'h-10 cursor-pointer rounded-full border px-3 text-xs font-semibold tabular-nums transition-colors',
-                    year === y
-                      ? 'border-[var(--highlight)] bg-[var(--highlight-soft)] text-[var(--highlight)]'
-                      : 'border-[var(--line)] bg-[var(--bg-muted)] text-[var(--ink-soft)] hover:border-[var(--highlight)]/40',
-                  )}
-                >
-                  {y}
-                </button>
-              ))}
-            </div>
-
-            {hasFilters ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="shrink-0 cursor-pointer rounded-full"
-                onClick={() => {
-                  setQInput('');
-                  setCategoryId('');
-                  setSubcategoryId('');
-                  setYear('');
-                }}
+              <label htmlFor="preli-year" className="sr-only">
+                Filter by exam year
+              </label>
+              <Select
+                id="preli-year"
+                value={year}
+                onChange={(e) => setYear(e.target.value)}
+                disabled={yearsQ.isLoading}
+                className={cn(
+                  filterControlClass,
+                  'flex-1 sm:min-w-[9rem] lg:w-[11rem] lg:flex-none',
+                  year && 'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]',
+                )}
+                aria-label="Filter by exam year"
               >
-                Clear
-              </Button>
-            ) : null}
-          </div>
-        </div>
+                <option value="">All Years</option>
+                {yearOptions.map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </Select>
 
-        {typeof total === 'number' ? (
-          <p className="mt-3 px-1 text-xs font-medium text-[var(--muted-strong)]">
-            {list.isFetching && !list.isFetchingNextPage
-              ? 'Updating…'
-              : `${total} collection${total === 1 ? '' : 's'}`}
-          </p>
-        ) : null}
+              {hasFilters ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="shrink-0 cursor-pointer rounded-full"
+                  onClick={clearFilters}
+                >
+                  Clear
+                </Button>
+              ) : null}
+            </div>
+          </div>
+
+          {typeof total === 'number' ? (
+            <p className="px-1 text-xs font-medium text-[var(--muted-strong)]">
+              {list.isFetching && !list.isFetchingNextPage
+                ? 'Updating…'
+                : `${total} collection${total === 1 ? '' : 's'}`}
+              {selectedCategory ? ` · ${selectedCategory.name}` : ''}
+              {subcategoryId
+                ? ` / ${subcategoryOptions.find((s) => s.id === subcategoryId)?.name ?? ''}`
+                : ''}
+              {year ? ` · ${year}` : ''}
+            </p>
+          ) : null}
+        </div>
       </div>
 
       {list.isLoading ? <ListCardSkeleton rows={5} /> : null}
@@ -239,7 +325,7 @@ export function PublicQuestionBank({
           title={hasFilters ? 'No matching collections' : 'No collections yet'}
           description={
             hasFilters
-              ? 'Try a different search, category, or year.'
+              ? 'Try a different search, category, subcategory, or year.'
               : 'Published uploads will appear here.'
           }
         />

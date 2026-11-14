@@ -26,6 +26,7 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { newRequestId } from '../common/request-id';
 import { ConfirmImportDto } from './dto/confirm-import.dto';
 import { UpdateBatchDto } from './dto/update-batch.dto';
+import { UpdateImportRowDto } from './dto/update-import-row.dto';
 import { QuestionImportService } from './question-import.service';
 
 @Controller('api/v1/admin/question-imports')
@@ -102,6 +103,7 @@ export class QuestionImportController {
     @Body('topicHint') topicHint?: string,
     @Body('examCategoryHint') examCategoryHint?: string,
     @Body('placementSubcategoryIds') placementSubcategoryIdsRaw?: string,
+    @Body('questionDate') questionDate?: string,
   ) {
     let placementSubcategoryIds: string[] | undefined;
     if (placementSubcategoryIdsRaw?.trim()) {
@@ -126,6 +128,7 @@ export class QuestionImportController {
         topicHint,
         examCategoryHint,
         placementSubcategoryIds,
+        questionDate,
       }),
       newRequestId(),
     );
@@ -160,6 +163,19 @@ export class QuestionImportController {
       limit: limit ? Number(limit) : 50,
       total: null,
     });
+  }
+
+  @Patch(':id/rows/:rowId')
+  @UseGuards(CsrfGuard)
+  async updateRow(
+    @Param('id') id: string,
+    @Param('rowId') rowId: string,
+    @Body() dto: UpdateImportRowDto,
+  ) {
+    return createSuccessResponse(
+      await this.imports.updateImportRow(id, rowId, dto),
+      newRequestId(),
+    );
   }
 
   @Post(':id/confirm')

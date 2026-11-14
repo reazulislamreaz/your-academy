@@ -509,6 +509,7 @@ function QuestionImportDetailContent() {
               <tr>
                 <th className="px-3 py-3">Row</th>
                 <th className="px-3 py-3">Question</th>
+                <th className="px-3 py-3">Date</th>
                 <th className="px-3 py-3">Options</th>
                 <th className="px-3 py-3">Answer</th>
                 <th className="px-3 py-3">Subject</th>
@@ -541,6 +542,37 @@ function QuestionImportDetailContent() {
                         {row.errorMessage}
                       </p>
                     ) : null}
+                  </td>
+                  <td className="px-3 py-3">
+                    {data.status === 'VALIDATED' || data.status === 'FAILED' ? (
+                      <Input
+                        type="date"
+                        className="h-9 w-[9.5rem]"
+                        defaultValue={
+                          row.questionDate
+                            ? row.questionDate.slice(0, 10)
+                            : ''
+                        }
+                        onBlur={(e) => {
+                          const next = e.target.value;
+                          const prev = row.questionDate?.slice(0, 10) ?? '';
+                          if (next === prev) return;
+                          void apiFetch(`/admin/question-imports/${id}/rows/${row.id}`, {
+                            method: 'PATCH',
+                            body: JSON.stringify({ questionDate: next || null }),
+                          }).then(() => {
+                            void qc.invalidateQueries({
+                              queryKey: ['admin-question-import-rows', id],
+                            });
+                          });
+                        }}
+                        aria-label={`Question date for row ${row.rowNumber}`}
+                      />
+                    ) : (
+                      <span className="tabular-nums text-sm text-[var(--ink-soft)]">
+                        {row.questionDate ? row.questionDate.slice(0, 10) : '—'}
+                      </span>
+                    )}
                   </td>
                   <td className="px-3 py-3 text-sm leading-relaxed text-[var(--ink-soft)]">
                     <p>A. {row.optionA}</p>
