@@ -8,7 +8,6 @@ import {
   Pencil,
   Plus,
   Power,
-  Search,
   Trash2,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -20,6 +19,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { SearchField } from '@/components/ui/search-field';
 import { Select } from '@/components/ui/select';
 import { Surface } from '@/components/ui/surface';
 import {
@@ -262,19 +262,13 @@ export default function AdminCategoriesPage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <div className="min-w-0 flex-1 space-y-2">
             <Label htmlFor="cat-search">Search</Label>
-            <div className="relative">
-              <Search
-                className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[var(--muted-strong)]"
-                aria-hidden
-              />
-              <Input
-                id="cat-search"
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="Search categories or subcategories…"
-                className="h-10 pl-9"
-              />
-            </div>
+            <SearchField
+              id="cat-search"
+              value={q}
+              onChange={setQ}
+              placeholder="Search categories or subcategories…"
+              aria-label="Search categories or subcategories"
+            />
           </div>
           <div className="w-full space-y-2 sm:w-48">
             <Label htmlFor="cat-status-filter">Status</Label>

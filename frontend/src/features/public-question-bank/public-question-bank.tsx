@@ -3,11 +3,11 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { Search, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { ListCardSkeleton, LoadError } from '@/components/loading';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
+import { SearchField } from '@/components/ui/search-field';
 import { Select } from '@/components/ui/select';
 import { apiFetch } from '@/lib/api/client';
 import {
@@ -15,6 +15,7 @@ import {
   listPublicQuestionSets,
 } from '@/lib/api/public-questions';
 import type { CategoryNode } from '@/lib/api/types';
+import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -23,16 +24,6 @@ type Props = {
   initialYear?: string;
   className?: string;
 };
-
-/** Debounced live search — updates after typing pauses. */
-function useDebouncedValue<T>(value: T, delayMs = 300): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const t = window.setTimeout(() => setDebounced(value), delayMs);
-    return () => window.clearTimeout(t);
-  }, [value, delayMs]);
-  return debounced;
-}
 
 const filterControlClass =
   'min-h-12 min-w-0 rounded-full border-[var(--line)] bg-[var(--bg-muted)] px-4 py-2 leading-normal shadow-none';
@@ -49,7 +40,7 @@ export function PublicQuestionBank({
   const [qInput, setQInput] = useState(initialQ);
   const [subcategoryId, setSubcategoryId] = useState(initialSubcategoryId);
   const [year, setYear] = useState(initialYear);
-  const q = useDebouncedValue(qInput.trim(), 280);
+  const q = useDebouncedValue(qInput.trim(), 350);
 
   const categories = useQuery({
     queryKey: ['categories'],
@@ -154,35 +145,14 @@ export function PublicQuestionBank({
       <div className="rounded-[1.25rem] border border-[var(--line)] bg-white p-3 shadow-[var(--shadow-sm)] sm:p-4">
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-            <div className="relative min-w-0 flex-1">
-              <Search
-                className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-[var(--muted)]"
-                aria-hidden
-              />
-              <input
-                value={qInput}
-                onChange={(e) => setQInput(e.target.value)}
-                placeholder="Search by title, category, or subcategory…"
-                aria-label="Search collections by title, category, or subcategory"
-                className={cn(
-                  'min-h-12 w-full rounded-full border border-[var(--line)] bg-[var(--bg-muted)]',
-                  'py-2 pr-11 pl-11 text-sm leading-normal text-[var(--ink)] outline-none',
-                  'placeholder:text-[var(--muted-strong)]',
-                  'transition-[border-color,box-shadow,background-color] duration-[var(--duration-fast)]',
-                  'focus:border-[var(--accent)] focus:bg-white focus:shadow-[var(--focus-ring)]',
-                )}
-              />
-              {qInput ? (
-                <button
-                  type="button"
-                  aria-label="Clear search"
-                  className="absolute top-1/2 right-3 flex size-7 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-[var(--muted)] transition-colors hover:bg-[var(--bg-soft)] hover:text-[var(--ink)]"
-                  onClick={() => setQInput('')}
-                >
-                  <X className="size-4" aria-hidden />
-                </button>
-              ) : null}
-            </div>
+            <SearchField
+              value={qInput}
+              onChange={setQInput}
+              placeholder="Search by title, category, or subcategory…"
+              aria-label="Search collections by title, category, or subcategory"
+              variant="pill"
+              className="min-w-0 flex-1"
+            />
 
             <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:shrink-0">
               <label htmlFor="preli-subcategory" className="sr-only">

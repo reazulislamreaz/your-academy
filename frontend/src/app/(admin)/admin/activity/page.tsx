@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Download, Search } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { Suspense, useMemo, useState } from 'react';
 import { BarChart } from '@/components/dashboard/bar-chart';
 import { StatCard } from '@/components/dashboard/stat-card';
@@ -13,6 +13,7 @@ import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { SearchField } from '@/components/ui/search-field';
 import { Select } from '@/components/ui/select';
 import { Surface } from '@/components/ui/surface';
 import { ContentIn } from '@/components/ui/skeleton';
@@ -25,6 +26,7 @@ import type {
   OnlineUserRow,
 } from '@/lib/api/admin-activity-types';
 import { useCursorList } from '@/lib/hooks/use-cursor-list';
+import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import { Activity, Clock3, Users } from 'lucide-react';
 import { AdminMobileCard, AdminMobileCards } from '@/components/admin/admin-mobile-cards';
 import {
@@ -75,6 +77,7 @@ function ActivityPageInner() {
   const initialUserId = searchParams.get('userId') ?? '';
 
   const [onlineQ, setOnlineQ] = useState('');
+  const debouncedOnlineQ = useDebouncedValue(onlineQ.trim(), 350);
   const [userId, setUserId] = useState(initialUserId);
   const [type, setType] = useState('');
   const [range, setRange] = useState<'7' | '14' | '30' | 'custom'>('14');
@@ -100,10 +103,10 @@ function ActivityPageInner() {
   });
 
   const online = useQuery({
-    queryKey: ['admin-activity-online', onlineQ],
+    queryKey: ['admin-activity-online', debouncedOnlineQ],
     queryFn: () => {
       const params = new URLSearchParams();
-      if (onlineQ.trim()) params.set('q', onlineQ.trim());
+      if (debouncedOnlineQ) params.set('q', debouncedOnlineQ);
       const qs = params.toString();
       return apiFetch<{ items: OnlineUserRow[]; onlineHeartbeatWindowMs: number }>(
         `/admin/activity/online${qs ? `?${qs}` : ''}`,
@@ -243,26 +246,13 @@ function ActivityPageInner() {
           title="Online users"
           description="Sessions with a recent heartbeat."
           actions={
-            <form
-              className="w-full sm:w-auto"
-              onSubmit={(e) => {
-                e.preventDefault();
-              }}
-            >
-              <div className="relative">
-                <Search
-                  className="pointer-events-none absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-[var(--muted-strong)]"
-                  aria-hidden
-                />
-                <Input
-                  value={onlineQ}
-                  onChange={(e) => setOnlineQ(e.target.value)}
-                  placeholder="Search online"
-                  aria-label="Search online users"
-                  className="h-10 w-full pl-8 text-sm sm:h-9 sm:w-44"
-                />
-              </div>
-            </form>
+            <SearchField
+              value={onlineQ}
+              onChange={setOnlineQ}
+              placeholder="Search online"
+              aria-label="Search online users"
+              className="w-full sm:w-44"
+            />
           }
         >
           <Surface className="p-3.5 sm:p-5">

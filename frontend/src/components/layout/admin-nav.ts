@@ -5,6 +5,7 @@ import {
   FileSpreadsheet,
   FileText,
   FolderTree,
+  Home,
   LayoutDashboard,
   MessageCircle,
   Newspaper,
@@ -37,6 +38,7 @@ export const adminNavItems: AdminNavItem[] = [
   { href: '/admin/practice-sets', label: 'Practice sets', shortLabel: 'Practice', icon: ClipboardList },
   { href: '/admin/practice-attempts', label: 'Exam results', shortLabel: 'Results', icon: Activity },
   { href: '/admin/categories', label: 'Categories', icon: FolderTree },
+  { href: '/admin/homepage', label: 'Homepage', icon: Home },
   { href: '/admin/news', label: 'News', icon: Newspaper },
   { href: '/admin/documents', label: 'Documents', shortLabel: 'Docs', icon: FileText },
 ];
@@ -60,6 +62,7 @@ export const adminNavGroups: AdminNavGroup[] = [
         '/admin/practice-sets',
         '/admin/practice-attempts',
         '/admin/categories',
+        '/admin/homepage',
         '/admin/news',
         '/admin/documents',
       ].includes(i.href),

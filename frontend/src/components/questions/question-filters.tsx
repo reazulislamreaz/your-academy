@@ -1,14 +1,15 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { SearchField } from '@/components/ui/search-field';
 import { Select } from '@/components/ui/select';
 import type { CategoryNode } from '@/lib/api/types';
 import { EXAM_TRACKS } from '@/lib/exam-tags';
+import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 
 type Props = {
   categories: CategoryNode[];
@@ -24,14 +25,8 @@ export function QuestionFilters({ categories }: Props) {
   const [subcategoryId, setSubcategoryId] = useState(params.get('subcategoryId') ?? '');
   const [difficulty, setDifficulty] = useState(params.get('difficulty') ?? '');
   const [examTag, setExamTag] = useState(params.get('examTag') ?? '');
-
-  useEffect(() => {
-    setQ(params.get('q') ?? '');
-    setCategoryId(params.get('categoryId') ?? '');
-    setSubcategoryId(params.get('subcategoryId') ?? '');
-    setDifficulty(params.get('difficulty') ?? '');
-    setExamTag(params.get('examTag') ?? '');
-  }, [params]);
+  const debouncedQ = useDebouncedValue(q.trim(), 350);
+  const skipUrlPush = useRef(false);
 
   const selected = useMemo(
     () => categories.find((c) => c.id === categoryId),
@@ -40,18 +35,83 @@ export function QuestionFilters({ categories }: Props) {
 
   const advancedActive = Boolean(categoryId || subcategoryId || difficulty || examTag);
 
-  function apply(next?: { clear?: boolean }) {
+  function buildHref(next: {
+    q: string;
+    categoryId: string;
+    subcategoryId: string;
+    difficulty: string;
+    examTag: string;
+  }): string {
     const sp = new URLSearchParams();
-    if (!next?.clear) {
-      if (q.trim()) sp.set('q', q.trim());
-      if (categoryId) sp.set('categoryId', categoryId);
-      if (subcategoryId) sp.set('subcategoryId', subcategoryId);
-      if (difficulty) sp.set('difficulty', difficulty);
-      if (examTag) sp.set('examTag', examTag);
+    if (next.q) sp.set('q', next.q);
+    if (next.categoryId) sp.set('categoryId', next.categoryId);
+    if (next.subcategoryId) sp.set('subcategoryId', next.subcategoryId);
+    if (next.difficulty) sp.set('difficulty', next.difficulty);
+    if (next.examTag) sp.set('examTag', next.examTag);
+    return sp.toString() ? `/questions?${sp.toString()}` : '/questions';
+  }
+
+  // Sync local state from URL (browser back / external navigation).
+  useEffect(() => {
+    const urlQ = params.get('q') ?? '';
+    const urlCategoryId = params.get('categoryId') ?? '';
+    const urlSubcategoryId = params.get('subcategoryId') ?? '';
+    const urlDifficulty = params.get('difficulty') ?? '';
+    const urlExamTag = params.get('examTag') ?? '';
+
+    setCategoryId(urlCategoryId);
+    setSubcategoryId(urlSubcategoryId);
+    setDifficulty(urlDifficulty);
+    setExamTag(urlExamTag);
+    // Avoid wiping in-progress typing when URL lags behind debounce.
+    if (urlQ !== debouncedQ) {
+      skipUrlPush.current = true;
+      setQ(urlQ);
     }
+  }, [params, debouncedQ]);
+
+  // Auto-apply debounced search + filters to the URL (resets list pagination via remount/query key).
+  useEffect(() => {
+    if (skipUrlPush.current) {
+      skipUrlPush.current = false;
+      return;
+    }
+
+    const next = {
+      q: debouncedQ,
+      categoryId,
+      subcategoryId,
+      difficulty,
+      examTag,
+    };
+    const current = {
+      q: params.get('q') ?? '',
+      categoryId: params.get('categoryId') ?? '',
+      subcategoryId: params.get('subcategoryId') ?? '',
+      difficulty: params.get('difficulty') ?? '',
+      examTag: params.get('examTag') ?? '',
+    };
+    if (
+      current.q === next.q &&
+      current.categoryId === next.categoryId &&
+      current.subcategoryId === next.subcategoryId &&
+      current.difficulty === next.difficulty &&
+      current.examTag === next.examTag
+    ) {
+      return;
+    }
+
     startTransition(() => {
-      router.push(sp.toString() ? `/questions?${sp.toString()}` : '/questions');
+      router.push(buildHref(next));
     });
+  }, [debouncedQ, categoryId, subcategoryId, difficulty, examTag, params, router]);
+
+  function clearAll() {
+    setQ('');
+    setCategoryId('');
+    setSubcategoryId('');
+    setDifficulty('');
+    setExamTag('');
   }
 
   const fieldProps = {
@@ -68,36 +128,27 @@ export function QuestionFilters({ categories }: Props) {
   };
 
   return (
-    <form
-      className="ya-glass z-10 grid min-w-0 gap-3 rounded-[var(--radius-lg)] border border-[var(--glass-border)] bg-[var(--glass-bg)] p-3 shadow-[var(--shadow-sm)] sm:p-4 xl:sticky xl:top-[var(--header-h,4rem)] [&>*]:min-w-0"
-      onSubmit={(e) => {
-        e.preventDefault();
-        apply();
-      }}
-    >
+    <div className="ya-glass z-10 grid min-w-0 gap-3 rounded-[var(--radius-lg)] border border-[var(--glass-border)] bg-[var(--glass-bg)] p-3 shadow-[var(--shadow-sm)] sm:p-4 xl:sticky xl:top-[var(--header-h,4rem)] [&>*]:min-w-0">
       <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
         <Field>
           <Label htmlFor="q-search">Search</Label>
-          <Input
+          <SearchField
             id="q-search"
             value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Title or content"
+            onChange={setQ}
+            placeholder="Search by title or content…"
+            aria-label="Search questions by title or content"
+            disabled={pending}
           />
         </Field>
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-          <Button type="submit" disabled={pending}>
-            {pending ? 'Filtering…' : 'Apply'}
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            disabled={pending}
-            onClick={() => apply({ clear: true })}
-          >
-            Clear
-          </Button>
-        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          disabled={pending || (!q && !advancedActive)}
+          onClick={clearAll}
+        >
+          Clear
+        </Button>
       </div>
 
       <div className="hidden gap-3 md:grid md:grid-cols-2 xl:grid-cols-4">
@@ -112,7 +163,7 @@ export function QuestionFilters({ categories }: Props) {
           <AdvancedFields idPrefix="mobile" {...fieldProps} />
         </div>
       </details>
-    </form>
+    </div>
   );
 }
 

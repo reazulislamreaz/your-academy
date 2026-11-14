@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight } from 'lucide-react';
+import type { HomepagePayload } from '@your-academy/shared';
 import { ListCardSkeleton, LoadError } from '@/components/loading';
 import { Button } from '@/components/ui/button';
 import { listPublicQuestionSets } from '@/lib/api/public-questions';
@@ -15,13 +16,21 @@ function formatUploadDate(iso: string) {
   });
 }
 
-/** Latest Exam Sets on the marketing homepage (name + upload date). */
-export function HomepageLatestQuestions({ limit = 6 }: { limit?: number }) {
+type Props = {
+  latest: HomepagePayload['latest'];
+};
+
+/** Latest Exam Sets on the marketing homepage (headers from CMS; list from API). */
+export function HomepageLatestQuestions({ latest }: Props) {
+  const limit = latest.limit ?? 6;
   const list = useQuery({
     queryKey: ['public-question-sets-home', limit],
     queryFn: () => listPublicQuestionSets({ limit }),
     staleTime: 30_000,
+    enabled: latest.visible,
   });
+
+  if (!latest.visible) return null;
 
   const items = list.data?.data ?? [];
 
@@ -35,18 +44,18 @@ export function HomepageLatestQuestions({ limit = 6 }: { limit?: number }) {
               aria-hidden
             />
             <h2 className="font-display text-2xl font-bold tracking-tight text-[var(--ink)] sm:text-[2rem]">
-              Latest Collections
+              {latest.heading}
             </h2>
-            <p className="text-sm text-[var(--muted-strong)] sm:text-base">
-              Newest admin uploads appear first.
-            </p>
+            <p className="text-sm text-[var(--muted-strong)] sm:text-base">{latest.subtitle}</p>
           </div>
-          <Link href="/preli-question-bank">
-            <Button type="button" className="cursor-pointer rounded-full px-6">
-              Preli Question Bank
-              <ArrowRight className="size-4" />
-            </Button>
-          </Link>
+          {latest.cta.visible ? (
+            <Link href={latest.cta.href}>
+              <Button type="button" className="cursor-pointer rounded-full px-6">
+                {latest.cta.label}
+                <ArrowRight className="size-4" />
+              </Button>
+            </Link>
+          ) : null}
         </div>
 
         {list.isLoading ? <ListCardSkeleton rows={3} /> : null}

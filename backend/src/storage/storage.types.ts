@@ -2,6 +2,7 @@ export const UPLOAD_PURPOSES = [
   'avatar',
   'question-image',
   'news-cover',
+  'homepage-hero',
   'pdf',
   'support-attachment',
 ] as const;

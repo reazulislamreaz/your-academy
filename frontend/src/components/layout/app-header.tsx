@@ -1,12 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Bookmark, Search } from 'lucide-react';
-import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
+import { Suspense, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { TrialStatusChip } from '@/components/access/trial-status-chip';
 import { LearnerThemeToggle } from '@/components/theme/learner-theme-toggle';
 import { useLearnerTheme } from '@/components/theme/learner-theme-provider';
+import { SearchField } from '@/components/ui/search-field';
+import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import { BrandMark } from './brand-mark';
 import { LearnerMobileNav } from './learner-mobile-nav';
 import { MessagesMenu } from './messages-menu';
@@ -17,18 +19,52 @@ import { UserMenu } from './user-menu';
  * Learner top navbar — matches Student Dashboard reference:
  * logo · trial · Saved MCQ · search · notifications · messages · profile.
  */
-export function AppHeader() {
+function AppHeaderInner() {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { theme } = useLearnerTheme();
-  const [query, setQuery] = useState('');
+  const onQuestions = pathname.startsWith('/questions');
+  const [query, setQuery] = useState(() =>
+    onQuestions ? (searchParams.get('q') ?? '') : '',
+  );
+  const debouncedQ = useDebouncedValue(query.trim(), 350);
+  const skipNav = useRef(true);
   const searchRef = useRef<HTMLInputElement>(null);
   const inverseLogo = theme === 'dark';
 
-  const onSearch = (e: FormEvent) => {
-    e.preventDefault();
-    const q = query.trim();
-    router.push(q ? `/questions?q=${encodeURIComponent(q)}` : '/questions');
-  };
+  useEffect(() => {
+    if (!onQuestions) return;
+    const urlQ = searchParams.get('q') ?? '';
+    if (urlQ !== debouncedQ) {
+      skipNav.current = true;
+      setQuery(urlQ);
+    }
+  }, [onQuestions, searchParams, debouncedQ]);
+
+  useEffect(() => {
+    if (skipNav.current) {
+      skipNav.current = false;
+      return;
+    }
+    const href = debouncedQ
+      ? `/questions?q=${encodeURIComponent(debouncedQ)}`
+      : '/questions';
+    if (onQuestions) {
+      const current = searchParams.get('q') ?? '';
+      if (current === debouncedQ) return;
+      // Preserve other filters when only the search term changes.
+      const sp = new URLSearchParams(searchParams.toString());
+      if (debouncedQ) sp.set('q', debouncedQ);
+      else sp.delete('q');
+      const qs = sp.toString();
+      router.replace(qs ? `/questions?${qs}` : '/questions', { scroll: false });
+      return;
+    }
+    if (debouncedQ) {
+      router.push(href);
+    }
+  }, [debouncedQ, onQuestions, router, searchParams]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -57,7 +93,6 @@ export function AppHeader() {
       className="ya-glass sticky top-0 z-30 flex h-[var(--header-h,4.5rem)] shrink-0 items-center gap-2 border-b border-[var(--glass-border)] bg-[var(--glass-bg)] px-3 pt-[env(safe-area-inset-top,0px)] sm:gap-4 sm:px-5 lg:px-6"
       style={{ boxShadow: 'var(--shadow-header)' } as CSSProperties}
     >
-      {/* Left: logo + trial — keep chrome minimal on phones */}
       <div className="flex min-w-0 shrink-0 items-center gap-2.5 sm:gap-4">
         <BrandMark
           href="/"
@@ -73,7 +108,6 @@ export function AppHeader() {
         <TrialStatusChip className="hidden min-[480px]:inline-flex" />
       </div>
 
-      {/* Right utilities — phone: search + menu; denser tools from sm+ */}
       <div className="ml-auto flex min-w-0 flex-1 items-center justify-end gap-1.5 sm:gap-2.5 md:gap-3">
         <Link
           href="/bookmarks"
@@ -95,31 +129,23 @@ export function AppHeader() {
           <Search className="size-[18px]" aria-hidden strokeWidth={1.75} />
         </Link>
 
-        <form
-          onSubmit={onSearch}
+        <div
           role="search"
           className="hidden min-w-0 sm:block sm:w-[11.5rem] md:w-[13.5rem] lg:w-[15rem]"
         >
           <label htmlFor="app-header-search" className="sr-only">
             Search questions
           </label>
-          <div className="relative">
-            <Search
-              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[var(--muted)]"
-              aria-hidden
-              strokeWidth={1.75}
-            />
-            <input
-              ref={searchRef}
-              id="app-header-search"
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search..."
-              className="h-10 w-full rounded-full border border-[var(--line)] bg-[var(--bg-muted)] pr-3 pl-9 text-sm text-[var(--ink)] outline-none transition-[border-color,background-color,box-shadow] placeholder:text-[var(--muted)] focus:border-[var(--accent)] focus:bg-[var(--bg-elevated)] focus:shadow-[var(--focus-ring)]"
-            />
-          </div>
-        </form>
+          <SearchField
+            id="app-header-search"
+            inputRef={searchRef}
+            value={query}
+            onChange={setQuery}
+            placeholder="Search questions…"
+            aria-label="Search questions"
+            variant="header"
+          />
+        </div>
 
         <div className="hidden sm:block">
           <UpdatesMenu />
@@ -136,5 +162,22 @@ export function AppHeader() {
         <LearnerMobileNav />
       </div>
     </header>
+  );
+}
+
+export function AppHeader() {
+  return (
+    <Suspense
+      fallback={
+        <header
+          className="ya-glass sticky top-0 z-30 flex h-[var(--header-h,4.5rem)] shrink-0 items-center border-b border-[var(--glass-border)] bg-[var(--glass-bg)] px-3"
+          style={{ boxShadow: 'var(--shadow-header)' } as CSSProperties}
+        >
+          <BrandMark href="/" markOnly className="[&_img]:h-8" />
+        </header>
+      }
+    >
+      <AppHeaderInner />
+    </Suspense>
   );
 }

@@ -1,8 +1,8 @@
 'use client';
 
-import { Suspense, useState, type CSSProperties, type FormEvent } from 'react';
+import { Suspense, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { LayoutDashboard, LogIn, Search } from 'lucide-react';
+import { LayoutDashboard, LogIn } from 'lucide-react';
 import Link from 'next/link';
 import { BrandMark } from './brand-mark';
 import { MobileNav } from './mobile-nav';
@@ -13,47 +13,10 @@ import {
 } from './marketing-nav';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { SearchField } from '@/components/ui/search-field';
 import { useMe } from '@/features/auth/use-auth';
 import { defaultPathForRole } from '@/lib/auth/role-routing';
-
-function SearchField({
-  id,
-  query,
-  setQuery,
-  onSearch,
-  className,
-}: {
-  id: string;
-  query: string;
-  setQuery: (v: string) => void;
-  onSearch: (e: FormEvent) => void;
-  className?: string;
-}) {
-  return (
-    <form onSubmit={onSearch} role="search" className={className}>
-      <label htmlFor={id} className="sr-only">
-        Search exams
-      </label>
-      <div className="relative w-full">
-        <input
-          id={id}
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search exams..."
-          className="h-10 w-full rounded-full border border-[var(--line)] bg-[var(--bg-muted)] pr-11 pl-4 text-sm text-[var(--ink)] outline-none placeholder:text-[var(--muted-strong)] transition-[border-color,box-shadow,background-color] focus:border-[var(--accent)] focus:bg-white focus:shadow-[var(--focus-ring)]"
-        />
-        <button
-          type="submit"
-          aria-label="Search"
-          className="absolute top-1/2 right-1 flex h-8 w-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-[var(--muted-strong)] transition-colors hover:bg-[var(--accent-soft)] hover:text-[var(--accent)]"
-        >
-          <Search className="h-4 w-4" />
-        </button>
-      </div>
-    </form>
-  );
-}
+import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 
 function DashboardNavButton({
   href,
@@ -130,18 +93,43 @@ function MarketingHeaderInner() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const me = useMe();
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(() =>
+    pathname.startsWith('/preli-question-bank') ? (searchParams.get('q') ?? '') : '',
+  );
+  const debouncedQ = useDebouncedValue(query.trim(), 350);
+  const skipNav = useRef(true);
 
   const dashboardHref = me.data ? defaultPathForRole(me.data.role) : null;
   const activeId = resolveActiveMarketingNavId(pathname, searchParams.toString());
+  const onBank = pathname.startsWith('/preli-question-bank');
 
-  const onSearch = (e: FormEvent) => {
-    e.preventDefault();
-    const q = query.trim();
-    router.push(
-      q ? `/preli-question-bank?q=${encodeURIComponent(q)}` : '/preli-question-bank',
-    );
-  };
+  useEffect(() => {
+    if (!onBank) return;
+    const urlQ = searchParams.get('q') ?? '';
+    if (urlQ !== debouncedQ) {
+      skipNav.current = true;
+      setQuery(urlQ);
+    }
+  }, [onBank, searchParams, debouncedQ]);
+
+  useEffect(() => {
+    if (skipNav.current) {
+      skipNav.current = false;
+      return;
+    }
+    const href = debouncedQ
+      ? `/preli-question-bank?q=${encodeURIComponent(debouncedQ)}`
+      : '/preli-question-bank';
+    if (onBank) {
+      const current = searchParams.get('q') ?? '';
+      if (current === debouncedQ) return;
+      router.replace(href, { scroll: false });
+      return;
+    }
+    if (debouncedQ) {
+      router.push(href);
+    }
+  }, [debouncedQ, onBank, router, searchParams]);
 
   return (
     <header
@@ -149,27 +137,30 @@ function MarketingHeaderInner() {
       style={{ '--header-h': '64px' } as CSSProperties}
     >
       <div className="mx-auto flex h-14 w-full max-w-[1280px] items-center gap-2 px-3 sm:h-16 sm:gap-3 sm:px-6">
-        {/* Compact mark on small screens; full lockup from lg up */}
         <BrandMark markOnly className="shrink-0 lg:hidden [&_img]:h-8" priority />
         <BrandMark className="hidden shrink-0 lg:inline-flex [&_img]:h-10" priority />
 
         <MarketingNavLinks activeId={activeId} />
 
-        <SearchField
-          id="marketing-search"
-          query={query}
-          setQuery={setQuery}
-          onSearch={onSearch}
-          className="ml-auto hidden min-w-0 w-[12rem] shrink-0 items-center xl:flex"
-        />
+        <div className="ml-auto hidden min-w-0 w-[14rem] shrink-0 xl:block">
+          <label htmlFor="marketing-search" className="sr-only">
+            Search exams
+          </label>
+          <SearchField
+            id="marketing-search"
+            value={query}
+            onChange={setQuery}
+            placeholder="Search exams…"
+            aria-label="Search exams"
+            variant="header"
+          />
+        </div>
 
-        {/* Desktop / tablet actions */}
         <div className="ml-auto hidden shrink-0 items-center gap-2 md:flex xl:ml-0">
           {dashboardHref ? <DashboardNavButton href={dashboardHref} /> : null}
           {me.data ? <UserMenu variant="header" /> : <UserMenu loginOnly />}
         </div>
 
-        {/* Phone actions: Login or avatar + menu */}
         <div className="ml-auto flex shrink-0 items-center gap-1.5 md:hidden">
           {me.data ? (
             <UserMenu variant="header" />
@@ -192,13 +183,19 @@ function MarketingHeaderInner() {
             }))}
             activeId={activeId}
             leading={
-              <SearchField
-                id="marketing-search-mobile"
-                query={query}
-                setQuery={setQuery}
-                onSearch={onSearch}
-                className="w-full"
-              />
+              <div className="w-full">
+                <label htmlFor="marketing-search-mobile" className="sr-only">
+                  Search exams
+                </label>
+                <SearchField
+                  id="marketing-search-mobile"
+                  value={query}
+                  onChange={setQuery}
+                  placeholder="Search exams…"
+                  aria-label="Search exams"
+                  variant="header"
+                />
+              </div>
             }
             trailing={
               !me.data ? (
@@ -212,7 +209,6 @@ function MarketingHeaderInner() {
           />
         </div>
 
-        {/* Tablet: keep hamburger for nav links until xl */}
         <MobileNav
           className="hidden shrink-0 md:block xl:hidden"
           breakpointClassName=""
@@ -224,13 +220,19 @@ function MarketingHeaderInner() {
           }))}
           activeId={activeId}
           leading={
-            <SearchField
-              id="marketing-search-tablet"
-              query={query}
-              setQuery={setQuery}
-              onSearch={onSearch}
-              className="w-full"
-            />
+            <div className="w-full">
+              <label htmlFor="marketing-search-tablet" className="sr-only">
+                Search exams
+              </label>
+              <SearchField
+                id="marketing-search-tablet"
+                value={query}
+                onChange={setQuery}
+                placeholder="Search exams…"
+                aria-label="Search exams"
+                variant="header"
+              />
+            </div>
           }
         />
       </div>

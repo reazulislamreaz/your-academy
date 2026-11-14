@@ -11,6 +11,7 @@ import { ApiExceptionFilter } from './common/filters/api-exception.filter';
 import { DatabaseModule } from './database/database.module';
 import { DocumentsModule } from './documents/documents.module';
 import { HealthModule } from './health/health.module';
+import { HomepageModule } from './homepage/homepage.module';
 import { LearningActivityModule } from './learning-activity/learning-activity.module';
 import { NewsModule } from './news/news.module';
 import { PracticeModule } from './practice/practice.module';
@@ -44,6 +45,7 @@ import { UsersModule } from './users/users.module';
     QuestionImportModule,
     BookmarksModule,
     NewsModule,
+    HomepageModule,
     DocumentsModule,
     PublicModule,
     AnalyticsModule,

@@ -1,17 +1,18 @@
 'use client';
 
 import Link from 'next/link';
-import { useDeferredValue, useState } from 'react';
+import { useState } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { FileText, Search } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 import { LoadError } from '@/components/loading';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Input } from '@/components/ui/input';
 import { LoadMoreButton } from '@/components/ui/load-more-button';
+import { SearchField } from '@/components/ui/search-field';
 import { ContentIn } from '@/components/ui/skeleton';
 import { NewsPageSkeleton } from '@/components/skeletons';
 import { listPublicDocuments } from '@/lib/api/public-documents';
+import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 
 function formatBytes(bytes: number | undefined): string | null {
   if (bytes == null || bytes <= 0) return null;
@@ -22,13 +23,13 @@ function formatBytes(bytes: number | undefined): string | null {
 
 export default function NewsPage() {
   const [q, setQ] = useState('');
-  const deferredQ = useDeferredValue(q.trim());
+  const debouncedQ = useDebouncedValue(q.trim(), 350);
 
   const list = useInfiniteQuery({
-    queryKey: ['public-documents', deferredQ],
+    queryKey: ['public-documents', debouncedQ],
     initialPageParam: undefined as string | undefined,
     queryFn: ({ pageParam }) =>
-      listPublicDocuments({ cursor: pageParam, limit: 20, q: deferredQ || undefined }),
+      listPublicDocuments({ cursor: pageParam, limit: 20, q: debouncedQ || undefined }),
     getNextPageParam: (last) => last.pagination?.nextCursor ?? undefined,
   });
 
@@ -42,19 +43,12 @@ export default function NewsPage() {
         description="Admin-published PDF columns — browse and open freely, no login required."
       />
 
-      <div className="relative">
-        <Search
-          className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[var(--muted-strong)]"
-          aria-hidden
-        />
-        <Input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search columns…"
-          className="pl-10"
-          aria-label="Search newspaper columns"
-        />
-      </div>
+      <SearchField
+        value={q}
+        onChange={setQ}
+        placeholder="Search columns…"
+        aria-label="Search newspaper columns"
+      />
 
       {list.isLoading ? <NewsPageSkeleton omitHeader /> : null}
       {list.error ? (
@@ -62,9 +56,9 @@ export default function NewsPage() {
       ) : null}
       {!list.isLoading && !list.isError && items.length === 0 ? (
         <EmptyState
-          title={deferredQ ? 'No matching columns' : 'No published columns yet'}
+          title={debouncedQ ? 'No matching columns' : 'No published columns yet'}
           description={
-            deferredQ
+            debouncedQ
               ? 'Try a different search.'
               : 'When an admin publishes a PDF document, it will appear here.'
           }

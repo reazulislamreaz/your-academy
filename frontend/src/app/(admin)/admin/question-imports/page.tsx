@@ -27,7 +27,9 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { SearchField } from '@/components/ui/search-field';
 import { Select } from '@/components/ui/select';
+import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import {
   type ImportStats,
   type UploadBatch,
@@ -60,6 +62,7 @@ const menuLinkClass =
 export default function QuestionImportsHubPage() {
   const qc = useQueryClient();
   const [q, setQ] = useState('');
+  const debouncedQ = useDebouncedValue(q.trim(), 350);
   const [status, setStatus] = useState('');
   const [subject, setSubject] = useState('');
   const [examCategory, setExamCategory] = useState('');
@@ -78,8 +81,8 @@ export default function QuestionImportsHubPage() {
   });
 
   const filterKey = useMemo(
-    () => ({ q, status, subject, examCategory, dateFrom, dateTo, sort }),
-    [q, status, subject, examCategory, dateFrom, dateTo, sort],
+    () => ({ q: debouncedQ, status, subject, examCategory, dateFrom, dateTo, sort }),
+    [debouncedQ, status, subject, examCategory, dateFrom, dateTo, sort],
   );
 
   const list = useInfiniteQuery({
@@ -87,7 +90,7 @@ export default function QuestionImportsHubPage() {
     initialPageParam: undefined as string | undefined,
     queryFn: async ({ pageParam }) => {
       const qs = new URLSearchParams({ limit: '20', sort });
-      if (q.trim()) qs.set('q', q.trim());
+      if (debouncedQ) qs.set('q', debouncedQ);
       if (status) qs.set('status', status);
       if (subject) qs.set('subject', subject);
       if (examCategory) qs.set('examCategory', examCategory);
@@ -292,11 +295,12 @@ export default function QuestionImportsHubPage() {
           <div className="grid min-w-0 grid-cols-1 gap-3 min-[420px]:grid-cols-2 xl:grid-cols-6">
             <Field className="min-w-0 min-[420px]:col-span-2 xl:col-span-2">
               <Label htmlFor="qi-q">Search</Label>
-              <Input
+              <SearchField
                 id="qi-q"
                 value={q}
-                onChange={(e) => setQ(e.target.value)}
+                onChange={setQ}
                 placeholder="Collection name or batch code"
+                aria-label="Search collections by name or batch code"
               />
             </Field>
             <Field className="min-w-0">

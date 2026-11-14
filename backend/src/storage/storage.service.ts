@@ -461,7 +461,10 @@ export class StorageService {
         ? pdfOk
         : purpose === 'support-attachment'
           ? supportOk
-          : purpose === 'avatar' || purpose === 'question-image' || purpose === 'news-cover'
+          : purpose === 'avatar' ||
+              purpose === 'question-image' ||
+              purpose === 'news-cover' ||
+              purpose === 'homepage-hero'
             ? imageOk
             : false;
 

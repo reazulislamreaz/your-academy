@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FileUp, Plus, Search } from 'lucide-react';
+import { FileUp, Plus } from 'lucide-react';
 import { Suspense, useEffect, useState } from 'react';
 import { AdminMobileCard, AdminMobileCards } from '@/components/admin/admin-mobile-cards';
 import { AdminBulkBar, AdminListMeta, AdminPage, AdminToolbar } from '@/components/admin/admin-page';
@@ -16,14 +16,15 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ConfirmButton } from '@/components/ui/confirm-button';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Input } from '@/components/ui/input';
 import { LoadMoreButton } from '@/components/ui/load-more-button';
+import { SearchField } from '@/components/ui/search-field';
 import { Select } from '@/components/ui/select';
 import { ContentIn } from '@/components/ui/skeleton';
 import { apiFetch } from '@/lib/api/client';
 import type { AdminQuestionListItem } from '@/lib/api/admin-types';
 import { AdminQuestionsPageSkeleton } from '@/components/skeletons';
 import { useCursorList } from '@/lib/hooks/use-cursor-list';
+import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 
 export default function AdminQuestionsPage() {
   return (
@@ -40,25 +41,39 @@ function AdminQuestionsContent() {
   const initialStatus = searchParams.get('status') ?? '';
   const initialQ = searchParams.get('q') ?? '';
   const [status, setStatus] = useState(initialStatus);
-  const [q, setQ] = useState(initialQ);
   const [qDraft, setQDraft] = useState(initialQ);
+  const debouncedQ = useDebouncedValue(qDraft.trim(), 350);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkMsg, setBulkMsg] = useState<string | null>(null);
 
   useEffect(() => {
     setStatus(searchParams.get('status') ?? '');
     const nextQ = searchParams.get('q') ?? '';
-    setQ(nextQ);
-    setQDraft(nextQ);
+    if (nextQ !== debouncedQ) {
+      setQDraft(nextQ);
+    }
     setSelected(new Set());
-  }, [searchParams]);
+  }, [searchParams, debouncedQ]);
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (status) params.set('status', status);
+    if (debouncedQ) params.set('q', debouncedQ);
+    const qs = params.toString();
+    const next = qs ? `/admin/questions?${qs}` : '/admin/questions';
+    const currentQ = searchParams.get('q') ?? '';
+    const currentStatus = searchParams.get('status') ?? '';
+    if (currentQ === debouncedQ && currentStatus === status) return;
+    router.replace(next);
+    setSelected(new Set());
+  }, [debouncedQ, status, router, searchParams]);
 
   const list = useCursorList<AdminQuestionListItem>(
-    ['admin-questions', status, q],
+    ['admin-questions', status, debouncedQ],
     (cursor) => {
       const qs = new URLSearchParams({ limit: '30' });
       if (status) qs.set('status', status);
-      if (q.trim()) qs.set('q', q.trim());
+      if (debouncedQ) qs.set('q', debouncedQ);
       if (cursor) qs.set('cursor', cursor);
       return `/admin/questions?${qs}`;
     },
@@ -124,14 +139,6 @@ function AdminQuestionsContent() {
     });
   }
 
-  function applySearch(nextQ: string, nextStatus: string) {
-    const params = new URLSearchParams();
-    if (nextStatus) params.set('status', nextStatus);
-    if (nextQ.trim()) params.set('q', nextQ.trim());
-    const qs = params.toString();
-    router.replace(qs ? `/admin/questions?${qs}` : '/admin/questions');
-  }
-
   return (
     <AdminPage dense>
       <PageHeader
@@ -157,49 +164,26 @@ function AdminQuestionsContent() {
       />
 
       <AdminToolbar>
-        <form
-          className="admin-filter-grid"
-          onSubmit={(e) => {
-            e.preventDefault();
-            applySearch(qDraft, status);
-            setQ(qDraft.trim());
-            setSelected(new Set());
-          }}
-        >
-          <div className="relative min-w-0">
-            <Search
-              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[var(--muted-strong)]"
-              aria-hidden
-            />
-            <Input
-              value={qDraft}
-              onChange={(e) => setQDraft(e.target.value)}
-              placeholder="Search title, content, or source note"
-              className="h-10 pl-9"
-              aria-label="Search questions"
-            />
-          </div>
+        <div className="admin-filter-grid">
+          <SearchField
+            value={qDraft}
+            onChange={setQDraft}
+            placeholder="Search title, content, or source note"
+            aria-label="Search questions"
+          />
           <Select
             id="status"
             className="h-10 w-full sm:w-44"
             value={status}
             aria-label="Filter by status"
-            onChange={(e) => {
-              const next = e.target.value;
-              setStatus(next);
-              setSelected(new Set());
-              applySearch(qDraft, next);
-            }}
+            onChange={(e) => setStatus(e.target.value)}
           >
             <option value="">All statuses</option>
             <option value="DRAFT">Draft</option>
             <option value="PUBLISHED">Published</option>
             <option value="ARCHIVED">Archived</option>
           </Select>
-          <Button type="submit" variant="outline" className="h-10 sm:w-auto">
-            Search
-          </Button>
-        </form>
+        </div>
       </AdminToolbar>
 
       {bulkMsg ? <Alert variant="success">{bulkMsg}</Alert> : null}
@@ -224,7 +208,7 @@ function AdminQuestionsContent() {
         <EmptyState
           title="No questions found"
           description={
-            q || status
+            debouncedQ || status
               ? 'Try a different search or status filter.'
               : 'Create your first MCQ or import a spreadsheet.'
           }
@@ -250,7 +234,7 @@ function AdminQuestionsContent() {
             count={items.length}
             noun="question"
             hasMore={list.hasNextPage}
-            query={q || undefined}
+            query={debouncedQ || undefined}
           />
           <AdminMobileCards>
             {items.map((qItem) => (
@@ -334,7 +318,7 @@ function AdminQuestionsContent() {
                 count={items.length}
                 noun="question"
                 hasMore={list.hasNextPage}
-                query={q || undefined}
+                query={debouncedQ || undefined}
               />
             }
             footer={

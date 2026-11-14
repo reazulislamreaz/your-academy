@@ -41,6 +41,12 @@ enum DocumentVisibility {
   PREMIUM
 }
 
+/// Singleton homepage CMS rows: one DRAFT + one PUBLISHED (DEC-038).
+enum HomepageContentStatus {
+  DRAFT
+  PUBLISHED
+}
+
 enum MediaResourceType {
   IMAGE
   RAW
@@ -191,6 +197,7 @@ model User {
   supportMessagesSent          SupportMessage[]      @relation("SupportMessageSender")
   supportInternalNotes         SupportInternalNote[]
   linkedSupportGuestSessions   SupportGuestSession[] @relation("SupportGuestLinkedUser")
+  homepageContentUpdates       HomepageContent[]     @relation("HomepageContentUpdater")
 
   @@index([status])
   @@index([trialEndsAt])
@@ -436,10 +443,29 @@ model MediaAsset {
   newsCovers         News[]              @relation("NewsCover")
   documents          Document[]          @relation("DocumentFile")
   supportAttachments SupportAttachment[]
+  homepageHeroImages HomepageContent[]   @relation("HomepageHeroImage")
 
   @@unique([publicId, resourceType])
   @@index([uploadedById])
   @@map("media_assets")
+}
+
+/// Marketing homepage CMS document (DEC-038). Exactly one DRAFT and one PUBLISHED row.
+model HomepageContent {
+  id               String                 @id @default(uuid()) @db.Uuid
+  status           HomepageContentStatus  @unique
+  payload          Json
+  heroImageAssetId String?                @map("hero_image_asset_id") @db.Uuid
+  publishedAt      DateTime?              @map("published_at") @db.Timestamptz(3)
+  updatedById      String?                @map("updated_by_id") @db.Uuid
+  createdAt        DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime               @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  heroImage MediaAsset? @relation("HomepageHeroImage", fields: [heroImageAssetId], references: [id], onDelete: SetNull)
+  updatedBy User?       @relation("HomepageContentUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([heroImageAssetId])
+  @@map("homepage_content")
 }
 
 /// Learner-owned MCQ save folder (Facebook-style collection). Private per user.

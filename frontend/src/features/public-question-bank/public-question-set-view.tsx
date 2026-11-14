@@ -2,18 +2,19 @@
 
 import Link from 'next/link';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Search } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
 import { ListCardSkeleton, LoadError } from '@/components/loading';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { SearchField } from '@/components/ui/search-field';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PublicMcqCard } from '@/components/marketing/public-mcq-card';
 import {
   getPublicQuestionSet,
   listPublicSetQuestions,
 } from '@/lib/api/public-questions';
+import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import { AnswerVisibilityToggle } from './answer-visibility-toggle';
 import { ExamInfoCard } from './exam-info-card';
 import { useAnswerVisibility } from './use-answer-visibility';
@@ -26,7 +27,7 @@ type Props = {
 
 export function PublicQuestionSetView({ setId, className }: Props) {
   const [qInput, setQInput] = useState('');
-  const [q, setQ] = useState('');
+  const q = useDebouncedValue(qInput.trim(), 350);
   const visibility = useAnswerVisibility();
 
   const setQry = useQuery({
@@ -86,27 +87,13 @@ export function PublicQuestionSetView({ setId, className }: Props) {
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <AnswerVisibilityToggle mode={visibility.mode} onChange={visibility.setMode} />
-        <form
-          className="flex min-w-0 flex-1 gap-2 lg:max-w-md"
-          onSubmit={(e) => {
-            e.preventDefault();
-            setQ(qInput.trim());
-          }}
-        >
-          <div className="relative min-w-0 flex-1">
-            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[var(--muted)]" />
-            <Input
-              value={qInput}
-              onChange={(e) => setQInput(e.target.value)}
-              placeholder="Search in this set…"
-              className="pl-9"
-              aria-label="Search in this set"
-            />
-          </div>
-          <Button type="submit" variant="outline" className="cursor-pointer shrink-0">
-            Search
-          </Button>
-        </form>
+        <SearchField
+          value={qInput}
+          onChange={setQInput}
+          placeholder="Search in this set…"
+          aria-label="Search in this set"
+          className="min-w-0 flex-1 lg:max-w-md"
+        />
       </div>
 
       {list.isLoading ? (

@@ -137,6 +137,11 @@ Profile picture: separate upload after auth or multipart field if approved.
 | GET | `/public/question-sets/years` | Distinct exam years for Preli bank year chips | Public | — |
 | GET | `/public/question-sets/:id` | Question Set metadata (`sheetPreamble`, `examYear`, `placements`) | Public | — |
 | GET | `/public/question-sets/:id/questions` | MCQs in a set in original upload `rowNumber` order (`sourceSerial`, `sectionTitle`; no category badge under stem) | Public | — |
+| GET | `/public/homepage` | Published homepage CMS payload + hero image URL (DEC-038; Cache-Control max-age=60) | Public | — |
+| GET | `/admin/homepage` | Draft + published homepage CMS documents | User | ADMIN |
+| PUT | `/admin/homepage/draft` | Replace draft payload (+ optional `heroImageAssetId`) | User | ADMIN |
+| POST | `/admin/homepage/publish` | Copy draft → published; invalidate public cache | User | ADMIN |
+| POST | `/admin/homepage/restore` | Copy published → draft | User | ADMIN |
 | GET | `/admin/categories` | Admin tree including inactive + usage counts | User | ADMIN |
 | POST | `/admin/categories` | Create category or subcategory (`parentId`); slug optional (auto) | User | ADMIN |
 | PATCH | `/admin/categories/:id` | Update name/description/status/parent | User | ADMIN |

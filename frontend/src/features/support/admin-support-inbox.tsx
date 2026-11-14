@@ -11,7 +11,6 @@ import {
   Paperclip,
   PanelRightClose,
   PanelRightOpen,
-  Search,
   SendHorizontal,
   Smile,
 } from 'lucide-react';
@@ -29,8 +28,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { SearchField } from '@/components/ui/search-field';
 import { Textarea } from '@/components/ui/textarea';
 import { useMe } from '@/features/auth/use-auth';
+import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import {
   createSupportNote,
   getAdminSupportConversation,
@@ -94,7 +95,7 @@ export function AdminSupportInbox() {
   const me = useMe();
   const qc = useQueryClient();
   const [q, setQ] = useState('');
-  const [debouncedQ, setDebouncedQ] = useState('');
+  const debouncedQ = useDebouncedValue(q.trim(), 350);
   const [filter, setFilter] = useState<InboxFilter>('all');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mobilePane, setMobilePane] = useState<'list' | 'thread'>('list');
@@ -122,11 +123,6 @@ export function AdminSupportInbox() {
     joinConversation: (id: string) => void;
     markRead: (id: string) => void;
   } | null>(null);
-
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedQ(q.trim()), 250);
-    return () => clearTimeout(t);
-  }, [q]);
 
   const listQ = useQuery({
     queryKey: ['admin-support', debouncedQ, filter],
@@ -425,15 +421,12 @@ export function AdminSupportInbox() {
             </div>
             <Badge variant="info">{items.filter((c) => c.adminUnreadCount > 0).length} unread</Badge>
           </div>
-          <div className="relative">
-            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[var(--muted)]" />
-            <Input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Search name, WhatsApp…"
-              className="pl-9"
-            />
-          </div>
+          <SearchField
+            value={q}
+            onChange={setQ}
+            placeholder="Search name, WhatsApp…"
+            aria-label="Search conversations"
+          />
           <div className="flex flex-wrap gap-1.5">
             {FILTERS.map((f) => (
               <button

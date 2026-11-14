@@ -2,7 +2,6 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
-import { Search } from 'lucide-react';
 import { useState } from 'react';
 import { AdminMobileCard, AdminMobileCards } from '@/components/admin/admin-mobile-cards';
 import { AdminListMeta, AdminPage, AdminToolbar } from '@/components/admin/admin-page';
@@ -16,20 +15,21 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ConfirmButton } from '@/components/ui/confirm-button';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Input } from '@/components/ui/input';
 import { LoadMoreButton } from '@/components/ui/load-more-button';
+import { SearchField } from '@/components/ui/search-field';
 import { Select } from '@/components/ui/select';
 import { ApiError } from '@/lib/api/client';
 import type { AdminUserListItem } from '@/lib/api/admin-activity-types';
 import { AdminUsersPageSkeleton, AdminUsersTableSkeleton } from '@/components/skeletons';
 import { ContentIn } from '@/components/ui/skeleton';
 import { useCursorList } from '@/lib/hooks/use-cursor-list';
+import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import { apiFetch } from '@/lib/api/client';
 
 export default function AdminUsersPage() {
   const qc = useQueryClient();
   const [q, setQ] = useState('');
-  const [qApplied, setQApplied] = useState('');
+  const qApplied = useDebouncedValue(q.trim(), 350);
   const [status, setStatus] = useState<'' | 'ACTIVE' | 'SUSPENDED'>('');
   const [error, setError] = useState<string | null>(null);
 
@@ -37,7 +37,7 @@ export default function AdminUsersPage() {
     ['admin-users', qApplied, status],
     (cursor) => {
       const params = new URLSearchParams({ limit: '30' });
-      if (qApplied.trim()) params.set('q', qApplied.trim());
+      if (qApplied) params.set('q', qApplied);
       if (status) params.set('status', status);
       if (cursor) params.set('cursor', cursor);
       return `/admin/users?${params}`;
@@ -74,26 +74,13 @@ export default function AdminUsersPage() {
       />
 
       <AdminToolbar>
-        <form
-          className="admin-filter-grid"
-          onSubmit={(e) => {
-            e.preventDefault();
-            setQApplied(q.trim());
-          }}
-        >
-          <div className="relative min-w-0">
-            <Search
-              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[var(--muted-strong)]"
-              aria-hidden
-            />
-            <Input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Search name, WhatsApp, or email"
-              className="h-10 pl-9"
-              aria-label="Search users"
-            />
-          </div>
+        <div className="admin-filter-grid">
+          <SearchField
+            value={q}
+            onChange={setQ}
+            placeholder="Search name, WhatsApp, or email"
+            aria-label="Search users"
+          />
           <Select
             value={status}
             onChange={(e) => setStatus(e.target.value as '' | 'ACTIVE' | 'SUSPENDED')}
@@ -104,10 +91,7 @@ export default function AdminUsersPage() {
             <option value="ACTIVE">Active</option>
             <option value="SUSPENDED">Suspended</option>
           </Select>
-          <Button type="submit" variant="outline" className="h-10">
-            Search
-          </Button>
-        </form>
+        </div>
       </AdminToolbar>
 
       {error ? <Alert variant="danger">{error}</Alert> : null}

@@ -29,7 +29,7 @@ export async function getStorageStatus(): Promise<{ configured: boolean }> {
  * Throws if Cloudinary is not configured on the API.
  */
 export async function uploadViaSignedRequest(
-  purpose: 'avatar' | 'question-image' | 'news-cover' | 'pdf',
+  purpose: 'avatar' | 'question-image' | 'news-cover' | 'homepage-hero' | 'pdf',
   file: File,
 ): Promise<MediaAsset> {
   const sign = await apiFetch<SignResponse>('/storage/sign-upload', {

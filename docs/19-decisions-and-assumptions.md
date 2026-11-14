@@ -31,6 +31,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | DEC-026 | MCQ Save to Collection folders | CONFIRMED |
 | DEC-027 | Learner Orbit dark charcoal theme | CONFIRMED |
 | DEC-037 | Platform-wide Anek Latin + Anek Bangla bilingual typography | CONFIRMED |
+| DEC-038 | Homepage CMS (draft + published) | CONFIRMED |
 | DEC-028 | Learner dashboard light/dark toggle | CONFIRMED |
 | DEC-029 | Real-time support messaging (Socket.IO) | CONFIRMED |
 | DEC-030 | Role-exclusive dashboard routing (ADMIN vs learner) | CONFIRMED |
@@ -351,6 +352,15 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Decision | **Two-tier typography:** (1) **Anek Latin + Anek Bangla** for UI/brand (headings, nav, buttons, dashboards). (2) **Hind Siliguri** for educational Q&A (MCQ stems, options, answers, explanations, exam prose) — regular 400 / medium 500, reading line-height ~1.85. Loaded via `next/font`; CSS `--font-stack` vs `--font-reading-stack`. |
 | Impact | `frontend/src/lib/fonts.ts`, `globals.css`, shared UI controls, MCQ/reading surfaces, `docs/21-design-system.md` |
 | Status | **CONFIRMED** (product request 2026-11-14; upgraded pairing same day) |
+
+### DEC-038 — Homepage CMS (draft + published)
+
+| Field | Value |
+|-------|-------|
+| Question | Can admins edit the full marketing homepage without code changes? |
+| Decision | **Yes.** Singleton `HomepageContent` rows (`DRAFT` + `PUBLISHED`) hold a validated JSON payload covering Hero, Categories, Topics, Why/Progress/CTA, Latest headers, and Newsletter. Publish copies draft → published; restore copies published → draft. Public `GET /public/homepage` serves published only (60s cache). Hero images via Cloudinary purpose `homepage-hero`. Category tiles link existing Category IDs (no duplicate category records). Seed defaults match prior hardcoded copy. |
+| Impact | Prisma migration, `HomepageModule`, admin `/admin/homepage`, marketing page wiring, shared `homepagePayloadSchema` |
+| Status | **CONFIRMED** (product request 2026-11-14) |
 
 ### DEC-028 — Learner dashboard light / dark toggle
 
