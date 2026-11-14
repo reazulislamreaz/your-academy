@@ -24,14 +24,6 @@ type Props = {
   className?: string;
 };
 
-function formatUploadDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-}
-
 /** Debounced live search — updates after typing pauses. */
 function useDebouncedValue<T>(value: T, delayMs = 300): T {
   const [debounced, setDebounced] = useState(value);
@@ -297,12 +289,6 @@ export function PublicQuestionBank({
               <h2 className="font-display text-lg font-bold tracking-tight text-[var(--ink)] sm:text-xl">
                 {set.title}
               </h2>
-              <p className="mt-1.5 text-sm text-[var(--muted-strong)]">
-                {formatUploadDate(set.uploadedAt)}
-                {set.subject ? ` · ${set.subject}` : ''}
-                {set.examYear ? ` · ${set.examYear}` : ''}
-                {` · ${set.questionCount} question${set.questionCount === 1 ? '' : 's'}`}
-              </p>
             </Link>
           </li>
         ))}
