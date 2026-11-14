@@ -285,41 +285,44 @@ export default function AdminHomepagePage() {
                 }
               />
             </Field>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <Field label="Title before highlight">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Brand heading">
                 <Input
                   value={payload.hero.titleBefore}
                   onChange={(e) =>
                     patch((p) => ({ ...p, hero: { ...p.hero, titleBefore: e.target.value } }))
                   }
+                  placeholder="Your Academy"
                 />
               </Field>
-              <Field label="Highlighted words">
-                <Input
-                  value={payload.hero.titleHighlight}
-                  onChange={(e) =>
-                    patch((p) => ({
-                      ...p,
-                      hero: { ...p.hero, titleHighlight: e.target.value },
-                    }))
-                  }
-                />
-              </Field>
-              <Field label="Title after">
+              <Field label="Side label (right of brand)">
                 <Input
                   value={payload.hero.titleAfter ?? ''}
                   onChange={(e) =>
                     patch((p) => ({ ...p, hero: { ...p.hero, titleAfter: e.target.value } }))
                   }
+                  placeholder="An Online Learning Platform"
                 />
               </Field>
             </div>
-            <Field label="Description">
+            <Field label="Fallback side label (used if side label empty)">
+              <Input
+                value={payload.hero.titleHighlight}
+                onChange={(e) =>
+                  patch((p) => ({
+                    ...p,
+                    hero: { ...p.hero, titleHighlight: e.target.value },
+                  }))
+                }
+              />
+            </Field>
+            <Field label="Centered tagline">
               <Textarea
                 value={payload.hero.description}
                 onChange={(e) =>
                   patch((p) => ({ ...p, hero: { ...p.hero, description: e.target.value } }))
                 }
+                placeholder="Boost Your Knowledge"
               />
             </Field>
             <div className="grid gap-3 sm:grid-cols-2">

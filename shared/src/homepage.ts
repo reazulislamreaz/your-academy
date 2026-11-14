@@ -134,11 +134,10 @@ export function createDefaultHomepagePayload(): HomepagePayload {
     hero: {
       visible: true,
       eyebrow: "Bangladesh's Premier Job Exam Preparation Platform",
-      titleBefore: 'Your Dream Job Starts',
-      titleHighlight: 'Here!',
-      titleAfter: '',
-      description:
-        'Practice MCQs, Get Expert Solutions, and Boost Your Preparation for Govt. & Bank Jobs.',
+      titleBefore: 'Your Academy',
+      titleHighlight: '',
+      titleAfter: 'An Online Learning Platform',
+      description: 'Boost Your Knowledge',
       primaryCta: { label: 'Start Practicing', href: '/register', visible: true },
       secondaryCta: {
         label: 'Explore Question Bank',

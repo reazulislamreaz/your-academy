@@ -64,7 +64,7 @@ describe('HomepageService', () => {
     });
 
     const result = await service.publish(user as never);
-    expect(result.payload.hero.titleHighlight).toBe('Here!');
+    expect(result.payload.hero.titleHighlight).toBe('');
     expect(prisma.homepageContent.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { status: HomepageContentStatus.PUBLISHED },

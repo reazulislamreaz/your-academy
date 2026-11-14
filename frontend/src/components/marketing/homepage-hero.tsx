@@ -14,38 +14,41 @@ export function HomepageHero({ hero, heroImageUrl }: Props) {
   if (!hero.visible) return null;
 
   const imageSrc = heroImageUrl?.trim() || '/images/hero-students.jpg';
+  const brand = hero.titleBefore.trim();
+  const sideLabel = (hero.titleAfter?.trim() || hero.titleHighlight.trim()).trim();
+  const tagline = hero.description.trim();
 
   return (
     <section className="relative overflow-hidden bg-[var(--bg-inverse)] text-white">
       <div className="relative mx-auto grid w-full max-w-[1280px] items-stretch lg:grid-cols-2">
-        <div className="motion-rise relative z-10 space-y-6 px-4 py-12 sm:px-8 sm:py-14 lg:py-16 lg:pr-8 lg:pl-6 xl:pl-8">
-          <p className="inline-flex items-center gap-2 rounded-full bg-[#5b6b80]/45 px-4 py-2 text-sm font-medium text-white/90 backdrop-blur-sm">
-            <GraduationCap className="h-4 w-4 shrink-0 text-white" aria-hidden />
-            {hero.eyebrow}
-          </p>
-          <h1 className="font-display text-[clamp(1.85rem,5vw,3.75rem)] font-bold text-balance">
-            {hero.titleBefore}{' '}
-            <span className="relative inline-block text-[var(--highlight)]">
-              {hero.titleHighlight}
-              <svg
-                aria-hidden
-                viewBox="0 0 120 12"
-                className="absolute -bottom-1 left-0 w-full"
-                fill="none"
-              >
-                <path
-                  d="M2 9 Q 30 2 60 7 Q 90 12 118 5"
-                  stroke="var(--highlight)"
-                  strokeWidth="3.5"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </span>
-            {hero.titleAfter ? ` ${hero.titleAfter}` : null}
-          </h1>
-          <p className="max-w-md text-base leading-relaxed text-white/75 sm:text-lg">
-            {hero.description}
-          </p>
+        <div className="motion-rise relative z-10 flex flex-col justify-center space-y-7 px-4 py-12 sm:px-8 sm:py-14 lg:py-16 lg:pr-8 lg:pl-6 xl:pl-8">
+          {hero.eyebrow.trim() ? (
+            <p className="inline-flex max-w-full items-center gap-2 self-start rounded-full bg-[#5b6b80]/45 px-4 py-2 text-sm font-medium text-white/90 backdrop-blur-sm">
+              <GraduationCap className="h-4 w-4 shrink-0 text-white" aria-hidden />
+              <span className="truncate">{hero.eyebrow.trim()}</span>
+            </p>
+          ) : null}
+
+          <div className="self-center sm:self-start">
+            <div className="inline-flex max-w-full flex-col items-stretch gap-2.5 sm:gap-3">
+              <h1 className="flex max-w-full flex-row flex-wrap items-center justify-center gap-x-3 gap-y-1 sm:flex-nowrap sm:justify-start sm:gap-x-4">
+                <span className="font-display shrink-0 text-[clamp(2.15rem,6.2vw,3.85rem)] leading-[1.05] font-extrabold tracking-[-0.02em]">
+                  {brand}
+                </span>
+                {sideLabel ? (
+                  <span className="max-w-[12.5rem] text-center text-[clamp(0.8125rem,2vw,1.0625rem)] leading-snug font-medium tracking-[0.015em] text-white/75 sm:max-w-[13.5rem] sm:text-left md:max-w-[15rem]">
+                    {sideLabel}
+                  </span>
+                ) : null}
+              </h1>
+              {tagline ? (
+                <p className="text-center font-display text-[clamp(1.05rem,2.6vw,1.375rem)] leading-snug font-semibold tracking-[0.01em] text-white/90">
+                  {tagline}
+                </p>
+              ) : null}
+            </div>
+          </div>
+
           <div className="flex w-full max-w-md flex-col gap-3 pt-1 sm:max-w-none sm:flex-row sm:flex-wrap">
             {hero.primaryCta.visible ? (
               <Link href={hero.primaryCta.href} className="w-full sm:w-auto">
@@ -67,8 +70,9 @@ export function HomepageHero({ hero, heroImageUrl }: Props) {
               </Link>
             ) : null}
           </div>
+
           {hero.stats.length > 0 ? (
-            <dl className="flex flex-wrap items-center gap-x-0 gap-y-4 pt-4">
+            <dl className="flex flex-wrap items-center gap-x-0 gap-y-4 pt-1">
               {hero.stats.map((stat, i) => (
                 <div key={`${stat.label}-${i}`} className="flex items-center">
                   {i > 0 ? (
