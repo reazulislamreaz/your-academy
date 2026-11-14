@@ -281,7 +281,7 @@ model Question {
   questionDate   DateTime?      @map("question_date") @db.Timestamptz(3)
   /// Section heading that preceded this MCQ in the Excel sheet (first-column preamble rows).
   sectionTitle   String?        @map("section_title") @db.VarChar(500)
-  /// SHA-256 of normalized question text for cross-file duplicate detection (DEC-024).
+  /// SHA-256 of normalized question text + correct answer content for duplicate detection (DEC-024).
   contentHash    String?        @map("content_hash") @db.VarChar(64)
   uploadBatchId  String?        @map("upload_batch_id") @db.Uuid
   imageAssetId   String?        @map("image_asset_id") @db.Uuid

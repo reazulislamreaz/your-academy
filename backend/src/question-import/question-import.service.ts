@@ -33,7 +33,15 @@ import {
   parseQuestionDate,
   toIsoDateString,
 } from './question-date.util';
-import { hashFileBuffer, hashQuestionContent, slugifyBatchCode } from './question-normalize';
+import {
+  answerSnippet,
+  hashFileBuffer,
+  hashQuestionContent,
+  hashQuestionIdentity,
+  normalizeAnswerText,
+  resolveCorrectOptionContent,
+  slugifyBatchCode,
+} from './question-normalize';
 
 const MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
 const MAX_ROWS = 5000;
@@ -444,9 +452,22 @@ export class QuestionImportService {
     await pipeline(Readable.from(file.buffer), createWriteStream(storagePath));
 
     const categoryIndex = await this.buildCategoryIndex();
-    const existingHashes = await this.loadExistingHashes(
-      parsed.map((r) => hashQuestionContent(r.question)),
-    );
+    const identityHashes: string[] = [];
+    const legacyTextHashes: string[] = [];
+    for (const row of parsed) {
+      if (!row.question) continue;
+      legacyTextHashes.push(hashQuestionContent(row.question));
+      const correct = normalizeCorrectAnswer(row.correctAnswer);
+      if (!correct) continue;
+      const correctContent = resolveCorrectOptionContent(correct, {
+        A: row.optionA,
+        B: row.optionB,
+        C: row.optionC,
+        D: row.optionD,
+      });
+      identityHashes.push(hashQuestionIdentity(row.question, correctContent));
+    }
+    const existingDuplicates = await this.loadExistingDuplicates(identityHashes, legacyTextHashes);
 
     const collectionSubject = input.subjectHint?.trim() || '';
     const collectionTopic = input.topicHint?.trim() || '';
@@ -551,14 +572,14 @@ export class QuestionImportService {
     let validCount = 0;
     let invalidCount = 0;
     let duplicateCount = 0;
-    const seenInFile = new Map<string, number>();
+    /** identityHash → first row number + answer snippet in this file */
+    const seenInFile = new Map<string, { rowNumber: number; answer: string }>();
 
     for (const row of parsed) {
       const subjectName = row.subject || collectionSubject;
       const topicName = row.topic || resolvedTopicHint;
       const examCategory = row.examCategory || collectionExam;
 
-      const hash = row.question ? hashQuestionContent(row.question) : null;
       const errors: string[] = [];
 
       if (!row.question) errors.push('Column "প্রশ্ন": question text is required');
@@ -574,6 +595,19 @@ export class QuestionImportService {
             (row.correctAnswer.trim() || '(empty)'),
         );
       }
+
+      const correctContent = resolveCorrectOptionContent(correct, {
+        A: row.optionA,
+        B: row.optionB,
+        C: row.optionC,
+        D: row.optionD,
+      });
+      /** Identity hash requires both question text and correct-answer content. */
+      const hash =
+        row.question && correct
+          ? hashQuestionIdentity(row.question, correctContent)
+          : null;
+      const legacyTextHash = row.question ? hashQuestionContent(row.question) : null;
 
       const difficulty = parseDifficulty(row.difficulty);
       if (!difficulty) {
@@ -665,6 +699,7 @@ export class QuestionImportService {
         continue;
       }
 
+      const answerLabel = answerSnippet(correctContent);
       const priorInFile = hash ? seenInFile.get(hash) : undefined;
       if (hash && priorInFile) {
         duplicateCount += 1;
@@ -690,12 +725,17 @@ export class QuestionImportService {
           questionDate: rowQuestionDate,
           source: row.source || null,
           sectionTitle,
-          errorMessage: `Row ${row.rowNumber}: Duplicate of row ${priorInFile} in this file`,
+          errorMessage:
+            `Row ${row.rowNumber}: Duplicate of row ${priorInFile.rowNumber} in this file ` +
+            `(same question text and correct answer "${priorInFile.answer}")`,
         });
         continue;
       }
 
-      const existing = hash ? existingHashes.get(hash) : undefined;
+      const existing =
+        hash || legacyTextHash
+          ? existingDuplicates.findMatch(hash, legacyTextHash, correctContent)
+          : undefined;
       if (existing) {
         duplicateCount += 1;
         rowCreates.push({
@@ -721,12 +761,15 @@ export class QuestionImportService {
           source: row.source || null,
           sectionTitle,
           existingQuestionId: existing.id,
-          errorMessage: `Row ${row.rowNumber}: Duplicate of existing question (${existing.title.slice(0, 80)})`,
+          errorMessage:
+            `Row ${row.rowNumber}: Duplicate of existing question ` +
+            `("${existing.title.slice(0, 80)}") — same question text and correct answer ` +
+            `"${answerSnippet(existing.correctAnswer || correctContent)}"`,
         });
         continue;
       }
 
-      if (hash) seenInFile.set(hash, row.rowNumber);
+      if (hash) seenInFile.set(hash, { rowNumber: row.rowNumber, answer: answerLabel });
       validCount += 1;
       rowCreates.push({
         id: randomUUID(),
@@ -974,7 +1017,7 @@ export class QuestionImportService {
             failedCount += 1;
             const message =
               err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002'
-                ? 'Duplicate content hash — question already exists'
+                ? 'Duplicate question — same question text and correct answer already exist'
                 : err instanceof Error
                   ? err.message.slice(0, 500)
                   : 'Import failed';
@@ -1159,34 +1202,110 @@ export class QuestionImportService {
     return { rootsByName, topicsByParentAndName };
   }
 
-  private async loadExistingHashes(hashes: string[]) {
-    const unique = [...new Set(hashes.filter(Boolean))];
-    const map = new Map<string, { id: string; title: string }>();
-    const chunkSize = 500;
-    for (let i = 0; i < unique.length; i += chunkSize) {
-      const slice = unique.slice(i, i + chunkSize);
-      const found = await this.prisma.question.findMany({
-        where: { deletedAt: null, contentHash: { in: slice } },
-        select: { id: true, title: true, contentHash: true },
-      });
-      for (const q of found) {
-        if (q.contentHash) map.set(q.contentHash, { id: q.id, title: q.title });
+  /**
+   * Batch-load candidates by identity hash (Q+A) and legacy text-only hash.
+   * A row is a DB duplicate only when both normalized question and correct answer match.
+   */
+  private async loadExistingDuplicates(identityHashes: string[], legacyTextHashes: string[]) {
+    type Existing = { id: string; title: string; correctAnswer: string; identityHash: string };
+    const byIdentity = new Map<string, Existing>();
+    const byLegacyText = new Map<string, Existing[]>();
+
+    const loadByHashes = async (hashes: string[]) => {
+      const unique = [...new Set(hashes.filter(Boolean))];
+      const chunkSize = 500;
+      for (let i = 0; i < unique.length; i += chunkSize) {
+        const slice = unique.slice(i, i + chunkSize);
+        const found = await this.prisma.question.findMany({
+          where: { deletedAt: null, contentHash: { in: slice } },
+          select: {
+            id: true,
+            title: true,
+            content: true,
+            contentHash: true,
+            options: {
+              where: { isCorrect: true },
+              select: { content: true },
+              take: 1,
+            },
+          },
+        });
+        for (const q of found) {
+          const correctAnswer = q.options[0]?.content ?? '';
+          const identityHash = hashQuestionIdentity(q.content, correctAnswer);
+          const entry: Existing = {
+            id: q.id,
+            title: q.title,
+            correctAnswer,
+            identityHash,
+          };
+          byIdentity.set(identityHash, entry);
+          if (q.contentHash) {
+            const legacyList = byLegacyText.get(q.contentHash) ?? [];
+            legacyList.push(entry);
+            byLegacyText.set(q.contentHash, legacyList);
+          }
+          // Upgrade legacy text-only hashes when we touch them.
+          if (q.contentHash && q.contentHash !== identityHash) {
+            try {
+              await this.prisma.question.update({
+                where: { id: q.id },
+                data: { contentHash: identityHash },
+              });
+            } catch {
+              // Unique collision from an already-upgraded twin; keep looking up via maps.
+            }
+          }
+        }
       }
-    }
-    return map;
+    };
+
+    await loadByHashes(identityHashes);
+    await loadByHashes(legacyTextHashes);
+
+    return {
+      findMatch(
+        identityHash: string | null,
+        legacyTextHash: string | null,
+        correctAnswerContent: string,
+      ): Existing | undefined {
+        if (identityHash) {
+          const hit = byIdentity.get(identityHash);
+          if (hit) return hit;
+        }
+        // Legacy text-only hashes: same question text is only a duplicate when answers match too.
+        if (!legacyTextHash) return undefined;
+        const candidates = byLegacyText.get(legacyTextHash) ?? [];
+        if (identityHash) {
+          return candidates.find((c) => c.identityHash === identityHash);
+        }
+        const wanted = normalizeAnswerText(correctAnswerContent);
+        return candidates.find((c) => normalizeAnswerText(c.correctAnswer) === wanted);
+      },
+    };
   }
 
   private async backfillMissingContentHashes() {
     const missing = await this.prisma.question.findMany({
       where: { deletedAt: null, contentHash: null },
-      select: { id: true, content: true },
+      select: {
+        id: true,
+        content: true,
+        options: {
+          where: { isCorrect: true },
+          select: { content: true },
+          take: 1,
+        },
+      },
       take: 2000,
     });
     for (const q of missing) {
       try {
         await this.prisma.question.update({
           where: { id: q.id },
-          data: { contentHash: hashQuestionContent(q.content) },
+          data: {
+            contentHash: hashQuestionIdentity(q.content, q.options[0]?.content ?? ''),
+          },
         });
       } catch {
         // Skip collisions from legacy near-duplicates; import still hashes new rows.

@@ -480,7 +480,7 @@ function QuestionImportDetailContent() {
           <div>
             <h2 className="font-display text-base font-bold">Question preview</h2>
             <p className="text-sm text-[var(--muted-strong)]">
-              Row-level validation with options and duplicate highlights.
+              Row-level validation with options. Duplicates require matching question text and correct answer.
             </p>
           </div>
           <Select

@@ -215,7 +215,7 @@ Query params for list: `cursor`, `limit`, `categoryId`, `subcategoryId`, `diffic
 | PATCH | `/admin/question-imports/:id/archive` | Archive batch (questions kept) | User | ADMIN |
 | DELETE | `/admin/question-imports/:id` | Delete non-completed batch | User | ADMIN |
 
-Duplicate file (`409 DUPLICATE_FILE`) when the same SHA-256 was already **completed**. Row-level duplicates use normalized `contentHash`.
+Duplicate file (`409 DUPLICATE_FILE`) when the same SHA-256 was already **completed**. Row-level duplicates use `contentHash` = SHA-256 of normalized question text **and** correct-answer content (same stem with a different correct option is not a duplicate).
 
 ---
 
