@@ -348,7 +348,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Field | Value |
 |-------|-------|
 | Question | How should Bengali and English UI/educational text share a consistent type system? |
-| Decision | **Anek Latin + Anek Bangla** (Ek Type multi-script family) is the premium bilingual stack for marketing, auth, admin, learner, and MCQ/news reading. Loaded via `next/font`; CSS `--font-stack` uses Latin first then Bangla fallback so mixed strings share one design voice. Hind Siliguri / Inter+Noto / Baloo rejected (plain, mismatched, or playful). Bengali-safe line-heights, refined scale, min-height controls; prose utilities `.type-prose*` / `.type-mcq-option`. |
+| Decision | **Two-tier typography:** (1) **Anek Latin + Anek Bangla** for UI/brand (headings, nav, buttons, dashboards). (2) **Hind Siliguri** for educational Q&A (MCQ stems, options, answers, explanations, exam prose) — regular 400 / medium 500, reading line-height ~1.85. Loaded via `next/font`; CSS `--font-stack` vs `--font-reading-stack`. |
 | Impact | `frontend/src/lib/fonts.ts`, `globals.css`, shared UI controls, MCQ/reading surfaces, `docs/21-design-system.md` |
 | Status | **CONFIRMED** (product request 2026-11-14; upgraded pairing same day) |
 

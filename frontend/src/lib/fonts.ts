@@ -1,10 +1,8 @@
-import { Anek_Bangla, Anek_Latin } from 'next/font/google';
+import { Anek_Bangla, Anek_Latin, Hind_Siliguri } from 'next/font/google';
 
 /**
- * Premium bilingual stack — Anek Latin + Anek Bangla (Ek Type / Google Fonts).
- * Designed as one multi-script family so Bn/En share visual DNA.
- * Loaded as variable fonts (efficient; avoids next/font static font-stretch parse issues).
- * CSS stack: Latin first, Bangla fallback — see `--font-stack` in globals.css (DEC-037).
+ * UI chrome — Anek Latin + Anek Bangla (premium multi-script brand voice).
+ * Variable load; CSS stack Latin → Bangla. See DEC-037.
  */
 export const fontLatin = Anek_Latin({
   subsets: ['latin'],
@@ -20,12 +18,23 @@ export const fontBengali = Anek_Bangla({
   weight: 'variable',
 });
 
-/** Apply both CSS variables on <html>. */
-export const fontVariableClassName = `${fontLatin.variable} ${fontBengali.variable}`;
+/**
+ * Educational reading — Hind Siliguri (simple Bn+Latin).
+ * Used for MCQ stems, options, answers, explanations — prioritize long-form comfort
+ * over decorative UI letterforms.
+ */
+export const fontReading = Hind_Siliguri({
+  subsets: ['latin', 'bengali'],
+  variable: '--font-reading-face',
+  display: 'swap',
+  weight: ['400', '500', '600'],
+});
 
-/** @deprecated Prefer CSS stack; kept for older imports. */
+/** Apply all CSS variables on <html>. */
+export const fontVariableClassName = `${fontLatin.variable} ${fontBengali.variable} ${fontReading.variable}`;
+
+/** @deprecated Prefer role-specific exports / CSS stacks. */
 export const fontPrimary = fontLatin;
 export const fontSans = fontLatin;
 export const fontDisplay = fontLatin;
-export const fontReading = fontBengali;
 export const fontLearner = fontLatin;

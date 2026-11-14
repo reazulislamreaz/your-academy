@@ -74,21 +74,21 @@ Apply `data-theme` + Sun/Moon toggle on `(app)` and `(admin)` Orbit shells only 
 
 ## 3. Typography (`lib/fonts.ts` + `next/font`)
 
-**Premium bilingual stack: Anek Latin + Anek Bangla** (Ek Type / Google Fonts multi-script family).  
-Loaded via `fontLatin` + `fontBengali` → `--font-latin` / `--font-bengali`. CSS `--font-stack` = Latin first, Bangla fallback (per-glyph), so mixed Bn/En shares one design voice.
+**Two-tier typography (DEC-037):**
 
-Compared & rejected for this product: Hind Siliguri (serviceable but plain), Inter + Noto Sans Bengali (readable but mismatched DNA), Baloo Da 2 (too playful).
+1. **UI / brand — Anek Latin + Anek Bangla** (matched multi-script). `--font-stack` = Latin → Bangla. Headings, nav, buttons, dashboards.
+2. **Questions & answers — Hind Siliguri** (simple Bn+Latin reading face). `--font-reading-stack` / `.font-reading`, `.type-prose*`, `.type-mcq-option`. Regular weight (400); medium (500) only for stems.
 
 | Role | Family | CSS var / class |
 |------|--------|-----------------|
 | UI / body (all shells) | **Anek** stack | `--font-sans` / `.font-sans` |
 | Brand / headings | **Anek** 700–800 | `--font-display` / `.font-display` |
 | Learner shell UI | **Anek** stack | `--font-learner` |
-| Educational reading (MCQ, news) | **Anek** stack | `--font-reading` / `.type-prose` |
+| Educational Q&A / MCQ / explanations | **Hind Siliguri** | `--font-reading` / `.type-prose`, `.type-mcq-option` |
 
-**Scale / leading (Bengali-safe):** `--leading-tight` 1.32 · `--leading-snug` 1.42 · `--leading-normal` 1.68 · `--leading-relaxed` 1.8.  
-Base size `1.0625rem`. Utilities: `.type-prose`, `.type-prose-title`, `.type-mcq-option`, `.type-meta`, `.type-label`, `.ya-control`.  
-Variable fonts (`weight: 'variable'`) for efficient loading; UI uses 400–800. `font-display: swap`. No decorative Bengali display fonts for body UI.
+**Scale / leading:** UI leading 1.32–1.8; reading `--leading-reading` **1.85**.  
+Utilities: `.type-prose`, `.type-prose-title` (weight 500), `.type-mcq-option` (weight 400), `.ya-control`.  
+`font-display: swap`. No decorative fonts on educational content.
 
 ---
 
