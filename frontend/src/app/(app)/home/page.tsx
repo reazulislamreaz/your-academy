@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { AccuracyDonut } from '@/components/dashboard/accuracy-donut';
 import { BarChart } from '@/components/dashboard/bar-chart';
+import { ExamPerformancePanel } from '@/components/dashboard/exam-performance-panel';
 import { HomeStatCard } from '@/components/dashboard/home-stat-card';
 import { ProgressRing } from '@/components/dashboard/progress-ring';
 import { QuickLink } from '@/components/dashboard/quick-link';
@@ -458,6 +459,10 @@ export default function StudyHomePage() {
           )}
         </Surface>
       </div>
+
+      {stats.data?.examPerformance || !stats.isLoading ? (
+        <ExamPerformancePanel initial={stats.data?.examPerformance ?? null} />
+      ) : null}
 
       <Surface elevated className="space-y-3 overflow-hidden p-4 sm:p-5">
         <SectionTitle title="Saved for later" href="/bookmarks" linkLabel="View all" />

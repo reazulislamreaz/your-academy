@@ -111,6 +111,7 @@ export type PracticeSetListItem = {
   durationSeconds?: number | null;
   marksPerCorrect: number;
   negativeMarkPerWrong: number;
+  passMarkPercent?: number | null;
   examTag?: string | null;
   isDaily: boolean;
   publishedAt?: string | null;
@@ -136,7 +137,10 @@ export type PracticeSetDetail = PracticeSetListItem & {
     maxScore?: number | null;
     durationSeconds?: number | null;
     expiresAt?: string | null;
+    savedAnswers?: Array<{ questionId: string; selectedOptionId: string }>;
+    serverNow?: string;
   } | null;
+  serverNow?: string;
 };
 
 export type PracticeAttemptSummary = {
@@ -144,17 +148,23 @@ export type PracticeAttemptSummary = {
   status: string;
   startedAt: string;
   submittedAt?: string | null;
+  elapsedSeconds?: number | null;
   score?: number | null;
   maxScore?: number | null;
+  percentScore?: number | null;
+  passed?: boolean | null;
   correctCount?: number | null;
   wrongCount?: number | null;
   skippedCount?: number | null;
+  totalQuestions?: number;
   practiceSet: {
     id: string;
     title: string;
     slug: string;
     kind: PracticeSetKind;
     examTag?: string | null;
+    category?: { id: string; name: string } | null;
+    subcategory?: { id: string; name: string } | null;
   };
 };
 
@@ -163,11 +173,17 @@ export type PracticeAttemptResult = {
   status: string;
   startedAt: string;
   submittedAt?: string | null;
+  elapsedSeconds?: number | null;
   score?: number | null;
   maxScore?: number | null;
+  percentScore?: number | null;
+  passed?: boolean | null;
   correctCount?: number | null;
   wrongCount?: number | null;
   skippedCount?: number | null;
+  totalQuestions?: number;
+  attempted?: number;
+  unanswered?: number;
   answersVisible: boolean;
   practiceSet: {
     id: string;
@@ -177,7 +193,10 @@ export type PracticeAttemptResult = {
     durationSeconds?: number | null;
     marksPerCorrect: number;
     negativeMarkPerWrong: number;
+    passMarkPercent?: number | null;
     examTag?: string | null;
+    category?: { id: string; name: string; slug: string } | null;
+    subcategory?: { id: string; name: string; slug: string } | null;
   };
   review: Array<{
     questionId: string;
@@ -185,6 +204,7 @@ export type PracticeAttemptResult = {
     content: string;
     difficulty: string;
     selectedOptionId?: string | null;
+    unanswered?: boolean;
     isCorrect?: boolean | null;
     explanation?: string;
     options: Array<{
@@ -194,6 +214,44 @@ export type PracticeAttemptResult = {
       sortOrder: number;
       isCorrect?: boolean;
     }>;
+  }>;
+};
+
+export type ExamPerformance = {
+  totalExamsParticipated: number;
+  totalExamsCompleted: number;
+  totalExamsInProgress: number;
+  totalQuestionsAttempted: number;
+  totalCorrect: number;
+  totalIncorrect: number;
+  totalUnanswered: number;
+  totalMarksObtained: number;
+  overallAccuracyPercent: number;
+  averageExamScorePercent: number;
+  highestExamScorePercent: number;
+  totalTimeSpentSeconds: number;
+  correctWrongRatio: { correct: number; incorrect: number; unanswered: number };
+  scoreTrend: Array<{ attemptId: string; date: string; percentScore: number }>;
+  bySubject: Array<{
+    categoryId: string;
+    name: string;
+    exams: number;
+    correct: number;
+    wrong: number;
+    accuracyPercent: number;
+    averagePercent: number;
+  }>;
+  strongSubjects: Array<{ categoryId: string; name: string; averagePercent: number }>;
+  weakSubjects: Array<{ categoryId: string; name: string; averagePercent: number }>;
+  recentExams: Array<{
+    id: string;
+    title: string;
+    kind: string;
+    status: string;
+    submittedAt: string | null;
+    percentScore: number | null;
+    score: number | null;
+    maxScore: number | null;
   }>;
 };
 
@@ -292,6 +350,7 @@ export type UserStats = {
     title: string;
   }>;
   performance: UserPerformance;
+  examPerformance?: ExamPerformance;
 };
 
 /** GET /analytics/me/summary */

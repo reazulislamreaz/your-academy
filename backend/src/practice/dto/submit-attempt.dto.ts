@@ -7,6 +7,7 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  Max,
   MaxLength,
   Min,
   ValidateNested,
@@ -22,6 +23,14 @@ class AttemptAnswerDto {
 }
 
 export class SubmitAttemptDto {
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => AttemptAnswerDto)
+  answers!: AttemptAnswerDto[];
+}
+
+/** Mid-attempt progress save (does not finalize the attempt). */
+export class SaveProgressDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => AttemptAnswerDto)
@@ -63,6 +72,13 @@ export class CreatePracticeSetDto {
   negativeMarkPerWrong?: number;
 
   @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  passMarkPercent?: number | null;
+
+  @IsOptional()
   @IsUUID()
   categoryId?: string;
 
@@ -83,4 +99,63 @@ export class CreatePracticeSetDto {
   @ArrayMinSize(1)
   @IsUUID('4', { each: true })
   questionIds!: string[];
+}
+
+export class UpdatePracticeSetDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  title?: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string | null;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  durationSeconds?: number | null;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  marksPerCorrect?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  negativeMarkPerWrong?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  passMarkPercent?: number | null;
+
+  @IsOptional()
+  @IsUUID()
+  categoryId?: string | null;
+
+  @IsOptional()
+  @IsUUID()
+  subcategoryId?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  examTag?: string | null;
+
+  @IsOptional()
+  @IsBoolean()
+  isDaily?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsUUID('4', { each: true })
+  questionIds?: string[];
 }

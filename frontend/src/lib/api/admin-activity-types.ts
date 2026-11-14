@@ -66,7 +66,32 @@ export type AdminUserDetail = {
     practiceCompletes: number;
     practiceCorrect: number;
     practiceWrong: number;
+    practiceSkipped?: number;
+    practiceMarks?: number;
+    practiceAvgPercent?: number;
+    practiceBestPercent?: number;
+    practiceTimeSeconds?: number;
   };
+  recentPracticeAttempts?: Array<{
+    id: string;
+    status: string;
+    submittedAt: string | null;
+    elapsedSeconds: number | null;
+    score: number | null;
+    maxScore: number | null;
+    percentScore: number | null;
+    passed: boolean | null;
+    correctCount: number | null;
+    wrongCount: number | null;
+    skippedCount: number | null;
+    practiceSet: {
+      id: string;
+      title: string;
+      kind: string;
+      examTag: string | null;
+      category: { id: string; name: string } | null;
+    };
+  }>;
   observedEngagement: Array<{
     categoryId: string;
     name: string;

@@ -31,7 +31,19 @@ describe('UsersService study prefs', () => {
     generateSignedDownloadUrl: jest.fn().mockResolvedValue(null),
   };
 
-  const service = new UsersService(prisma as never, access as never, storage as never);
+  const practice = {
+    getExamPerformance: jest.fn().mockResolvedValue({
+      totalExamsCompleted: 0,
+      recentExams: [],
+    }),
+  };
+
+  const service = new UsersService(
+    prisma as never,
+    access as never,
+    storage as never,
+    practice as never,
+  );
 
   const baseUser = {
     id: 'u1',

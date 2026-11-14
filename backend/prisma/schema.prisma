@@ -613,6 +613,8 @@ model PracticeSet {
   durationSeconds      Int?              @map("duration_seconds")
   marksPerCorrect      Float             @default(1) @map("marks_per_correct")
   negativeMarkPerWrong Float             @default(0) @map("negative_mark_per_wrong")
+  /// Optional pass threshold (0–100). Null = no pass/fail grade.
+  passMarkPercent      Float?            @map("pass_mark_percent")
   categoryId           String?           @map("category_id") @db.Uuid
   subcategoryId        String?           @map("subcategory_id") @db.Uuid
   examTag              String?           @map("exam_tag") @db.VarChar(64)
@@ -650,18 +652,22 @@ model PracticeSetItem {
 }
 
 model PracticeAttempt {
-  id            String                @id @default(uuid()) @db.Uuid
-  userId        String                @map("user_id") @db.Uuid
-  practiceSetId String                @map("practice_set_id") @db.Uuid
-  status        PracticeAttemptStatus @default(IN_PROGRESS)
-  startedAt     DateTime              @default(now()) @map("started_at") @db.Timestamptz(3)
-  submittedAt   DateTime?             @map("submitted_at") @db.Timestamptz(3)
-  score         Float?                
-  maxScore      Float?                @map("max_score")
-  correctCount  Int?                  @map("correct_count")
-  wrongCount    Int?                  @map("wrong_count")
-  skippedCount  Int?                  @map("skipped_count")
-  createdAt     DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  id             String                @id @default(uuid()) @db.Uuid
+  userId         String                @map("user_id") @db.Uuid
+  practiceSetId  String                @map("practice_set_id") @db.Uuid
+  status         PracticeAttemptStatus @default(IN_PROGRESS)
+  startedAt      DateTime              @default(now()) @map("started_at") @db.Timestamptz(3)
+  submittedAt    DateTime?             @map("submitted_at") @db.Timestamptz(3)
+  /// Wall-clock seconds from start to submit (capped by duration when timed).
+  elapsedSeconds Int?                  @map("elapsed_seconds")
+  score          Float?
+  maxScore       Float?                @map("max_score")
+  percentScore   Float?                @map("percent_score")
+  passed         Boolean?
+  correctCount   Int?                  @map("correct_count")
+  wrongCount     Int?                  @map("wrong_count")
+  skippedCount   Int?                  @map("skipped_count")
+  createdAt      DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user        User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
   practiceSet PracticeSet             @relation(fields: [practiceSetId], references: [id], onDelete: Cascade)
@@ -670,15 +676,23 @@ model PracticeAttempt {
   @@index([userId, createdAt(sort: Desc)])
   @@index([practiceSetId, createdAt(sort: Desc)])
   @@index([userId, status])
+  @@index([userId, submittedAt(sort: Desc)])
   @@map("practice_attempts")
 }
 
 model PracticeAttemptAnswer {
-  id               String  @id @default(uuid()) @db.Uuid
-  attemptId        String  @map("attempt_id") @db.Uuid
-  questionId       String  @map("question_id") @db.Uuid
-  selectedOptionId String? @map("selected_option_id") @db.Uuid
-  isCorrect        Boolean? @map("is_correct")
+  id               String    @id @default(uuid()) @db.Uuid
+  attemptId        String    @map("attempt_id") @db.Uuid
+  questionId       String    @map("question_id") @db.Uuid
+  selectedOptionId String?   @map("selected_option_id") @db.Uuid
+  isCorrect        Boolean?  @map("is_correct")
+  /// Last progress save / final answer time (mid-attempt autosave).
+  answeredAt       DateTime? @map("answered_at") @db.Timestamptz(3)
+  /// Snapshots so review survives later MCQ edits (DEC-035).
+  questionTitleSnapshot    String? @map("question_title_snapshot") @db.VarChar(200)
+  questionContentSnapshot  String? @map("question_content_snapshot")
+  explanationSnapshot      String? @map("explanation_snapshot")
+  optionsSnapshot          Json?   @map("options_snapshot")
 
   attempt        PracticeAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
   question       Question        @relation(fields: [questionId], references: [id], onDelete: Cascade)

@@ -23,6 +23,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | DEC-032 | Admin PUBLIC documents on পত্রিকার গুরুত্বপূর্ণ কলাম | CONFIRMED |
 | DEC-033 | In-app PDF viewer; no download UI; API byte proxy | CONFIRMED |
 | DEC-034 | Excel serial/preamble/sections + multi-subcategory placements + year chips | CONFIRMED |
+| DEC-035 | Exam timer, progress save, detailed results, performance tracking on PracticeSet | CONFIRMED |
 | DEC-004 | Password reset delivered via email | CONFIRMED |
 | DEC-012 | Web auth via HTTP-only cookies + CSRF protection | CONFIRMED |
 | DEC-020 | pnpm workspaces + Turborepo | CONFIRMED |
@@ -294,6 +295,15 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Decision | **Yes** — introduce `PracticeSet` (+ items/attempts) for daily/subject/topic quizzes, model tests, and previous-year-**style** collections. Questions stay in existing Category depth-2 tree; govt-job tracks use `Question.examTags`. Demo seed must label synthetic items (`sourceNote`) and must **not** falsely claim official previous-year papers. Answer privacy (trial/subscription) still applies on review payloads. |
 | Impact | Prisma models, PracticeModule APIs, learner prep hubs, admin practice-set management, seed catalog |
 | Status | **CONFIRMED** (product request 2026-11-11) |
+
+### DEC-035 — Exam timer, results analysis, and performance tracking
+
+| Field | Value |
+|-------|-------|
+| Question | Should timed exams support backend-validated countdown, mid-attempt progress save, detailed result/analysis pages, profile/dashboard exam analytics, admin duration/marks/negative/pass config, and admin student exam history — without a separate Exam domain? |
+| Decision | **Yes — extend PracticeSet/PracticeAttempt (DEC-023).** Add `passMarkPercent`, attempt `elapsedSeconds`/`percentScore`/`passed`, progress autosave via `PATCH /practice-attempts/:id/progress`, server auto-finalize on expiry, answer snapshots for historical review, `GET /me/exam-performance`, and admin attempt list/detail. Scoring and deadline checks remain server-side. Trial/subscription answer privacy still gates explanations/correct flags on learner review. |
+| Impact | Prisma migration `20261114140000_exam_timer_results_tracking`, PracticeModule, Users stats, admin practice UI, learner player/results/home/profile |
+| Status | **CONFIRMED** (product request 2026-11-14) |
 
 ### DEC-024 — Excel bulk question upload
 

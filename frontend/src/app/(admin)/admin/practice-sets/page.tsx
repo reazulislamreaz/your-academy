@@ -54,6 +54,10 @@ export default function AdminPracticeSetsPage() {
   const [createKind, setCreateKind] = useState('SUBJECT_QUIZ');
   const [questionIdsRaw, setQuestionIdsRaw] = useState('');
   const [examTag, setExamTag] = useState('');
+  const [durationMinutes, setDurationMinutes] = useState('30');
+  const [marksPerCorrect, setMarksPerCorrect] = useState('1');
+  const [negativeMark, setNegativeMark] = useState('0');
+  const [passMarkPercent, setPassMarkPercent] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
 
   const list = useCursorList<AdminPracticeSet>(
@@ -89,6 +93,10 @@ export default function AdminPracticeSetsPage() {
         .split(/[\s,]+/)
         .map((s) => s.trim())
         .filter(Boolean);
+      const minutes = Number(durationMinutes);
+      const marks = Number(marksPerCorrect);
+      const neg = Number(negativeMark);
+      const pass = passMarkPercent.trim() === '' ? null : Number(passMarkPercent);
       return apiFetch('/admin/practice-sets', {
         method: 'POST',
         body: JSON.stringify({
@@ -97,6 +105,11 @@ export default function AdminPracticeSetsPage() {
           kind: createKind,
           questionIds,
           ...(examTag.trim() ? { examTag: examTag.trim() } : {}),
+          durationSeconds:
+            Number.isFinite(minutes) && minutes > 0 ? Math.round(minutes * 60) : null,
+          marksPerCorrect: Number.isFinite(marks) && marks >= 0 ? marks : 1,
+          negativeMarkPerWrong: Number.isFinite(neg) && neg >= 0 ? neg : 0,
+          ...(pass != null && Number.isFinite(pass) ? { passMarkPercent: pass } : {}),
         }),
       });
     },
@@ -106,6 +119,10 @@ export default function AdminPracticeSetsPage() {
       setSlug('');
       setQuestionIdsRaw('');
       setExamTag('');
+      setDurationMinutes('30');
+      setMarksPerCorrect('1');
+      setNegativeMark('0');
+      setPassMarkPercent('');
       void qc.invalidateQueries({ queryKey: ['admin-practice-sets'] });
     },
     onError: (err) => {
@@ -180,6 +197,51 @@ export default function AdminPracticeSetsPage() {
               value={examTag}
               onChange={(e) => setExamTag(e.target.value)}
               placeholder="bcs-prelim"
+            />
+          </Field>
+          <Field>
+            <Label htmlFor="ps-duration">Duration (minutes)</Label>
+            <Input
+              id="ps-duration"
+              type="number"
+              min={0}
+              value={durationMinutes}
+              onChange={(e) => setDurationMinutes(e.target.value)}
+              placeholder="30 (blank/0 = untimed)"
+            />
+          </Field>
+          <Field>
+            <Label htmlFor="ps-marks">Marks per correct</Label>
+            <Input
+              id="ps-marks"
+              type="number"
+              min={0}
+              step="0.25"
+              value={marksPerCorrect}
+              onChange={(e) => setMarksPerCorrect(e.target.value)}
+            />
+          </Field>
+          <Field>
+            <Label htmlFor="ps-neg">Negative mark per wrong</Label>
+            <Input
+              id="ps-neg"
+              type="number"
+              min={0}
+              step="0.25"
+              value={negativeMark}
+              onChange={(e) => setNegativeMark(e.target.value)}
+            />
+          </Field>
+          <Field>
+            <Label htmlFor="ps-pass">Pass mark % (optional)</Label>
+            <Input
+              id="ps-pass"
+              type="number"
+              min={0}
+              max={100}
+              value={passMarkPercent}
+              onChange={(e) => setPassMarkPercent(e.target.value)}
+              placeholder="e.g. 40"
             />
           </Field>
           <Field className="sm:col-span-2">

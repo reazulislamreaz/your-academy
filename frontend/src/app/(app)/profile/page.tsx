@@ -239,7 +239,13 @@ export default function ProfilePage() {
             href="/home#exam-history"
             className="font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
           >
-            Recent answer checks
+            Exam performance
+          </Link>
+          <Link
+            href="/results"
+            className="font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
+          >
+            Exam history
           </Link>
         </div>
       </section>

@@ -226,15 +226,20 @@ Timed/untimed quizzes and model tests built from published questions. Review pay
 | Method | Endpoint | Description | Auth | Role |
 |--------|----------|-------------|------|------|
 | GET | `/practice-sets` | Published sets (`kind`, `examTag`, `categoryId`, `subcategoryId`, `isDaily`, cursor) | User | USER/ADMIN |
-| GET | `/practice-sets/:idOrSlug` | Detail + questions (no correct flags) | User | USER/ADMIN |
-| POST | `/practice-sets/:idOrSlug/attempts` | Start (or resume) attempt | User | USER/ADMIN |
-| POST | `/practice-attempts/:id/submit` | `{ answers: [{ questionId, selectedOptionId? }] }` | User | USER/ADMIN |
-| GET | `/practice-attempts/:id` | Score + review (answer privacy applied) | User | USER/ADMIN |
+| GET | `/practice-sets/:idOrSlug` | Detail + questions (no correct flags); includes `activeAttempt.savedAnswers`, `serverNow` | User | USER/ADMIN |
+| POST | `/practice-sets/:idOrSlug/attempts` | Start (or resume) attempt; returns `expiresAt` when timed | User | USER/ADMIN |
+| PATCH | `/practice-attempts/:id/progress` | Mid-attempt answer autosave (server deadline enforced) | User | USER/ADMIN |
+| POST | `/practice-attempts/:id/submit` | Finalize + score; idempotent if already submitted; marks `EXPIRED` after deadline | User | USER/ADMIN |
+| GET | `/practice-attempts/:id` | Detailed result (marks, %, time, pass/fail, answer analysis; privacy gated) | User | USER/ADMIN |
 | GET | `/me/practice-attempts` | Own submitted/expired history | User | USER/ADMIN |
+| GET | `/me/exam-performance` | Aggregated exam KPIs, trends, subject strengths/weaknesses | User | USER/ADMIN |
 | GET | `/admin/practice-sets` | Admin list | User | ADMIN |
-| POST | `/admin/practice-sets` | Create draft with `questionIds` | User | ADMIN |
+| POST | `/admin/practice-sets` | Create draft (`durationSeconds`, marks, negative marks, `passMarkPercent`, `questionIds`) | User | ADMIN |
+| PATCH | `/admin/practice-sets/:id` | Update draft/settings (duration, marks, pass mark, items) | User | ADMIN |
 | PATCH | `/admin/practice-sets/:id/publish` | Publish | User | ADMIN |
 | PATCH | `/admin/practice-sets/:id/archive` | Archive | User | ADMIN |
+| GET | `/admin/practice-attempts` | Student exam history filters (`userId`, `practiceSetId`, `categoryId`, `status`, `minPercent`, `maxPercent`) | User | ADMIN |
+| GET | `/admin/practice-attempts/:id` | Admin answer review for any student attempt | User | ADMIN |
 
 `kind`: `DAILY_QUIZ` \| `SUBJECT_QUIZ` \| `TOPIC_QUIZ` \| `MODEL_TEST` \| `PREVIOUS_YEAR_SET`.
 

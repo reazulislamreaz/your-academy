@@ -17,7 +17,12 @@ import { CsrfGuard } from '../common/guards/csrf.guard';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { newRequestId } from '../common/request-id';
-import { CreatePracticeSetDto, SubmitAttemptDto } from './dto/submit-attempt.dto';
+import {
+  CreatePracticeSetDto,
+  SaveProgressDto,
+  SubmitAttemptDto,
+  UpdatePracticeSetDto,
+} from './dto/submit-attempt.dto';
 import { PracticeService } from './practice.service';
 
 @Controller('api/v1')
@@ -67,6 +72,19 @@ export class PracticeController {
     return createSuccessResponse(await this.practice.startAttempt(user, idOrSlug), newRequestId());
   }
 
+  @Patch('practice-attempts/:id/progress')
+  @UseGuards(JwtAuthGuard, CsrfGuard)
+  async saveProgress(
+    @CurrentUser() user: RequestUser,
+    @Param('id') id: string,
+    @Body() dto: SaveProgressDto,
+  ) {
+    return createSuccessResponse(
+      await this.practice.saveProgress(user, id, dto),
+      newRequestId(),
+    );
+  }
+
   @Post('practice-attempts/:id/submit')
   @UseGuards(JwtAuthGuard, CsrfGuard)
   async submit(
@@ -102,6 +120,15 @@ export class PracticeController {
     });
   }
 
+  @Get('me/exam-performance')
+  @UseGuards(JwtAuthGuard)
+  async examPerformance(@CurrentUser() user: RequestUser) {
+    return createSuccessResponse(
+      await this.practice.getExamPerformance(user.userId),
+      newRequestId(),
+    );
+  }
+
   @Get('admin/practice-sets')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
@@ -132,6 +159,13 @@ export class PracticeController {
     return createSuccessResponse(await this.practice.adminCreate(user, dto), newRequestId());
   }
 
+  @Patch('admin/practice-sets/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
+  @Roles(UserRole.ADMIN)
+  async adminUpdate(@Param('id') id: string, @Body() dto: UpdatePracticeSetDto) {
+    return createSuccessResponse(await this.practice.adminUpdate(id, dto), newRequestId());
+  }
+
   @Patch('admin/practice-sets/:id/publish')
   @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
   @Roles(UserRole.ADMIN)
@@ -144,5 +178,46 @@ export class PracticeController {
   @Roles(UserRole.ADMIN)
   async adminArchive(@Param('id') id: string) {
     return createSuccessResponse(await this.practice.adminArchive(id), newRequestId());
+  }
+
+  @Get('admin/practice-attempts')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async adminAttempts(
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit?: string,
+    @Query('userId') userId?: string,
+    @Query('practiceSetId') practiceSetId?: string,
+    @Query('categoryId') categoryId?: string,
+    @Query('status') status?: string,
+    @Query('minPercent') minPercent?: string,
+    @Query('maxPercent') maxPercent?: string,
+  ) {
+    const data = await this.practice.adminListAttempts({
+      cursor,
+      limit: limit ? Number(limit) : undefined,
+      userId,
+      practiceSetId,
+      categoryId,
+      status,
+      minPercent: minPercent != null && minPercent !== '' ? Number(minPercent) : undefined,
+      maxPercent: maxPercent != null && maxPercent !== '' ? Number(maxPercent) : undefined,
+    });
+    return createSuccessResponse(data.items, newRequestId(), {
+      nextCursor: data.nextCursor,
+      prevCursor: null,
+      limit: limit ? Number(limit) : 20,
+      total: null,
+    });
+  }
+
+  @Get('admin/practice-attempts/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async adminAttemptDetail(@CurrentUser() user: RequestUser, @Param('id') id: string) {
+    return createSuccessResponse(
+      await this.practice.getAttemptResult(user, id, { asAdmin: true }),
+      newRequestId(),
+    );
   }
 }

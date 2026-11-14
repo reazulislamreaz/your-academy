@@ -93,15 +93,35 @@ export default function ResultsPage() {
                     </Link>
                   </h3>
                   <p className="mt-1 text-xs text-[var(--muted-strong)]">
+                    {attempt.practiceSet.category?.name
+                      ? `${attempt.practiceSet.category.name} · `
+                      : ''}
                     {attempt.submittedAt
                       ? new Date(attempt.submittedAt).toLocaleString()
                       : 'Not submitted'}
+                    {attempt.elapsedSeconds != null
+                      ? ` · ${Math.floor(attempt.elapsedSeconds / 60)}m ${attempt.elapsedSeconds % 60}s`
+                      : ''}
+                  </p>
+                  <p className="mt-1 text-xs text-[var(--muted-strong)]">
+                    ✓ {attempt.correctCount ?? 0} · ✗ {attempt.wrongCount ?? 0} · —{' '}
+                    {attempt.skippedCount ?? 0}
+                    {attempt.passed != null
+                      ? attempt.passed
+                        ? ' · Passed'
+                        : ' · Failed'
+                      : ''}
                   </p>
                 </div>
-                <p className="font-display text-xl font-bold tabular-nums">
-                  {attempt.score ?? '—'}
-                  {attempt.maxScore != null ? `/${attempt.maxScore}` : ''}
-                </p>
+                <div className="text-right">
+                  <p className="font-display text-xl font-bold tabular-nums">
+                    {attempt.percentScore != null ? `${attempt.percentScore}%` : '—'}
+                  </p>
+                  <p className="text-xs tabular-nums text-[var(--muted-strong)]">
+                    {attempt.score ?? '—'}
+                    {attempt.maxScore != null ? `/${attempt.maxScore}` : ''}
+                  </p>
+                </div>
               </div>
             </Surface>
           ))}

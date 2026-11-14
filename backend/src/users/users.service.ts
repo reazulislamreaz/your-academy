@@ -1,9 +1,10 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException, forwardRef } from '@nestjs/common';
 import { MediaResourceType, QuestionStatus } from '@prisma/client';
 import { createErrorResponse } from '@your-academy/shared';
 import type { RequestUser } from '../auth/auth.types';
 import { newRequestId } from '../common/request-id';
 import { PrismaService } from '../database/prisma.service';
+import { PracticeService } from '../practice/practice.service';
 import { StorageService } from '../storage/storage.service';
 import { AccessControlService } from '../subscriptions/access-control.service';
 import type { UpdateStudyPrefsDto } from './dto/update-study-prefs.dto';
@@ -14,6 +15,8 @@ export class UsersService {
     private readonly prisma: PrismaService,
     private readonly access: AccessControlService,
     private readonly storage: StorageService,
+    @Inject(forwardRef(() => PracticeService))
+    private readonly practice: PracticeService,
   ) {}
 
   private async serializeMe(userId: string) {
@@ -362,6 +365,7 @@ export class UsersService {
           createdAt: row.createdAt.toISOString(),
         })),
       },
+      examPerformance: await this.practice.getExamPerformance(user.userId),
     };
   }
 }

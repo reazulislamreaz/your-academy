@@ -365,6 +365,7 @@ export class AdminService {
       topicAttempts,
       onlineSession,
       practiceStats,
+      recentPracticeAttempts,
     ] = await Promise.all([
       this.prisma.questionAttempt.count({ where: { userId: id } }),
       this.prisma.questionAttempt.count({ where: { userId: id, isCorrect: true } }),
@@ -413,7 +414,45 @@ export class AdminService {
           status: { in: [PracticeAttemptStatus.SUBMITTED, PracticeAttemptStatus.EXPIRED] },
         },
         _count: { _all: true },
-        _sum: { correctCount: true, wrongCount: true },
+        _sum: {
+          correctCount: true,
+          wrongCount: true,
+          skippedCount: true,
+          score: true,
+          elapsedSeconds: true,
+        },
+        _avg: { percentScore: true },
+        _max: { percentScore: true },
+      }),
+      this.prisma.practiceAttempt.findMany({
+        where: {
+          userId: id,
+          status: { in: [PracticeAttemptStatus.SUBMITTED, PracticeAttemptStatus.EXPIRED] },
+        },
+        orderBy: { submittedAt: 'desc' },
+        take: 15,
+        select: {
+          id: true,
+          status: true,
+          submittedAt: true,
+          elapsedSeconds: true,
+          score: true,
+          maxScore: true,
+          percentScore: true,
+          passed: true,
+          correctCount: true,
+          wrongCount: true,
+          skippedCount: true,
+          practiceSet: {
+            select: {
+              id: true,
+              title: true,
+              kind: true,
+              examTag: true,
+              category: { select: { id: true, name: true } },
+            },
+          },
+        },
       }),
     ]);
 
@@ -488,7 +527,32 @@ export class AdminService {
         practiceCompletes: practiceStats._count._all,
         practiceCorrect: practiceStats._sum.correctCount ?? 0,
         practiceWrong: practiceStats._sum.wrongCount ?? 0,
+        practiceSkipped: practiceStats._sum.skippedCount ?? 0,
+        practiceMarks: practiceStats._sum.score ?? 0,
+        practiceAvgPercent:
+          practiceStats._avg.percentScore != null
+            ? Math.round(practiceStats._avg.percentScore * 10) / 10
+            : 0,
+        practiceBestPercent:
+          practiceStats._max.percentScore != null
+            ? Math.round(practiceStats._max.percentScore * 10) / 10
+            : 0,
+        practiceTimeSeconds: practiceStats._sum.elapsedSeconds ?? 0,
       },
+      recentPracticeAttempts: recentPracticeAttempts.map((a) => ({
+        id: a.id,
+        status: a.status,
+        submittedAt: a.submittedAt?.toISOString() ?? null,
+        elapsedSeconds: a.elapsedSeconds,
+        score: a.score,
+        maxScore: a.maxScore,
+        percentScore: a.percentScore,
+        passed: a.passed,
+        correctCount: a.correctCount,
+        wrongCount: a.wrongCount,
+        skippedCount: a.skippedCount,
+        practiceSet: a.practiceSet,
+      })),
       observedEngagement,
       sessions: recentSessions.map((s) => ({
         id: s.id,
