@@ -310,7 +310,7 @@ export default function PracticePlayerPage() {
                   </h3>
                   <Badge variant="outline">{q.difficulty}</Badge>
                 </div>
-                <p className="text-sm whitespace-pre-wrap text-[var(--ink-soft)]">{q.content}</p>
+                <p className="type-prose whitespace-pre-wrap text-[var(--ink-soft)]">{q.content}</p>
                 <div
                   className="grid gap-2"
                   role="radiogroup"
@@ -335,7 +335,7 @@ export default function PracticePlayerPage() {
                           if (attemptId) queueSave(attemptId);
                         }}
                         className={cn(
-                          'cursor-pointer rounded-[var(--radius-sm)] border px-3 py-2 text-left text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-70',
+                          'type-mcq-option cursor-pointer rounded-[var(--radius-sm)] border px-3 py-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-70',
                           selected
                             ? 'border-[var(--learn-selected)] bg-[var(--learn-selected-soft)] text-[var(--info-fg)]'
                             : 'border-[var(--line)] text-[var(--ink-soft)] hover:bg-[var(--bg-muted)]',

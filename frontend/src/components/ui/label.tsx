@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 export function Label({ className, ...props }: LabelHTMLAttributes<HTMLLabelElement>) {
   return (
     <label
-      className={cn('block text-sm font-semibold text-[var(--ink-soft)]', className)}
+      className={cn('type-label block text-[var(--ink-soft)]', className)}
       {...props}
     />
   );

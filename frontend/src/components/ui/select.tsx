@@ -14,7 +14,7 @@ export function Select({
   return (
     <select
       className={cn(
-        'h-11 w-full min-w-0 max-w-full cursor-pointer appearance-none rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] bg-[length:12px] bg-[position:right_0.9rem_center] bg-no-repeat px-3.5 pr-10 text-base text-[var(--ink)] shadow-[var(--shadow-sm)] outline-none transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-out)] hover:border-[var(--line-strong)] focus:border-[var(--accent)] focus:shadow-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-60 sm:text-sm',
+        'ya-control w-full min-w-0 max-w-full cursor-pointer appearance-none rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] bg-[length:12px] bg-[position:right_0.9rem_center] bg-no-repeat px-3.5 pr-10 text-base leading-normal text-[var(--ink)] shadow-[var(--shadow-sm)] outline-none transition-[border-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-out)] hover:border-[var(--line-strong)] focus:border-[var(--accent)] focus:shadow-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-60 sm:text-sm',
         className,
       )}
       style={{ ...chevron, ...style }}

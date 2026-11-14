@@ -188,7 +188,7 @@ export default function ResultDetailPage() {
                   <Badge variant="outline">Answered</Badge>
                 )}
               </div>
-              <p className="text-sm whitespace-pre-wrap text-[var(--ink-soft)]">{item.content}</p>
+              <p className="type-prose whitespace-pre-wrap text-[var(--ink-soft)]">{item.content}</p>
               <div className="grid gap-2">
                 {item.options.map((opt) => {
                   const selected = item.selectedOptionId === opt.id;

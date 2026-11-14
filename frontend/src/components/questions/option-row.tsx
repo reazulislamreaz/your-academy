@@ -29,7 +29,7 @@ export function OptionRow({ label, content, state, disabled, onSelect }: Props) 
       disabled={disabled}
       onClick={onSelect}
       className={cn(
-        'motion-press group flex w-full items-start gap-3 rounded-[var(--radius)] border px-4 py-3.5 text-left transition-[border-color,background-color,transform] duration-[var(--duration-fast)] ease-[var(--ease-out)]',
+        'motion-press group flex w-full items-start gap-3 rounded-[var(--radius)] border px-4 py-4 text-left transition-[border-color,background-color,transform] duration-[var(--duration-fast)] ease-[var(--ease-out)]',
         state === 'idle' &&
           'border-[var(--line)] bg-[var(--bg-elevated)] hover:border-[var(--line-strong)] hover:bg-[var(--bg-muted)]',
         state === 'selected' &&
@@ -57,7 +57,7 @@ export function OptionRow({ label, content, state, disabled, onSelect }: Props) 
       </span>
       <span className="min-w-0 flex-1">
         <span className="sr-only">{label}. </span>
-        <span className="leading-relaxed text-[var(--ink-soft)]">{content}</span>
+        <span className="type-mcq-option text-[var(--ink-soft)]">{content}</span>
         {state === 'correct' ? (
           <span className="mt-1 block text-xs font-semibold text-[var(--success-fg)]">
             Correct answer

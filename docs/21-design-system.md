@@ -74,14 +74,19 @@ Apply `data-theme` + Sun/Moon toggle on `(app)` and `(admin)` Orbit shells only 
 
 ## 3. Typography (`lib/fonts.ts` + `next/font`)
 
+**Primary bilingual family: Hind Siliguri** (Latin + Bengali), loaded once via `fontPrimary` → `--font-primary`.  
+All role aliases (`--font-sans`, `--font-display`, `--font-reading`, `--font-learner`) resolve to the same family so mixed Bn/En UI stays consistent.
+
 | Role | Family | CSS var / class |
 |------|--------|-----------------|
-| Brand / headings | **Syne** | `--font-display` / `.font-display` |
-| UI / body (marketing, auth, admin) | **Manrope** | `--font-sans` |
-| Learner shell UI | **Inter** | `--font-learner` under `.learner-theme` |
-| Long-form reading (MCQ, news) | **Source Serif 4** | `--font-reading` / `.font-reading` |
+| UI / body (all shells) | **Hind Siliguri** | `--font-sans` / `.font-sans` |
+| Brand / headings | **Hind Siliguri** 600–700 | `--font-display` / `.font-display` |
+| Learner shell UI | **Hind Siliguri** | `--font-learner` (same primary) |
+| Educational reading (MCQ, news) | **Hind Siliguri** | `--font-reading` / `.font-reading`, `.type-prose` |
 
-Bengali UI fonts are **out of scope** until i18n is approved.
+**Scale / leading (Bengali-safe):** `--leading-tight` 1.35 · `--leading-snug` 1.45 · `--leading-normal` 1.65 · `--leading-relaxed` 1.75.  
+Utilities: `.type-prose`, `.type-prose-title`, `.type-mcq-option`, `.type-meta`, `.type-label`, `.ya-control` (min-height controls).  
+Weights used: 300–700. `font-display: swap`. Do not introduce decorative Bengali display fonts for body UI.
 
 ---
 

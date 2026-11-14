@@ -47,9 +47,7 @@ export default function NewsDetailPage() {
           </p>
         ) : null}
       </header>
-      <p className="font-reading whitespace-pre-wrap break-words text-lg leading-relaxed text-[var(--ink-soft)]">
-        {data.body}
-      </p>
+      <p className="type-prose whitespace-pre-wrap break-words text-[var(--ink-soft)]">{data.body}</p>
       {data.documents.length > 0 ? (
         <Surface elevated className="p-5">
           <h2 className="text-xs font-semibold tracking-[0.14em] text-[var(--muted-strong)] uppercase">

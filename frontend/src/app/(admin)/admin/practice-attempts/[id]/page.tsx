@@ -121,7 +121,7 @@ export default function AdminPracticeAttemptDetailPage() {
                     : 'Incorrect'}
               </Badge>
             </div>
-            <p className="text-sm whitespace-pre-wrap text-[var(--ink-soft)]">{item.content}</p>
+            <p className="type-prose whitespace-pre-wrap text-[var(--ink-soft)]">{item.content}</p>
             <ul className="grid gap-1.5">
               {item.options.map((opt) => (
                 <li

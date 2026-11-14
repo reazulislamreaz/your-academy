@@ -158,7 +158,7 @@ function QuestionDetailContent() {
         <h1 className="font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-bold tracking-tight">
           {data.title}
         </h1>
-        <p className="font-reading text-lg leading-relaxed break-words text-[var(--ink-soft)]">{data.content}</p>
+        <p className="type-prose break-words text-[var(--ink-soft)]">{data.content}</p>
       </header>
 
       <div className="grid gap-2.5" role="radiogroup" aria-label="Answer options">
@@ -203,9 +203,7 @@ function QuestionDetailContent() {
           <h2 className="text-xs font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
             Explanation
           </h2>
-          <p className="font-reading mt-3 leading-relaxed text-[var(--ink-soft)]">
-            {data.explanation}
-          </p>
+          <p className="type-prose mt-3 text-[var(--ink-soft)]">{data.explanation}</p>
         </Surface>
       ) : null}
 

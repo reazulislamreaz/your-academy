@@ -43,7 +43,7 @@ function useDebouncedValue<T>(value: T, delayMs = 300): T {
 }
 
 const filterControlClass =
-  'h-12 min-w-0 rounded-full border-[var(--line)] bg-[var(--bg-muted)] px-4 shadow-none';
+  'min-h-12 min-w-0 rounded-full border-[var(--line)] bg-[var(--bg-muted)] px-4 py-2 leading-normal shadow-none';
 
 /** Preli landing: Exam Sets only (name + upload date). Questions live on the set page. */
 export function PublicQuestionBank({
@@ -173,8 +173,8 @@ export function PublicQuestionBank({
                 placeholder="Search by title, category, or subcategory…"
                 aria-label="Search collections by title, category, or subcategory"
                 className={cn(
-                  'h-12 w-full rounded-full border border-[var(--line)] bg-[var(--bg-muted)]',
-                  'pr-11 pl-11 text-sm text-[var(--ink)] outline-none',
+                  'min-h-12 w-full rounded-full border border-[var(--line)] bg-[var(--bg-muted)]',
+                  'py-2 pr-11 pl-11 text-sm leading-normal text-[var(--ink)] outline-none',
                   'placeholder:text-[var(--muted-strong)]',
                   'transition-[border-color,box-shadow,background-color] duration-[var(--duration-fast)]',
                   'focus:border-[var(--accent)] focus:bg-white focus:shadow-[var(--focus-ring)]',
@@ -303,11 +303,6 @@ export function PublicQuestionBank({
                 {set.examYear ? ` · ${set.examYear}` : ''}
                 {` · ${set.questionCount} question${set.questionCount === 1 ? '' : 's'}`}
               </p>
-              {set.placements.length > 0 ? (
-                <p className="mt-1.5 text-xs text-[var(--muted)]">
-                  Also in: {set.placements.map((p) => p.subcategoryName).join(', ')}
-                </p>
-              ) : null}
             </Link>
           </li>
         ))}

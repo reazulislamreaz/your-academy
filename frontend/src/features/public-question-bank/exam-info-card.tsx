@@ -87,7 +87,7 @@ export function ExamInfoCard({ preamble, className }: Props) {
     return (
       <div
         className={cn(
-          'rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] px-4 py-4 text-sm leading-relaxed whitespace-pre-wrap text-[var(--ink-soft)] shadow-[var(--shadow-sm)] sm:px-5',
+          'type-prose rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] px-4 py-4 whitespace-pre-wrap text-[var(--ink-soft)] shadow-[var(--shadow-sm)] sm:px-5',
           className,
         )}
       >

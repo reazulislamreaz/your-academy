@@ -45,9 +45,9 @@ export function PublicMcqCard({
       )}
     >
       <div className="relative z-[1] space-y-3">
-        <h2 className="font-reading text-lg leading-snug font-bold tracking-tight text-[var(--ink)] sm:text-xl">
+        <h2 className="type-prose-title text-[var(--ink)]">
           {question.sourceSerial ? (
-            <span className="mr-2 font-display text-[0.95em] font-bold text-[var(--highlight)] tabular-nums">
+            <span className="mr-2 font-bold text-[var(--highlight)] tabular-nums">
               {question.sourceSerial}.
             </span>
           ) : null}
@@ -63,7 +63,7 @@ export function PublicMcqCard({
             <li
               key={opt.id}
               className={cn(
-                'rounded-[var(--radius)] border px-3.5 py-3 text-sm leading-relaxed transition-colors duration-200',
+                'type-mcq-option rounded-[var(--radius)] border px-3.5 py-3.5 transition-colors duration-200',
                 highlight
                   ? 'border-[var(--success)] bg-[var(--success-soft)] text-[var(--ink)]'
                   : 'border-[var(--line)] bg-[var(--bg-desk)] text-[var(--ink-soft)]',

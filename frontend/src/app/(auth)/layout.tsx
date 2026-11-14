@@ -30,7 +30,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           <p className="text-[0.6875rem] font-semibold tracking-[0.18em] text-white/55 uppercase">
             Your Academy
           </p>
-          <p className="font-display text-4xl leading-[1.08] font-extrabold tracking-[-0.02em] xl:text-5xl">
+          <p className="font-display text-4xl font-bold xl:text-5xl">
             Study at your exam desk
           </p>
           <p className="text-base leading-relaxed text-white/68">

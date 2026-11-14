@@ -46,7 +46,7 @@ export default function HomePage() {
               <GraduationCap className="h-4 w-4 shrink-0 text-white" aria-hidden />
               Bangladesh&apos;s Premier Job Exam Preparation Platform
             </p>
-            <h1 className="font-display text-[clamp(1.85rem,5vw,3.75rem)] leading-[1.08] font-extrabold tracking-tight text-balance">
+            <h1 className="font-display text-[clamp(1.85rem,5vw,3.75rem)] font-bold text-balance">
               Your Dream Job Starts{' '}
               <span className="relative inline-block text-[var(--highlight)]">
                 Here!
