@@ -9,18 +9,14 @@ import { ListCardSkeleton, LoadError } from '@/components/loading';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
-import { apiFetch } from '@/lib/api/client';
 import {
   listPublicQuestionSetYears,
   listPublicQuestionSets,
 } from '@/lib/api/public-questions';
-import type { CategoryNode } from '@/lib/api/types';
 import { cn } from '@/lib/utils';
 
 type Props = {
   initialQ?: string;
-  initialCategoryId?: string;
-  initialSubcategoryId?: string;
   initialYear?: string;
   className?: string;
 };
@@ -49,24 +45,14 @@ const filterControlClass =
 /** Preli landing: Exam Sets only (name + upload date). Questions live on the set page. */
 export function PublicQuestionBank({
   initialQ = '',
-  initialCategoryId = '',
-  initialSubcategoryId = '',
   initialYear = '',
   className,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const [qInput, setQInput] = useState(initialQ);
-  const [categoryId, setCategoryId] = useState(initialCategoryId);
-  const [subcategoryId, setSubcategoryId] = useState(initialSubcategoryId);
   const [year, setYear] = useState(initialYear);
   const q = useDebouncedValue(qInput.trim(), 280);
-
-  const categories = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => apiFetch<CategoryNode[]>('/categories', { skipRefresh: true }),
-    staleTime: 60_000,
-  });
 
   const yearsQ = useQuery({
     queryKey: ['public-question-set-years'],
@@ -74,55 +60,12 @@ export function PublicQuestionBank({
     staleTime: 60_000,
   });
 
-  /** Main categories only (API returns roots with nested children). */
-  const rootCategories = useMemo(() => categories.data ?? [], [categories.data]);
-
-  const selectedCategory = useMemo(
-    () => rootCategories.find((c) => c.id === categoryId) ?? null,
-    [rootCategories, categoryId],
-  );
-
-  /** Subcategories of the selected main category only. */
-  const subcategoryOptions = useMemo(() => {
-    const children = selectedCategory?.children ?? [];
-    return [...children].sort((a, b) =>
-      a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }),
-    );
-  }, [selectedCategory]);
-
   const yearOptions = useMemo(() => {
     const fromApi = (yearsQ.data ?? []).map((y) => y.trim()).filter(Boolean);
     return [...new Set(fromApi)].sort(
       (a, b) => Number(b) - Number(a) || b.localeCompare(a),
     );
   }, [yearsQ.data]);
-
-  // If category changes / loads, drop subcategory that is not a child of the selection.
-  useEffect(() => {
-    if (categories.isLoading || categories.isError) return;
-    if (!subcategoryId) return;
-    if (!selectedCategory) {
-      // Subcategory without a valid parent category — try to recover parent from tree.
-      const parent = rootCategories.find((c) =>
-        c.children.some((child) => child.id === subcategoryId),
-      );
-      if (parent) {
-        setCategoryId(parent.id);
-        return;
-      }
-      setSubcategoryId('');
-      return;
-    }
-    if (!selectedCategory.children.some((c) => c.id === subcategoryId)) {
-      setSubcategoryId('');
-    }
-  }, [
-    categories.isLoading,
-    categories.isError,
-    subcategoryId,
-    selectedCategory,
-    rootCategories,
-  ]);
 
   // Drop invalid year once catalog loads.
   useEffect(() => {
@@ -136,23 +79,19 @@ export function PublicQuestionBank({
   useEffect(() => {
     const sp = new URLSearchParams();
     if (q) sp.set('q', q);
-    if (categoryId) sp.set('categoryId', categoryId);
-    if (subcategoryId) sp.set('subcategoryId', subcategoryId);
     if (year) sp.set('year', year);
     const next = sp.toString() ? `${pathname}?${sp}` : pathname;
     router.replace(next, { scroll: false });
-  }, [q, categoryId, subcategoryId, year, pathname, router]);
+  }, [q, year, pathname, router]);
 
   const list = useInfiniteQuery({
-    queryKey: ['public-question-sets', q, categoryId, subcategoryId, year],
+    queryKey: ['public-question-sets', q, year],
     initialPageParam: undefined as string | undefined,
     queryFn: ({ pageParam }) =>
       listPublicQuestionSets({
         cursor: pageParam,
         limit: 20,
         q: q || undefined,
-        categoryId: categoryId || undefined,
-        subcategoryId: subcategoryId || undefined,
         year: year || undefined,
       }),
     getNextPageParam: (last) => last.pagination?.nextCursor ?? undefined,
@@ -160,25 +99,18 @@ export function PublicQuestionBank({
 
   const sets = list.data?.pages.flatMap((p) => p.data) ?? [];
   const total = list.data?.pages[0]?.pagination?.total;
-  const hasFilters = Boolean(q || categoryId || subcategoryId || year);
+  const hasFilters = Boolean(q || year);
 
   const clearFilters = () => {
     setQInput('');
-    setCategoryId('');
-    setSubcategoryId('');
     setYear('');
-  };
-
-  const onCategoryChange = (nextCategoryId: string) => {
-    setCategoryId(nextCategoryId);
-    setSubcategoryId('');
   };
 
   return (
     <div className={cn('space-y-5', className)}>
       <div className="rounded-[1.25rem] border border-[var(--line)] bg-white p-3 shadow-[var(--shadow-sm)] sm:p-4">
         <div className="flex flex-col gap-3">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="relative min-w-0 flex-1">
               <Search
                 className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-[var(--muted)]"
@@ -187,8 +119,8 @@ export function PublicQuestionBank({
               <input
                 value={qInput}
                 onChange={(e) => setQInput(e.target.value)}
-                placeholder="Search collections by name…"
-                aria-label="Search collections by title"
+                placeholder="Search by title, category, or subcategory…"
+                aria-label="Search collections by title, category, or subcategory"
                 className={cn(
                   'h-12 w-full rounded-full border border-[var(--line)] bg-[var(--bg-muted)]',
                   'pr-11 pl-11 text-sm text-[var(--ink)] outline-none',
@@ -209,55 +141,7 @@ export function PublicQuestionBank({
               ) : null}
             </div>
 
-            <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:shrink-0">
-              <label htmlFor="preli-category" className="sr-only">
-                Filter by category
-              </label>
-              <Select
-                id="preli-category"
-                value={categoryId}
-                onChange={(e) => onCategoryChange(e.target.value)}
-                disabled={categories.isLoading}
-                className={cn(
-                  filterControlClass,
-                  'flex-1 sm:min-w-[11rem] lg:w-[13rem] lg:flex-none',
-                  categoryId &&
-                    'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]',
-                )}
-                aria-label="Filter by category"
-              >
-                <option value="">All Categories</option>
-                {rootCategories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </Select>
-
-              <label htmlFor="preli-subcategory" className="sr-only">
-                Filter by subcategory
-              </label>
-              <Select
-                id="preli-subcategory"
-                value={subcategoryId}
-                onChange={(e) => setSubcategoryId(e.target.value)}
-                disabled={categories.isLoading || !categoryId || subcategoryOptions.length === 0}
-                className={cn(
-                  filterControlClass,
-                  'flex-1 sm:min-w-[11rem] lg:w-[14rem] lg:flex-none',
-                  subcategoryId &&
-                    'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]',
-                )}
-                aria-label="Filter by subcategory"
-              >
-                <option value="">All Subcategories</option>
-                {subcategoryOptions.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </Select>
-
+            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:shrink-0">
               <label htmlFor="preli-year" className="sr-only">
                 Filter by exam year
               </label>
@@ -268,7 +152,7 @@ export function PublicQuestionBank({
                 disabled={yearsQ.isLoading}
                 className={cn(
                   filterControlClass,
-                  'flex-1 sm:min-w-[9rem] lg:w-[11rem] lg:flex-none',
+                  'flex-1 sm:min-w-[9rem] sm:w-[11rem] sm:flex-none',
                   year && 'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]',
                 )}
                 aria-label="Filter by exam year"
@@ -300,10 +184,6 @@ export function PublicQuestionBank({
               {list.isFetching && !list.isFetchingNextPage
                 ? 'Updating…'
                 : `${total} collection${total === 1 ? '' : 's'}`}
-              {selectedCategory ? ` · ${selectedCategory.name}` : ''}
-              {subcategoryId
-                ? ` / ${subcategoryOptions.find((s) => s.id === subcategoryId)?.name ?? ''}`
-                : ''}
               {year ? ` · ${year}` : ''}
             </p>
           ) : null}
@@ -325,7 +205,7 @@ export function PublicQuestionBank({
           title={hasFilters ? 'No matching collections' : 'No collections yet'}
           description={
             hasFilters
-              ? 'Try a different search, category, subcategory, or year.'
+              ? 'Try a different search or year.'
               : 'Published uploads will appear here.'
           }
         />

@@ -216,6 +216,43 @@ export class PublicService {
                   { subjectHint: { contains: q, mode: 'insensitive' as const } },
                   { topicHint: { contains: q, mode: 'insensitive' as const } },
                   { sheetPreamble: { contains: q, mode: 'insensitive' as const } },
+                  {
+                    placements: {
+                      some: {
+                        OR: [
+                          {
+                            category: {
+                              name: { contains: q, mode: 'insensitive' as const },
+                            },
+                          },
+                          {
+                            subcategory: {
+                              name: { contains: q, mode: 'insensitive' as const },
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  },
+                  {
+                    questions: {
+                      some: {
+                        ...liveQuestion,
+                        OR: [
+                          {
+                            category: {
+                              name: { contains: q, mode: 'insensitive' as const },
+                            },
+                          },
+                          {
+                            subcategory: {
+                              name: { contains: q, mode: 'insensitive' as const },
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  },
                 ],
               },
             ] satisfies Prisma.QuestionUploadBatchWhereInput[])
