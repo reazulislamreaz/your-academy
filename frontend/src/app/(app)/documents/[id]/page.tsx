@@ -3,11 +3,16 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft } from 'lucide-react';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Surface } from '@/components/ui/surface';
+import { PdfViewer } from '@/components/pdf/pdf-viewer-dynamic';
 import { ApiError, apiFetch } from '@/lib/api/client';
+import {
+  authenticatedDocumentFileUrl,
+  publicDocumentFileUrl,
+} from '@/lib/api/public-documents';
 import { DocumentDetailPageSkeleton } from '@/components/skeletons';
 
 type DocumentDetail = {
@@ -23,6 +28,7 @@ type DocumentDetail = {
     originalFilename?: string | null;
     format?: string | null;
   };
+  view?: { available: boolean; reason: string };
   download: { available: boolean; reason: string; url: string | null };
 };
 
@@ -73,12 +79,49 @@ export default function DocumentDetailPage() {
 
   if (error || !data) return <Alert variant="danger">Document not found.</Alert>;
 
-  return (
-    <article className="mx-auto max-w-3xl space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+  const viewOk = data.view?.available !== false;
+  const isPublic = data.visibility === 'PUBLIC';
+  const fileUrl = isPublic
+    ? publicDocumentFileUrl(data.id)
+    : authenticatedDocumentFileUrl(data.id);
+
+  if (!viewOk) {
+    return (
+      <div className="mx-auto max-w-3xl space-y-4">
         <Link href="/documents" className="text-sm text-[var(--muted-strong)] hover:text-[var(--highlight)]">
           ← PDF library
         </Link>
+        <h1 className="font-display text-2xl font-bold tracking-tight">{data.title}</h1>
+        <Alert variant="info">
+          {data.view?.reason === 'PLACEHOLDER_ASSET'
+            ? 'This entry uses a placeholder asset. An admin must upload a real PDF.'
+            : data.view?.reason === 'STORAGE_NOT_CONFIGURED'
+              ? 'Cloudinary is not configured — PDF viewing is unavailable.'
+              : 'PDF is not available for viewing yet.'}
+        </Alert>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-x-0 bottom-0 top-[var(--header-h)] z-30 flex flex-col bg-[var(--bg)] pb-[env(safe-area-inset-bottom,0px)] lg:static lg:inset-auto lg:z-auto lg:min-h-[70vh] lg:pb-0">
+      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-[var(--line)] bg-[var(--bg-elevated)] px-3 py-2 sm:gap-3 sm:px-4 lg:rounded-t-[var(--radius-lg)]">
+        <Link
+          href="/documents"
+          className="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-[var(--radius)] px-2 text-sm font-medium text-[var(--muted-strong)] hover:bg-[var(--bg-muted)] hover:text-[var(--highlight)]"
+        >
+          <ArrowLeft className="size-4" aria-hidden />
+          Library
+        </Link>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="truncate font-display text-sm font-semibold tracking-tight sm:text-base">
+              {data.title}
+            </h1>
+            <Badge variant="outline">{data.visibility}</Badge>
+            {data.category ? <Badge>{data.category.name}</Badge> : null}
+          </div>
+        </div>
         <Button
           variant="outline"
           size="sm"
@@ -87,38 +130,21 @@ export default function DocumentDetailPage() {
         >
           {data.bookmarked ? 'Remove bookmark' : 'Save PDF'}
         </Button>
-      </div>
-      <header className="space-y-3 border-b border-[var(--line)] pb-6">
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="outline">{data.visibility}</Badge>
-          {data.category ? <Badge>{data.category.name}</Badge> : null}
-        </div>
-        <h1 className="font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-bold tracking-tight">
-          {data.title}
-        </h1>
-        {data.description ? (
-          <p className="text-[var(--muted-strong)] leading-relaxed break-words">{data.description}</p>
+        {isPublic ? (
+          <Link
+            href={`/news/d/${data.id}`}
+            className="hidden text-xs font-semibold text-[var(--muted-strong)] hover:text-[var(--highlight)] sm:inline"
+          >
+            Open on কলাম
+          </Link>
         ) : null}
-      </header>
-      <Surface elevated className="space-y-4 p-5 sm:p-6">
-        <p className="text-sm text-[var(--muted-strong)]">
-          File: {data.mediaAsset.originalFilename ?? 'document'} · {data.mediaAsset.mimeType} ·{' '}
-          {Math.max(1, Math.round(data.mediaAsset.bytes / 1024))} KB
-        </p>
-        {data.download.available && data.download.url ? (
-          <a href={data.download.url} target="_blank" rel="noreferrer">
-            <Button>Download</Button>
-          </a>
-        ) : (
-          <Alert variant="info">
-            {data.download.reason === 'STORAGE_NOT_CONFIGURED'
-              ? 'Cloudinary is not configured — signed download unavailable. Set real CLOUDINARY_* credentials to enable PDF delivery.'
-              : data.download.reason === 'PLACEHOLDER_ASSET'
-                ? 'This entry uses a placeholder asset (seed/admin metadata). Re-upload a real PDF via Admin → Documents when Cloudinary is configured.'
-                : `Download unavailable (${data.download.reason}).`}
-          </Alert>
-        )}
-      </Surface>
-    </article>
+      </div>
+
+      <PdfViewer
+        className="min-h-0 flex-1 rounded-none border-0 shadow-none lg:rounded-b-[var(--radius-lg)] lg:border lg:border-t-0 lg:shadow-[var(--shadow-sm)]"
+        fileUrl={fileUrl}
+        title={data.title}
+      />
+    </div>
   );
 }

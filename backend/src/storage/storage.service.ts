@@ -207,18 +207,30 @@ export class StorageService {
   /** Fetch asset bytes via a short-lived signed URL (API proxy use). */
   async fetchAssetBytes(
     publicId: string,
-    opts: { resourceType?: 'image' | 'raw'; deliveryType?: MediaDeliveryType; ttlSeconds?: number },
+    opts: {
+      resourceType?: 'image' | 'raw';
+      deliveryType?: MediaDeliveryType;
+      ttlSeconds?: number;
+      /** Upstream fetch timeout (Cloudinary authenticated raw can be slow). */
+      timeoutMs?: number;
+    },
   ): Promise<{ buffer: Buffer; contentType: string } | null> {
     const url = await this.generateSignedViewUrl(publicId, opts);
     if (!url) return null;
-    const res = await fetch(url);
-    if (!res.ok) {
-      this.logger.warn(`Upstream asset fetch failed (${res.status}) for ${publicId}`);
+    const timeoutMs = opts.timeoutMs ?? 90_000;
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
+      if (!res.ok) {
+        this.logger.warn(`Upstream asset fetch failed (${res.status}) for ${publicId}`);
+        return null;
+      }
+      const contentType = res.headers.get('content-type') ?? 'application/octet-stream';
+      const buffer = Buffer.from(await res.arrayBuffer());
+      return { buffer, contentType };
+    } catch (err) {
+      this.logger.warn(`Upstream asset fetch error for ${publicId}: ${String(err)}`);
       return null;
     }
-    const contentType = res.headers.get('content-type') ?? 'application/octet-stream';
-    const buffer = Buffer.from(await res.arrayBuffer());
-    return { buffer, contentType };
   }
 
   private buildSignedAssetUrl(

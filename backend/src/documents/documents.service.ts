@@ -15,6 +15,7 @@ import { MaintenanceQueueService } from '../queue/maintenance-queue.service';
 import { AccessControlService } from '../subscriptions/access-control.service';
 import { StorageService } from '../storage/storage.service';
 import type { CreateDocumentDto, UpdateDocumentDto } from './dto/create-document.dto';
+import { publicPdfByteCache } from './pdf-byte-cache';
 
 @Injectable()
 export class DocumentsService {
@@ -99,6 +100,10 @@ export class DocumentsService {
       );
     }
     const view = await this.resolveViewAvailability(doc.mediaAsset.id);
+    // Warm cache while the client mounts the viewer (Cloudinary can be slow).
+    if (view.available) {
+      void this.warmPublicPdfCache(id);
+    }
     return {
       ...doc,
       /** In-app viewer only — never expose storage URLs to the client. */
@@ -107,7 +112,7 @@ export class DocumentsService {
   }
 
   /**
-   * Proxy bytes for the public PDF viewer. Returns null when asset cannot be served.
+   * Proxy bytes for the public PDF viewer.
    * Caller sets Content-Disposition: inline (no attachment / download UI).
    */
   async getPublicPdfBytes(id: string): Promise<{
@@ -115,6 +120,15 @@ export class DocumentsService {
     contentType: string;
     filename: string;
   }> {
+    const cached = publicPdfByteCache.get(`public:${id}`);
+    if (cached) {
+      return {
+        buffer: cached.buffer,
+        contentType: cached.contentType,
+        filename: cached.filename,
+      };
+    }
+
     const doc = await this.prisma.document.findFirst({
       where: {
         id,
@@ -141,7 +155,87 @@ export class DocumentsService {
         createErrorResponse('DOCUMENT_NOT_FOUND', 'Document not found', newRequestId()),
       );
     }
-    const asset = doc.mediaAsset;
+    const payload = await this.fetchPdfPayload(doc.mediaAsset);
+    publicPdfByteCache.set(`public:${id}`, payload);
+    return payload;
+  }
+
+  /**
+   * Authenticated in-app viewer bytes — same inline delivery, no signed download URL.
+   */
+  async getAuthenticatedPdfBytes(
+    id: string,
+    user: RequestUser,
+  ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
+    const cacheKey = `auth:${id}`;
+    const cached = publicPdfByteCache.get(cacheKey);
+    if (cached) {
+      return {
+        buffer: cached.buffer,
+        contentType: cached.contentType,
+        filename: cached.filename,
+      };
+    }
+
+    const doc = await this.prisma.document.findFirst({
+      where: { id, isPublished: true, deletedAt: null },
+      select: {
+        visibility: true,
+        mediaAsset: {
+          select: {
+            id: true,
+            publicId: true,
+            mimeType: true,
+            originalFilename: true,
+            resourceType: true,
+            deliveryType: true,
+            deletedAt: true,
+          },
+        },
+      },
+    });
+    if (!doc?.mediaAsset || doc.mediaAsset.deletedAt) {
+      throw new NotFoundException(
+        createErrorResponse('DOCUMENT_NOT_FOUND', 'Document not found', newRequestId()),
+      );
+    }
+
+    const dbUser = await this.prisma.user.findUniqueOrThrow({ where: { id: user.userId } });
+    const allowed = await this.access.canAccessDocument(dbUser, doc.visibility);
+    if (!allowed) {
+      throw new ForbiddenException(
+        createErrorResponse(
+          'DOCUMENT_PREMIUM_REQUIRED',
+          'This document requires an active trial or subscription',
+          newRequestId(),
+        ),
+      );
+    }
+
+    const payload = await this.fetchPdfPayload(doc.mediaAsset);
+    publicPdfByteCache.set(cacheKey, payload);
+    if (doc.visibility === DocumentVisibility.PUBLIC) {
+      publicPdfByteCache.set(`public:${id}`, payload);
+    }
+    return payload;
+  }
+
+  private async warmPublicPdfCache(id: string): Promise<void> {
+    try {
+      if (publicPdfByteCache.get(`public:${id}`)) return;
+      await this.getPublicPdfBytes(id);
+    } catch {
+      /* warm is best-effort */
+    }
+  }
+
+  private async fetchPdfPayload(asset: {
+    publicId: string;
+    mimeType: string;
+    originalFilename: string | null;
+    resourceType: MediaResourceType;
+    deliveryType: import('@prisma/client').MediaDeliveryType;
+  }): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
     if (asset.publicId.startsWith('seed/') || asset.publicId.startsWith('admin-placeholder/')) {
       throw new NotFoundException(
         createErrorResponse(
@@ -155,6 +249,7 @@ export class DocumentsService {
       resourceType: asset.resourceType === MediaResourceType.RAW ? 'raw' : 'image',
       deliveryType: asset.deliveryType,
       ttlSeconds: 120,
+      timeoutMs: 90_000,
     });
     if (!fetched) {
       throw new NotFoundException(
@@ -302,34 +397,18 @@ export class DocumentsService {
       meta: { documentId: doc.id },
     });
 
+    const view = await this.resolveViewAvailability(doc.mediaAsset.id);
+    // Never return Cloudinary/signed download URLs to learners (DEC-033).
     return {
       ...doc,
       bookmarked: Boolean(bookmark),
-      download: await this.resolveDownload(doc.mediaAsset.id),
-    };
-  }
-
-  private async resolveDownload(mediaAssetId: string) {
-    const asset = await this.prisma.mediaAsset.findUnique({ where: { id: mediaAssetId } });
-    if (!asset || asset.deletedAt) {
-      return { available: false, reason: 'ASSET_MISSING', url: null as string | null };
-    }
-    if (asset.publicId.startsWith('seed/') || asset.publicId.startsWith('admin-placeholder/')) {
-      return {
+      view,
+      download: {
         available: false,
-        reason: this.storage.isConfigured() ? 'PLACEHOLDER_ASSET' : 'STORAGE_NOT_CONFIGURED',
+        reason: 'VIEW_ONLY' as const,
         url: null as string | null,
-      };
-    }
-    const signed = await this.storage.generateSignedDownloadUrl(asset.publicId, {
-      resourceType: asset.resourceType === MediaResourceType.RAW ? 'raw' : 'image',
-      deliveryType: asset.deliveryType,
-      ttlSeconds: 180,
-    });
-    if (!signed) {
-      return { available: false, reason: 'STORAGE_NOT_CONFIGURED', url: null as string | null };
-    }
-    return { available: true, reason: 'OK', url: signed };
+      },
+    };
   }
 
   async adminGet(id: string) {
@@ -423,9 +502,28 @@ export class DocumentsService {
     });
   }
 
-  async update(id: string, dto: UpdateDocumentDto) {
-    await this.adminGet(id);
-    return this.prisma.document.update({
+  async update(id: string, dto: UpdateDocumentDto, actor?: RequestUser) {
+    const existing = await this.adminGet(id);
+    let nextMediaAssetId: string | undefined;
+
+    if (dto.mediaAssetId) {
+      if (!actor) {
+        throw new ForbiddenException(
+          createErrorResponse('FORBIDDEN', 'Actor required to replace media', newRequestId()),
+        );
+      }
+      const media = await this.prisma.mediaAsset.findFirst({
+        where: { id: dto.mediaAssetId, deletedAt: null, uploadedById: actor.userId },
+      });
+      if (!media) {
+        throw new NotFoundException(
+          createErrorResponse('MEDIA_NOT_FOUND', 'Media asset not found', newRequestId()),
+        );
+      }
+      nextMediaAssetId = media.id;
+    }
+
+    const updated = await this.prisma.document.update({
       where: { id },
       data: {
         ...(dto.title ? { title: dto.title.trim() } : {}),
@@ -433,6 +531,7 @@ export class DocumentsService {
         ...(dto.categoryId !== undefined ? { categoryId: dto.categoryId } : {}),
         ...(dto.visibility ? { visibility: dto.visibility } : {}),
         ...(dto.isPublished !== undefined ? { isPublished: dto.isPublished } : {}),
+        ...(nextMediaAssetId ? { mediaAssetId: nextMediaAssetId } : {}),
       },
       include: {
         category: { select: { id: true, name: true } },
@@ -441,6 +540,24 @@ export class DocumentsService {
         },
       },
     });
+
+    publicPdfByteCache.invalidateDocument(id);
+
+    // Soft-delete previous Cloudinary asset after a successful replace.
+    if (nextMediaAssetId && existing.mediaAssetId && existing.mediaAssetId !== nextMediaAssetId) {
+      const oldAsset = await this.prisma.mediaAsset.findUnique({
+        where: { id: existing.mediaAssetId },
+      });
+      if (oldAsset && !oldAsset.deletedAt) {
+        await this.maintenanceQueue.enqueueDeleteAsset({
+          mediaAssetId: oldAsset.id,
+          publicId: oldAsset.publicId,
+          resourceType: oldAsset.resourceType === MediaResourceType.RAW ? 'raw' : 'image',
+        });
+      }
+    }
+
+    return updated;
   }
 
   async softDelete(id: string, actorUserId?: string) {
@@ -452,6 +569,8 @@ export class DocumentsService {
         mediaAsset: { select: { id: true, publicId: true, resourceType: true, deletedAt: true } },
       },
     });
+
+    publicPdfByteCache.invalidateDocument(id);
 
     if (doc.mediaAsset && !doc.mediaAsset.deletedAt) {
       await this.maintenanceQueue.enqueueDeleteAsset({

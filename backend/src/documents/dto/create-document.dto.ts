@@ -59,4 +59,9 @@ export class UpdateDocumentDto {
   @IsOptional()
   @IsBoolean()
   isPublished?: boolean;
+
+  /** Replace PDF via MediaAsset id from POST /storage/confirm. */
+  @IsOptional()
+  @IsUUID()
+  mediaAssetId?: string;
 }

@@ -41,6 +41,60 @@ type PdfModules = {
   Page: ComponentType<Record<string, unknown>>;
 };
 
+function LazyPdfPage({
+  Page,
+  pageNumber,
+  pageProps,
+  root,
+}: {
+  Page: ComponentType<Record<string, unknown>>;
+  pageNumber: number;
+  pageProps: { width?: number; height?: number; scale?: number };
+  root: HTMLElement | null;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(pageNumber <= 2);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) setVisible(true);
+      },
+      { root: root ?? null, rootMargin: '800px 0px', threshold: 0.01 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [root]);
+
+  return (
+    <div
+      ref={ref}
+      data-pdf-page={pageNumber}
+      className="min-h-[40vh] w-full overflow-hidden rounded-[var(--radius)] bg-white shadow-[var(--shadow-sm)] ring-1 ring-[var(--line)]"
+    >
+      {visible ? (
+        <Page
+          pageNumber={pageNumber}
+          {...pageProps}
+          renderAnnotationLayer={false}
+          renderTextLayer
+          loading={
+            <div className="flex h-[50vh] w-full max-w-3xl items-center justify-center bg-[var(--bg-muted)]">
+              <PageLoader compact label={`Loading page ${pageNumber}`} />
+            </div>
+          }
+        />
+      ) : (
+        <div className="flex h-[50vh] w-full items-center justify-center bg-[var(--bg-muted)] text-xs text-[var(--muted-strong)]">
+          Page {pageNumber}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /**
  * Full-page in-app PDF reader. react-pdf/pdfjs are loaded only after mount
  * (never during SSR). Bytes are fetched via the API proxy as an ArrayBuffer
@@ -61,8 +115,8 @@ export function PdfViewer({ fileUrl, title, className, toolbarExtra }: Props) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [libReady, setLibReady] = useState(false);
+  const [fetchProgress, setFetchProgress] = useState<number | null>(null);
 
-  // Load pdf.js only in the browser after mount.
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -88,7 +142,6 @@ export function PdfViewer({ fileUrl, title, className, toolbarExtra }: Props) {
     };
   }, []);
 
-  // Fetch PDF bytes through our controlled proxy (no Cloudinary URL in the client).
   useEffect(() => {
     if (!libReady) return;
     let cancelled = false;
@@ -96,6 +149,7 @@ export function PdfViewer({ fileUrl, title, className, toolbarExtra }: Props) {
     setPdfData(null);
     setLoadError(null);
     setNumPages(0);
+    setFetchProgress(0);
 
     void (async () => {
       try {
@@ -103,18 +157,49 @@ export function PdfViewer({ fileUrl, title, className, toolbarExtra }: Props) {
           credentials: 'include',
           signal: ctrl.signal,
           headers: { Accept: 'application/pdf' },
+          cache: 'no-store',
         });
         if (!res.ok) {
           throw new Error(`HTTP ${res.status}`);
         }
-        const buf = await res.arrayBuffer();
+        const total = Number(res.headers.get('content-length') || 0);
+        if (!res.body) {
+          const buf = await res.arrayBuffer();
+          if (!cancelled) {
+            setPdfData(buf.slice(0));
+            setFetchProgress(100);
+          }
+          return;
+        }
+
+        const reader = res.body.getReader();
+        const chunks: Uint8Array[] = [];
+        let received = 0;
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          if (value) {
+            chunks.push(value);
+            received += value.length;
+            if (!cancelled && total > 0) {
+              setFetchProgress(Math.min(99, Math.round((received / total) * 100)));
+            }
+          }
+        }
+        const merged = new Uint8Array(received);
+        let offset = 0;
+        for (const chunk of chunks) {
+          merged.set(chunk, offset);
+          offset += chunk.length;
+        }
         if (!cancelled) {
-          // Copy — pdf.js may transfer/detach the buffer.
-          setPdfData(buf.slice(0));
+          setPdfData(merged.buffer.slice(merged.byteOffset, merged.byteOffset + merged.byteLength));
+          setFetchProgress(100);
         }
       } catch (err) {
         if (cancelled || (err instanceof DOMException && err.name === 'AbortError')) return;
-        setLoadError('Could not open this PDF.');
+        setLoadError('Could not open this PDF. It may still be loading — try again in a moment.');
+        setFetchProgress(null);
       }
     })();
 
@@ -322,7 +407,24 @@ export function PdfViewer({ fileUrl, title, className, toolbarExtra }: Props) {
             }}
           />
         ) : !ready || !Document || !Page ? (
-          <PageLoader compact label="Loading PDF" />
+          <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3">
+            <PageLoader
+              compact
+              label={
+                fetchProgress != null && fetchProgress < 100
+                  ? `Loading PDF${fetchProgress > 0 ? ` · ${fetchProgress}%` : '…'}`
+                  : 'Loading PDF'
+              }
+            />
+            {fetchProgress != null && fetchProgress > 0 && fetchProgress < 100 ? (
+              <div className="h-1.5 w-48 overflow-hidden rounded-full bg-[var(--bg-muted)]">
+                <div
+                  className="h-full rounded-full bg-[var(--accent)] transition-[width]"
+                  style={{ width: `${fetchProgress}%` }}
+                />
+              </div>
+            ) : null}
+          </div>
         ) : (
           <Document
             key={`${fileUrl}-${reloadKey}`}
@@ -345,23 +447,13 @@ export function PdfViewer({ fileUrl, title, className, toolbarExtra }: Props) {
             {Array.from({ length: numPages }, (_, i) => {
               const n = i + 1;
               return (
-                <div
+                <LazyPdfPage
                   key={n}
-                  data-pdf-page={n}
-                  className="overflow-hidden rounded-[var(--radius)] bg-white shadow-[var(--shadow-sm)] ring-1 ring-[var(--line)]"
-                >
-                  <Page
-                    pageNumber={n}
-                    {...pageProps}
-                    renderAnnotationLayer={false}
-                    renderTextLayer
-                    loading={
-                      <div className="flex h-[60vh] w-full max-w-3xl items-center justify-center bg-[var(--bg-muted)]">
-                        <PageLoader compact label={`Loading page ${n}`} />
-                      </div>
-                    }
-                  />
-                </div>
+                  Page={Page}
+                  pageNumber={n}
+                  pageProps={pageProps}
+                  root={scrollerRef.current}
+                />
               );
             })}
           </Document>

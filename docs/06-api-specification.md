@@ -132,6 +132,7 @@ Profile picture: separate upload after auth or multipart field if approved.
 | GET | `/public/documents` | Published `PUBLIC` documents for পত্রিকার গুরুত্বপূর্ণ কলাম (`cursor`, `limit`, `q`) | Public | — |
 | GET | `/public/documents/:id` | Public document metadata + `view.available` (no storage URLs) | Public | — |
 | GET | `/public/documents/:id/file` | PDF bytes proxy for in-app viewer (`Content-Disposition: inline`; no attachment) | Public | — |
+| GET | `/documents/:id/file` | Authenticated in-app PDF bytes (inline; no signed download URL) | User | — |
 | GET | `/public/questions` | Published MCQ cards (options + correct answer), `createdAt DESC`, cursor pagination + filters (`q`, `categoryId`, `subcategoryId`, `examTag`, `difficulty`, `uploadBatchId`) | Public | — |
 | GET | `/public/question-sets` | Upload-based Question Sets (completed/archived batches with published MCQs), newest first; filters: `q` (title + category/subcategory names + hints), `categoryId`, `subcategoryId` (placements), `year` | Public | — |
 | GET | `/public/question-sets/years` | Distinct exam years for Preli bank year chips | Public | — |

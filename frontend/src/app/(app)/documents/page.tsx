@@ -32,7 +32,7 @@ export default function DocumentsPage() {
       <PageHeader
         eyebrow="Study materials"
         title="PDF library"
-        description="Published study documents. Downloads require configured cloud storage."
+        description="Published study documents. Open any item to read in the in-app viewer (view only)."
       />
 
       {list.isLoading ? <DocumentsPageSkeleton omitHeader /> : null}

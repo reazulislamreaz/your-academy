@@ -22,10 +22,18 @@ export type PublicDocumentDetail = PublicDocumentListItem & {
   view: { available: boolean; reason: string };
 };
 
-/** Same-origin PDF proxy (Next rewrite → API). Do not use Cloudinary URLs in the UI. */
+/**
+ * Same-origin PDF proxy with a long timeout (Next rewrite to the API times out
+ * before slow Cloudinary authenticated RAW fetches complete).
+ * Never expose Cloudinary URLs to the UI.
+ */
 export function publicDocumentFileUrl(id: string): string {
-  const base = process.env.NEXT_PUBLIC_API_BASE_URL ?? '/api/v1';
-  return `${base}/public/documents/${id}/file`;
+  return `/api/pdf/${id}`;
+}
+
+/** Authenticated in-app viewer bytes (forwards session cookies). */
+export function authenticatedDocumentFileUrl(id: string): string {
+  return `/api/pdf/auth/${id}`;
 }
 
 export async function listPublicDocuments(params: {

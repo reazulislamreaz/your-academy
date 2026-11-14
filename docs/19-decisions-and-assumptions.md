@@ -249,9 +249,9 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Field | Value |
 |-------|-------|
 | Question | How should পত্রিকার গুরুত্বপূর্ণ কলাম PDFs be read, and can users download them? |
-| Decision | **In-app PDF.js viewer** on `/news/d/:id` with page nav, zoom, fit width/page, fullscreen. **No download / save / print buttons.** Bytes are served only via `GET /api/v1/public/documents/:id/file` (server fetches short-lived Cloudinary URL; client never receives storage URLs). Soft deterrents: `Content-Disposition: inline`, short private cache, context-menu / Ctrl+S / Ctrl+P blocked in the viewer, print CSS hides canvas. **Residual risk:** determined users can still capture bytes via DevTools/network/screenshots — do not claim absolute prevention. |
-| Impact | `react-pdf` + worker in `public/`; PublicModule file proxy; DocumentsService view metadata |
-| Status | **CONFIRMED** (product request 2026-11-12) |
+| Decision | **In-app PDF.js viewer** on `/news/d/:id` (and learner `/documents/:id`) with page nav, zoom, fit width/page, fullscreen. **No download / save / print buttons.** Bytes are served only via controlled proxies (`/api/pdf/:id` → API `GET /public/documents/:id/file`, and authenticated `/api/pdf/auth/:id` → `GET /documents/:id/file`). Server fetches short-lived Cloudinary URLs; client never receives storage URLs. Soft deterrents: `Content-Disposition: inline`, short private cache, context-menu / Ctrl+S / Ctrl+P blocked in the viewer, print CSS hides canvas. In-process PDF byte cache + long-timeout Next route handlers address slow authenticated Cloudinary RAW delivery. **Residual risk:** determined users can still capture bytes via DevTools/network/screenshots — do not claim absolute prevention. |
+| Impact | `react-pdf` + worker in `public/`; PublicModule + Documents file proxies; no signed download URLs for learners |
+| Status | **CONFIRMED** (product request 2026-11-12; hardened 2026-11-14) |
 
 ### DEC-019 — Soft delete vs archive for questions
 

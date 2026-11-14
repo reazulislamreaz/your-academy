@@ -57,7 +57,11 @@ export default function NewsDetailPage() {
             {data.documents.map((doc) => (
               <li key={doc.id} className="py-3 first:pt-0 last:pb-0">
                 <Link
-                  href={`/documents/${doc.id}`}
+                  href={
+                    doc.visibility === 'PUBLIC'
+                      ? `/news/d/${doc.id}`
+                      : `/documents/${doc.id}`
+                  }
                   className="text-sm font-semibold underline-offset-2 hover:underline"
                 >
                   {doc.title}
@@ -69,8 +73,8 @@ export default function NewsDetailPage() {
             ))}
           </ul>
           <p className="mt-3 text-xs text-[var(--muted-strong)]">
-            Sign in to open authenticated PDFs. Downloads use short-lived signed URLs when Cloudinary
-            is configured.
+            Public columns open in the in-app reader (view only). Sign in for authenticated study
+            PDFs.
           </p>
         </Surface>
       ) : null}
