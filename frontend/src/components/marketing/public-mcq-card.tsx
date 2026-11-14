@@ -46,16 +46,13 @@ export function PublicMcqCard({
     >
       <div className="relative z-[1] space-y-3">
         <h2 className="font-reading text-lg leading-snug font-bold tracking-tight text-[var(--ink)] sm:text-xl">
+          {question.sourceSerial ? (
+            <span className="mr-2 font-display text-[0.95em] font-bold text-[var(--highlight)] tabular-nums">
+              {question.sourceSerial}.
+            </span>
+          ) : null}
           <span className="whitespace-pre-wrap break-words">{question.content}</span>
         </h2>
-
-        {question.sourceLabel ? (
-          <p>
-            <span className="inline-flex max-w-full rounded-md bg-[var(--brand-wash-strong)] px-2.5 py-1 text-xs font-semibold text-[var(--ink-soft)]">
-              [{question.sourceLabel}]
-            </span>
-          </p>
-        ) : null}
       </div>
 
       <ul className="relative z-[1] mt-5 grid gap-2.5 sm:grid-cols-2">

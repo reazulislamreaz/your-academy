@@ -72,7 +72,7 @@ export function PublicQuestionSetView({ setId, className }: Props) {
         <LoadError message="Question set not found or has no published questions." />
       ) : null}
       {setQry.data ? (
-        <header className="space-y-2 border-b border-[var(--line)] pb-5">
+        <header className="space-y-3 border-b border-[var(--line)] pb-5">
           <p className="text-[0.6875rem] font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
             Question set
           </p>
@@ -81,10 +81,15 @@ export function PublicQuestionSetView({ setId, className }: Props) {
           </h1>
           <p className="text-sm text-[var(--muted-strong)]">
             {total != null ? `${total.toLocaleString()} questions` : null}
+            {setQry.data.examYear ? ` · ${setQry.data.examYear}` : ''}
             {setQry.data.subject ? ` · ${setQry.data.subject}` : ''}
             {setQry.data.topic ? ` · ${setQry.data.topic}` : ''}
-            {setQry.data.examCategory ? ` · ${setQry.data.examCategory}` : ''}
           </p>
+          {setQry.data.sheetPreamble ? (
+            <div className="rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--info-soft)] px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap text-[var(--ink-soft)]">
+              {setQry.data.sheetPreamble}
+            </div>
+          ) : null}
         </header>
       ) : null}
 
@@ -136,16 +141,28 @@ export function PublicQuestionSetView({ setId, className }: Props) {
       ) : null}
 
       <ul className="space-y-4">
-        {items.map((item) => (
-          <li key={item.id}>
-            <PublicMcqCard
-              question={item}
-              answerVisible={visibility.isAnswerVisible(item.id)}
-              allowIndividualToggle={individualMode}
-              onToggleAnswer={() => visibility.toggleQuestion(item.id)}
-            />
-          </li>
-        ))}
+        {items.map((item, index) => {
+          const prevSection = index > 0 ? items[index - 1]?.sectionTitle : null;
+          const showSection =
+            Boolean(item.sectionTitle) && item.sectionTitle !== prevSection;
+          return (
+            <li key={item.id} className="space-y-3">
+              {showSection ? (
+                <div className="rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-muted)] px-4 py-2.5">
+                  <p className="font-display text-sm font-bold tracking-tight text-[var(--ink)]">
+                    {item.sectionTitle}
+                  </p>
+                </div>
+              ) : null}
+              <PublicMcqCard
+                question={item}
+                answerVisible={visibility.isAnswerVisible(item.id)}
+                allowIndividualToggle={individualMode}
+                onToggleAnswer={() => visibility.toggleQuestion(item.id)}
+              />
+            </li>
+          );
+        })}
       </ul>
 
       {list.hasNextPage ? (

@@ -27,12 +27,13 @@ import {
   normalizeCorrectAnswer,
   parseQuestionWorkbook,
   TEMPLATE_HEADERS,
-  type ParsedImportRow,
 } from './excel-parser';
 import { hashFileBuffer, hashQuestionContent, slugifyBatchCode } from './question-normalize';
 
 const MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
 const MAX_ROWS = 5000;
+/** One Excel collection can be placed under up to 8 subcategories (product brief). */
+const MAX_PLACEMENT_SUBCATEGORIES = 8;
 
 @Injectable()
 export class QuestionImportService {
@@ -198,6 +199,17 @@ export class QuestionImportService {
       where: { id },
       include: {
         uploadedBy: { select: { id: true, name: true } },
+        placements: {
+          orderBy: { sortOrder: 'asc' },
+          select: {
+            id: true,
+            categoryId: true,
+            subcategoryId: true,
+            sortOrder: true,
+            subcategory: { select: { id: true, name: true, slug: true } },
+            category: { select: { id: true, name: true, slug: true } },
+          },
+        },
       },
     });
     if (!batch) {
@@ -244,6 +256,8 @@ export class QuestionImportService {
       subjectHint?: string;
       topicHint?: string;
       examCategoryHint?: string;
+      /** Extra subcategory IDs so this batch appears in multiple bank/homepage slots (max 8). */
+      placementSubcategoryIds?: string[];
     },
   ) {
     if (!file?.buffer?.length) {
@@ -300,9 +314,9 @@ export class QuestionImportService {
       batchCode = `${batchCode}_${randomUUID().slice(0, 8).toUpperCase()}`.slice(0, 80);
     }
 
-    let parsed: ParsedImportRow[];
+    let workbook;
     try {
-      parsed = await parseQuestionWorkbook(file.buffer, originalFilename, file.mimetype || '');
+      workbook = await parseQuestionWorkbook(file.buffer, originalFilename, file.mimetype || '');
     } catch (err) {
       if (err instanceof Error && err.message === 'MISSING_HEADERS') {
         throw new BadRequestException(
@@ -315,6 +329,9 @@ export class QuestionImportService {
       }
       throw err;
     }
+
+    const parsed = workbook.rows;
+    const sheetPreamble = workbook.preamble.slice(0, 4000) || null;
 
     if (parsed.length === 0) {
       throw new BadRequestException(
@@ -348,7 +365,6 @@ export class QuestionImportService {
     const collectionSubject = input.subjectHint?.trim() || '';
     const collectionTopic = input.topicHint?.trim() || '';
     const collectionExam = input.examCategoryHint?.trim() || '';
-
     const sheetHasCategory = parsed.some((row) => Boolean(row.subject?.trim()));
     if (!collectionSubject && !sheetHasCategory) {
       throw new BadRequestException(
@@ -360,6 +376,86 @@ export class QuestionImportService {
       );
     }
 
+    const rootCategory = collectionSubject
+      ? categoryIndex.rootsByName.get(this.nameKey(collectionSubject))
+      : null;
+    if (collectionSubject && !rootCategory) {
+      throw new BadRequestException(
+        createErrorResponse(
+          'CATEGORY_NOT_FOUND',
+          `Category not found: ${collectionSubject}`,
+          newRequestId(),
+        ),
+      );
+    }
+
+    /** Multi-placement IDs (max 8) so one Excel can appear under several homepage/bank slots. */
+    const placementIdSet: string[] = [];
+    const pushPlacementId = (id: string | undefined | null) => {
+      if (!id || placementIdSet.includes(id)) return;
+      if (placementIdSet.length >= MAX_PLACEMENT_SUBCATEGORIES) return;
+      placementIdSet.push(id);
+    };
+
+    // Legacy single topicHint resolves to a placement when no explicit IDs were sent.
+    if (rootCategory && collectionTopic) {
+      const fromHint = categoryIndex.topicsByParentAndName.get(
+        `${rootCategory.id}::${this.nameKey(collectionTopic)}`,
+      );
+      pushPlacementId(fromHint);
+    }
+
+    for (const rawId of input.placementSubcategoryIds ?? []) {
+      pushPlacementId(rawId?.trim());
+    }
+
+    const placementRows: Array<{
+      categoryId: string;
+      subcategoryId: string;
+      sortOrder: number;
+      name: string;
+    }> = [];
+    if (rootCategory && placementIdSet.length) {
+      for (let i = 0; i < placementIdSet.length; i += 1) {
+        const subId = placementIdSet[i];
+        const sub = await this.prisma.category.findFirst({
+          where: { id: subId, parentId: rootCategory.id, isActive: true },
+          select: { id: true, name: true },
+        });
+        if (!sub) {
+          throw new BadRequestException(
+            createErrorResponse(
+              'SUBCATEGORY_INVALID',
+              'Each placement must be an active subcategory of the selected category',
+              newRequestId(),
+            ),
+          );
+        }
+        placementRows.push({
+          categoryId: rootCategory.id,
+          subcategoryId: sub.id,
+          sortOrder: i,
+          name: sub.name,
+        });
+      }
+    }
+
+    // Prefer first placement name as topicHint for list filters / legacy display.
+    const resolvedTopicHint =
+      placementRows[0]?.name?.trim() || collectionTopic || '';
+
+    const yearCounts = new Map<string, number>();
+    for (const row of parsed) {
+      const y = row.examYear?.trim();
+      if (!y) continue;
+      yearCounts.set(y, (yearCounts.get(y) ?? 0) + 1);
+    }
+    const batchExamYear =
+      [...yearCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ??
+      this.extractYearHint(displayName) ??
+      this.extractYearHint(sheetPreamble ?? '') ??
+      null;
+
     const rowCreates: Prisma.QuestionImportRowCreateManyInput[] = [];
     let validCount = 0;
     let invalidCount = 0;
@@ -368,7 +464,7 @@ export class QuestionImportService {
 
     for (const row of parsed) {
       const subjectName = row.subject || collectionSubject;
-      const topicName = row.topic || collectionTopic;
+      const topicName = row.topic || resolvedTopicHint;
       const examCategory = row.examCategory || collectionExam;
 
       const hash = row.question ? hashQuestionContent(row.question) : null;
@@ -412,6 +508,9 @@ export class QuestionImportService {
         // Subcategory may be created on import if category exists — allow VALID without topic id.
       }
 
+      const serial = row.serial?.trim().slice(0, 32) || null;
+      const sectionTitle = row.sectionTitle?.trim().slice(0, 500) || null;
+
       if (errors.length) {
         invalidCount += 1;
         rowCreates.push({
@@ -420,6 +519,7 @@ export class QuestionImportService {
           rowNumber: row.rowNumber,
           status: QuestionImportRowStatus.INVALID,
           contentHash: hash,
+          serial,
           questionText: row.question || '(empty)',
           optionA: row.optionA || null,
           optionB: row.optionB || null,
@@ -433,6 +533,7 @@ export class QuestionImportService {
           examCategory: examCategory || null,
           examYear: row.examYear || null,
           source: row.source || null,
+          sectionTitle,
           errorMessage: `Row ${row.rowNumber}: ${errors.join('; ')}`.slice(0, 500),
         });
         continue;
@@ -447,6 +548,7 @@ export class QuestionImportService {
           rowNumber: row.rowNumber,
           status: QuestionImportRowStatus.DUPLICATE,
           contentHash: hash,
+          serial,
           questionText: row.question,
           optionA: row.optionA,
           optionB: row.optionB,
@@ -460,6 +562,7 @@ export class QuestionImportService {
           examCategory: examCategory || null,
           examYear: row.examYear || null,
           source: row.source || null,
+          sectionTitle,
           errorMessage: `Row ${row.rowNumber}: Duplicate of row ${priorInFile} in this file`,
         });
         continue;
@@ -474,6 +577,7 @@ export class QuestionImportService {
           rowNumber: row.rowNumber,
           status: QuestionImportRowStatus.DUPLICATE,
           contentHash: hash,
+          serial,
           questionText: row.question,
           optionA: row.optionA,
           optionB: row.optionB,
@@ -487,6 +591,7 @@ export class QuestionImportService {
           examCategory: examCategory || null,
           examYear: row.examYear || null,
           source: row.source || null,
+          sectionTitle,
           existingQuestionId: existing.id,
           errorMessage: `Row ${row.rowNumber}: Duplicate of existing question (${existing.title.slice(0, 80)})`,
         });
@@ -501,6 +606,7 @@ export class QuestionImportService {
         rowNumber: row.rowNumber,
         status: QuestionImportRowStatus.VALID,
         contentHash: hash,
+        serial,
         questionText: row.question,
         optionA: row.optionA,
         optionB: row.optionB,
@@ -514,6 +620,7 @@ export class QuestionImportService {
         examCategory: examCategory || null,
         examYear: row.examYear || null,
         source: row.source || null,
+        sectionTitle,
       });
       void topicId;
     }
@@ -535,10 +642,24 @@ export class QuestionImportService {
           invalidCount,
           duplicateCount,
           subjectHint: collectionSubject || null,
-          topicHint: collectionTopic || null,
+          topicHint: resolvedTopicHint || null,
           examCategoryHint: collectionExam || null,
+          sheetPreamble,
+          examYear: batchExamYear,
           duplicateFileBatchId: existingFile?.id ?? null,
           uploadedById: user.userId,
+          ...(placementRows.length
+            ? {
+                placements: {
+                  create: placementRows.map((p) => ({
+                    id: randomUUID(),
+                    categoryId: p.categoryId,
+                    subcategoryId: p.subcategoryId,
+                    sortOrder: p.sortOrder,
+                  })),
+                },
+              }
+            : {}),
         },
       });
       // chunk createMany
@@ -587,6 +708,10 @@ export class QuestionImportService {
   }
 
   private async runImport(user: RequestUser, batchId: string, skipDuplicates: boolean) {
+    const batch = await this.prisma.questionUploadBatch.findUniqueOrThrow({
+      where: { id: batchId },
+      select: { id: true, examYear: true, examCategoryHint: true },
+    });
     const categoryIndex = await this.buildCategoryIndex();
     const rows = await this.prisma.questionImportRow.findMany({
       where: {
@@ -675,6 +800,9 @@ export class QuestionImportService {
                 publishedAt: new Date(),
                 examTags: examTag ? [examTag] : [],
                 sourceNote: sourceParts.join(' · ').slice(0, 240),
+                sourceSerial: row.serial?.trim().slice(0, 32) || null,
+                examYear: row.examYear?.trim().slice(0, 16) || batch.examYear || null,
+                sectionTitle: row.sectionTitle?.trim().slice(0, 500) || null,
                 contentHash: row.contentHash,
                 uploadBatchId: batchId,
                 createdById: user.userId,
@@ -849,6 +977,12 @@ export class QuestionImportService {
       buffer: Buffer.from(buf),
       filename: `${batch.batchCode}_export.xlsx`,
     };
+  }
+
+  private extractYearHint(text: string | null | undefined): string | null {
+    if (!text?.trim()) return null;
+    const m = text.match(/(?:19|20)\d{2}/);
+    return m?.[0] ?? null;
   }
 
   private nameKey(name: string): string {

@@ -18,7 +18,11 @@ export type PublicQuestionCard = {
   difficulty: Difficulty;
   examTags: string[];
   sourceNote: string | null;
+  /** @deprecated Prefer serial/sectionTitle; kept null so UI no longer shows category after stem. */
   sourceLabel: string | null;
+  sourceSerial: string | null;
+  examYear: string | null;
+  sectionTitle: string | null;
   category: { id: string; name: string; slug: string };
   subcategory: { id: string; name: string; slug: string } | null;
   options: Array<{ id: string; label: string; content: string; sortOrder: number }>;
@@ -38,9 +42,17 @@ export type PublicQuestionSet = {
   subject: string | null;
   topic: string | null;
   examCategory: string | null;
+  examYear: string | null;
+  sheetPreamble: string | null;
   questionCount: number;
   uploadedAt: string;
   importedAt: string | null;
+  placements: Array<{
+    subcategoryId: string;
+    subcategoryName: string;
+    categoryId: string;
+    categoryName: string;
+  }>;
 };
 
 @Injectable()
@@ -71,44 +83,107 @@ export class PublicService {
     return { questions, categories, news, documents, questionSets };
   }
 
+  /** Distinct exam years available on published collections (for year filter chips). */
+  async listQuestionSetYears(): Promise<string[]> {
+    const [batchYears, questionYears] = await Promise.all([
+      this.prisma.questionUploadBatch.findMany({
+        where: {
+          status: { in: [QuestionUploadStatus.COMPLETED, QuestionUploadStatus.ARCHIVED] },
+          examYear: { not: null },
+          questions: { some: { status: QuestionStatus.PUBLISHED, deletedAt: null } },
+        },
+        distinct: ['examYear'],
+        select: { examYear: true },
+      }),
+      this.prisma.question.findMany({
+        where: {
+          status: QuestionStatus.PUBLISHED,
+          deletedAt: null,
+          examYear: { not: null },
+          uploadBatchId: { not: null },
+        },
+        distinct: ['examYear'],
+        select: { examYear: true },
+      }),
+    ]);
+    const years = new Set<string>();
+    for (const row of [...batchYears, ...questionYears]) {
+      if (row.examYear?.trim()) years.add(row.examYear.trim());
+    }
+    return [...years].sort((a, b) => Number(b) - Number(a) || b.localeCompare(a));
+  }
+
   /** Public Question Sets = completed/archived upload batches with live published MCQs. */
   async listQuestionSets(params: {
     cursor?: string;
     limit?: number;
     q?: string;
     categoryId?: string;
+    subcategoryId?: string;
+    year?: string;
   }) {
     const limit = Math.min(Math.max(params.limit ?? 20, 1), 100);
     const q = params.q?.trim();
     const categoryId = params.categoryId?.trim() || undefined;
+    const subcategoryId = params.subcategoryId?.trim() || undefined;
+    const year = params.year?.trim() || undefined;
+
+    const liveQuestion: Prisma.QuestionWhereInput = {
+      status: QuestionStatus.PUBLISHED,
+      deletedAt: null,
+    };
+
+    const yearMatch: Prisma.QuestionUploadBatchWhereInput | undefined = year
+      ? {
+          OR: [
+            { examYear: year, questions: { some: liveQuestion } },
+            { questions: { some: { ...liveQuestion, examYear: year } } },
+          ],
+        }
+      : { questions: { some: liveQuestion } };
+
+    const placementMatch: Prisma.QuestionUploadBatchWhereInput | undefined = subcategoryId
+      ? {
+          OR: [
+            { placements: { some: { subcategoryId } } },
+            { questions: { some: { ...liveQuestion, subcategoryId } } },
+          ],
+        }
+      : categoryId
+        ? {
+            OR: [
+              { questions: { some: { ...liveQuestion, categoryId } } },
+              { placements: { some: { categoryId } } },
+            ],
+          }
+        : undefined;
 
     const where: Prisma.QuestionUploadBatchWhereInput = {
       status: { in: [QuestionUploadStatus.COMPLETED, QuestionUploadStatus.ARCHIVED] },
-      questions: {
-        some: {
-          status: QuestionStatus.PUBLISHED,
-          deletedAt: null,
-          ...(categoryId ? { categoryId } : {}),
-        },
-      },
-      ...(q
-        ? {
-            OR: [
-              { displayName: { contains: q, mode: 'insensitive' } },
-              { batchCode: { contains: q, mode: 'insensitive' } },
-              { examCategoryHint: { contains: q, mode: 'insensitive' } },
-              { subjectHint: { contains: q, mode: 'insensitive' } },
-              { topicHint: { contains: q, mode: 'insensitive' } },
-            ],
-          }
-        : {}),
+      AND: [
+        yearMatch,
+        ...(placementMatch ? [placementMatch] : []),
+        ...(q
+          ? ([
+              {
+                OR: [
+                  { displayName: { contains: q, mode: 'insensitive' as const } },
+                  { batchCode: { contains: q, mode: 'insensitive' as const } },
+                  { examCategoryHint: { contains: q, mode: 'insensitive' as const } },
+                  { subjectHint: { contains: q, mode: 'insensitive' as const } },
+                  { topicHint: { contains: q, mode: 'insensitive' as const } },
+                  { sheetPreamble: { contains: q, mode: 'insensitive' as const } },
+                ],
+              },
+            ] satisfies Prisma.QuestionUploadBatchWhereInput[])
+          : []),
+      ],
     };
 
     const batches = await this.prisma.questionUploadBatch.findMany({
       where,
       take: limit + 1,
       ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {}),
-      // Newest Admin upload first (upload createdAt DESC).
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       select: {
         id: true,
@@ -118,16 +193,23 @@ export class PublicService {
         subjectHint: true,
         topicHint: true,
         examCategoryHint: true,
+        examYear: true,
+        sheetPreamble: true,
         createdAt: true,
         importedAt: true,
+        placements: {
+          orderBy: { sortOrder: 'asc' },
+          select: {
+            categoryId: true,
+            subcategoryId: true,
+            category: { select: { name: true } },
+            subcategory: { select: { name: true } },
+          },
+        },
         _count: {
           select: {
             questions: {
-              where: {
-                status: QuestionStatus.PUBLISHED,
-                deletedAt: null,
-                ...(categoryId ? { categoryId } : {}),
-              },
+              where: year ? { ...liveQuestion, examYear: year } : liveQuestion,
             },
           },
         },
@@ -135,18 +217,7 @@ export class PublicService {
     });
 
     const nextCursor = batches.length > limit ? batches.pop()!.id : null;
-    const items: PublicQuestionSet[] = batches.map((b) => ({
-      id: b.id,
-      batchCode: b.batchCode,
-      title: this.setTitle(b),
-      description: b.description,
-      subject: b.subjectHint,
-      topic: b.topicHint,
-      examCategory: b.examCategoryHint,
-      questionCount: b._count.questions,
-      uploadedAt: b.createdAt.toISOString(),
-      importedAt: b.importedAt?.toISOString() ?? null,
-    }));
+    const items: PublicQuestionSet[] = batches.map((b) => this.mapSet(b));
 
     const total = await this.prisma.questionUploadBatch.count({ where });
 
@@ -168,8 +239,19 @@ export class PublicService {
         subjectHint: true,
         topicHint: true,
         examCategoryHint: true,
+        examYear: true,
+        sheetPreamble: true,
         createdAt: true,
         importedAt: true,
+        placements: {
+          orderBy: { sortOrder: 'asc' },
+          select: {
+            categoryId: true,
+            subcategoryId: true,
+            category: { select: { name: true } },
+            subcategory: { select: { name: true } },
+          },
+        },
         _count: {
           select: {
             questions: {
@@ -184,18 +266,7 @@ export class PublicService {
         createErrorResponse('QUESTION_SET_NOT_FOUND', 'Question set not found', newRequestId()),
       );
     }
-    return {
-      id: batch.id,
-      batchCode: batch.batchCode,
-      title: this.setTitle(batch),
-      description: batch.description,
-      subject: batch.subjectHint,
-      topic: batch.topicHint,
-      examCategory: batch.examCategoryHint,
-      questionCount: batch._count.questions,
-      uploadedAt: batch.createdAt.toISOString(),
-      importedAt: batch.importedAt?.toISOString() ?? null,
-    };
+    return this.mapSet(batch);
   }
 
   async listSetQuestions(
@@ -282,6 +353,9 @@ export class PublicService {
         difficulty: true,
         examTags: true,
         sourceNote: true,
+        sourceSerial: true,
+        examYear: true,
+        sectionTitle: true,
         createdAt: true,
         publishedAt: true,
         uploadBatchId: true,
@@ -299,7 +373,7 @@ export class PublicService {
         },
         importRows: {
           where: { batchId },
-          select: { rowNumber: true },
+          select: { rowNumber: true, serial: true, sectionTitle: true },
           take: 1,
         },
       },
@@ -311,7 +385,9 @@ export class PublicService {
     const items: PublicQuestionCard[] = pageIds
       .map((id) => byId.get(id))
       .filter((q): q is NonNullable<typeof q> => Boolean(q))
-      .map((q) => this.toCard(q, rowNumberById.get(q.id) ?? q.importRows[0]?.rowNumber ?? null));
+      .map((q) =>
+        this.toCard(q, rowNumberById.get(q.id) ?? q.importRows[0]?.rowNumber ?? null),
+      );
 
     return { items, nextCursor, total };
   }
@@ -350,6 +426,9 @@ export class PublicService {
           difficulty: true,
           examTags: true,
           sourceNote: true,
+          sourceSerial: true,
+          examYear: true,
+          sectionTitle: true,
           createdAt: true,
           publishedAt: true,
           uploadBatchId: true,
@@ -366,7 +445,7 @@ export class PublicService {
             },
           },
           importRows: {
-            select: { rowNumber: true },
+            select: { rowNumber: true, serial: true, sectionTitle: true },
             take: 1,
             orderBy: { rowNumber: 'asc' },
           },
@@ -387,6 +466,9 @@ export class PublicService {
       difficulty: Difficulty;
       examTags: string[];
       sourceNote: string | null;
+      sourceSerial?: string | null;
+      examYear?: string | null;
+      sectionTitle?: string | null;
       createdAt: Date;
       publishedAt: Date | null;
       uploadBatchId: string | null;
@@ -399,11 +481,13 @@ export class PublicService {
         sortOrder: number;
         isCorrect: boolean;
       }>;
+      importRows?: Array<{ serial?: string | null; sectionTitle?: string | null }>;
     },
     rowNumber: number | null,
   ): PublicQuestionCard {
     const correct = q.options.find((o) => o.isCorrect);
     const correctAnswerLabel = correct?.label ?? '';
+    const importMeta = q.importRows?.[0];
     return {
       id: q.id,
       title: q.title,
@@ -411,7 +495,11 @@ export class PublicService {
       difficulty: q.difficulty,
       examTags: q.examTags,
       sourceNote: q.sourceNote,
-      sourceLabel: this.sourceLabel(q.sourceNote, q.examTags, q.category.name),
+      // Product brief: do not show category/exam badge under the stem.
+      sourceLabel: null,
+      sourceSerial: q.sourceSerial ?? importMeta?.serial ?? null,
+      examYear: q.examYear ?? null,
+      sectionTitle: q.sectionTitle ?? importMeta?.sectionTitle ?? null,
       category: q.category,
       subcategory: q.subcategory,
       options: q.options.map(({ id, label, content, sortOrder }) => ({
@@ -426,6 +514,48 @@ export class PublicService {
       publishedAt: q.publishedAt?.toISOString() ?? null,
       uploadBatchId: q.uploadBatchId,
       rowNumber,
+    };
+  }
+
+  private mapSet(batch: {
+    id: string;
+    batchCode: string;
+    displayName: string;
+    description: string | null;
+    subjectHint: string | null;
+    topicHint: string | null;
+    examCategoryHint: string | null;
+    examYear: string | null;
+    sheetPreamble: string | null;
+    createdAt: Date;
+    importedAt: Date | null;
+    placements: Array<{
+      categoryId: string;
+      subcategoryId: string;
+      category: { name: string };
+      subcategory: { name: string };
+    }>;
+    _count: { questions: number };
+  }): PublicQuestionSet {
+    return {
+      id: batch.id,
+      batchCode: batch.batchCode,
+      title: this.setTitle(batch),
+      description: batch.description,
+      subject: batch.subjectHint,
+      topic: batch.topicHint,
+      examCategory: batch.examCategoryHint,
+      examYear: batch.examYear,
+      sheetPreamble: batch.sheetPreamble,
+      questionCount: batch._count.questions,
+      uploadedAt: batch.createdAt.toISOString(),
+      importedAt: batch.importedAt?.toISOString() ?? null,
+      placements: batch.placements.map((p) => ({
+        categoryId: p.categoryId,
+        categoryName: p.category.name,
+        subcategoryId: p.subcategoryId,
+        subcategoryName: p.subcategory.name,
+      })),
     };
   }
 
@@ -469,19 +599,4 @@ export class PublicService {
     };
   }
 
-  private sourceLabel(
-    sourceNote: string | null,
-    examTags: string[],
-    categoryName: string,
-  ): string | null {
-    if (sourceNote?.trim()) {
-      const primary = sourceNote
-        .split('·')
-        .map((s) => s.trim())
-        .find((s) => s && !/^Batch\s/i.test(s) && !/^Year\s/i.test(s));
-      if (primary) return primary;
-    }
-    if (examTags[0]) return examTags[0];
-    return categoryName || null;
-  }
 }

@@ -67,6 +67,12 @@ export class PublicController {
     res.send(file.buffer);
   }
 
+  /** Distinct years for Preli bank year chips. */
+  @Get('question-sets/years')
+  async questionSetYears() {
+    return createSuccessResponse(await this.publicService.listQuestionSetYears(), newRequestId());
+  }
+
   /** Upload-based Question Sets (one per admin import batch). */
   @Get('question-sets')
   async questionSets(
@@ -74,6 +80,8 @@ export class PublicController {
     @Query('limit') limit?: string,
     @Query('q') q?: string,
     @Query('categoryId') categoryId?: string,
+    @Query('subcategoryId') subcategoryId?: string,
+    @Query('year') year?: string,
   ) {
     const take = Math.min(Math.max(Number(limit) || 20, 1), 100);
     const data = await this.publicService.listQuestionSets({
@@ -81,6 +89,8 @@ export class PublicController {
       limit: take,
       q,
       categoryId,
+      subcategoryId,
+      year,
     });
     return createSuccessResponse(
       data.items,

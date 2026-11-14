@@ -15,19 +15,9 @@ import {
 } from 'lucide-react';
 import type { Metadata } from 'next';
 import { Button } from '@/components/ui/button';
+import { HomepageBankBrowse } from '@/components/marketing/homepage-bank-browse';
 import { HomepageLatestQuestions } from '@/components/marketing/homepage-latest-questions';
 import { NewsletterBar } from '@/components/marketing/newsletter-bar';
-import {
-  BanglaBookIcon,
-  BankTempleIcon,
-  BcsEmblemIcon,
-  EnglishLangIcon,
-  GearBlueIcon,
-  GkGlobeIcon,
-  GovSealIcon,
-  GradCapIcon,
-  MathSymbolsIcon,
-} from '@/components/marketing/homepage-icons';
 import { Reveal } from '@/components/motion/reveal';
 
 export const metadata: Metadata = {
@@ -43,47 +33,6 @@ const WHY_POINTS = [
   'Unlimited Exam Practice',
   'Regular Update',
   'Performance Update',
-] as const;
-
-const CATEGORIES = [
-  {
-    name: 'BCS',
-    subtitle: '(Preliminary + Written)',
-    href: '/preli-question-bank?q=BCS',
-    Icon: BcsEmblemIcon,
-  },
-  {
-    name: 'Bank',
-    subtitle: '(Officer & SO)',
-    href: '/preli-question-bank?examTag=bank',
-    Icon: BankTempleIcon,
-  },
-  {
-    name: 'Government Jobs',
-    subtitle: '',
-    href: '/preli-question-bank?examTag=govt-job',
-    Icon: GovSealIcon,
-  },
-  {
-    name: 'Primary & NTRCA',
-    subtitle: '',
-    href: '/preli-question-bank?examTag=ntrca',
-    Icon: GradCapIcon,
-  },
-  {
-    name: 'Other Govt. Jobs',
-    subtitle: '',
-    href: '/preli-question-bank',
-    Icon: GearBlueIcon,
-  },
-] as const;
-
-const TOPICS = [
-  { name: 'Bangla', href: '/preli-question-bank?q=Bangla', Icon: BanglaBookIcon },
-  { name: 'English', href: '/preli-question-bank?q=English', Icon: EnglishLangIcon },
-  { name: 'Math', href: '/preli-question-bank?q=Math', Icon: MathSymbolsIcon },
-  { name: 'GK', href: '/preli-question-bank?q=GK', Icon: GkGlobeIcon },
-  { name: 'Others', href: '/preli-question-bank', Icon: GearBlueIcon },
 ] as const;
 
 export default function HomePage() {
@@ -196,91 +145,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Question bank categories — left intro + right cards */}
-      <section className="section-pad">
-        <Reveal className="mx-auto grid w-full max-w-[1280px] items-center gap-8 px-4 sm:px-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,2.2fr)] lg:gap-10">
-          <div className="space-y-4">
-            <span
-              className="mb-1 block h-[3px] w-7 rounded-full bg-[var(--highlight)]"
-              aria-hidden
-            />
-            <h2 className="font-display text-2xl font-bold tracking-tight text-[var(--ink)] sm:text-[2rem]">
-              Our Question Bank Categories
-            </h2>
-            <p className="text-[var(--muted-strong)]">
-              Choose your target exam and start your preparation
-            </p>
-            <Link href="/preli-question-bank" className="inline-flex pt-1">
-              <Button className="rounded-full px-6 shadow-sm">
-                View All Exams
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
-          <ul className="motion-stagger grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 lg:gap-4">
-            {CATEGORIES.map(({ name, subtitle, href, Icon }) => (
-              <li key={name}>
-                <Link
-                  href={href}
-                  className="motion-hover-lift ya-panel-shine relative group flex h-full flex-col items-center gap-2.5 overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] px-2 py-5 text-center shadow-[var(--shadow-sm)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] hover:border-[var(--highlight)]/50"
-                >
-                  <Icon className="relative z-[1] h-12 w-12" />
-                  <span className="relative z-[1]">
-                    <span className="block font-display text-sm leading-snug font-bold tracking-tight text-[var(--ink)] sm:text-[15px]">
-                      {name}
-                    </span>
-                    {subtitle ? (
-                      <span className="mt-0.5 block text-xs leading-snug text-[var(--muted-strong)]">
-                        {subtitle}
-                      </span>
-                    ) : null}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </Reveal>
-      </section>
-
-      {/* Topic base question analysis */}
-      <section className="pb-[var(--space-section)]">
-        <Reveal className="mx-auto w-full max-w-[1280px] px-4 sm:px-6">
-          <div className="rounded-[var(--radius-xl)] border border-[var(--line)] bg-[var(--info-soft)] px-5 py-7 shadow-[var(--shadow-sm)] sm:px-8 sm:py-8">
-            <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,2.2fr)] lg:gap-10">
-              <div className="space-y-4">
-                <span
-                  className="mb-1 block h-[3px] w-7 rounded-full bg-[var(--highlight)]"
-                  aria-hidden
-                />
-                <h2 className="font-display text-3xl font-bold tracking-tight text-[var(--ink)] sm:text-[2rem]">
-                  Topic Base Question Analysis
-                </h2>
-                <Link href="/preli-question-bank" className="inline-flex pt-1">
-                  <Button className="rounded-full px-6 shadow-sm">
-                    View All Topics
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </Link>
-              </div>
-              <ul className="motion-stagger grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 lg:gap-4">
-                {TOPICS.map(({ name, href, Icon }) => (
-                  <li key={name}>
-                    <Link
-                      href={href}
-                      className="motion-hover-lift ya-panel-shine relative group flex h-full flex-col items-center gap-2.5 overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] px-2 py-5 text-center shadow-[var(--shadow-sm)] transition-[border-color,box-shadow] duration-[var(--duration-fast)] hover:border-[var(--highlight)]/50"
-                    >
-                      <Icon className="relative z-[1] h-12 w-12" />
-                      <span className="relative z-[1] font-display text-sm font-bold tracking-tight text-[var(--ink)] sm:text-[15px]">
-                        {name}
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </Reveal>
-      </section>
+      <HomepageBankBrowse />
 
       {/* Why + Progress + CTA */}
       <section id="how-it-works" className="scroll-mt-24 pb-[var(--space-section)]">

@@ -15,12 +15,22 @@ export type UploadBatch = {
   subjectHint?: string | null;
   topicHint?: string | null;
   examCategoryHint?: string | null;
+  examYear?: string | null;
+  sheetPreamble?: string | null;
   errorMessage?: string | null;
   createdAt: string;
   importedAt?: string | null;
   uploadedBy: { id: string; name: string };
   duplicateFileBatchId?: string | null;
   duplicateFileBatch?: { id: string; batchCode: string; displayName: string } | null;
+  placements?: Array<{
+    id: string;
+    categoryId: string;
+    subcategoryId: string;
+    sortOrder: number;
+    subcategory: { id: string; name: string; slug: string };
+    category: { id: string; name: string; slug: string };
+  }>;
 };
 
 export type ImportRow = {

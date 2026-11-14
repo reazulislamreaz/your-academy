@@ -8,6 +8,9 @@ export type PublicQuestionCard = {
   examTags: string[];
   sourceNote: string | null;
   sourceLabel: string | null;
+  sourceSerial: string | null;
+  examYear: string | null;
+  sectionTitle: string | null;
   category: { id: string; name: string; slug: string };
   subcategory: { id: string; name: string; slug: string } | null;
   options: Array<{ id: string; label: string; content: string; sortOrder: number }>;
@@ -27,9 +30,17 @@ export type PublicQuestionSet = {
   subject: string | null;
   topic: string | null;
   examCategory: string | null;
+  examYear: string | null;
+  sheetPreamble: string | null;
   questionCount: number;
   uploadedAt: string;
   importedAt: string | null;
+  placements: Array<{
+    subcategoryId: string;
+    subcategoryName: string;
+    categoryId: string;
+    categoryName: string;
+  }>;
 };
 
 export async function listPublicQuestionSets(params: {
@@ -37,15 +48,23 @@ export async function listPublicQuestionSets(params: {
   limit?: number;
   q?: string;
   categoryId?: string;
+  subcategoryId?: string;
+  year?: string;
 }) {
   const qs = new URLSearchParams();
   if (params.cursor) qs.set('cursor', params.cursor);
   qs.set('limit', String(params.limit ?? 20));
   if (params.q) qs.set('q', params.q);
   if (params.categoryId) qs.set('categoryId', params.categoryId);
+  if (params.subcategoryId) qs.set('subcategoryId', params.subcategoryId);
+  if (params.year) qs.set('year', params.year);
   return apiFetchResult<PublicQuestionSet[]>(`/public/question-sets?${qs}`, {
     skipRefresh: true,
   });
+}
+
+export async function listPublicQuestionSetYears() {
+  return apiFetch<string[]>('/public/question-sets/years', { skipRefresh: true });
 }
 
 export async function getPublicQuestionSet(id: string) {

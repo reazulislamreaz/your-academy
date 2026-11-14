@@ -101,7 +101,22 @@ export class QuestionImportController {
     @Body('subjectHint') subjectHint?: string,
     @Body('topicHint') topicHint?: string,
     @Body('examCategoryHint') examCategoryHint?: string,
+    @Body('placementSubcategoryIds') placementSubcategoryIdsRaw?: string,
   ) {
+    let placementSubcategoryIds: string[] | undefined;
+    if (placementSubcategoryIdsRaw?.trim()) {
+      try {
+        const parsed = JSON.parse(placementSubcategoryIdsRaw) as unknown;
+        if (Array.isArray(parsed)) {
+          placementSubcategoryIds = parsed.map(String);
+        }
+      } catch {
+        placementSubcategoryIds = placementSubcategoryIdsRaw
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean);
+      }
+    }
     return createSuccessResponse(
       await this.imports.upload(user, file, {
         batchCode,
@@ -110,6 +125,7 @@ export class QuestionImportController {
         subjectHint,
         topicHint,
         examCategoryHint,
+        placementSubcategoryIds,
       }),
       newRequestId(),
     );

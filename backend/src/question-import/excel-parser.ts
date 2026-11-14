@@ -38,6 +38,14 @@ export type ParsedImportRow = {
   examCategory: string;
   examYear: string;
   source: string;
+  /** Section heading from a first-column-only row that preceded this MCQ. */
+  sectionTitle: string;
+};
+
+export type ParseWorkbookResult = {
+  /** First-column text above the MCQ header (shown before questions). */
+  preamble: string;
+  rows: ParsedImportRow[];
 };
 
 type FieldKey = keyof Omit<ParsedImportRow, 'rowNumber'>;
@@ -214,6 +222,7 @@ function emptyParsed(rowNumber: number): ParsedImportRow {
     examCategory: '',
     examYear: '',
     source: '',
+    sectionTitle: '',
   };
 }
 
@@ -253,7 +262,7 @@ export async function parseQuestionWorkbook(
   buffer: Buffer,
   filename: string,
   mimeType: string,
-): Promise<ParsedImportRow[]> {
+): Promise<ParseWorkbookResult> {
   const workbook = new ExcelJS.Workbook();
 
   if (isCsvUpload(filename, mimeType)) {
@@ -264,10 +273,10 @@ export async function parseQuestionWorkbook(
   }
 
   const sheet = workbook.worksheets[0];
-  if (!sheet) return [];
+  if (!sheet) return { preamble: '', rows: [] };
 
   const maxScanCols = Math.max(sheet.columnCount || 0, 16);
-  const maxScanRows = Math.min(Math.max(sheet.rowCount || 0, 1), 30);
+  const maxScanRows = Math.min(Math.max(sheet.rowCount || 0, 1), 40);
 
   let headerRowNumber = 0;
   let colMap = new Map<number, FieldKey>();
@@ -299,8 +308,17 @@ export async function parseQuestionWorkbook(
     throw new Error('MISSING_HEADERS');
   }
 
+  // First-column text above the header (exam title / org / meta) — show before MCQs.
+  const preambleParts: string[] = [];
+  for (let r = 1; r < headerRowNumber; r += 1) {
+    const first = cellText(sheet.getRow(r).getCell(1).value);
+    if (first) preambleParts.push(first);
+  }
+  const preamble = preambleParts.join('\n').trim();
+
   const rows: ParsedImportRow[] = [];
   const lastRow = sheet.rowCount || headerRowNumber;
+  let currentSection = '';
 
   for (let rowNumber = headerRowNumber + 1; rowNumber <= lastRow; rowNumber += 1) {
     const row = sheet.getRow(rowNumber);
@@ -317,21 +335,28 @@ export async function parseQuestionWorkbook(
       parsed.examYear = split.examYear;
     }
 
-    if (
+    const isEmptyMcq =
       !parsed.question &&
       !parsed.optionA &&
       !parsed.optionB &&
       !parsed.optionC &&
       !parsed.optionD &&
-      !parsed.correctAnswer
-    ) {
+      !parsed.correctAnswer;
+
+    if (isEmptyMcq) {
+      // Mid-sheet section header: non-empty first column, no MCQ cells.
+      const firstCol = cellText(row.getCell(1).value);
+      if (firstCol) {
+        currentSection = firstCol.slice(0, 500);
+      }
       continue;
     }
 
+    parsed.sectionTitle = currentSection;
     rows.push(parsed);
   }
 
-  return rows;
+  return { preamble, rows };
 }
 
 export async function buildTemplateBuffer(): Promise<Buffer> {

@@ -133,9 +133,10 @@ Profile picture: separate upload after auth or multipart field if approved.
 | GET | `/public/documents/:id` | Public document metadata + `view.available` (no storage URLs) | Public | — |
 | GET | `/public/documents/:id/file` | PDF bytes proxy for in-app viewer (`Content-Disposition: inline`; no attachment) | Public | — |
 | GET | `/public/questions` | Published MCQ cards (options + correct answer), `createdAt DESC`, cursor pagination + filters (`q`, `categoryId`, `subcategoryId`, `examTag`, `difficulty`, `uploadBatchId`) | Public | — |
-| GET | `/public/question-sets` | Upload-based Question Sets (completed/archived batches with published MCQs), newest first | Public | — |
-| GET | `/public/question-sets/:id` | Question Set metadata | Public | — |
-| GET | `/public/question-sets/:id/questions` | MCQs in a set in original upload `rowNumber` order | Public | — |
+| GET | `/public/question-sets` | Upload-based Question Sets (completed/archived batches with published MCQs), newest first; filters: `q`, `categoryId`, `subcategoryId` (placements), `year` | Public | — |
+| GET | `/public/question-sets/years` | Distinct exam years for Preli bank year chips | Public | — |
+| GET | `/public/question-sets/:id` | Question Set metadata (`sheetPreamble`, `examYear`, `placements`) | Public | — |
+| GET | `/public/question-sets/:id/questions` | MCQs in a set in original upload `rowNumber` order (`sourceSerial`, `sectionTitle`; no category badge under stem) | Public | — |
 | GET | `/admin/categories` | Admin tree including inactive + usage counts | User | ADMIN |
 | POST | `/admin/categories` | Create category or subcategory (`parentId`); slug optional (auto) | User | ADMIN |
 | PATCH | `/admin/categories/:id` | Update name/description/status/parent | User | ADMIN |
@@ -204,7 +205,7 @@ Query params for list: `cursor`, `limit`, `categoryId`, `subcategoryId`, `diffic
 |--------|----------|-------------|------|------|
 | GET | `/admin/question-imports/template` | Download Bangla Google Sheets `.xlsx` template (`প্রশ্ন নং…উত্তর`) | User | ADMIN |
 | GET | `/admin/question-imports` | List batches (`status`, `q`, cursor) | User | ADMIN |
-| POST | `/admin/question-imports/upload` | Multipart `file` + optional `batchCode`/`displayName` | User | ADMIN |
+| POST | `/admin/question-imports/upload` | Multipart `file` + `displayName`/`subjectHint`/`topicHint` + optional `placementSubcategoryIds` (JSON array, max 8) for multi-slot homepage/bank placement | User | ADMIN |
 | GET | `/admin/question-imports/:id` | Batch summary + duplicate-file warning | User | ADMIN |
 | GET | `/admin/question-imports/:id/rows` | Preview rows (`status` filter) | User | ADMIN |
 | POST | `/admin/question-imports/:id/confirm` | `{ skipDuplicates?: true }` import valid rows | User | ADMIN |

@@ -251,6 +251,8 @@ model Category {
   attempts         QuestionAttempt[]
   practiceSets     PracticeSet[]  @relation("PracticeSetCategory")
   practiceSetTopics PracticeSet[] @relation("PracticeSetSubcategory")
+  batchPlacementsAsCategory    QuestionUploadBatchPlacement[] @relation("BatchPlacementCategory")
+  batchPlacementsAsSubcategory QuestionUploadBatchPlacement[] @relation("BatchPlacementSubcategory")
 
   @@index([parentId])
   @@index([isActive])
@@ -271,6 +273,12 @@ model Question {
   examTags       String[]       @default([]) @map("exam_tags")
   /// Optional human-readable source note (e.g. "Demo — BCS-style practice").
   sourceNote     String?        @map("source_note") @db.VarChar(240)
+  /// Excel `প্রশ্ন নং` / serial from the upload sheet.
+  sourceSerial   String?        @map("source_serial") @db.VarChar(32)
+  /// Exam year extracted from sheet (e.g. 2026) for public year filters.
+  examYear       String?        @map("exam_year") @db.VarChar(16)
+  /// Section heading that preceded this MCQ in the Excel sheet (first-column preamble rows).
+  sectionTitle   String?        @map("section_title") @db.VarChar(500)
   /// SHA-256 of normalized question text for cross-file duplicate detection (DEC-024).
   contentHash    String?        @map("content_hash") @db.VarChar(64)
   uploadBatchId  String?        @map("upload_batch_id") @db.Uuid
@@ -299,6 +307,7 @@ model Question {
   @@index([categoryId, status])
   @@index([subcategoryId, status])
   @@index([difficulty, status])
+  @@index([examYear, status])
   @@index([examTags], type: Gin)
   @@index([contentHash])
   @@index([uploadBatchId])
@@ -701,6 +710,10 @@ model QuestionUploadBatch {
   subjectHint        String?              @map("subject_hint") @db.VarChar(120)
   topicHint          String?              @map("topic_hint") @db.VarChar(120)
   examCategoryHint   String?              @map("exam_category_hint") @db.VarChar(120)
+  /// First-column text above the MCQ header row (shown before questions on the set page).
+  sheetPreamble      String?              @map("sheet_preamble")
+  /// Primary exam year for this collection (public year filter).
+  examYear           String?              @map("exam_year") @db.VarChar(16)
   duplicateFileBatchId String?            @map("duplicate_file_batch_id") @db.Uuid
   errorMessage       String?              @map("error_message")
   uploadedById       String               @map("uploaded_by_id") @db.Uuid
@@ -712,11 +725,32 @@ model QuestionUploadBatch {
   uploadedBy User                @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
   rows       QuestionImportRow[]
   questions  Question[]
+  placements QuestionUploadBatchPlacement[]
 
   @@index([status, createdAt(sort: Desc)])
   @@index([fileSha256])
   @@index([uploadedById, createdAt(sort: Desc)])
+  @@index([examYear])
   @@map("question_upload_batches")
+}
+
+/// Multi-placement: one Excel/batch can appear under several subcategories (homepage / bank filters).
+model QuestionUploadBatchPlacement {
+  id            String   @id @default(uuid()) @db.Uuid
+  batchId       String   @map("batch_id") @db.Uuid
+  categoryId    String   @map("category_id") @db.Uuid
+  subcategoryId String   @map("subcategory_id") @db.Uuid
+  sortOrder     Int      @default(0) @map("sort_order")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  batch       QuestionUploadBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  category    Category            @relation("BatchPlacementCategory", fields: [categoryId], references: [id], onDelete: Cascade)
+  subcategory Category            @relation("BatchPlacementSubcategory", fields: [subcategoryId], references: [id], onDelete: Cascade)
+
+  @@unique([batchId, subcategoryId])
+  @@index([subcategoryId, batchId])
+  @@index([categoryId, batchId])
+  @@map("question_upload_batch_placements")
 }
 
 model QuestionImportRow {
@@ -725,6 +759,8 @@ model QuestionImportRow {
   rowNumber          Int                     @map("row_number")
   status             QuestionImportRowStatus
   contentHash        String?                 @map("content_hash") @db.VarChar(64)
+  /// Excel `প্রশ্ন নং` value (display serial).
+  serial             String?                 @db.VarChar(32)
   questionText       String                  @map("question_text")
   optionA            String?                 @map("option_a")
   optionB            String?                 @map("option_b")
@@ -738,6 +774,7 @@ model QuestionImportRow {
   examCategory       String?                 @map("exam_category") @db.VarChar(120)
   examYear           String?                 @map("exam_year") @db.VarChar(32)
   source             String?                 @db.VarChar(240)
+  sectionTitle       String?                 @map("section_title") @db.VarChar(500)
   errorMessage       String?                 @map("error_message") @db.VarChar(500)
   existingQuestionId String?                 @map("existing_question_id") @db.Uuid
   createdQuestionId  String?                 @map("created_question_id") @db.Uuid

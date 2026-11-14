@@ -42,6 +42,9 @@ const TEMPLATE_COLUMNS = [
   'উত্তর',
 ];
 
+/** One Excel can appear under up to 8 subcategories (homepage / Preli bank slots). */
+const MAX_PLACEMENTS = 8;
+
 export default function NewQuestionImportPage() {
   const router = useRouter();
   const qc = useQueryClient();
@@ -49,7 +52,7 @@ export default function NewQuestionImportPage() {
   const [file, setFile] = useState<File | null>(null);
   const [displayName, setDisplayName] = useState('');
   const [categoryName, setCategoryName] = useState('');
-  const [subcategoryName, setSubcategoryName] = useState('');
+  const [placementSubcategoryIds, setPlacementSubcategoryIds] = useState<string[]>([]);
   const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,6 +66,21 @@ export default function NewQuestionImportPage() {
     [categories.data, categoryName],
   );
 
+  const selectedPlacementNames = useMemo(() => {
+    if (!selectedCategory) return [];
+    return placementSubcategoryIds
+      .map((id) => selectedCategory.children.find((c) => c.id === id)?.name)
+      .filter((n): n is string => Boolean(n));
+  }, [selectedCategory, placementSubcategoryIds]);
+
+  const togglePlacement = (id: string) => {
+    setPlacementSubcategoryIds((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => x !== id);
+      if (prev.length >= MAX_PLACEMENTS) return prev;
+      return [...prev, id];
+    });
+  };
+
   const upload = useMutation({
     mutationFn: async () => {
       if (!file) throw new ApiError('FILE_REQUIRED', 'Choose a file first', 400);
@@ -73,7 +91,12 @@ export default function NewQuestionImportPage() {
       form.append('file', file);
       form.append('displayName', displayName.trim());
       form.append('subjectHint', categoryName.trim());
-      if (subcategoryName.trim()) form.append('topicHint', subcategoryName.trim());
+      if (selectedPlacementNames[0]) {
+        form.append('topicHint', selectedPlacementNames[0]);
+      }
+      if (placementSubcategoryIds.length) {
+        form.append('placementSubcategoryIds', JSON.stringify(placementSubcategoryIds));
+      }
       setProgress(55);
       const result = await apiUploadForm<UploadBatch>('/admin/question-imports/upload', form);
       setProgress(100);
@@ -154,7 +177,7 @@ export default function NewQuestionImportPage() {
               <h2 className="font-display text-lg font-bold">Select Excel file</h2>
               <p className="text-sm leading-relaxed text-[var(--muted-strong)]">
                 Upload the Google Sheets MCQ template as `.xlsx` or `.csv` — no column renaming needed.
-                Answers use ক / খ / গ / ঘ.
+                Answers use ক / খ / গ / ঘ. Serial numbers (`প্রশ্ন নং`) and sheet preamble rows are kept.
               </p>
             </div>
             <a href={adminDownloadUrl('/admin/question-imports/template')}>
@@ -183,8 +206,9 @@ export default function NewQuestionImportPage() {
               ))}
             </div>
             <p className="mt-3 text-xs leading-relaxed text-[var(--muted-strong)]">
-              Category is set in the next step for the whole collection. Exam name/year from the sheet
-              is kept when present. Title rows above the header are ignored automatically.
+              First-column title rows above the header become the set preamble. Mid-sheet section
+              headers are shown between questions. Category + multi-subcategory placements are set in
+              the next step.
             </p>
           </div>
 
@@ -207,7 +231,8 @@ export default function NewQuestionImportPage() {
           <div>
             <h2 className="font-display text-lg font-bold">Configure collection</h2>
             <p className="text-sm leading-relaxed text-[var(--muted-strong)]">
-              Title and category apply to this upload. Subcategory is optional.
+              Title and category apply to this upload. Select up to {MAX_PLACEMENTS} subcategories so
+              this Excel appears in multiple homepage / Preli bank slots.
             </p>
           </div>
 
@@ -231,7 +256,7 @@ export default function NewQuestionImportPage() {
                   value={categoryName}
                   onChange={(e) => {
                     setCategoryName(e.target.value);
-                    setSubcategoryName('');
+                    setPlacementSubcategoryIds([]);
                   }}
                   required
                 >
@@ -249,42 +274,83 @@ export default function NewQuestionImportPage() {
                 <QuickCreateCategoryButton
                   onCreated={(created) => {
                     setCategoryName(created.name);
-                    setSubcategoryName('');
+                    setPlacementSubcategoryIds([]);
                   }}
                 />
               </div>
             </Field>
+
             <Field>
-              <Label htmlFor="subcategory">Subcategory (Optional)</Label>
-              <div className="flex gap-2">
-                <Select
-                  id="subcategory"
-                  className="min-w-0 flex-1"
-                  value={subcategoryName}
-                  onChange={(e) => setSubcategoryName(e.target.value)}
-                  disabled={!selectedCategory}
-                >
-                  <option value="">
-                    {selectedCategory
-                      ? selectedCategory.children.length
-                        ? 'None'
-                        : 'No subcategories'
-                      : 'Select a category first…'}
-                  </option>
-                  {(selectedCategory?.children ?? []).map((t) => (
-                    <option key={t.id} value={t.name}>
-                      {t.name}
-                    </option>
-                  ))}
-                </Select>
-                <QuickCreateSubcategoryButton
-                  parentId={selectedCategory?.id ?? null}
-                  parentName={selectedCategory?.name}
-                  onCreated={(created) => {
-                    setSubcategoryName(created.name);
-                  }}
-                />
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <Label>Subcategory placements (up to {MAX_PLACEMENTS})</Label>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-[var(--muted-strong)]">
+                    {placementSubcategoryIds.length}/{MAX_PLACEMENTS} selected
+                  </span>
+                  <QuickCreateSubcategoryButton
+                    parentId={selectedCategory?.id ?? null}
+                    parentName={selectedCategory?.name}
+                    onCreated={(created) => {
+                      setPlacementSubcategoryIds((prev) => {
+                        if (prev.includes(created.id) || prev.length >= MAX_PLACEMENTS) return prev;
+                        return [...prev, created.id];
+                      });
+                    }}
+                  />
+                </div>
               </div>
+
+              {!selectedCategory ? (
+                <p className="rounded-[12px] border border-dashed border-[var(--line)] bg-[var(--bg-desk)] px-4 py-6 text-sm text-[var(--muted-strong)]">
+                  Select a category first to choose placement subcategories.
+                </p>
+              ) : selectedCategory.children.length === 0 ? (
+                <p className="rounded-[12px] border border-dashed border-[var(--line)] bg-[var(--bg-desk)] px-4 py-6 text-sm text-[var(--muted-strong)]">
+                  No subcategories yet — create one with the + button.
+                </p>
+              ) : (
+                <ul className="grid gap-2 sm:grid-cols-2">
+                  {selectedCategory.children.map((t) => {
+                    const checked = placementSubcategoryIds.includes(t.id);
+                    const disabled = !checked && placementSubcategoryIds.length >= MAX_PLACEMENTS;
+                    return (
+                      <li key={t.id}>
+                        <label
+                          className={cn(
+                            'flex cursor-pointer items-start gap-3 rounded-[12px] border px-3 py-3 transition-colors',
+                            checked
+                              ? 'border-[var(--highlight)] bg-[var(--highlight-soft)]'
+                              : 'border-[var(--line)] bg-white hover:border-[var(--highlight)]/40',
+                            disabled && 'cursor-not-allowed opacity-50',
+                          )}
+                        >
+                          <input
+                            type="checkbox"
+                            className="mt-1 size-4 accent-[var(--highlight)]"
+                            checked={checked}
+                            disabled={disabled}
+                            onChange={() => togglePlacement(t.id)}
+                          />
+                          <span className="min-w-0">
+                            <span className="block text-sm font-semibold text-[var(--ink)]">
+                              {t.name}
+                            </span>
+                            {checked && placementSubcategoryIds[0] === t.id ? (
+                              <span className="mt-0.5 block text-xs text-[var(--muted-strong)]">
+                                Primary placement
+                              </span>
+                            ) : null}
+                          </span>
+                        </label>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+              <p className="mt-2 text-xs leading-relaxed text-[var(--muted-strong)]">
+                Tip: select 5–8 related subtopics (e.g. Bangla, English, GK) so this one file shows in
+                each of those homepage / bank filters.
+              </p>
             </Field>
           </div>
 
@@ -333,8 +399,12 @@ export default function NewQuestionImportPage() {
               <p className="text-sm text-[var(--ink-soft)]">{categoryName || '—'}</p>
             </div>
             <div>
-              <p className="text-xs font-semibold text-[var(--muted-strong)]">Subcategory</p>
-              <p className="text-sm text-[var(--ink-soft)]">{subcategoryName || 'None'}</p>
+              <p className="text-xs font-semibold text-[var(--muted-strong)]">Placements</p>
+              <p className="text-sm text-[var(--ink-soft)]">
+                {selectedPlacementNames.length
+                  ? selectedPlacementNames.join(', ')
+                  : 'None (optional)'}
+              </p>
             </div>
           </div>
 

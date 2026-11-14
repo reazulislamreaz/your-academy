@@ -8,10 +8,17 @@ function PreliQuestionBankContent() {
   const search = useSearchParams();
   const q = search.get('q') ?? '';
   const categoryId = search.get('categoryId') ?? '';
+  const subcategoryId = search.get('subcategoryId') ?? '';
+  const year = search.get('year') ?? '';
 
   return (
     <div className="mx-auto w-full max-w-[1100px] px-4 py-6 sm:px-6 sm:py-8">
-      <PublicQuestionBank initialQ={q} initialCategoryId={categoryId} />
+      <PublicQuestionBank
+        initialQ={q}
+        initialCategoryId={categoryId}
+        initialSubcategoryId={subcategoryId}
+        initialYear={year}
+      />
     </div>
   );
 }

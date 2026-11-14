@@ -22,6 +22,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | DEC-031 | Public Preli Question Bank (no login) | CONFIRMED |
 | DEC-032 | Admin PUBLIC documents on পত্রিকার গুরুত্বপূর্ণ কলাম | CONFIRMED |
 | DEC-033 | In-app PDF viewer; no download UI; API byte proxy | CONFIRMED |
+| DEC-034 | Excel serial/preamble/sections + multi-subcategory placements + year chips | CONFIRMED |
 | DEC-004 | Password reset delivered via email | CONFIRMED |
 | DEC-012 | Web auth via HTTP-only cookies + CSRF protection | CONFIRMED |
 | DEC-020 | pnpm workspaces + Turborepo | CONFIRMED |
@@ -71,6 +72,15 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Decision | **Yes.** Public bank is organized by admin **upload batches** (`QuestionUploadBatch` → Question Set). `GET /api/v1/public/question-sets` lists sets; `…/question-sets/:id/questions` returns MCQs in original upload order. Cards include correct-answer data for UI toggles; **Show All / Hide All Answers** is a client preference (`localStorage`) with per-question reveal when hidden. Homepage lists latest sets; `/preli-question-bank` is the hub. Save still requires login. |
 | Impact | PublicModule batch APIs, marketing Question Set UI + answer visibility controls, DEC-003 exception for public surfaces only |
 | Status | **CONFIRMED** (product request 2026-11-12; grouping + answer toggles same day) |
+
+### DEC-034 — Excel serial, sheet preamble/sections, multi-placement, year filter
+
+| Field | Value |
+|-------|-------|
+| Question | Product brief 2026-11-14: hide category badge after MCQ stem; show Excel `প্রশ্ন নং`; show first-column sheet preamble before MCQs + mid-sheet section headers; allow selecting up to 8 subcategories on upload so one Excel appears in multiple homepage/bank slots; year chips (2026/2025/2024…) beside category filters. |
+| Decision | **Yes.** Persist `Question.sourceSerial` / `examYear` / `sectionTitle`, batch `sheetPreamble` / `examYear`, and junction `QuestionUploadBatchPlacement` (max 8). Parser keeps preamble above header and mid-sheet first-column section rows. Public cards omit `sourceLabel`; set page shows preamble + section breaks; Preli bank filters by `year` + placement `subcategoryId`. Homepage topic tiles resolve to subcategory placement filters when categories exist. |
+| Impact | Prisma migration `20261114120000_question_serial_sections_placements`, excel-parser, question-import upload, PublicModule, Preli/admin/marketing UI |
+| Status | **CONFIRMED** (product request 2026-11-14) |
 
 ### DEC-004 — Password reset delivery channel
 

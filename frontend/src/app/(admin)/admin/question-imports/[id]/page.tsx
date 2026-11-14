@@ -274,9 +274,15 @@ function QuestionImportDetailContent() {
             <Badge variant={statusTone(data.status)}>{data.status}</Badge>
             {data.subjectHint ? <Badge variant="outline">{data.subjectHint}</Badge> : null}
             {data.topicHint ? <Badge variant="outline">{data.topicHint}</Badge> : null}
+            {data.examYear ? <Badge variant="outline">{data.examYear}</Badge> : null}
             {data.examCategoryHint ? (
               <Badge variant="outline">{data.examCategoryHint}</Badge>
             ) : null}
+            {(data.placements ?? []).map((p) => (
+              <Badge key={p.id} variant="info">
+                {p.subcategory.name}
+              </Badge>
+            ))}
           </div>
           <div className="flex flex-wrap gap-2">
             <Button
