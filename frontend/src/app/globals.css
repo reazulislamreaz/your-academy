@@ -808,6 +808,39 @@ input:disabled {
   padding-block: var(--space-section);
 }
 
+/* Marketing hero — atmosphere + photo treatment */
+.hero-section {
+  isolation: isolate;
+}
+
+.hero-atmosphere {
+  background:
+    radial-gradient(ellipse 55% 70% at 12% 20%, color-mix(in srgb, #2a5fad 34%, transparent), transparent 70%),
+    radial-gradient(ellipse 45% 55% at 40% 90%, color-mix(in srgb, var(--highlight) 14%, transparent), transparent 72%),
+    linear-gradient(165deg, #001a44 0%, var(--bg-inverse) 48%, #001638 100%);
+}
+
+.hero-grid {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.55) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.55) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 70% 80% at 30% 40%, #000 20%, transparent 75%);
+}
+
+.hero-eyebrow {
+  border-radius: 999px;
+}
+
+.hero-photo {
+  transform: scale(1.02);
+  transition: transform 8s var(--ease-out);
+}
+
+.hero-section:hover .hero-photo {
+  transform: scale(1.06);
+}
+
 /* Marketing hero photo — soft left wave on desktop to match reference */
 @media (min-width: 1024px) {
   .hero-photo-mask {
@@ -823,6 +856,14 @@ input:disabled {
       2% 12%,
       6% 0%
     );
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-photo,
+  .hero-section:hover .hero-photo {
+    transform: none;
+    transition: none;
   }
 }
 

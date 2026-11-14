@@ -19,84 +19,116 @@ export function HomepageHero({ hero, heroImageUrl }: Props) {
   const tagline = hero.description.trim();
 
   return (
-    <section className="relative overflow-hidden bg-[var(--bg-inverse)] text-white">
-      <div className="relative mx-auto grid w-full max-w-[1280px] items-stretch lg:grid-cols-2">
-        <div className="motion-rise relative z-10 flex flex-col justify-center space-y-7 px-4 py-12 sm:px-8 sm:py-14 lg:py-16 lg:pr-8 lg:pl-6 xl:pl-8">
-          {hero.eyebrow.trim() ? (
-            <p className="inline-flex max-w-full items-center gap-2 self-start rounded-full bg-[#5b6b80]/45 px-4 py-2 text-sm font-medium text-white/90 backdrop-blur-sm">
-              <GraduationCap className="h-4 w-4 shrink-0 text-white" aria-hidden />
-              <span className="truncate">{hero.eyebrow.trim()}</span>
-            </p>
-          ) : null}
+    <section className="hero-section relative overflow-x-hidden overflow-y-hidden bg-[var(--bg-inverse)] text-white">
+      {/* Atmosphere — restrained navy/red washes (no purple / neon) */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="hero-atmosphere absolute inset-0" />
+        <div className="absolute -top-16 left-[8%] h-48 w-48 rounded-full bg-[color-mix(in_srgb,var(--highlight)_16%,transparent)] blur-3xl sm:h-72 sm:w-72" />
+        <div className="absolute bottom-0 left-0 h-40 w-40 rounded-full bg-[#1a4a8a]/30 blur-3xl sm:h-56 sm:w-56" />
+        <div className="hero-grid absolute inset-0 opacity-[0.06] sm:opacity-[0.07]" />
+      </div>
 
-          <div className="self-center sm:self-start">
-            <div className="inline-flex max-w-full flex-col items-stretch gap-2.5 sm:gap-3">
-              <h1 className="flex max-w-full flex-row flex-wrap items-center justify-center gap-x-3 gap-y-1 sm:flex-nowrap sm:justify-start sm:gap-x-4">
-                <span className="font-display shrink-0 text-[clamp(2.15rem,6.2vw,3.85rem)] leading-[1.05] font-extrabold tracking-[-0.02em]">
-                  {brand}
+      <div className="relative mx-auto grid w-full max-w-[1280px] min-w-0 items-stretch lg:grid-cols-2">
+        <div className="relative z-10 flex min-w-0 flex-col justify-center px-4 py-10 sm:px-8 sm:py-14 lg:min-h-[560px] lg:py-20 lg:pr-10 lg:pl-6 xl:pl-8">
+          <div
+            className="motion-stagger mx-auto flex w-full min-w-0 max-w-xl flex-col items-center gap-5 sm:gap-7 lg:mx-0 lg:items-start lg:gap-8"
+            style={{ ['--stagger-step' as string]: '70ms' }}
+          >
+            {hero.eyebrow.trim() ? (
+              <p className="hero-eyebrow inline-flex w-full max-w-full items-start gap-2.5 border border-white/15 bg-white/8 px-3 py-2 text-left text-[0.75rem] leading-snug font-medium tracking-[0.01em] text-white/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-md sm:w-auto sm:max-w-full sm:items-center sm:px-3.5 sm:text-[0.8125rem]">
+                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--highlight)]/90 text-white shadow-sm sm:mt-0 sm:h-7 sm:w-7">
+                  <GraduationCap className="h-3.5 w-3.5" aria-hidden />
                 </span>
-                {sideLabel ? (
-                  <span className="max-w-[12.5rem] text-center text-[clamp(0.8125rem,2vw,1.0625rem)] leading-snug font-medium tracking-[0.015em] text-white/75 sm:max-w-[13.5rem] sm:text-left md:max-w-[15rem]">
-                    {sideLabel}
+                <span className="min-w-0 flex-1 text-pretty break-words">{hero.eyebrow.trim()}</span>
+              </p>
+            ) : null}
+
+            <div className="w-full min-w-0">
+              <div className="mx-auto flex w-full max-w-full flex-col items-center gap-2.5 sm:gap-3 lg:mx-0 lg:w-fit lg:items-stretch lg:gap-3.5">
+                <h1 className="flex w-full max-w-full flex-col items-center gap-y-2 text-center sm:gap-y-2.5 md:flex-row md:flex-wrap md:items-center md:justify-center md:gap-x-4 md:gap-y-2 lg:w-auto lg:flex-nowrap lg:justify-start lg:gap-x-5 lg:text-left">
+                  <span className="font-display max-w-full text-[clamp(1.85rem,7.5vw,4.15rem)] leading-[1.05] font-extrabold tracking-[-0.03em] text-balance text-white drop-shadow-[0_1px_0_rgba(255,255,255,0.08)]">
+                    {brand}
                   </span>
+                  {sideLabel ? (
+                    <span className="relative max-w-[16rem] text-[clamp(0.8rem,2.4vw,1.0625rem)] leading-snug font-medium tracking-[0.02em] text-pretty text-white/72 md:max-w-[12.5rem] md:border-l md:border-white/25 md:pl-3.5 md:text-left lg:max-w-[15.5rem] lg:pl-4">
+                      {sideLabel}
+                    </span>
+                  ) : null}
+                </h1>
+                {tagline ? (
+                  <p className="relative text-center font-display text-[clamp(1rem,3.2vw,1.5rem)] leading-snug font-semibold tracking-[0.015em] text-white">
+                    <span className="relative inline-block max-w-full px-1 pb-1.5">
+                      {tagline}
+                      <span
+                        aria-hidden
+                        className="absolute inset-x-3 -bottom-0.5 h-[3px] rounded-full bg-[var(--highlight)] sm:inset-x-2"
+                      />
+                    </span>
+                  </p>
                 ) : null}
-              </h1>
-              {tagline ? (
-                <p className="text-center font-display text-[clamp(1.05rem,2.6vw,1.375rem)] leading-snug font-semibold tracking-[0.01em] text-white/90">
-                  {tagline}
-                </p>
+              </div>
+            </div>
+
+            <div className="flex w-full max-w-md flex-col gap-2.5 sm:max-w-none sm:flex-row sm:flex-wrap sm:justify-center sm:gap-3 lg:justify-start">
+              {hero.primaryCta.visible ? (
+                <Link href={hero.primaryCta.href} className="w-full sm:w-auto">
+                  <Button
+                    size="lg"
+                    className="hero-cta-primary group w-full rounded-full px-6 text-[0.9rem] shadow-[0_10px_28px_-8px_rgba(227,30,36,0.55)] transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_32px_-8px_rgba(227,30,36,0.65)] sm:w-auto sm:px-8 sm:text-[0.95rem]"
+                  >
+                    {hero.primaryCta.label}
+                    <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+                  </Button>
+                </Link>
+              ) : null}
+              {hero.secondaryCta.visible ? (
+                <Link href={hero.secondaryCta.href} className="w-full sm:w-auto">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="w-full rounded-full border-white/40 bg-white/5 px-6 text-[0.9rem] text-white backdrop-blur-sm transition-[transform,background-color,border-color] duration-200 hover:-translate-y-0.5 hover:border-white/70 hover:bg-white/12 sm:w-auto sm:px-8 sm:text-[0.95rem]"
+                  >
+                    {hero.secondaryCta.label}
+                  </Button>
+                </Link>
               ) : null}
             </div>
-          </div>
 
-          <div className="flex w-full max-w-md flex-col gap-3 pt-1 sm:max-w-none sm:flex-row sm:flex-wrap">
-            {hero.primaryCta.visible ? (
-              <Link href={hero.primaryCta.href} className="w-full sm:w-auto">
-                <Button size="lg" className="w-full rounded-full px-7 shadow-md sm:w-auto">
-                  {hero.primaryCta.label}
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
-            ) : null}
-            {hero.secondaryCta.visible ? (
-              <Link href={hero.secondaryCta.href} className="w-full sm:w-auto">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="w-full rounded-full border-white/55 bg-transparent px-7 text-white hover:border-white hover:bg-white/10 sm:w-auto"
-                >
-                  {hero.secondaryCta.label}
-                </Button>
-              </Link>
-            ) : null}
-          </div>
-
-          {hero.stats.length > 0 ? (
-            <dl className="flex flex-wrap items-center gap-x-0 gap-y-4 pt-1">
-              {hero.stats.map((stat, i) => (
-                <div key={`${stat.label}-${i}`} className="flex items-center">
-                  {i > 0 ? (
-                    <span className="mx-4 hidden h-8 w-px bg-white/25 sm:block" aria-hidden />
-                  ) : null}
-                  <div className="flex items-center gap-3 pr-2 sm:pr-0">
-                    <HomepageIcon iconKey={stat.iconKey} className="h-6 w-6 text-white/85" />
-                    <div>
+            {hero.stats.length > 0 ? (
+              <dl className="hero-stats mt-0 grid w-full min-w-0 grid-cols-1 gap-2.5 sm:grid-cols-3 sm:gap-3 lg:gap-0">
+                {hero.stats.map((stat, i) => (
+                  <div
+                    key={`${stat.label}-${i}`}
+                    className="flex min-w-0 items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.06] px-3 py-2.5 backdrop-blur-sm sm:px-3.5 sm:py-3 lg:rounded-none lg:border-0 lg:bg-transparent lg:px-0 lg:py-0 lg:backdrop-blur-none"
+                  >
+                    {i > 0 ? (
+                      <span
+                        className="mr-3 hidden h-10 w-px bg-gradient-to-b from-transparent via-white/30 to-transparent lg:block"
+                        aria-hidden
+                      />
+                    ) : null}
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-white sm:h-10 sm:w-10">
+                      <HomepageIcon iconKey={stat.iconKey} className="h-4 w-4 sm:h-5 sm:w-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
                       <dt className="sr-only">{stat.label}</dt>
-                      <dd className="font-display text-lg leading-none font-bold sm:text-xl">
+                      <dd className="font-display text-lg leading-none font-bold tracking-tight sm:text-xl lg:text-[1.35rem]">
                         {stat.value}
                       </dd>
-                      <dd className="mt-1 text-xs text-white/85 sm:text-sm">{stat.label}</dd>
+                      <dd className="mt-1 text-xs leading-snug text-pretty text-white/70 sm:text-sm">
+                        {stat.label}
+                      </dd>
                     </div>
                   </div>
-                </div>
-              ))}
-            </dl>
-          ) : null}
+                ))}
+              </dl>
+            ) : null}
+          </div>
         </div>
 
         <div
-          className="motion-rise relative min-h-[280px] sm:min-h-[360px] lg:min-h-full"
-          style={{ animationDelay: '90ms' }}
+          className="motion-rise relative min-h-[220px] w-full min-w-0 sm:min-h-[300px] lg:min-h-full"
+          style={{ animationDelay: '120ms' }}
         >
           <div className="hero-photo-mask absolute inset-0 overflow-hidden">
             <Image
@@ -105,13 +137,17 @@ export function HomepageHero({ hero, heroImageUrl }: Props) {
               fill
               priority
               sizes="(max-width: 1024px) 100vw, 50vw"
-              className="object-cover object-[center_30%]"
+              className="hero-photo object-cover object-[center_28%]"
               unoptimized={imageSrc.startsWith('http')}
+            />
+            <div
+              aria-hidden
+              className="absolute inset-0 bg-gradient-to-t from-[var(--bg-inverse)]/60 via-transparent to-transparent lg:bg-gradient-to-l lg:from-transparent lg:via-transparent lg:to-[var(--bg-inverse)]/25"
             />
           </div>
           <svg
             aria-hidden
-            className="pointer-events-none absolute inset-y-0 left-0 z-10 hidden h-full w-[4.5rem] -translate-x-1/2 lg:block"
+            className="pointer-events-none absolute inset-y-0 left-0 z-10 hidden h-full w-[4.75rem] -translate-x-1/2 lg:block"
             viewBox="0 0 72 640"
             preserveAspectRatio="none"
           >
