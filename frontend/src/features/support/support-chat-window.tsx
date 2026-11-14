@@ -1,7 +1,7 @@
 'use client';
 
-import { Paperclip, SendHorizontal, X } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import { Loader2, Paperclip, SendHorizontal, X } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState, type FormEvent, type UIEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -17,12 +17,16 @@ import {
   SupportAttachmentBubble,
   SupportPendingAttachmentPreview,
 } from './support-attachment';
+import {
+  formatDayLabel,
+  formatMessageTime,
+  mergeSupportMessage,
+  NEAR_BOTTOM_PX,
+  newSupportClientId,
+  prependOlderMessages,
+  sortMessagesChronological,
+} from './support-message-utils';
 import { useSupportSocket } from './support-socket';
-
-function newClientId() {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID();
-  return `c-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-}
 
 type Props = {
   conversation: SupportConversation;
@@ -58,36 +62,50 @@ export function SupportChatWindow({
   const [typing, setTyping] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [pendingPreviewUrl, setPendingPreviewUrl] = useState<string | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const attachAbort = useRef(0);
+  const stickToBottom = useRef(true);
+  const preserveScroll = useRef<{ height: number; top: number } | null>(null);
 
   const listFn = adminList ?? listSupportMessages;
   const sendFn = adminSend ?? sendSupportMessage;
   const readFn = adminMarkRead ?? markSupportRead;
 
   const mergeMessage = useCallback((incoming: SupportMessage) => {
-    setMessages((prev) => {
-      if (prev.some((m) => m.id === incoming.id)) return prev;
-      if (
-        incoming.clientMessageId &&
-        prev.some((m) => m.clientMessageId === incoming.clientMessageId)
-      ) {
-        return prev.map((m) =>
-          m.clientMessageId === incoming.clientMessageId ? incoming : m,
-        );
-      }
-      return [...prev, incoming];
-    });
+    setMessages((prev) => mergeSupportMessage(prev, incoming));
+    if (stickToBottom.current) {
+      requestAnimationFrame(() => {
+        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+      });
+    }
   }, []);
+
+  const reloadThread = useCallback(async () => {
+    const res = await listFn(conversation.id);
+    setMessages(sortMessagesChronological(res.data));
+    setNextCursor(res.pagination?.nextCursor ?? null);
+    stickToBottom.current = true;
+    await readFn(conversation.id);
+  }, [conversation.id, listFn, readFn]);
+
+  const socketActionsRef = useRef<{
+    joinConversation: (id: string) => void;
+    markRead: (id: string) => void;
+  } | null>(null);
 
   const socket = useSupportSocket(true, {
     onMessageNew: (m) => {
       if (m.conversationId !== conversation.id) return;
       mergeMessage(m);
+      void readFn(conversation.id);
+      socketActionsRef.current?.markRead(conversation.id);
     },
     onMessageAck: ({ message }) => {
       if (message.conversationId !== conversation.id) return;
@@ -99,17 +117,25 @@ export function SupportChatWindow({
       if (mode !== 'admin' && p.actorKind !== 'admin') return;
       setTyping(p.typing);
     },
+    onReconnect: () => {
+      socketActionsRef.current?.joinConversation(conversation.id);
+      void reloadThread().catch(() => undefined);
+    },
   });
+  socketActionsRef.current = {
+    joinConversation: socket.joinConversation,
+    markRead: socket.markRead,
+  };
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       setLoading(true);
+      setError(null);
+      stickToBottom.current = true;
       try {
-        const res = await listFn(conversation.id);
-        if (!cancelled) setMessages(res.data);
-        await readFn(conversation.id);
-        socket.markRead(conversation.id);
+        await reloadThread();
+        if (!cancelled) socket.markRead(conversation.id);
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : 'Failed to load messages');
       } finally {
@@ -119,6 +145,8 @@ export function SupportChatWindow({
     return () => {
       cancelled = true;
     };
+    // Intentionally keyed on conversation id only — socket/list helpers are stable enough.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversation.id]);
 
   useEffect(() => {
@@ -127,8 +155,42 @@ export function SupportChatWindow({
   }, [conversation.id, socket.connected]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, typing]);
+    if (!loading && stickToBottom.current && messages.length > 0) {
+      bottomRef.current?.scrollIntoView({ behavior: 'auto' });
+    }
+  }, [loading]);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    const saved = preserveScroll.current;
+    if (!el || !saved) return;
+    el.scrollTop = saved.top + (el.scrollHeight - saved.height);
+    preserveScroll.current = null;
+  }, [messages]);
+
+  const onScroll = (e: UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
+    stickToBottom.current = distance < NEAR_BOTTOM_PX;
+  };
+
+  const loadOlder = async () => {
+    if (!nextCursor || loadingOlder) return;
+    const el = scrollRef.current;
+    if (el) preserveScroll.current = { height: el.scrollHeight, top: el.scrollTop };
+    stickToBottom.current = false;
+    setLoadingOlder(true);
+    try {
+      const res = await listFn(conversation.id, nextCursor);
+      setMessages((prev) => prependOlderMessages(prev, res.data));
+      setNextCursor(res.pagination?.nextCursor ?? null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load earlier messages');
+      preserveScroll.current = null;
+    } finally {
+      setLoadingOlder(false);
+    }
+  };
 
   const closed = conversation.status === 'CLOSED' || conversation.status === 'ARCHIVED';
 
@@ -145,7 +207,7 @@ export function SupportChatWindow({
     if (!text || sending || closed) return;
     setSending(true);
     setError(null);
-    const clientMessageId = newClientId();
+    const clientMessageId = newSupportClientId();
     const optimistic: SupportMessage = {
       id: `tmp-${clientMessageId}`,
       conversationId: conversation.id,
@@ -159,16 +221,17 @@ export function SupportChatWindow({
       createdAt: new Date().toISOString(),
       attachments: [],
     };
-    setMessages((prev) => [...prev, optimistic]);
+    stickToBottom.current = true;
+    setMessages((prev) => mergeSupportMessage(prev, optimistic));
     setDraft('');
     socket.setTyping(conversation.id, false);
+    requestAnimationFrame(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }));
 
     try {
       if (socket.connected) {
         socket.sendMessage({ conversationId: conversation.id, body: text, clientMessageId });
       } else {
-        const saved = await sendFn(conversation.id, { body: text, clientMessageId });
-        mergeMessage(saved);
+        mergeMessage(await sendFn(conversation.id, { body: text, clientMessageId }));
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Send failed');
@@ -195,17 +258,17 @@ export function SupportChatWindow({
     setPendingPreviewUrl(localUrl);
     setSending(true);
     setError(null);
+    stickToBottom.current = true;
     try {
       const asset = await uploadSupportAttachment(file);
       if (ticket !== attachAbort.current) return;
-      const clientMessageId = newClientId();
+      const clientMessageId = newSupportClientId();
       const payload = {
         clientMessageId,
         mediaAssetId: asset.id,
         originalFilename: file.name,
         body: draft.trim() || undefined,
       };
-      // Optimistic bubble with local preview while server ACK arrives
       if (localUrl) {
         mergeMessage({
           id: `tmp-${clientMessageId}`,
@@ -244,7 +307,6 @@ export function SupportChatWindow({
       if (ticket === attachAbort.current) {
         setSending(false);
         setPendingFile(null);
-        // Keep object URL until real message replaces optimistic (revoked on unmount/clear)
         if (fileRef.current) fileRef.current.value = '';
       }
     }
@@ -255,6 +317,17 @@ export function SupportChatWindow({
       if (pendingPreviewUrl) URL.revokeObjectURL(pendingPreviewUrl);
     };
   }, [pendingPreviewUrl]);
+
+  const messageGroups = (() => {
+    const groups: Array<{ day: string; items: SupportMessage[] }> = [];
+    for (const m of messages) {
+      const day = formatDayLabel(m.createdAt);
+      const last = groups[groups.length - 1];
+      if (!last || last.day !== day) groups.push({ day, items: [m] });
+      else last.items.push(m);
+    }
+    return groups;
+  })();
 
   return (
     <div
@@ -278,66 +351,125 @@ export function SupportChatWindow({
             type="button"
             aria-label="Close chat"
             onClick={onClose}
-            className="rounded-lg p-1.5 text-[var(--muted)] hover:bg-[var(--bg-muted)] hover:text-[var(--ink)]"
+            className="rounded-lg p-1.5 text-[var(--muted)] transition-colors hover:bg-[var(--bg-muted)] hover:text-[var(--ink)]"
           >
             <X className="size-4" />
           </button>
         ) : null}
       </header>
 
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-3">
+      <div
+        ref={scrollRef}
+        onScroll={onScroll}
+        className="relative min-h-0 flex-1 overflow-y-auto bg-[var(--bg-soft,#f8fafc)] px-3 py-3 sm:px-4"
+        style={{
+          backgroundImage:
+            'radial-gradient(circle at 1px 1px, color-mix(in oklab, var(--line) 55%, transparent) 1px, transparent 0)',
+          backgroundSize: '18px 18px',
+        }}
+      >
+        {nextCursor ? (
+          <div className="mb-3 flex justify-center">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={loadingOlder}
+              onClick={() => void loadOlder()}
+              className="bg-[var(--bg-elevated)]/90 shadow-sm"
+            >
+              {loadingOlder ? (
+                <>
+                  <Loader2 className="size-3.5 animate-spin" />
+                  Loading…
+                </>
+              ) : (
+                'Load earlier messages'
+              )}
+            </Button>
+          </div>
+        ) : null}
+
         {loading ? (
-          <p className="text-sm text-[var(--muted)]">Loading conversation…</p>
+          <div className="flex h-full min-h-[8rem] flex-col items-center justify-center gap-2 text-[var(--muted)]">
+            <Loader2 className="size-5 animate-spin" />
+            <p className="text-sm">Loading conversation…</p>
+          </div>
         ) : messages.length === 0 ? (
-          <p className="text-sm text-[var(--muted)]">Say hello — an admin will reply soon.</p>
+          <div className="flex h-full min-h-[8rem] flex-col items-center justify-center gap-1 px-6 text-center">
+            <p className="text-sm font-medium text-[var(--ink)]">No messages yet</p>
+            <p className="text-xs text-[var(--muted)]">Say hello — an admin will reply soon.</p>
+          </div>
         ) : (
-          messages.map((m) => {
-            const mine =
-              (mode === 'admin' && m.senderType === 'ADMIN') ||
-              (mode !== 'admin' && (m.senderType === 'USER' || m.senderType === 'GUEST'));
-            return (
-              <div
-                key={m.id}
-                className={cn('flex', mine ? 'justify-end' : 'justify-start')}
-              >
-                <div
-                  className={cn(
-                    'max-w-[85%] rounded-2xl px-3.5 py-2 text-sm leading-relaxed',
-                    mine
-                      ? 'bg-[var(--accent)] text-[var(--accent-fg,#fff)]'
-                      : 'bg-[var(--bg-muted)] text-[var(--ink)]',
-                  )}
-                >
-                  {m.body ? <p className="whitespace-pre-wrap break-words">{m.body}</p> : null}
-                  {m.attachments.map((a) => (
-                    <SupportAttachmentBubble key={a.id} attachment={a} mine={mine} />
-                  ))}
-                  <p
+          messageGroups.map((group) => (
+            <div key={group.day} className="mb-4 space-y-1.5">
+              <div className="sticky top-1 z-[1] flex justify-center py-1">
+                <span className="rounded-full bg-[var(--bg-elevated)]/95 px-3 py-1 text-[11px] font-medium text-[var(--muted)] shadow-sm ring-1 ring-[var(--line)]">
+                  {group.day}
+                </span>
+              </div>
+              {group.items.map((m) => {
+                const mine =
+                  (mode === 'admin' && m.senderType === 'ADMIN') ||
+                  (mode !== 'admin' && (m.senderType === 'USER' || m.senderType === 'GUEST'));
+                const pending = m.id.startsWith('tmp-');
+                return (
+                  <div
+                    key={m.id}
                     className={cn(
-                      'mt-1 text-[10px]',
-                      mine ? 'opacity-70' : 'text-[var(--muted)]',
+                      'flex motion-safe:animate-[ya-rise_0.28s_ease-out]',
+                      mine ? 'justify-end' : 'justify-start',
                     )}
                   >
-                    {new Date(m.createdAt).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </p>
-                </div>
-              </div>
-            );
-          })
+                    <div
+                      className={cn(
+                        'max-w-[min(22rem,85%)] rounded-2xl px-3.5 py-2 text-sm leading-relaxed shadow-sm',
+                        mine
+                          ? 'rounded-br-md bg-[var(--accent)] text-[var(--accent-fg,#fff)]'
+                          : 'rounded-bl-md bg-[var(--bg-elevated)] text-[var(--ink)] ring-1 ring-[var(--line)]',
+                        pending && 'opacity-80',
+                      )}
+                    >
+                      {m.body ? (
+                        <p className="whitespace-pre-wrap break-words">{m.body}</p>
+                      ) : null}
+                      {m.attachments.map((a) => (
+                        <SupportAttachmentBubble key={a.id} attachment={a} mine={mine} />
+                      ))}
+                      <p
+                        className={cn(
+                          'mt-1 text-right text-[10px] tabular-nums',
+                          mine ? 'opacity-70' : 'text-[var(--muted)]',
+                        )}
+                      >
+                        {formatMessageTime(m.createdAt)}
+                        {pending ? ' · sending' : ''}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ))
         )}
         {typing ? (
-          <p className="text-xs text-[var(--muted)]">
-            {mode === 'admin' ? 'Visitor is typing…' : 'Support is typing…'}
-          </p>
+          <div className="mb-2 flex justify-start">
+            <div className="rounded-2xl rounded-bl-md bg-[var(--bg-elevated)] px-3.5 py-2.5 shadow-sm ring-1 ring-[var(--line)]">
+              <span className="flex gap-1">
+                <span className="size-1.5 animate-bounce rounded-full bg-[var(--muted)] [animation-delay:0ms]" />
+                <span className="size-1.5 animate-bounce rounded-full bg-[var(--muted)] [animation-delay:150ms]" />
+                <span className="size-1.5 animate-bounce rounded-full bg-[var(--muted)] [animation-delay:300ms]" />
+              </span>
+            </div>
+          </div>
         ) : null}
         <div ref={bottomRef} />
       </div>
 
       {error ? (
-        <p className="border-t border-[var(--line)] px-4 py-2 text-xs text-red-600">{error}</p>
+        <p className="border-t border-[var(--line)] bg-[var(--danger-soft,#fef2f2)] px-4 py-2 text-xs text-[var(--danger-fg,#b91c1c)]">
+          {error}
+        </p>
       ) : null}
 
       {pendingFile ? (
@@ -350,7 +482,7 @@ export function SupportChatWindow({
 
       <form
         onSubmit={submit}
-        className="flex items-end gap-2 border-t border-[var(--line)] px-3 py-3"
+        className="flex items-end gap-2 border-t border-[var(--line)] bg-[var(--bg-elevated)] px-3 py-3"
       >
         <input
           ref={fileRef}
@@ -364,7 +496,7 @@ export function SupportChatWindow({
           disabled={closed || sending}
           aria-label="Attach file"
           onClick={() => fileRef.current?.click()}
-          className="mb-0.5 rounded-lg p-2 text-[var(--muted)] hover:bg-[var(--bg-muted)] hover:text-[var(--ink)] disabled:opacity-40"
+          className="mb-0.5 rounded-xl p-2.5 text-[var(--muted)] transition-colors hover:bg-[var(--bg-muted)] hover:text-[var(--ink)] disabled:opacity-40"
         >
           <Paperclip className="size-4" />
         </button>
@@ -380,10 +512,20 @@ export function SupportChatWindow({
           placeholder={closed ? 'Conversation closed' : 'Write a message…'}
           disabled={closed || sending}
           rows={1}
-          className="min-h-[2.5rem] max-h-28 flex-1 resize-none"
+          className="max-h-28 min-h-[2.75rem] flex-1 resize-none rounded-2xl"
         />
-        <Button type="submit" size="icon" disabled={closed || sending || !draft.trim()} aria-label="Send">
-          <SendHorizontal className="size-4" />
+        <Button
+          type="submit"
+          size="icon"
+          disabled={closed || sending || !draft.trim()}
+          aria-label="Send"
+          className="mb-0.5 size-10 shrink-0 rounded-full"
+        >
+          {sending && !draft.trim() ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <SendHorizontal className="size-4" />
+          )}
         </Button>
       </form>
     </div>

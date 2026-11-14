@@ -355,9 +355,9 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Field | Value |
 |-------|-------|
 | Question | Should the platform offer real-time Admin Support chat for guests and students? |
-| Decision | **Yes.** Socket.IO on the Nest API (Redis adapter) for support chat only. Guests provide **name + WhatsApp** before chatting (`support_guest_token` HttpOnly cookie). Authenticated learners use JWT cookies. All `ADMIN`s share the inbox; optional `assignedAdminId`, internal notes, close/reopen/archive. Attachments via Cloudinary purpose `support-attachment` (authenticated). Guest→account link when WhatsApp matches on register/login. |
+| Decision | **Yes.** Socket.IO on the Nest API (Redis adapter) for support chat only. Guests provide **name + WhatsApp** before chatting (`support_guest_token` HttpOnly cookie). Authenticated learners use JWT cookies. All `ADMIN`s share the inbox; optional `assignedAdminId`, internal notes, close/reopen/archive. Attachments via Cloudinary purpose `support-attachment` (authenticated). Guest→account link when WhatsApp matches on register/login. **Message order:** list/paginate by server `createdAt` ASC (tie-break `id`); never by UUID alone. Cursor = `createdAtISO~id`. Inbox conversations sort by `lastMessageAt` DESC. |
 | Impact | Prisma support models, `SupportModule` + gateway, storage purpose, marketing/learner FAB, admin Support Inbox |
-| Status | **CONFIRMED** (product request 2026-11-12) |
+| Status | **CONFIRMED** (product request 2026-11-12; ordering clarified 2026-11-14) |
 
 ### DEC-030 — Role-exclusive dashboard routing
 

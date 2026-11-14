@@ -871,7 +871,8 @@ model SupportMessage {
   attachments  SupportAttachment[]
 
   @@unique([conversationId, clientMessageId])
-  @@index([conversationId, id])
+  /// Chronological thread order (UUID id alone is not time-ordered).
+  @@index([conversationId, createdAt(sort: Desc), id(sort: Desc)])
   @@index([senderUserId])
   @@map("support_messages")
 }

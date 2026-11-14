@@ -6,14 +6,24 @@ import {
   CheckCheck,
   ChevronLeft,
   Info,
+  Loader2,
   MessageCircle,
   Paperclip,
   PanelRightClose,
   PanelRightOpen,
   Search,
+  SendHorizontal,
   Smile,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type UIEvent,
+} from 'react';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -39,6 +49,16 @@ import {
   SupportAttachmentBubble,
   SupportPendingAttachmentPreview,
 } from './support-attachment';
+import {
+  formatConversationListTime,
+  formatDayLabel,
+  formatMessageTime,
+  mergeSupportMessage,
+  NEAR_BOTTOM_PX,
+  newSupportClientId,
+  prependOlderMessages,
+  sortMessagesChronological,
+} from './support-message-utils';
 import { useSupportSocket } from './support-socket';
 
 type InboxFilter = 'all' | 'unread' | 'active' | 'archived';
@@ -52,11 +72,6 @@ const FILTERS: Array<{ id: InboxFilter; label: string }> = [
 
 const EMOJIS = ['😀', '👍', '🙏', '✅', '🔥', '😊', '🎉', '📎', '💡', '❤️'];
 
-function newClientId() {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID();
-  return `c-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-}
-
 function initials(name: string | null | undefined) {
   if (!name?.trim()) return '?';
   return name
@@ -67,32 +82,10 @@ function initials(name: string | null | undefined) {
     .join('');
 }
 
-function formatListTime(iso: string | null) {
-  if (!iso) return '';
-  const d = new Date(iso);
-  const now = new Date();
-  const sameDay = d.toDateString() === now.toDateString();
-  if (sameDay) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  const yesterday = new Date(now);
-  yesterday.setDate(now.getDate() - 1);
-  if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
-  return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
-}
-
-function formatDayLabel(iso: string) {
-  const d = new Date(iso);
-  const now = new Date();
-  if (d.toDateString() === now.toDateString()) return 'Today';
-  const yesterday = new Date(now);
-  yesterday.setDate(now.getDate() - 1);
-  if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
-  return d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
-}
-
 function presenceLabel(c: SupportConversation) {
   if (c.participantOnline) return 'Online';
   if (c.participantLastSeenAt) {
-    return `Last seen ${formatListTime(c.participantLastSeenAt)}`;
+    return `Last seen ${formatConversationListTime(c.participantLastSeenAt)}`;
   }
   return c.guestSessionId ? 'Guest' : 'Offline';
 }
@@ -119,9 +112,16 @@ export function AdminSupportInbox() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const threadScrollRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const stickToBottom = useRef(true);
+  const preserveScroll = useRef<{ height: number; top: number } | null>(null);
+  const socketActionsRef = useRef<{
+    joinConversation: (id: string) => void;
+    markRead: (id: string) => void;
+  } | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQ(q.trim()), 250);
@@ -159,27 +159,36 @@ export function AdminSupportInbox() {
   const conversation = detailQ.data ?? items.find((c) => c.id === selectedId) ?? null;
 
   const mergeMessage = useCallback((incoming: SupportMessage) => {
-    setMessages((prev) => {
-      if (prev.some((m) => m.id === incoming.id)) return prev;
-      if (
-        incoming.clientMessageId &&
-        prev.some((m) => m.clientMessageId === incoming.clientMessageId)
-      ) {
-        return prev.map((m) =>
-          m.clientMessageId === incoming.clientMessageId ? incoming : m,
-        );
-      }
-      return [...prev, incoming];
-    });
+    setMessages((prev) => mergeSupportMessage(prev, incoming));
+    if (stickToBottom.current) {
+      requestAnimationFrame(() => {
+        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+      });
+    }
+  }, []);
+
+  const loadMessages = useCallback(async (conversationId: string, cursor?: string) => {
+    const res = await listAdminSupportMessages(conversationId, cursor);
+    if (cursor) {
+      setMessages((prev) => prependOlderMessages(prev, res.data));
+    } else {
+      setMessages(sortMessagesChronological(res.data));
+    }
+    setNextCursor(res.pagination?.nextCursor ?? null);
   }, []);
 
   const socket = useSupportSocket(true, {
     onMessageNew: (m) => {
-      if (m.conversationId === selectedId) mergeMessage(m);
+      if (m.conversationId === selectedId) {
+        mergeMessage(m);
+        void markAdminSupportRead(m.conversationId);
+        socketActionsRef.current?.markRead(m.conversationId);
+      }
       void qc.invalidateQueries({ queryKey: ['admin-support'] });
     },
     onMessageAck: ({ message }) => {
       if (message.conversationId === selectedId) mergeMessage(message);
+      void qc.invalidateQueries({ queryKey: ['admin-support'] });
     },
     onTyping: (p) => {
       if (p.conversationId !== selectedId) return;
@@ -192,28 +201,22 @@ export function AdminSupportInbox() {
     onUnread: () => {
       void qc.invalidateQueries({ queryKey: ['admin-support'] });
     },
-  });
-
-  const loadMessages = useCallback(
-    async (conversationId: string, cursor?: string) => {
-      const res = await listAdminSupportMessages(conversationId, cursor);
-      if (cursor) {
-        setMessages((prev) => {
-          const ids = new Set(prev.map((m) => m.id));
-          const older = res.data.filter((m) => !ids.has(m.id));
-          return [...older, ...prev];
-        });
-      } else {
-        setMessages(res.data);
-      }
-      setNextCursor(res.pagination?.nextCursor ?? null);
+    onReconnect: () => {
+      if (!selectedId) return;
+      socketActionsRef.current?.joinConversation(selectedId);
+      void loadMessages(selectedId).catch(() => undefined);
+      void qc.invalidateQueries({ queryKey: ['admin-support'] });
     },
-    [],
-  );
+  });
+  socketActionsRef.current = {
+    joinConversation: socket.joinConversation,
+    markRead: socket.markRead,
+  };
 
   useEffect(() => {
     if (!selectedId) return;
     let cancelled = false;
+    stickToBottom.current = true;
     (async () => {
       try {
         await loadMessages(selectedId);
@@ -222,6 +225,9 @@ export function AdminSupportInbox() {
         socket.markRead(selectedId);
         socket.joinConversation(selectedId);
         void qc.invalidateQueries({ queryKey: ['admin-support'] });
+        requestAnimationFrame(() =>
+          bottomRef.current?.scrollIntoView({ behavior: 'auto' }),
+        );
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : 'Failed to load thread');
       }
@@ -230,11 +236,22 @@ export function AdminSupportInbox() {
       cancelled = true;
       socket.leaveConversation(selectedId);
     };
-  }, [selectedId, socket.connected]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId, socket.connected, loadMessages]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, typing, selectedId]);
+    const el = threadScrollRef.current;
+    const saved = preserveScroll.current;
+    if (!el || !saved) return;
+    el.scrollTop = saved.top + (el.scrollHeight - saved.height);
+    preserveScroll.current = null;
+  }, [messages]);
+
+  const onThreadScroll = (e: UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
+    stickToBottom.current = distance < NEAR_BOTTOM_PX;
+  };
 
   const patch = useMutation({
     mutationFn: (body: { status?: string; assignedAdminId?: string | null }) =>
@@ -271,18 +288,54 @@ export function AdminSupportInbox() {
     if (!text && !pendingFile) return;
     setSending(true);
     setError(null);
-    const clientMessageId = newClientId();
+    const clientMessageId = newSupportClientId();
     const bodyText = replyQuote
       ? `↩️ ${replyQuote}\n\n${text}`.trim()
       : text || undefined;
 
+    const pendingLocal = pendingFile;
+    const pendingUrl = pendingPreviewUrl;
+    stickToBottom.current = true;
+
+    const optimistic: SupportMessage = {
+      id: `tmp-${clientMessageId}`,
+      conversationId: selectedId,
+      senderType: 'ADMIN',
+      senderUserId: me.data?.id ?? null,
+      clientMessageId,
+      kind: pendingLocal ? 'ATTACHMENT' : 'TEXT',
+      body: bodyText ?? null,
+      deliveredAt: null,
+      readAt: null,
+      createdAt: new Date().toISOString(),
+      attachments:
+        pendingLocal && pendingUrl
+          ? [
+              {
+                id: `tmp-att-${clientMessageId}`,
+                mediaAssetId: 'pending',
+                originalFilename: pendingLocal.name,
+                mimeType: pendingLocal.type || 'application/octet-stream',
+                bytes: pendingLocal.size,
+                downloadUrl: pendingUrl,
+              },
+            ]
+          : [],
+    };
+    if (bodyText || pendingLocal) {
+      mergeMessage(optimistic);
+      requestAnimationFrame(() =>
+        bottomRef.current?.scrollIntoView({ behavior: 'smooth' }),
+      );
+    }
+
     try {
       let mediaAssetId: string | undefined;
       let originalFilename: string | undefined;
-      if (pendingFile) {
-        const asset = await uploadSupportAttachment(pendingFile);
+      if (pendingLocal) {
+        const asset = await uploadSupportAttachment(pendingLocal);
         mediaAssetId = asset.id;
-        originalFilename = pendingFile.name;
+        originalFilename = pendingLocal.name;
       }
       const payload = {
         clientMessageId,
@@ -297,13 +350,14 @@ export function AdminSupportInbox() {
       }
       setDraft('');
       setReplyQuote(null);
-      if (pendingPreviewUrl) URL.revokeObjectURL(pendingPreviewUrl);
+      if (pendingUrl) URL.revokeObjectURL(pendingUrl);
       setPendingFile(null);
       setPendingPreviewUrl(null);
       socket.setTyping(selectedId, false);
       void qc.invalidateQueries({ queryKey: ['admin-support'] });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Send failed');
+      setMessages((prev) => prev.filter((m) => m.clientMessageId !== clientMessageId));
     } finally {
       setSending(false);
       if (fileRef.current) fileRef.current.value = '';
@@ -319,9 +373,14 @@ export function AdminSupportInbox() {
 
   const loadOlder = async () => {
     if (!selectedId || !nextCursor || loadingOlder) return;
+    const el = threadScrollRef.current;
+    if (el) preserveScroll.current = { height: el.scrollHeight, top: el.scrollTop };
+    stickToBottom.current = false;
     setLoadingOlder(true);
     try {
       await loadMessages(selectedId, nextCursor);
+    } catch {
+      preserveScroll.current = null;
     } finally {
       setLoadingOlder(false);
     }
@@ -455,8 +514,8 @@ export function AdminSupportInbox() {
                           >
                             {c.participantName ?? 'Visitor'}
                           </span>
-                          <span className="shrink-0 text-[10px] text-[var(--muted)]">
-                            {formatListTime(c.lastMessageAt)}
+                          <span className="shrink-0 text-[10px] tabular-nums text-[var(--muted)]">
+                            {formatConversationListTime(c.lastMessageAt)}
                           </span>
                         </span>
                         <span className="mt-0.5 flex items-center justify-between gap-2">
@@ -547,7 +606,16 @@ export function AdminSupportInbox() {
               </button>
             </header>
 
-            <div className="relative min-h-0 flex-1 overflow-y-auto px-3 py-4 sm:px-6">
+            <div
+              ref={threadScrollRef}
+              onScroll={onThreadScroll}
+              className="relative min-h-0 flex-1 overflow-y-auto px-3 py-4 sm:px-6"
+              style={{
+                backgroundImage:
+                  'radial-gradient(circle at 1px 1px, color-mix(in oklab, var(--line) 45%, transparent) 1px, transparent 0)',
+                backgroundSize: '18px 18px',
+              }}
+            >
               {nextCursor ? (
                 <div className="mb-3 flex justify-center">
                   <Button
@@ -556,32 +624,52 @@ export function AdminSupportInbox() {
                     variant="outline"
                     disabled={loadingOlder}
                     onClick={() => void loadOlder()}
+                    className="bg-[var(--bg-elevated)]/90 shadow-sm"
                   >
-                    {loadingOlder ? 'Loading…' : 'Load earlier messages'}
+                    {loadingOlder ? (
+                      <>
+                        <Loader2 className="size-3.5 animate-spin" />
+                        Loading…
+                      </>
+                    ) : (
+                      'Load earlier messages'
+                    )}
                   </Button>
                 </div>
               ) : null}
 
+              {messages.length === 0 ? (
+                <div className="flex min-h-[12rem] flex-col items-center justify-center gap-1 text-center">
+                  <p className="text-sm font-medium text-[var(--ink)]">No messages yet</p>
+                  <p className="text-xs text-[var(--muted)]">Send the first reply to start the thread.</p>
+                </div>
+              ) : null}
+
               {messageGroups.map((group) => (
-                <div key={group.day} className="mb-4 space-y-2">
-                  <div className="flex justify-center">
-                    <span className="rounded-full bg-[var(--bg-elevated)] px-3 py-1 text-[11px] font-medium text-[var(--muted)] shadow-[var(--shadow-sm)]">
+                <div key={group.day} className="mb-4 space-y-1.5">
+                  <div className="sticky top-1 z-[1] flex justify-center py-1">
+                    <span className="rounded-full bg-[var(--bg-elevated)]/95 px-3 py-1 text-[11px] font-medium text-[var(--muted)] shadow-sm ring-1 ring-[var(--line)]">
                       {group.day}
                     </span>
                   </div>
                   {group.items.map((m) => {
                     const mine = m.senderType === 'ADMIN';
+                    const pending = m.id.startsWith('tmp-');
                     return (
                       <div
                         key={m.id}
-                        className={cn('flex', mine ? 'justify-end' : 'justify-start')}
+                        className={cn(
+                          'flex motion-safe:animate-[ya-rise_0.28s_ease-out]',
+                          mine ? 'justify-end' : 'justify-start',
+                        )}
                       >
                         <div
                           className={cn(
-                            'group max-w-[min(28rem,85%)] rounded-2xl px-3.5 py-2 text-sm leading-relaxed shadow-[var(--shadow-sm)]',
+                            'group max-w-[min(28rem,85%)] rounded-2xl px-3.5 py-2 text-sm leading-relaxed shadow-sm',
                             mine
-                              ? 'rounded-br-md bg-[var(--accent-soft)] text-[var(--ink)]'
-                              : 'rounded-bl-md bg-[var(--bg-elevated)] text-[var(--ink)]',
+                              ? 'rounded-br-md bg-[var(--accent)] text-[var(--accent-fg,#fff)]'
+                              : 'rounded-bl-md bg-[var(--bg-elevated)] text-[var(--ink)] ring-1 ring-[var(--line)]',
+                            pending && 'opacity-80',
                           )}
                         >
                           {m.body ? (
@@ -590,29 +678,40 @@ export function AdminSupportInbox() {
                           {m.attachments.map((a) => (
                             <SupportAttachmentBubble key={a.id} attachment={a} mine={mine} />
                           ))}
-                          <div className="mt-1 flex items-center justify-end gap-1.5">
+                          <div
+                            className={cn(
+                              'mt-1 flex items-center justify-end gap-1.5',
+                              mine ? 'text-white/70' : 'text-[var(--muted)]',
+                            )}
+                          >
                             <button
                               type="button"
-                              className="text-[10px] text-[var(--muted)] opacity-0 transition-opacity group-hover:opacity-100"
+                              className={cn(
+                                'text-[10px] opacity-0 transition-opacity group-hover:opacity-100',
+                                mine ? 'text-white/80' : 'text-[var(--muted)]',
+                              )}
                               onClick={() =>
-                                setReplyQuote((m.body ?? m.attachments[0]?.originalFilename ?? '').slice(0, 120))
+                                setReplyQuote(
+                                  (m.body ?? m.attachments[0]?.originalFilename ?? '').slice(0, 120),
+                                )
                               }
                             >
                               Reply
                             </button>
-                            <span className="text-[10px] text-[var(--muted)]">
-                              {new Date(m.createdAt).toLocaleTimeString([], {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
+                            <span className="text-[10px] tabular-nums">
+                              {formatMessageTime(m.createdAt)}
+                              {pending ? ' · sending' : ''}
                             </span>
-                            {mine ? (
+                            {mine && !pending ? (
                               m.readAt ? (
-                                <CheckCheck className="size-3.5 text-[var(--accent)]" aria-label="Read" />
+                                <CheckCheck
+                                  className="size-3.5 text-[var(--accent-fg,#fff)]"
+                                  aria-label="Read"
+                                />
                               ) : m.deliveredAt ? (
-                                <CheckCheck className="size-3.5 text-[var(--muted)]" aria-label="Delivered" />
+                                <CheckCheck className="size-3.5 opacity-70" aria-label="Delivered" />
                               ) : (
-                                <Check className="size-3.5 text-[var(--muted)]" aria-label="Sent" />
+                                <Check className="size-3.5 opacity-70" aria-label="Sent" />
                               )
                             ) : null}
                           </div>
@@ -623,7 +722,15 @@ export function AdminSupportInbox() {
                 </div>
               ))}
               {typing ? (
-                <p className="text-xs text-[var(--muted)] italic">Visitor is typing…</p>
+                <div className="mb-2 flex justify-start">
+                  <div className="rounded-2xl rounded-bl-md bg-[var(--bg-elevated)] px-3.5 py-2.5 shadow-sm ring-1 ring-[var(--line)]">
+                    <span className="flex gap-1">
+                      <span className="size-1.5 animate-bounce rounded-full bg-[var(--muted)] [animation-delay:0ms]" />
+                      <span className="size-1.5 animate-bounce rounded-full bg-[var(--muted)] [animation-delay:150ms]" />
+                      <span className="size-1.5 animate-bounce rounded-full bg-[var(--muted)] [animation-delay:300ms]" />
+                    </span>
+                  </div>
+                </div>
               ) : null}
               <div ref={bottomRef} />
             </div>
@@ -726,9 +833,16 @@ export function AdminSupportInbox() {
               />
               <Button
                 type="submit"
+                size="icon"
+                aria-label="Send"
                 disabled={closed || sending || (!draft.trim() && !pendingFile)}
+                className="mb-0.5 size-10 shrink-0 rounded-full"
               >
-                Send
+                {sending ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <SendHorizontal className="size-4" />
+                )}
               </Button>
             </form>
           </>

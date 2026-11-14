@@ -18,6 +18,8 @@ export type SupportSocketHandlers = {
   onTyping?: (payload: { conversationId: string; typing: boolean; actorKind: string }) => void;
   onUnread?: (payload: { unread?: number; bump?: boolean }) => void;
   onConversationUpdated?: (payload: { conversationId: string }) => void;
+  /** Fired after connect / reconnect so UIs can re-join rooms and resync. */
+  onReconnect?: () => void;
 };
 
 export function useSupportSocket(enabled: boolean, handlers: SupportSocketHandlers) {
@@ -25,6 +27,7 @@ export function useSupportSocket(enabled: boolean, handlers: SupportSocketHandle
   const socketRef = useRef<Socket | null>(null);
   const handlersRef = useRef(handlers);
   handlersRef.current = handlers;
+  const hadDisconnect = useRef(false);
 
   useEffect(() => {
     if (!enabled) return;
@@ -33,11 +36,24 @@ export function useSupportSocket(enabled: boolean, handlers: SupportSocketHandle
       withCredentials: true,
       transports: ['websocket', 'polling'],
       autoConnect: true,
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 800,
+      reconnectionDelayMax: 8_000,
+      timeout: 20_000,
     });
     socketRef.current = socket;
 
-    socket.on('connect', () => setConnected(true));
-    socket.on('disconnect', () => setConnected(false));
+    socket.on('connect', () => {
+      setConnected(true);
+      if (hadDisconnect.current) {
+        handlersRef.current.onReconnect?.();
+      }
+    });
+    socket.on('disconnect', () => {
+      hadDisconnect.current = true;
+      setConnected(false);
+    });
     socket.on('support:message:new', (m: SupportMessage) => handlersRef.current.onMessageNew?.(m));
     socket.on('support:message:ack', (p) => handlersRef.current.onMessageAck?.(p));
     socket.on('support:message:read', (p) => handlersRef.current.onMessageRead?.(p));
@@ -52,6 +68,7 @@ export function useSupportSocket(enabled: boolean, handlers: SupportSocketHandle
       socket.disconnect();
       socketRef.current = null;
       setConnected(false);
+      hadDisconnect.current = false;
     };
   }, [enabled]);
 

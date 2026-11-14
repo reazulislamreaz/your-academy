@@ -126,15 +126,45 @@ export class SupportMessageService {
     return messages.map((m) => mapMessage(m as never, urls));
   }
 
+  /**
+   * Cursor format: `${createdAt.toISOString()}~${id}` (opaque to clients).
+   * Pages are fetched newest-first, then reversed so the API returns oldest→newest
+   * (chat UI: oldest at top, newest at bottom).
+   */
+  private encodeMessageCursor(createdAt: Date, id: string): string {
+    return `${createdAt.toISOString()}~${id}`;
+  }
+
+  private decodeMessageCursor(
+    cursor: string | undefined,
+  ): { createdAt: Date; id: string } | null {
+    if (!cursor?.trim()) return null;
+    const sep = cursor.indexOf('~');
+    if (sep <= 0) return null;
+    const createdAt = new Date(cursor.slice(0, sep));
+    const id = cursor.slice(sep + 1);
+    if (Number.isNaN(createdAt.getTime()) || !id) return null;
+    return { createdAt, id };
+  }
+
   async listMessages(actor: SupportActor, conversationId: string, cursor?: string, limitRaw?: number) {
     await this.conversations.requireAccessible(actor, conversationId);
     const limit = Math.min(Math.max(limitRaw ?? 30, 1), 100);
+    const decoded = this.decodeMessageCursor(cursor);
+
     const rows = await this.prisma.supportMessage.findMany({
       where: {
         conversationId,
-        ...(cursor ? { id: { lt: cursor } } : {}),
+        ...(decoded
+          ? {
+              OR: [
+                { createdAt: { lt: decoded.createdAt } },
+                { createdAt: decoded.createdAt, id: { lt: decoded.id } },
+              ],
+            }
+          : {}),
       },
-      orderBy: { id: 'desc' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take: limit + 1,
       include: {
         attachments: { include: { mediaAsset: true } },
@@ -142,9 +172,12 @@ export class SupportMessageService {
     });
     const hasMore = rows.length > limit;
     const page = hasMore ? rows.slice(0, limit) : rows;
+    // Oldest message in this page (for loading still-older history).
+    const oldest = page[page.length - 1];
+    const nextCursor =
+      hasMore && oldest ? this.encodeMessageCursor(oldest.createdAt, oldest.id) : null;
     const items = await this.withDownloadUrls(page);
-    items.reverse();
-    const nextCursor = hasMore ? page[page.length - 1]?.id ?? null : null;
+    items.reverse(); // chronological: oldest → newest
     return { items, meta: cursorPaginationMeta(nextCursor, limit, null) };
   }
 

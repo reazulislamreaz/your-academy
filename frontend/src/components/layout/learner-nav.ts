@@ -49,7 +49,7 @@ export const learnerNavGroups: LearnerNavGroup[] = [
     title: 'Library',
     items: [
       { href: '/documents', label: 'Study resources', icon: FileText, match: 'prefix' },
-      { href: '/bookmarks', label: 'Saved questions', icon: BookMarked, match: 'prefix' },
+      { href: '/bookmarks', label: 'Questions & PDFs', icon: BookMarked, match: 'prefix' },
       { href: '/news', label: 'News & updates', icon: Newspaper, match: 'prefix' },
     ],
   },

@@ -160,4 +160,82 @@ describe('SupportMessageService unread math', () => {
     expect(result?.id).toBe('m-existing');
     expect(prisma.supportMessage.create).not.toHaveBeenCalled();
   });
+
+  it('lists messages ordered by createdAt then id (not UUID alone)', async () => {
+    const older = {
+      id: 'zzzz-uuid',
+      conversationId: 'c1',
+      senderType: SupportSenderType.USER,
+      senderUserId: 'u1',
+      clientMessageId: null,
+      kind: 'TEXT',
+      body: 'older',
+      deliveredAt: new Date(),
+      readAt: null,
+      createdAt: new Date('2026-01-01T10:00:00.000Z'),
+      attachments: [],
+    };
+    const newer = {
+      id: 'aaaa-uuid',
+      conversationId: 'c1',
+      senderType: SupportSenderType.ADMIN,
+      senderUserId: 'a1',
+      clientMessageId: null,
+      kind: 'TEXT',
+      body: 'newer',
+      deliveredAt: new Date(),
+      readAt: null,
+      createdAt: new Date('2026-01-01T10:05:00.000Z'),
+      attachments: [],
+    };
+    // DB returns newest-first; service reverses to chronological for the API.
+    prisma.supportMessage.findMany.mockResolvedValue([newer, older]);
+
+    const result = await service.listMessages(
+      { kind: 'user', userId: 'u1', role: UserRole.USER, sessionId: 's1' },
+      'c1',
+    );
+
+    expect(prisma.supportMessage.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      }),
+    );
+    expect(result.items.map((m) => m.body)).toEqual(['older', 'newer']);
+    expect(result.meta.nextCursor).toBeNull();
+  });
+
+  it('encodes pagination cursor from oldest message in the page', async () => {
+    const rows = Array.from({ length: 3 }, (_, i) => ({
+      id: `id-${i}`,
+      conversationId: 'c1',
+      senderType: SupportSenderType.USER,
+      senderUserId: 'u1',
+      clientMessageId: null,
+      kind: 'TEXT',
+      body: `m${i}`,
+      deliveredAt: new Date(),
+      readAt: null,
+      createdAt: new Date(`2026-01-01T10:0${i}:00.000Z`),
+      attachments: [],
+    }));
+    // take limit+1 → hasMore; newest-first page of 2 + extra
+    prisma.supportMessage.findMany.mockResolvedValue([
+      rows[2],
+      rows[1],
+      rows[0],
+    ]);
+
+    const result = await service.listMessages(
+      { kind: 'user', userId: 'u1', role: UserRole.USER, sessionId: 's1' },
+      'c1',
+      undefined,
+      2,
+    );
+
+    expect(result.items.map((m) => m.body)).toEqual(['m1', 'm2']);
+    expect(result.meta.nextCursor).toBe(
+      `${rows[1].createdAt.toISOString()}~${rows[1].id}`,
+    );
+  });
 });
