@@ -25,6 +25,13 @@ fi
 
 COMPOSE=(docker compose "${COMPOSE_FILES[@]}" --env-file "$ENV_FILE")
 
+# Base compose references ../.env; keep a same-dir symlink so prod stacks without a second file.
+if [[ "$ENV_FILE" != ".env" && -f "$ENV_FILE" && ! -e .env ]]; then
+  ln -sfn "$ENV_FILE" .env
+elif [[ "$ENV_FILE" != ".env" && -f "$ENV_FILE" && -L .env ]]; then
+  ln -sfn "$ENV_FILE" .env
+fi
+
 echo "==> Building and starting production stack"
 "${COMPOSE[@]}" up -d --build --remove-orphans
 

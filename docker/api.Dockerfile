@@ -5,6 +5,8 @@ RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
 WORKDIR /app
 
 FROM base AS deps
+# argon2 native binding needs a C toolchain + Python for node-gyp
+RUN apk add --no-cache python3 make g++
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* turbo.json tsconfig.base.json ./
 COPY shared/package.json shared/
 COPY backend/package.json backend/
