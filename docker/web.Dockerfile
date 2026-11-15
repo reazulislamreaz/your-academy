@@ -5,6 +5,8 @@ RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
 WORKDIR /app
 
 FROM base AS deps
+# Include build tooling even if host NODE_ENV=production
+ENV NODE_ENV=development
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* turbo.json tsconfig.base.json ./
 COPY shared/package.json shared/
 COPY frontend/package.json frontend/
