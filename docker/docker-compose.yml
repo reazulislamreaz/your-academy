@@ -63,8 +63,9 @@ services:
         ]
       interval: 10s
       timeout: 5s
-      retries: 10
-      start_period: 20s
+      retries: 12
+      # Nest boots after Prisma connect; keep start_period above typical cold start.
+      start_period: 45s
     networks:
       - internal
       - edge
@@ -116,8 +117,8 @@ services:
         ]
       interval: 10s
       timeout: 5s
-      retries: 10
-      start_period: 30s
+      retries: 12
+      start_period: 40s
     networks:
       - edge
 

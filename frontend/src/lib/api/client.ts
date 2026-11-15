@@ -30,7 +30,11 @@ export type ApiResult<T> = {
 type FetchOptions = RequestInit & {
   /** Skip 401 → refresh → retry (auth endpoints, or already-retried calls). */
   skipRefresh?: boolean;
+  /** Override default request timeout (ms). Set 0 to disable. */
+  timeoutMs?: number;
 };
+
+const DEFAULT_FETCH_TIMEOUT_MS = 30_000;
 
 async function parseJson<T>(res: Response): Promise<ApiEnvelope<T>> {
   const text = await res.text();
@@ -104,7 +108,7 @@ export async function apiFetchResult<T>(
   path: string,
   init: FetchOptions = {},
 ): Promise<ApiResult<T>> {
-  const { skipRefresh, ...requestInit } = init;
+  const { skipRefresh, timeoutMs = DEFAULT_FETCH_TIMEOUT_MS, signal, ...requestInit } = init;
   const method = (requestInit.method ?? 'GET').toUpperCase();
   const headers = new Headers(requestInit.headers);
   if (!headers.has('Content-Type') && requestInit.body) {
@@ -116,14 +120,48 @@ export async function apiFetchResult<T>(
     if (csrf) headers.set('X-CSRF-Token', csrf);
   }
 
-  const doFetch = () =>
-    fetch(`${API_BASE}${path}`, {
-      ...requestInit,
-      headers,
-      credentials: 'include',
-    });
+  const doFetch = async () => {
+    const controller = timeoutMs > 0 ? new AbortController() : null;
+    const timer =
+      controller && timeoutMs > 0
+        ? setTimeout(() => controller.abort(), timeoutMs)
+        : null;
+    // Honour caller abort + our timeout.
+    const onCallerAbort = () => controller?.abort();
+    if (signal) {
+      if (signal.aborted) controller?.abort();
+      else signal.addEventListener('abort', onCallerAbort, { once: true });
+    }
+    try {
+      return await fetch(`${API_BASE}${path}`, {
+        ...requestInit,
+        headers,
+        credentials: 'include',
+        signal: controller?.signal ?? signal,
+      });
+    } catch (err) {
+      const name = err instanceof Error ? err.name : '';
+      if (name === 'AbortError') {
+        throw new ApiError('REQUEST_TIMEOUT', 'Request timed out. Please try again.', 408);
+      }
+      throw err;
+    } finally {
+      if (timer != null) clearTimeout(timer);
+      if (signal) signal.removeEventListener('abort', onCallerAbort);
+    }
+  };
 
-  let res = await doFetch();
+  let res: Response;
+  try {
+    res = await doFetch();
+  } catch (err) {
+    if (err instanceof ApiError) throw err;
+    throw new ApiError(
+      'NETWORK_ERROR',
+      err instanceof Error ? err.message : 'Network request failed',
+      0,
+    );
+  }
 
   if (res.status === 401 && shouldAttemptRefresh(path, skipRefresh)) {
     const refreshed = await refreshSession();
@@ -133,7 +171,16 @@ export async function apiFetchResult<T>(
         const csrf = getCookie(process.env.NEXT_PUBLIC_CSRF_COOKIE_NAME ?? 'csrf_token');
         if (csrf) headers.set('X-CSRF-Token', csrf);
       }
-      res = await doFetch();
+      try {
+        res = await doFetch();
+      } catch (err) {
+        if (err instanceof ApiError) throw err;
+        throw new ApiError(
+          'NETWORK_ERROR',
+          err instanceof Error ? err.message : 'Network request failed',
+          0,
+        );
+      }
     }
   }
 

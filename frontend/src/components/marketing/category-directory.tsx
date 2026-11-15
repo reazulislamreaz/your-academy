@@ -46,7 +46,7 @@ function topicHref(tile: TopicTile, roots: CategoryNode[]): string {
   }
   if (tile.subcategoryId) {
     for (const root of roots) {
-      if (root.children.some((c) => c.id === tile.subcategoryId)) {
+      if ((root.children ?? []).some((c) => c.id === tile.subcategoryId)) {
         return `/preli-question-bank?categoryId=${encodeURIComponent(root.id)}&subcategoryId=${encodeURIComponent(tile.subcategoryId)}`;
       }
     }
