@@ -37,7 +37,11 @@ jobs:
             cd "$APP_DIR"
             git fetch --prune origin
             git checkout main 2>/dev/null || git checkout master
-            git pull --ff-only
+            # Production must mirror origin exactly. Discard local hotfixes/untracked
+            # copies so deploy never fails with "local changes would be overwritten".
+            # Ignored files (.env.production, certs, etc.) are preserved (no -x).
+            git reset --hard "origin/$(git rev-parse --abbrev-ref HEAD)"
+            git clean -fd
             export ENV_FILE=.env.production
             chmod +x scripts/deploy.sh scripts/backup-db.sh scripts/restore-db.sh
             ./scripts/deploy.sh
