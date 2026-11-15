@@ -422,7 +422,6 @@ export default function AdminHomepagePage() {
             <div className="space-y-2">
               <p className="text-sm font-semibold">Hero image</p>
               {heroPreviewUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={heroPreviewUrl}
                   alt="Hero preview"

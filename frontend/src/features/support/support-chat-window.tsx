@@ -146,7 +146,6 @@ export function SupportChatWindow({
       cancelled = true;
     };
     // Intentionally keyed on conversation id only — socket/list helpers are stable enough.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversation.id]);
 
   useEffect(() => {

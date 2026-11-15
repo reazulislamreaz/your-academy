@@ -26,7 +26,6 @@ import {
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SearchField } from '@/components/ui/search-field';
 import { Textarea } from '@/components/ui/textarea';
@@ -232,7 +231,6 @@ export function AdminSupportInbox() {
       cancelled = true;
       socket.leaveConversation(selectedId);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId, socket.connected, loadMessages]);
 
   useEffect(() => {

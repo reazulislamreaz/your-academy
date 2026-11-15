@@ -81,7 +81,7 @@ function normalizeColon(raw: string): string {
 /** Format DD.MM.YYYY / DD-MM-YYYY / YYYY-MM-DD → Bangla long date. */
 export function formatBanglaExamDate(raw: string): string | null {
   const t = toAsciiDigits(raw.trim());
-  let m = t.match(/^(\d{1,2})[./\-](\d{1,2})[./\-](\d{4})$/);
+  let m = t.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
   if (m) {
     const day = Number(m[1]);
     const month = Number(m[2]);
@@ -89,7 +89,7 @@ export function formatBanglaExamDate(raw: string): string | null {
     if (month < 1 || month > 12 || day < 1 || day > 31) return null;
     return `${toBanglaDigits(String(day))} ${BN_MONTHS[month - 1]} ${toBanglaDigits(String(year))}`;
   }
-  m = t.match(/^(\d{4})[./\-](\d{1,2})[./\-](\d{1,2})$/);
+  m = t.match(/^(\d{4})[./-](\d{1,2})[./-](\d{1,2})$/);
   if (m) {
     const year = Number(m[1]);
     const month = Number(m[2]);
@@ -117,7 +117,7 @@ function isScheduleLine(line: string): boolean {
 
 function isPositionLine(line: string): boolean {
   const n = normalizeColon(line);
-  return /^(পদের\s*নাম|পদ|position|post)\s*[:ঃ]?/i.test(n);
+  return /^(পদের\s*নাম|পদ|position|post)\s*(:|ঃ)?/i.test(n);
 }
 
 function parseScheduleLine(line: string): ExamSchedule {
