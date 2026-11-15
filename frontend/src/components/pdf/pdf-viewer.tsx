@@ -32,24 +32,41 @@ type Props = {
   toolbarExtra?: ReactNode;
 };
 
-const MIN_SCALE = 0.5;
-const MAX_SCALE = 2.5;
+const MIN_SCALE = 0.35;
+const MAX_SCALE = 4;
 const SCALE_STEP = 0.15;
+/** Must match Document `max-w-[1200px]` so Fit width cannot exceed the column. */
+const CONTENT_MAX_WIDTH = 1200;
+/** Horizontal/vertical padding inside the scroller (px-3/sm:px-6 + py-4) + ring. */
+const SCROLLER_PAD_X = 48;
+const SCROLLER_PAD_Y = 32;
+const PAGE_CHROME = 4;
 
 type PdfModules = {
   Document: ComponentType<Record<string, unknown>>;
   Page: ComponentType<Record<string, unknown>>;
 };
 
+type PageSize = { width: number; height: number };
+
+type PageLayoutProps = { width: number } | { scale: number };
+
+type PdfDocLike = {
+  numPages: number;
+  getPage: (pageNumber: number) => Promise<{
+    getViewport: (params: { scale: number }) => { width: number; height: number };
+  }>;
+};
+
 function LazyPdfPage({
   Page,
   pageNumber,
-  pageProps,
+  layout,
   root,
 }: {
   Page: ComponentType<Record<string, unknown>>;
   pageNumber: number;
-  pageProps: { width?: number; height?: number; scale?: number };
+  layout: PageLayoutProps;
   root: HTMLElement | null;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -72,22 +89,23 @@ function LazyPdfPage({
     <div
       ref={ref}
       data-pdf-page={pageNumber}
-      className="min-h-[40vh] w-full overflow-hidden rounded-[var(--radius)] bg-white shadow-[var(--shadow-sm)] ring-1 ring-[var(--line)]"
+      className="mx-auto max-w-full rounded-[var(--radius)] bg-white shadow-[var(--shadow-sm)] ring-1 ring-[var(--line)]"
     >
       {visible ? (
         <Page
           pageNumber={pageNumber}
-          {...pageProps}
+          {...layout}
           renderAnnotationLayer={false}
           renderTextLayer
+          className="mx-auto !bg-transparent"
           loading={
-            <div className="flex h-[50vh] w-full max-w-3xl items-center justify-center bg-[var(--bg-muted)]">
+            <div className="flex h-[40vh] w-full max-w-3xl items-center justify-center bg-[var(--bg-muted)]">
               <PageLoader compact label={`Loading page ${pageNumber}`} />
             </div>
           }
         />
       ) : (
-        <div className="flex h-[50vh] w-full items-center justify-center bg-[var(--bg-muted)] text-xs text-[var(--muted-strong)]">
+        <div className="flex h-[40vh] w-full items-center justify-center bg-[var(--bg-muted)] text-xs text-[var(--muted-strong)]">
           Page {pageNumber}
         </div>
       )}
@@ -95,22 +113,36 @@ function LazyPdfPage({
   );
 }
 
+function errorMessageForStatus(status: number): string {
+  if (status === 404) return 'This PDF could not be found or is no longer published.';
+  if (status === 401 || status === 403) return 'You do not have access to view this PDF.';
+  if (status === 504 || status === 408) {
+    return 'The PDF took too long to load. Please try again.';
+  }
+  return 'Could not open this PDF. Please try again in a moment.';
+}
+
+function clampScale(value: number): number {
+  return Math.min(MAX_SCALE, Math.max(MIN_SCALE, Number(value.toFixed(4))));
+}
+
 /**
  * Full-page in-app PDF reader. react-pdf/pdfjs are loaded only after mount
- * (never during SSR). Bytes are fetched via the API proxy as an ArrayBuffer
+ * (never during SSR). Bytes are fetched via the API proxy as a Uint8Array
  * so the browser never receives a storage URL.
  */
 export function PdfViewer({ fileUrl, title, className, toolbarExtra }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const pdfDocRef = useRef<PdfDocLike | null>(null);
   const [mods, setMods] = useState<PdfModules | null>(null);
-  const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null);
+  const [pdfBytes, setPdfBytes] = useState<Uint8Array | null>(null);
   const [numPages, setNumPages] = useState(0);
   const [page, setPage] = useState(1);
   const [fit, setFit] = useState<FitMode>('width');
   const [scale, setScale] = useState(1);
-  const [pageWidth, setPageWidth] = useState<number | undefined>(undefined);
-  const [pageHeight, setPageHeight] = useState<number | undefined>(undefined);
+  const [viewport, setViewport] = useState({ width: 0, height: 0 });
+  const [basePage, setBasePage] = useState<PageSize | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -146,9 +178,11 @@ export function PdfViewer({ fileUrl, title, className, toolbarExtra }: Props) {
     if (!libReady) return;
     let cancelled = false;
     const ctrl = new AbortController();
-    setPdfData(null);
+    setPdfBytes(null);
     setLoadError(null);
     setNumPages(0);
+    setBasePage(null);
+    pdfDocRef.current = null;
     setFetchProgress(0);
 
     void (async () => {
@@ -160,45 +194,56 @@ export function PdfViewer({ fileUrl, title, className, toolbarExtra }: Props) {
           cache: 'no-store',
         });
         if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
-        }
-        const total = Number(res.headers.get('content-length') || 0);
-        if (!res.body) {
-          const buf = await res.arrayBuffer();
-          if (!cancelled) {
-            setPdfData(buf.slice(0));
-            setFetchProgress(100);
-          }
-          return;
+          throw Object.assign(new Error(`HTTP ${res.status}`), { status: res.status });
         }
 
-        const reader = res.body.getReader();
-        const chunks: Uint8Array[] = [];
-        let received = 0;
-        for (;;) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          if (value) {
-            chunks.push(value);
-            received += value.length;
-            if (!cancelled && total > 0) {
-              setFetchProgress(Math.min(99, Math.round((received / total) * 100)));
+        const total = Number(res.headers.get('content-length') || 0);
+        let bytes: Uint8Array;
+
+        if (!res.body) {
+          bytes = new Uint8Array(await res.arrayBuffer());
+        } else {
+          const reader = res.body.getReader();
+          const chunks: Uint8Array[] = [];
+          let received = 0;
+          for (;;) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            if (value) {
+              chunks.push(value);
+              received += value.length;
+              if (!cancelled && total > 0) {
+                setFetchProgress(Math.min(99, Math.round((received / total) * 100)));
+              }
             }
           }
+          bytes = new Uint8Array(received);
+          let offset = 0;
+          for (const chunk of chunks) {
+            bytes.set(chunk, offset);
+            offset += chunk.length;
+          }
         }
-        const merged = new Uint8Array(received);
-        let offset = 0;
-        for (const chunk of chunks) {
-          merged.set(chunk, offset);
-          offset += chunk.length;
+
+        if (bytes.byteLength < 5) {
+          throw new Error('Empty PDF response');
         }
+        const magic = String.fromCharCode(bytes[0]!, bytes[1]!, bytes[2]!, bytes[3]!, bytes[4]!);
+        if (magic !== '%PDF-') {
+          throw new Error('Invalid PDF payload');
+        }
+
         if (!cancelled) {
-          setPdfData(merged.buffer.slice(merged.byteOffset, merged.byteOffset + merged.byteLength));
+          setPdfBytes(bytes.slice());
           setFetchProgress(100);
         }
       } catch (err) {
         if (cancelled || (err instanceof DOMException && err.name === 'AbortError')) return;
-        setLoadError('Could not open this PDF. It may still be loading — try again in a moment.');
+        const status =
+          err && typeof err === 'object' && 'status' in err
+            ? Number((err as { status?: number }).status)
+            : 0;
+        setLoadError(status ? errorMessageForStatus(status) : errorMessageForStatus(0));
         setFetchProgress(null);
       }
     })();
@@ -212,17 +257,25 @@ export function PdfViewer({ fileUrl, title, className, toolbarExtra }: Props) {
   const measure = useCallback(() => {
     const el = scrollerRef.current;
     if (!el) return;
-    const pad = 32;
-    setPageWidth(Math.max(280, el.clientWidth - pad));
-    setPageHeight(Math.max(320, el.clientHeight - pad));
+    // Fit against the visible column, not a wider scroller that Document clamps.
+    const width = Math.max(
+      200,
+      Math.min(CONTENT_MAX_WIDTH, el.clientWidth - SCROLLER_PAD_X) - PAGE_CHROME,
+    );
+    const height = Math.max(200, el.clientHeight - SCROLLER_PAD_Y - PAGE_CHROME);
+    setViewport((prev) =>
+      prev.width === width && prev.height === height ? prev : { width, height },
+    );
   }, []);
 
   useEffect(() => {
     measure();
+    const el = scrollerRef.current;
+    if (!el) return;
     const ro = new ResizeObserver(() => measure());
-    if (scrollerRef.current) ro.observe(scrollerRef.current);
+    ro.observe(el);
     return () => ro.disconnect();
-  }, [measure, fullscreen, pdfData]);
+  }, [measure, fullscreen, pdfBytes]);
 
   useEffect(() => {
     const onFs = () => setFullscreen(Boolean(document.fullscreenElement));
@@ -241,11 +294,53 @@ export function PdfViewer({ fileUrl, title, className, toolbarExtra }: Props) {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  const pageProps = useMemo(() => {
-    if (fit === 'width' && pageWidth) return { width: pageWidth } as const;
-    if (fit === 'page' && pageHeight) return { height: pageHeight } as const;
-    return { scale } as const;
-  }, [fit, pageWidth, pageHeight, scale]);
+  const readPageSize = useCallback(async (pageNumber: number) => {
+    const doc = pdfDocRef.current;
+    if (!doc || pageNumber < 1) return;
+    try {
+      const pdfPage = await doc.getPage(pageNumber);
+      const vp = pdfPage.getViewport({ scale: 1 });
+      if (vp.width > 0 && vp.height > 0) {
+        setBasePage({ width: vp.width, height: vp.height });
+      }
+    } catch {
+      /* keep last known size */
+    }
+  }, []);
+
+  useEffect(() => {
+    if (numPages < 1) return;
+    void readPageSize(page);
+  }, [numPages, page, readPageSize]);
+
+  // Stable identity so react-pdf does not reload on every parent render.
+  const file = useMemo(
+    () => (pdfBytes ? { data: pdfBytes } : null),
+    [pdfBytes],
+  );
+
+  /**
+   * Fit width → exact CSS width via react-pdf `width` (no max-scale clamp).
+   * Fit page → min(widthScale, heightScale), unclamped so the page letterboxes.
+   * Custom → manual zoom with min/max guards.
+   */
+  const fitScale = useMemo(() => {
+    if (!basePage || viewport.width <= 0 || viewport.height <= 0) return 1;
+    const widthScale = viewport.width / basePage.width;
+    const heightScale = viewport.height / basePage.height;
+    if (fit === 'page') return Number(Math.min(widthScale, heightScale).toFixed(4));
+    return Number(widthScale.toFixed(4));
+  }, [basePage, viewport, fit]);
+
+  const renderScale = fit === 'custom' ? clampScale(scale) : fitScale;
+
+  const pageLayout: PageLayoutProps = useMemo(() => {
+    if (fit === 'width' && viewport.width > 0) {
+      // react-pdf sizes the canvas to this width and preserves aspect ratio.
+      return { width: viewport.width };
+    }
+    return { scale: renderScale };
+  }, [fit, viewport.width, renderScale]);
 
   const goPage = (next: number) => {
     if (numPages < 1) return;
@@ -257,7 +352,24 @@ export function PdfViewer({ fileUrl, title, className, toolbarExtra }: Props) {
 
   const zoomBy = (delta: number) => {
     setFit('custom');
-    setScale((s) => Math.min(MAX_SCALE, Math.max(MIN_SCALE, Number((s + delta).toFixed(2)))));
+    setScale(clampScale(renderScale + delta));
+  };
+
+  const applyFit = (mode: FitMode) => {
+    setFit(mode);
+    if (mode !== 'custom' && basePage && viewport.width > 0) {
+      const widthScale = viewport.width / basePage.width;
+      const heightScale = viewport.height / basePage.height;
+      // Seed custom zoom from the fit result (still allow zooming past MAX later via clamp).
+      setScale(
+        clampScale(mode === 'width' ? widthScale : Math.min(widthScale, heightScale)),
+      );
+    }
+    requestAnimationFrame(() => {
+      measure();
+      const target = scrollerRef.current?.querySelector(`[data-pdf-page="${page}"]`);
+      target?.scrollIntoView({ behavior: 'smooth', block: mode === 'page' ? 'center' : 'start' });
+    });
   };
 
   const toggleFullscreen = async () => {
@@ -291,7 +403,7 @@ export function PdfViewer({ fileUrl, title, className, toolbarExtra }: Props) {
 
   const Document = mods?.Document;
   const Page = mods?.Page;
-  const ready = Boolean(Document && Page && pdfData);
+  const ready = Boolean(Document && Page && file);
 
   return (
     <div
@@ -351,6 +463,9 @@ export function PdfViewer({ fileUrl, title, className, toolbarExtra }: Props) {
           >
             <ZoomOut className="size-4" />
           </Button>
+          <span className="hidden min-w-[3.25rem] text-center text-xs font-semibold tabular-nums text-[var(--muted-strong)] sm:inline">
+            {Math.round(renderScale * 100)}%
+          </span>
           <Button
             type="button"
             size="icon"
@@ -366,7 +481,7 @@ export function PdfViewer({ fileUrl, title, className, toolbarExtra }: Props) {
               type="button"
               size="sm"
               variant={fit === 'width' ? 'soft' : 'outline'}
-              onClick={() => setFit('width')}
+              onClick={() => applyFit('width')}
             >
               Fit width
             </Button>
@@ -374,7 +489,7 @@ export function PdfViewer({ fileUrl, title, className, toolbarExtra }: Props) {
               type="button"
               size="sm"
               variant={fit === 'page' ? 'soft' : 'outline'}
-              onClick={() => setFit('page')}
+              onClick={() => applyFit('page')}
             >
               Fit page
             </Button>
@@ -399,14 +514,16 @@ export function PdfViewer({ fileUrl, title, className, toolbarExtra }: Props) {
         onScroll={onScroll}
       >
         {loadError ? (
-          <LoadError
-            message={loadError}
-            onRetry={() => {
-              setLoadError(null);
-              setReloadKey((k) => k + 1);
-            }}
-          />
-        ) : !ready || !Document || !Page ? (
+          <div className="flex min-h-[50vh] items-center justify-center">
+            <LoadError
+              message={loadError}
+              onRetry={() => {
+                setLoadError(null);
+                setReloadKey((k) => k + 1);
+              }}
+            />
+          </div>
+        ) : !ready || !Document || !Page || !file ? (
           <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3">
             <PageLoader
               compact
@@ -428,18 +545,33 @@ export function PdfViewer({ fileUrl, title, className, toolbarExtra }: Props) {
         ) : (
           <Document
             key={`${fileUrl}-${reloadKey}`}
-            file={{ data: pdfData }}
+            file={file}
+            suspense={false}
             loading={<PageLoader compact label="Rendering PDF" />}
             error={
-              <LoadError
-                message="Could not render this PDF."
-                onRetry={() => setReloadKey((k) => k + 1)}
-              />
+              <div className="flex min-h-[50vh] items-center justify-center">
+                <LoadError
+                  message="Could not render this PDF."
+                  onRetry={() => setReloadKey((k) => k + 1)}
+                />
+              </div>
             }
-            onLoadSuccess={(info: { numPages: number }) => {
-              setNumPages(info.numPages);
+            onLoadSuccess={(pdf: PdfDocLike) => {
+              pdfDocRef.current = pdf;
+              setNumPages(pdf.numPages);
               setPage(1);
               setLoadError(null);
+              void (async () => {
+                try {
+                  const first = await pdf.getPage(1);
+                  const vp = first.getViewport({ scale: 1 });
+                  setBasePage({ width: vp.width, height: vp.height });
+                } catch {
+                  /* scale falls back until page size is known */
+                }
+                // Remeasure after layout settles so Fit page has a real viewport.
+                requestAnimationFrame(() => measure());
+              })();
             }}
             onLoadError={() => setLoadError('Could not render this PDF.')}
             className="mx-auto flex w-full max-w-[1200px] flex-col items-center gap-4"
@@ -451,7 +583,7 @@ export function PdfViewer({ fileUrl, title, className, toolbarExtra }: Props) {
                   key={n}
                   Page={Page}
                   pageNumber={n}
-                  pageProps={pageProps}
+                  layout={pageLayout}
                   root={scrollerRef.current}
                 />
               );

@@ -7,6 +7,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Alert } from '@/components/ui/alert';
 import { PdfViewer } from '@/components/pdf/pdf-viewer-dynamic';
 import { PageLoader } from '@/components/loading';
+import { SaveDocumentButton } from '@/features/bookmarks/save-document-button';
 import { ApiError } from '@/lib/api/client';
 import { getPublicDocument, publicDocumentFileUrl } from '@/lib/api/public-documents';
 
@@ -72,7 +73,7 @@ export default function PublicDocumentDetailPage() {
   }
 
   return (
-    <div className="fixed inset-x-0 bottom-0 top-[var(--header-h)] z-40 flex flex-col bg-[var(--bg)] pb-[env(safe-area-inset-bottom,0px)]">
+    <div className="flex min-h-0 flex-1 flex-col bg-[var(--bg)] pb-[env(safe-area-inset-bottom,0px)]">
       <div className="flex shrink-0 items-center gap-2 border-b border-[var(--line)] bg-[var(--bg-elevated)] px-2 py-2 sm:gap-3 sm:px-4">
         <Link
           href="/news"
@@ -91,6 +92,11 @@ export default function PublicDocumentDetailPage() {
             </p>
           ) : null}
         </div>
+        <SaveDocumentButton
+          documentId={data.id}
+          loginNext={`/news/d/${data.id}`}
+          className="shrink-0"
+        />
       </div>
 
       {/* Title already shown in page chrome — avoid duplicate on narrow toolbars */}

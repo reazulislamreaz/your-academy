@@ -2,12 +2,12 @@
 
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { PdfViewer } from '@/components/pdf/pdf-viewer-dynamic';
+import { SaveDocumentButton } from '@/features/bookmarks/save-document-button';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import {
   authenticatedDocumentFileUrl,
@@ -34,32 +34,10 @@ type DocumentDetail = {
 
 export default function DocumentDetailPage() {
   const params = useParams<{ id: string }>();
-  const qc = useQueryClient();
   const { data, isLoading, error } = useQuery({
     queryKey: ['document', params.id],
     queryFn: () => apiFetch<DocumentDetail>(`/documents/${params.id}`),
     retry: false,
-  });
-
-  const bookmark = useMutation({
-    mutationFn: async () => {
-      if (data?.bookmarked) {
-        await apiFetch(`/bookmarks/documents/${params.id}`, { method: 'DELETE' });
-        return false;
-      }
-      await apiFetch('/bookmarks/documents', {
-        method: 'POST',
-        body: JSON.stringify({ documentId: params.id }),
-      });
-      return true;
-    },
-    onSuccess: (bookmarked) => {
-      qc.setQueryData<DocumentDetail>(['document', params.id], (prev) =>
-        prev ? { ...prev, bookmarked } : prev,
-      );
-      void qc.invalidateQueries({ queryKey: ['bookmarks'] });
-      void qc.invalidateQueries({ queryKey: ['stats'] });
-    },
   });
 
   if (isLoading) {
@@ -104,7 +82,7 @@ export default function DocumentDetailPage() {
   }
 
   return (
-    <div className="fixed inset-x-0 bottom-0 top-[var(--header-h)] z-30 flex flex-col bg-[var(--bg)] pb-[env(safe-area-inset-bottom,0px)] lg:static lg:inset-auto lg:z-auto lg:min-h-[70vh] lg:pb-0">
+    <div className="flex h-[calc(100dvh-var(--header-h,4.5rem)-1.5rem)] min-h-0 flex-col overflow-hidden bg-[var(--bg)] sm:h-[calc(100dvh-var(--header-h,4.5rem)-3.5rem)]">
       <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-[var(--line)] bg-[var(--bg-elevated)] px-3 py-2 sm:gap-3 sm:px-4 lg:rounded-t-[var(--radius-lg)]">
         <Link
           href="/documents"
@@ -120,16 +98,10 @@ export default function DocumentDetailPage() {
             </h1>
             <Badge variant="outline">{data.visibility}</Badge>
             {data.category ? <Badge>{data.category.name}</Badge> : null}
+            {data.bookmarked ? <Badge variant="bookmark">Saved</Badge> : null}
           </div>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={bookmark.isPending}
-          onClick={() => bookmark.mutate()}
-        >
-          {data.bookmarked ? 'Remove bookmark' : 'Save PDF'}
-        </Button>
+        <SaveDocumentButton documentId={data.id} bookmarked={data.bookmarked} />
         {isPublic ? (
           <Link
             href={`/news/d/${data.id}`}

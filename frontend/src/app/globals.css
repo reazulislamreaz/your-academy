@@ -938,14 +938,14 @@ input:disabled {
   }
 }
 
+/* Opacity-only: a transform on `.motion-page` creates a containing block that
+   collapses `position: fixed` PDF/document viewers (height → 0, blank screen). */
 @keyframes ya-page-in {
   from {
     opacity: 0;
-    transform: translateY(8px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
@@ -1354,10 +1354,15 @@ input:disabled {
   }
 }
 
-/* In-app PDF viewer — reading canvas; discourage print stylesheet dumps */
+/* Keep pdf.js canvas dimensions intact — overriding height breaks Fit page scaling. */
+.ya-pdf-viewer .react-pdf__Page {
+  display: flex;
+  justify-content: center;
+}
+
 .ya-pdf-viewer .react-pdf__Page__canvas {
-  max-width: 100%;
-  height: auto !important;
+  display: block;
+  max-width: none;
 }
 
 .ya-pdf-scroller {
