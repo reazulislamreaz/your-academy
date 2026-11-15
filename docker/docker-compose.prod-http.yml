@@ -6,11 +6,10 @@
 #
 # When ready for HTTPS, omit this file and use nginx.prod.conf + certs.
 
-services:
-  api:
-    environment:
-      COOKIE_SECURE: 'false'
+# Origin speaks HTTP; keep COOKIE_SECURE / WEB_ORIGIN from .env.production
+# (typically Secure cookies + https:// origins when Cloudflare Flexible is in front).
 
+services:
   nginx:
     ports: !override
       - '80:80'
