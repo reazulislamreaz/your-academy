@@ -157,8 +157,38 @@ describe('AdminService activity / users', () => {
       practiceAttempt: {
         aggregate: jest.fn().mockResolvedValue({
           _count: { _all: 2 },
-          _sum: { correctCount: 8, wrongCount: 2 },
+          _sum: {
+            correctCount: 8,
+            wrongCount: 2,
+            skippedCount: 0,
+            score: 16,
+            elapsedSeconds: 120,
+          },
+          _avg: { percentScore: 80 },
+          _max: { percentScore: 90 },
         }),
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: 'pa1',
+            status: 'SUBMITTED',
+            submittedAt: now,
+            elapsedSeconds: 60,
+            score: 8,
+            maxScore: 10,
+            percentScore: 80,
+            passed: true,
+            correctCount: 8,
+            wrongCount: 2,
+            skippedCount: 0,
+            practiceSet: {
+              id: 'ps1',
+              title: 'Set A',
+              kind: 'MODEL_TEST',
+              examTag: null,
+              category: { id: 'cat1', name: 'Bangla' },
+            },
+          },
+        ]),
       },
       category: {
         findMany: jest.fn().mockResolvedValue([
