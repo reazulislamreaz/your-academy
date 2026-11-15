@@ -6,12 +6,24 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 ENV_FILE="${ENV_FILE:-.env.production}"
-COMPOSE=(docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml --env-file "$ENV_FILE")
 
 if [[ ! -f "$ENV_FILE" ]]; then
   echo "Missing $ENV_FILE — copy from .env.example and fill production secrets." >&2
   exit 1
 fi
+
+# Read TLS / cookie hints from env file (compose still uses --env-file).
+TLS_ENABLED="$(grep -E '^TLS_ENABLED=' "$ENV_FILE" 2>/dev/null | tail -1 | cut -d= -f2- | tr -d '"' | tr -d "'" || true)"
+COOKIE_SECURE_HINT="$(grep -E '^COOKIE_SECURE=' "$ENV_FILE" 2>/dev/null | tail -1 | cut -d= -f2- | tr -d '"' | tr -d "'" || true)"
+
+COMPOSE_FILES=( -f docker/docker-compose.yml -f docker/docker-compose.prod.yml )
+# HTTP-only when TLS is deferred (COOKIE_SECURE=false or TLS_ENABLED=false).
+if [[ "${TLS_ENABLED:-}" == "false" || "${COOKIE_SECURE_HINT:-}" == "false" ]]; then
+  COMPOSE_FILES+=( -f docker/docker-compose.prod-http.yml )
+  echo "==> HTTP-only mode (TLS deferred)"
+fi
+
+COMPOSE=(docker compose "${COMPOSE_FILES[@]}" --env-file "$ENV_FILE")
 
 echo "==> Building and starting production stack"
 "${COMPOSE[@]}" up -d --build --remove-orphans

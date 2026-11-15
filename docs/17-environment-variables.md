@@ -76,6 +76,19 @@ No `CLOUDINARY_API_SECRET` on web.
 
 Placeholder values (`demo` / `demo_secret_change_me`) are treated as **not configured**. `GET /api/v1/storage/status` returns `{ configured: false }` until real credentials are set. Admin PDF upload and profile avatar then stay in metadata/placeholder mode.
 
+## Cloudflare (optional / ops)
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `CLOUDFLARE_API_TOKEN` | no | Account API token for Wrangler / Cloudflare API |
+| `CLOUDFLARE_ACCOUNT_ID` | no | Cloudflare account id |
+| `CLOUDFLARE_R2_ACCESS_KEY_ID` | no | R2 S3-compatible access key id |
+| `CLOUDFLARE_R2_SECRET_ACCESS_KEY` | no | R2 S3-compatible secret access key |
+| `CLOUDFLARE_R2_S3_ENDPOINT` | no | e.g. `https://<ACCOUNT_ID>.r2.cloudflarestorage.com` |
+| `DEPLOY_HOST` | no | VPS IP/hostname for SSH / GitHub Actions deploy |
+
+Store only in gitignored `.env` — never commit. Product file storage remains Cloudinary unless a future decision migrates to R2.
+
 ## Email / password reset (API enqueue → worker SMTP)
 
 | Variable | Used by | Description |

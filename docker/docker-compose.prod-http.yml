@@ -1,0 +1,18 @@
+# HTTP-only production overlay (no TLS). Stack with base + prod:
+#   docker compose -f docker/docker-compose.yml \
+#     -f docker/docker-compose.prod.yml \
+#     -f docker/docker-compose.prod-http.yml \
+#     --env-file .env.production up -d --build
+#
+# When ready for HTTPS, omit this file and use nginx.prod.conf + certs.
+
+services:
+  api:
+    environment:
+      COOKIE_SECURE: 'false'
+
+  nginx:
+    ports: !override
+      - '80:80'
+    volumes: !override
+      - ./nginx/nginx.prod-http.conf:/etc/nginx/nginx.conf:ro

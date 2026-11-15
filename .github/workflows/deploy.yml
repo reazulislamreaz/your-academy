@@ -43,7 +43,13 @@ jobs:
             ./scripts/deploy.sh
             DOMAIN="${{ secrets.DEPLOY_DOMAIN }}"
             if [ -n "$DOMAIN" ]; then
-              curl -fsS "https://${DOMAIN}/health" >/dev/null
-              curl -fsS "https://${DOMAIN}/ready" >/dev/null
-              echo "Public health green for ${DOMAIN}"
+              # Prefer HTTPS when certs exist; fall back to HTTP (TLS deferred).
+              if curl -fsS "https://${DOMAIN}/health" >/dev/null 2>&1; then
+                curl -fsS "https://${DOMAIN}/ready" >/dev/null
+                echo "Public health green (https) for ${DOMAIN}"
+              else
+                curl -fsS "http://${DOMAIN}/health" >/dev/null
+                curl -fsS "http://${DOMAIN}/ready" >/dev/null
+                echo "Public health green (http) for ${DOMAIN}"
+              fi
             fi

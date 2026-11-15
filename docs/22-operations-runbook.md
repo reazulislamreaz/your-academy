@@ -9,10 +9,11 @@
 ## 1. First-time VPS setup
 
 1. Provision Ubuntu 22.04+ with Docker Engine + Compose plugin.
-2. Create deploy user; add SSH key used by GitHub Actions (`DEPLOY_SSH_KEY`).
-3. Clone repo to `DEPLOY_PATH` (e.g. `/home/deploy/your-academy`).
-4. Point DNS `A`/`AAAA` for your domain at the VPS.
-5. Issue TLS certs (Let’s Encrypt recommended):
+2. Create deploy user (or use `root`); add SSH key used by GitHub Actions (`DEPLOY_SSH_KEY`).
+3. Clone repo to `DEPLOY_PATH` (e.g. `/root/your-academy`).
+4. Point DNS `A`/`AAAA` for your domain at the VPS (Cloudflare orange-cloud OK).
+5. **HTTP-first (TLS deferred):** set `COOKIE_SECURE=false`, `TLS_ENABLED=false`, and `http://` origins in `.env.production`. `./scripts/deploy.sh` auto-stacks `docker-compose.prod-http.yml`. If Cloudflare proxies the zone, set SSL/TLS mode to **Flexible** until origin certs exist. Skip TLS steps below and continue at step 8.
+6. Issue TLS certs when ready (Let’s Encrypt recommended):
 
 ```bash
 sudo apt install certbot
@@ -20,7 +21,7 @@ sudo certbot certonly --webroot -w /var/www/certbot -d your.domain
 # or standalone before nginx is up, then switch to webroot renewals
 ```
 
-6. Link certs for Compose:
+7. Link certs for Compose:
 
 ```bash
 sudo mkdir -p /etc/your-academy/certs
@@ -28,37 +29,38 @@ sudo ln -sf /etc/letsencrypt/live/your.domain/fullchain.pem /etc/your-academy/ce
 sudo ln -sf /etc/letsencrypt/live/your.domain/privkey.pem /etc/your-academy/certs/privkey.pem
 ```
 
-7. Create `.env.production` from `.env.example` (chmod `600`). Set at minimum:
+8. Create `.env.production` from `.env.example` (chmod `600`). HTTP-first minimum:
 
-| Variable | Production value |
-|----------|------------------|
-| `NODE_ENV` | `production` |
-| `COOKIE_SECURE` | `true` |
-| `SWAGGER_ENABLED` | `false` |
-| `WEB_ORIGIN` | `https://your.domain` |
-| `API_PUBLIC_URL` | `https://your.domain` |
-| `PASSWORD_RESET_URL_BASE` | `https://your.domain/reset-password` |
-| `JWT_ACCESS_SECRET` | ≥32 char random (not the example) |
-| `POSTGRES_PASSWORD` | strong unique password |
-| `TLS_CERTS_DIR` | `/etc/your-academy/certs` |
-| Cloudinary / SMTP | real credentials |
+| Variable | HTTP-first value | HTTPS later |
+|----------|------------------|-------------|
+| `NODE_ENV` | `production` | same |
+| `COOKIE_SECURE` | `false` | `true` |
+| `TLS_ENABLED` | `false` | omit / `true` |
+| `SWAGGER_ENABLED` | `false` | same |
+| `WEB_ORIGIN` | `http://your.domain` | `https://…` |
+| `API_PUBLIC_URL` | `http://your.domain` | `https://…` |
+| `PASSWORD_RESET_URL_BASE` | `http://your.domain/reset-password` | `https://…` |
+| `JWT_ACCESS_SECRET` | ≥32 char random | same |
+| `POSTGRES_PASSWORD` | strong unique | same |
+| `TLS_CERTS_DIR` | n/a until TLS | `/etc/your-academy/certs` |
+| Cloudinary / SMTP | real credentials | same |
 
-8. First boot:
-
-```bash
-pnpm docker:prod
-# or: ./scripts/deploy.sh
-```
-
-9. Seed bootstrap admin once (if empty DB), then **change** `BOOTSTRAP_ADMIN_*` password.
-10. Verify:
+9. First boot:
 
 ```bash
-curl -fsS https://your.domain/health
-curl -fsS https://your.domain/ready
+./scripts/deploy.sh
+# or: pnpm docker:prod:http
 ```
 
-**Acceptance checks:** HTTPS serves app; `/ready` shows `database` + `redis` up; `docker compose ps` shows **no** published `5432`/`6379`.
+10. Seed bootstrap admin once (if empty DB), then **change** `BOOTSTRAP_ADMIN_*` password.
+11. Verify:
+
+```bash
+curl -fsS http://your.domain/health   # or https:// when TLS is on
+curl -fsS http://your.domain/ready
+```
+
+**Acceptance checks:** Edge serves app; `/ready` shows `database` + `redis` up; `docker compose ps` shows **no** published `5432`/`6379`.
 
 ---
 
@@ -166,6 +168,6 @@ Prefer image/git tags for releases once you add tagged deploys.
 | `DEPLOY_USER` | SSH user |
 | `DEPLOY_SSH_KEY` | Private key |
 | `DEPLOY_PATH` | Absolute path to repo on VPS |
-| `DEPLOY_DOMAIN` | Public hostname for post-deploy HTTPS health gate |
+| `DEPLOY_DOMAIN` | Public hostname for post-deploy health gate (HTTPS preferred, HTTP fallback) |
 
 Configure environment **production** protection rules as needed.
