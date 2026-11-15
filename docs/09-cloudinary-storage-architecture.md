@@ -39,7 +39,7 @@ interface StorageService {
 
 ### Preferred: Signed client upload
 
-1. Authenticated client calls `POST /storage/sign-upload` with `purpose` (`avatar` \| `question-image` \| `news-cover` \| `pdf`)
+1. Authenticated client calls `POST /storage/sign-upload` with `purpose` (`avatar` \| `question-image` \| `news-cover` \| `homepage-hero` \| `homepage-tile-logo` \| `pdf` \| `support-attachment`)
 2. API checks role + purpose permissions; returns time-limited signature, folder, resource_type, constraints
 3. Client uploads directly to Cloudinary
 4. Client calls `POST /storage/confirm` with returned public_id + etag/bytes
@@ -55,8 +55,9 @@ Multipart to API → validate → `StorageService.upload` → DB. Use for admin 
 
 | Check | Rule (initial) |
 |-------|----------------|
-| MIME allowlist | Images: jpeg/png/webp; Documents: application/pdf |
-| Size | Avatar ≤ 2 MB; images ≤ 5 MB; PDF ≤ 20 MB (configurable) |
+| MIME allowlist | Images: jpeg/png/webp; tile logos also svg+xml; Documents: application/pdf |
+| Size | Avatar ≤ 2 MB; homepage tile logo ≤ 2 MB; images ≤ 8 MB; PDF ≤ 40 MB (configurable) |
+| Tile logo transform | Purpose `homepage-tile-logo` signs Cloudinary eager `c_fit,w_256,h_256,q_auto:good,f_auto` (backend-driven resize; aspect preserved) |
 | Ownership | confirm/delete only by uploader or ADMIN |
 | Filename | Sanitize; do not trust client path |
 | Purpose | Folder prefix per purpose: `your-academy/avatars/…` |

@@ -358,9 +358,9 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Field | Value |
 |-------|-------|
 | Question | Can admins edit the full marketing homepage without code changes? |
-| Decision | **Yes.** Singleton `HomepageContent` rows (`DRAFT` + `PUBLISHED`) hold a validated JSON payload covering Hero, Categories, Topics, Why/Progress/CTA, Latest headers, and Newsletter. Publish copies draft → published; restore copies published → draft. Public `GET /public/homepage` serves published only (60s cache). Hero images via Cloudinary purpose `homepage-hero`. Category tiles link existing Category IDs (no duplicate category records). Seed defaults match prior hardcoded copy. |
-| Impact | Prisma migration, `HomepageModule`, admin `/admin/homepage`, marketing page wiring, shared `homepagePayloadSchema` |
-| Status | **CONFIRMED** (product request 2026-11-14) |
+| Decision | **Yes.** Singleton `HomepageContent` rows (`DRAFT` + `PUBLISHED`) hold a validated JSON payload covering Hero, Categories, Topics, Why/Progress/CTA, Latest headers, and Newsletter. Publish copies draft → published; restore copies published → draft. Public `GET /public/homepage` serves published only (60s cache). Hero images via Cloudinary purpose `homepage-hero`. Category/topic tiles may include optional `logoAssetId` (Cloudinary purpose `homepage-tile-logo`, eager fit 256×256). Tile array order is the display order; homepage preview shows the first 4 visible tiles plus an **Others** card linking to `/question-bank-categories` and `/topic-categories`. Dedicated admin managers: `/admin/question-bank-categories`, `/admin/topic-categories`. Tiles link existing Category IDs (no duplicate category records). Seed defaults match prior hardcoded copy. |
+| Impact | Prisma migration, `HomepageModule`, admin homepage + section managers, marketing first-4+Others pages, shared `homepagePayloadSchema` / `HOMEPAGE_SECTION_PREVIEW_LIMIT` |
+| Status | **CONFIRMED** (product request 2026-11-14; tile logos + Others pages 2026-11-15) |
 
 ### DEC-028 — Learner dashboard light / dark toggle
 

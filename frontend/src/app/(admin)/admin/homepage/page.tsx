@@ -1,17 +1,9 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  ArrowDown,
-  ArrowUp,
-  Eye,
-  Plus,
-  RotateCcw,
-  Save,
-  Trash2,
-  Upload,
-} from 'lucide-react';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Eye, Plus, RotateCcw, Save, Trash2, Upload } from 'lucide-react';
+import Link from 'next/link';
+import { useEffect, useState, type ReactNode } from 'react';
 import {
   createDefaultHomepagePayload,
   HOMEPAGE_ICON_KEYS,
@@ -32,14 +24,12 @@ import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Surface } from '@/components/ui/surface';
 import { Textarea } from '@/components/ui/textarea';
-import { apiFetch } from '@/lib/api/client';
 import {
   getAdminHomepage,
   publishHomepage,
   restoreHomepage,
   saveHomepageDraft,
 } from '@/lib/api/homepage';
-import type { CategoryNode } from '@/lib/api/types';
 import { getStorageStatus, uploadViaSignedRequest } from '@/lib/cloudinary-upload';
 import { cn } from '@/lib/utils';
 
@@ -53,16 +43,6 @@ const TABS: Array<{ id: TabId; label: string }> = [
   { id: 'latest', label: 'Latest' },
   { id: 'newsletter', label: 'Newsletter' },
 ];
-
-function moveItem<T>(list: T[], index: number, dir: -1 | 1): T[] {
-  const next = [...list];
-  const j = index + dir;
-  if (j < 0 || j >= next.length) return list;
-  const tmp = next[index]!;
-  next[index] = next[j]!;
-  next[j] = tmp;
-  return next;
-}
 
 export default function AdminHomepagePage() {
   const qc = useQueryClient();
@@ -83,12 +63,6 @@ export default function AdminHomepagePage() {
     queryFn: getAdminHomepage,
   });
 
-  const categoriesQ = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => apiFetch<CategoryNode[]>('/categories'),
-    staleTime: 60_000,
-  });
-
   const storageQ = useQuery({
     queryKey: ['storage-status'],
     queryFn: getStorageStatus,
@@ -104,15 +78,6 @@ export default function AdminHomepagePage() {
   }, [adminQ.data]);
 
   const publishedAt = adminQ.data?.published.publishedAt;
-
-  const flatCategories = useMemo(() => {
-    const roots = categoriesQ.data ?? [];
-    return roots.map((r) => ({
-      id: r.id,
-      name: r.name,
-      children: r.children.map((c) => ({ id: c.id, name: c.name })),
-    }));
-  }, [categoriesQ.data]);
 
   const patch = (updater: (prev: HomepagePayload) => HomepagePayload) => {
     setPayload((prev) => updater(prev));
@@ -473,17 +438,22 @@ export default function AdminHomepagePage() {
         ) : null}
 
         {tab === 'categories' ? (
-          <CategoryTilesEditor
+          <SectionManagerRedirect
+            title="Question Bank Categories"
+            description="Create, reorder, upload logos, and control visibility for “Our Question Bank Categories” on the dedicated manager."
+            href="/admin/question-bank-categories"
             section={payload.categories}
-            flatCategories={flatCategories}
             onChange={(categories) => patch((p) => ({ ...p, categories }))}
+            showSubtitle
           />
         ) : null}
 
         {tab === 'topics' ? (
-          <TopicTilesEditor
+          <SectionManagerRedirect
+            title="Topic Based Question Analysis"
+            description="Manage topic tiles (logos, order, visibility) on the dedicated Topic Categories page."
+            href="/admin/topic-categories"
             section={payload.topics}
-            flatCategories={flatCategories}
             onChange={(topics) => patch((p) => ({ ...p, topics }))}
           />
         ) : null}
@@ -876,31 +846,38 @@ function CtaFields({
   );
 }
 
-type FlatCat = Array<{
-  id: string;
-  name: string;
-  children: Array<{ id: string; name: string }>;
-}>;
-
-function CategoryTilesEditor({
+function SectionManagerRedirect<
+  T extends HomepagePayload['categories'] | HomepagePayload['topics'],
+>({
+  title,
+  description,
+  href,
   section,
-  flatCategories,
   onChange,
+  showSubtitle = false,
 }: {
-  section: HomepagePayload['categories'];
-  flatCategories: FlatCat;
-  onChange: (next: HomepagePayload['categories']) => void;
+  title: string;
+  description: string;
+  href: string;
+  section: T;
+  onChange: (next: T) => void;
+  showSubtitle?: boolean;
 }) {
-  const tiles = section.tiles;
   return (
     <div className="space-y-4">
+      <Alert variant="info">
+        {description}{' '}
+        <Link href={href} className="font-semibold underline underline-offset-2">
+          Open {title}
+        </Link>
+      </Alert>
       <label className="flex items-center gap-2 text-sm font-medium">
         <input
           type="checkbox"
           checked={section.visible}
           onChange={(e) => onChange({ ...section, visible: e.target.checked })}
         />
-        Show section
+        Show section on homepage
       </label>
       <Field label="Heading">
         <Input
@@ -908,330 +885,31 @@ function CategoryTilesEditor({
           onChange={(e) => onChange({ ...section, heading: e.target.value })}
         />
       </Field>
-      <Field label="Subtitle">
-        <Input
-          value={section.subtitle}
-          onChange={(e) => onChange({ ...section, subtitle: e.target.value })}
-        />
-      </Field>
+      {showSubtitle && 'subtitle' in section ? (
+        <Field label="Subtitle">
+          <Input
+            value={(section as HomepagePayload['categories']).subtitle}
+            onChange={(e) =>
+              onChange({
+                ...section,
+                subtitle: e.target.value,
+              } as T)
+            }
+          />
+        </Field>
+      ) : null}
       <CtaFields
         title="Section CTA"
         cta={section.cta}
         onChange={(cta) => onChange({ ...section, cta })}
       />
-      <div className="space-y-3">
-        <p className="text-sm font-semibold">Tiles</p>
-        {tiles.map((tile, i) => (
-          <div
-            key={tile.id}
-            className="space-y-2 rounded-[var(--radius)] border border-[var(--line)] p-3"
-          >
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                onClick={() => onChange({ ...section, tiles: moveItem(tiles, i, -1) })}
-              >
-                <ArrowUp className="size-4" />
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                onClick={() => onChange({ ...section, tiles: moveItem(tiles, i, 1) })}
-              >
-                <ArrowDown className="size-4" />
-              </Button>
-              <label className="flex items-center gap-1 text-xs">
-                <input
-                  type="checkbox"
-                  checked={tile.visible}
-                  onChange={(e) => {
-                    const next = [...tiles];
-                    next[i] = { ...tile, visible: e.target.checked };
-                    onChange({ ...section, tiles: next });
-                  }}
-                />
-                Visible
-              </label>
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                onClick={() =>
-                  onChange({ ...section, tiles: tiles.filter((_, j) => j !== i) })
-                }
-              >
-                <Trash2 className="size-4" />
-              </Button>
-            </div>
-            <Input
-              value={tile.displayTitle}
-              placeholder="Title"
-              onChange={(e) => {
-                const next = [...tiles];
-                next[i] = { ...tile, displayTitle: e.target.value };
-                onChange({ ...section, tiles: next });
-              }}
-            />
-            <Input
-              value={tile.subtitle ?? ''}
-              placeholder="Subtitle"
-              onChange={(e) => {
-                const next = [...tiles];
-                next[i] = { ...tile, subtitle: e.target.value };
-                onChange({ ...section, tiles: next });
-              }}
-            />
-            <Select
-              value={tile.iconKey}
-              onChange={(e) => {
-                const next = [...tiles];
-                next[i] = {
-                  ...tile,
-                  iconKey: e.target.value as (typeof HOMEPAGE_ICON_KEYS)[number],
-                };
-                onChange({ ...section, tiles: next });
-              }}
-            >
-              {HOMEPAGE_ICON_KEYS.map((k) => (
-                <option key={k} value={k}>
-                  {k}
-                </option>
-              ))}
-            </Select>
-            <Select
-              value={tile.categoryId ?? ''}
-              onChange={(e) => {
-                const next = [...tiles];
-                next[i] = { ...tile, categoryId: e.target.value || null };
-                onChange({ ...section, tiles: next });
-              }}
-            >
-              <option value="">No linked category (use fallback URL)</option>
-              {flatCategories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </Select>
-            <Input
-              value={tile.fallbackHref}
-              placeholder="Fallback href"
-              onChange={(e) => {
-                const next = [...tiles];
-                next[i] = { ...tile, fallbackHref: e.target.value };
-                onChange({ ...section, tiles: next });
-              }}
-            />
-          </div>
-        ))}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() =>
-            onChange({
-              ...section,
-              tiles: [
-                ...tiles,
-                {
-                  id: `category-${Date.now()}`,
-                  displayTitle: 'New category',
-                  subtitle: '',
-                  iconKey: 'gear',
-                  categoryId: null,
-                  fallbackHref: '/preli-question-bank',
-                  visible: true,
-                },
-              ],
-            })
-          }
-        >
-          <Plus className="size-4" /> Add tile
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-function TopicTilesEditor({
-  section,
-  flatCategories,
-  onChange,
-}: {
-  section: HomepagePayload['topics'];
-  flatCategories: FlatCat;
-  onChange: (next: HomepagePayload['topics']) => void;
-}) {
-  const tiles = section.tiles;
-  return (
-    <div className="space-y-4">
-      <label className="flex items-center gap-2 text-sm font-medium">
-        <input
-          type="checkbox"
-          checked={section.visible}
-          onChange={(e) => onChange({ ...section, visible: e.target.checked })}
-        />
-        Show section
-      </label>
-      <Field label="Heading">
-        <Input
-          value={section.heading}
-          onChange={(e) => onChange({ ...section, heading: e.target.value })}
-        />
-      </Field>
-      <CtaFields
-        title="Section CTA"
-        cta={section.cta}
-        onChange={(cta) => onChange({ ...section, cta })}
-      />
-      <div className="space-y-3">
-        <p className="text-sm font-semibold">Tiles</p>
-        {tiles.map((tile, i) => (
-          <div
-            key={tile.id}
-            className="space-y-2 rounded-[var(--radius)] border border-[var(--line)] p-3"
-          >
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                onClick={() => onChange({ ...section, tiles: moveItem(tiles, i, -1) })}
-              >
-                <ArrowUp className="size-4" />
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                onClick={() => onChange({ ...section, tiles: moveItem(tiles, i, 1) })}
-              >
-                <ArrowDown className="size-4" />
-              </Button>
-              <label className="flex items-center gap-1 text-xs">
-                <input
-                  type="checkbox"
-                  checked={tile.visible}
-                  onChange={(e) => {
-                    const next = [...tiles];
-                    next[i] = { ...tile, visible: e.target.checked };
-                    onChange({ ...section, tiles: next });
-                  }}
-                />
-                Visible
-              </label>
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                onClick={() =>
-                  onChange({ ...section, tiles: tiles.filter((_, j) => j !== i) })
-                }
-              >
-                <Trash2 className="size-4" />
-              </Button>
-            </div>
-            <Input
-              value={tile.displayTitle}
-              placeholder="Title"
-              onChange={(e) => {
-                const next = [...tiles];
-                next[i] = { ...tile, displayTitle: e.target.value };
-                onChange({ ...section, tiles: next });
-              }}
-            />
-            <Select
-              value={tile.iconKey}
-              onChange={(e) => {
-                const next = [...tiles];
-                next[i] = {
-                  ...tile,
-                  iconKey: e.target.value as (typeof HOMEPAGE_ICON_KEYS)[number],
-                };
-                onChange({ ...section, tiles: next });
-              }}
-            >
-              {HOMEPAGE_ICON_KEYS.map((k) => (
-                <option key={k} value={k}>
-                  {k}
-                </option>
-              ))}
-            </Select>
-            <Select
-              value={tile.categoryId ?? ''}
-              onChange={(e) => {
-                const next = [...tiles];
-                next[i] = {
-                  ...tile,
-                  categoryId: e.target.value || null,
-                  subcategoryId: null,
-                };
-                onChange({ ...section, tiles: next });
-              }}
-            >
-              <option value="">No linked category (use fallback URL)</option>
-              {flatCategories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </Select>
-            <Select
-              value={tile.subcategoryId ?? ''}
-              onChange={(e) => {
-                const next = [...tiles];
-                next[i] = { ...tile, subcategoryId: e.target.value || null };
-                onChange({ ...section, tiles: next });
-              }}
-            >
-              <option value="">No subcategory</option>
-              {flatCategories
-                .find((c) => c.id === tile.categoryId)
-                ?.children.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-            </Select>
-            <Input
-              value={tile.fallbackHref}
-              placeholder="Fallback href"
-              onChange={(e) => {
-                const next = [...tiles];
-                next[i] = { ...tile, fallbackHref: e.target.value };
-                onChange({ ...section, tiles: next });
-              }}
-            />
-          </div>
-        ))}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() =>
-            onChange({
-              ...section,
-              tiles: [
-                ...tiles,
-                {
-                  id: `topic-${Date.now()}`,
-                  displayTitle: 'New topic',
-                  iconKey: 'gear',
-                  categoryId: null,
-                  subcategoryId: null,
-                  fallbackHref: '/preli-question-bank',
-                  visible: true,
-                },
-              ],
-            })
-          }
-        >
-          <Plus className="size-4" /> Add tile
-        </Button>
-      </div>
+      <p className="text-sm text-[var(--muted)]">
+        {section.tiles.filter((t) => t.visible).length} visible / {section.tiles.length}{' '}
+        tiles (order & logos managed on the dedicated page).
+      </p>
+      <Link href={href}>
+        <Button type="button">Manage tiles</Button>
+      </Link>
     </div>
   );
 }

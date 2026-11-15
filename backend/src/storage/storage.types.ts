@@ -3,10 +3,24 @@ export const UPLOAD_PURPOSES = [
   'question-image',
   'news-cover',
   'homepage-hero',
+  /** Square logos for homepage Question Bank / Topic Analysis tiles. */
+  'homepage-tile-logo',
   'pdf',
   'support-attachment',
 ] as const;
 export type UploadPurpose = (typeof UPLOAD_PURPOSES)[number];
+
+/** Cloudinary eager transform: fit into 256×256, auto format/quality (backend resize). */
+export const HOMEPAGE_TILE_LOGO_EAGER = 'c_fit,w_256,h_256,q_auto:good,f_auto';
+
+export const HOMEPAGE_TILE_LOGO_MIMES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/svg+xml',
+] as const;
+
+export const HOMEPAGE_TILE_LOGO_MAX_BYTES = 2 * 1024 * 1024;
 
 export type SignedUploadParams = {
   configured: boolean;
