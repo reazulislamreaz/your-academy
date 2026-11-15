@@ -23,6 +23,9 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      - name: Generate Prisma client
+        run: pnpm --filter @your-academy/backend prisma:generate
+
       - name: Lint
         run: pnpm lint
 
