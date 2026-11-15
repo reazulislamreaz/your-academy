@@ -16,10 +16,11 @@ FROM base AS build
 COPY --from=deps /app /app
 COPY shared shared
 COPY worker worker
-# Worker build runs prisma generate against the shared schema
-COPY backend/prisma backend/prisma
+# Copy schema into the worker package so `prisma generate` resolves this
+# package's prisma dependency (schema under backend/ triggers a failed pnpm add).
+COPY backend/prisma worker/prisma
 RUN pnpm --filter @your-academy/shared build \
-  && pnpm --filter @your-academy/worker exec prisma generate --schema ../backend/prisma/schema.prisma \
+  && pnpm --filter @your-academy/worker exec prisma generate --schema ./prisma/schema.prisma \
   && pnpm --filter @your-academy/worker exec tsc -p tsconfig.json
 
 FROM node:20-alpine AS runner
