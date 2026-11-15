@@ -7,6 +7,8 @@ WORKDIR /app
 FROM base AS deps
 # argon2 native binding needs a C toolchain + Python for node-gyp
 RUN apk add --no-cache python3 make g++
+# Use Node headers shipped in the official image (avoid unofficial-builds.nodejs.org)
+ENV npm_config_nodedir=/usr/local
 # Include devDependencies (prisma CLI, typescript) even if host NODE_ENV=production
 ENV NODE_ENV=development
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* turbo.json tsconfig.base.json ./
