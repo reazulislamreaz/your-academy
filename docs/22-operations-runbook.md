@@ -153,7 +153,9 @@ Prefer image/git tags for releases once you add tagged deploys.
 |---------|----------------|
 | `/ready` 503 database | Postgres down / bad `DATABASE_URL` |
 | `/ready` 503 Redis | Redis down / bad `REDIS_URL` |
-| 502 via Nginx | `api`/`web` unhealthy — check logs |
+| 502 via Nginx | Usually rolling recreate: nginx hit `api`/`web` while the new container was not listening yet (`connect() failed (111)`). Deploy builds images first then `up --wait`; nginx retries `error/timeout/502/503` briefly. Check `docker compose … logs api web nginx`. |
+| Next client “Application error” | Often `ChunkLoadError` after deploy (HTML/JS build id mismatch) or mid-deploy 502 on `/_next/static/*`. App auto-reloads once; hard refresh clears stuck tabs. |
+| Web `EACCES` on `.next/cache` | Image must chown cache dirs to `youracademy` (see `docker/web.Dockerfile`). |
 | Cookies fail on HTTPS | `COOKIE_SECURE` not `true` or wrong `WEB_ORIGIN` |
 | TLS error | Missing/expired files in `TLS_CERTS_DIR` |
 | Migrate failed | Check `migrate` container logs; fix SQL/env; re-run deploy |

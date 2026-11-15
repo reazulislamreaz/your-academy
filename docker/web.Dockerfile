@@ -31,7 +31,14 @@ RUN addgroup -S youracademy && adduser -S youracademy -G youracademy
 COPY --from=build /app/frontend/public ./frontend/public
 COPY --from=build /app/frontend/.next/standalone ./
 COPY --from=build /app/frontend/.next/static ./frontend/.next/static
+# Next needs writable cache dirs at runtime (ISR, image optimizer, fetch cache).
+# Standalone copy is root-owned; create dirs and hand ownership to the app user.
+RUN mkdir -p \
+      frontend/.next/cache/images \
+      frontend/.next/cache/fetch-cache \
+      frontend/.next/server/route-cache \
+    && chown -R youracademy:youracademy frontend
 USER youracademy
 EXPOSE 3000
-HEALTHCHECK --interval=15s --timeout=5s --retries=5 CMD node -e "fetch('http://127.0.0.1:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+HEALTHCHECK --interval=15s --timeout=5s --retries=5 --start-period=20s CMD node -e "fetch('http://127.0.0.1:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 CMD ["node", "frontend/server.js"]
