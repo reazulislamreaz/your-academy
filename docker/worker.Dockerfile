@@ -14,6 +14,8 @@ FROM base AS build
 COPY --from=deps /app /app
 COPY shared shared
 COPY worker worker
+# Worker build runs `prisma generate --schema ../backend/prisma/schema.prisma`
+COPY backend/prisma backend/prisma
 RUN pnpm --filter @your-academy/shared build && pnpm --filter @your-academy/worker build
 
 FROM node:20-alpine AS runner
