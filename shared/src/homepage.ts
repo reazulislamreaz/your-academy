@@ -46,6 +46,13 @@ const categoryTileSchema = z.object({
   displayTitle: shortText,
   subtitle: shortText.optional().default(''),
   iconKey: z.enum(HOMEPAGE_ICON_KEYS),
+  /** Optional Cloudinary MediaAsset id for a custom tile logo. */
+  logoAssetId: z.string().uuid().nullable().optional(),
+  /** Resolved delivery URL — filled by API on read; stripped on write. */
+  logoUrl: z.string().max(2000).nullable().optional(),
+  /** Optional display dimensions of the stored logo (informational). */
+  logoWidth: z.number().int().positive().nullable().optional(),
+  logoHeight: z.number().int().positive().nullable().optional(),
   categoryId: z.string().uuid().nullable().optional(),
   fallbackHref: hrefSchema,
   visible: z.boolean().default(true),
@@ -55,11 +62,21 @@ const topicTileSchema = z.object({
   id: z.string().min(1).max(64),
   displayTitle: shortText,
   iconKey: z.enum(HOMEPAGE_ICON_KEYS),
+  logoAssetId: z.string().uuid().nullable().optional(),
+  logoUrl: z.string().max(2000).nullable().optional(),
+  logoWidth: z.number().int().positive().nullable().optional(),
+  logoHeight: z.number().int().positive().nullable().optional(),
   categoryId: z.string().uuid().nullable().optional(),
   subcategoryId: z.string().uuid().nullable().optional(),
   fallbackHref: hrefSchema,
   visible: z.boolean().default(true),
 });
+
+/** How many tiles to show on the homepage before the Others card. */
+export const HOMEPAGE_SECTION_PREVIEW_LIMIT = 4;
+
+/** Recommended square logo size for homepage category/topic tiles (px). */
+export const HOMEPAGE_TILE_LOGO_SIZE = 256;
 
 const progressMetricSchema = z.object({
   value: shortText,
@@ -155,7 +172,7 @@ export function createDefaultHomepagePayload(): HomepagePayload {
       visible: true,
       heading: 'Our Question Bank Categories',
       subtitle: 'Choose your target exam and start your preparation',
-      cta: { label: 'View All Exams', href: '/preli-question-bank', visible: true },
+      cta: { label: 'View All Exams', href: '/question-bank-categories', visible: true },
       tiles: [
         {
           id: 'bcs',
@@ -206,8 +223,8 @@ export function createDefaultHomepagePayload(): HomepagePayload {
     },
     topics: {
       visible: true,
-      heading: 'Topic Base Question Analysis',
-      cta: { label: 'View All Topics', href: '/preli-question-bank', visible: true },
+      heading: 'Topic Based Question Analysis',
+      cta: { label: 'View All Topics', href: '/topic-categories', visible: true },
       tiles: [
         {
           id: 'bangla',
@@ -246,12 +263,12 @@ export function createDefaultHomepagePayload(): HomepagePayload {
           visible: true,
         },
         {
-          id: 'others',
-          displayTitle: 'Others',
+          id: 'ict',
+          displayTitle: 'ICT',
           iconKey: 'gear',
           categoryId: null,
           subcategoryId: null,
-          fallbackHref: '/preli-question-bank',
+          fallbackHref: '/preli-question-bank?q=ICT',
           visible: true,
         },
       ],

@@ -18,7 +18,7 @@ describe('HomepageService', () => {
       create: jest.Mock;
       update: jest.Mock;
     };
-    mediaAsset: { findFirst: jest.Mock };
+    mediaAsset: { findFirst: jest.Mock; findMany: jest.Mock };
     $transaction: jest.Mock;
   };
 
@@ -31,7 +31,7 @@ describe('HomepageService', () => {
       create: jest.fn(),
       update: jest.fn(),
     },
-    mediaAsset: { findFirst: jest.fn() },
+    mediaAsset: { findFirst: jest.fn(), findMany: jest.fn() },
     $transaction: jest.fn(),
   };
   prisma.$transaction.mockImplementation(
@@ -95,6 +95,50 @@ describe('HomepageService', () => {
         where: { status: HomepageContentStatus.DRAFT },
         data: expect.objectContaining({ heroImageAssetId: 'img-1' }),
       }),
+    );
+  });
+
+  it('enriches tile logo URLs from MediaAsset and strips logoUrl on draft save', async () => {
+    const logoId = '11111111-1111-4111-8111-111111111111';
+    const withLogo = createDefaultHomepagePayload();
+    withLogo.categories.tiles[0] = {
+      ...withLogo.categories.tiles[0]!,
+      logoAssetId: logoId,
+      logoUrl: 'https://client.example/should-strip.png',
+    };
+
+    const assetRow = {
+      id: logoId,
+      publicId: 'your-academy/homepage-tile-logo/admin/logo1',
+      resourceType: 'IMAGE',
+      deliveryType: 'UPLOAD',
+      width: 512,
+      height: 400,
+    };
+    prisma.mediaAsset.findMany
+      .mockResolvedValueOnce([{ id: logoId }])
+      .mockResolvedValueOnce([assetRow]);
+    prisma.homepageContent.update.mockResolvedValue({
+      id: 'draft-1',
+      status: HomepageContentStatus.DRAFT,
+      payload: withLogo,
+      heroImageAssetId: null,
+      publishedAt: null,
+      updatedAt: new Date(),
+      heroImage: null,
+    });
+
+    process.env.CLOUDINARY_CLOUD_NAME = 'demo-cloud';
+    const result = await service.updateDraft(user as never, { payload: withLogo });
+
+    expect(prisma.mediaAsset.findMany).toHaveBeenCalled();
+    const savedPayload = prisma.homepageContent.update.mock.calls[0]![0].data.payload as {
+      categories: { tiles: Array<{ logoUrl?: string; logoAssetId?: string }> };
+    };
+    expect(savedPayload.categories.tiles[0]?.logoAssetId).toBe(logoId);
+    expect(savedPayload.categories.tiles[0]?.logoUrl).toBeUndefined();
+    expect(result.payload.categories.tiles[0]?.logoUrl).toContain(
+      'res.cloudinary.com/demo-cloud/image/upload/c_fit,w_256,h_256',
     );
   });
 });

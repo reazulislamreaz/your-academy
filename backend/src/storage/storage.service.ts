@@ -13,6 +13,9 @@ import { newRequestId } from '../common/request-id';
 import { PrismaService } from '../database/prisma.service';
 import type { ConfirmUploadInput, SignedUploadParams, UploadPurpose } from './storage.types';
 import {
+  HOMEPAGE_TILE_LOGO_EAGER,
+  HOMEPAGE_TILE_LOGO_MAX_BYTES,
+  HOMEPAGE_TILE_LOGO_MIMES,
   SUPPORT_ATTACHMENT_MAX_BYTES,
   SUPPORT_ATTACHMENT_MIMES,
   UPLOAD_PURPOSES,
@@ -84,6 +87,11 @@ export class StorageService {
     if (deliveryType !== 'upload') {
       toSign.type = deliveryType;
     }
+    // Backend-driven resize/optimize for homepage tile logos (Cloudinary eager).
+    const eager = purpose === 'homepage-tile-logo' ? HOMEPAGE_TILE_LOGO_EAGER : undefined;
+    if (eager) {
+      toSign.eager = eager;
+    }
     const signature = cloudinary.utils.api_sign_request(
       toSign,
       process.env.CLOUDINARY_API_SECRET as string,
@@ -99,6 +107,7 @@ export class StorageService {
       purpose,
       resourceType,
       deliveryType,
+      eager,
     };
   }
 
@@ -465,6 +474,7 @@ export class StorageService {
   private assertMimeForPurpose(purpose: UploadPurpose, mimeType: string) {
     const normalized = mimeType.toLowerCase().split(';')[0]?.trim() ?? '';
     const imageOk = ['image/jpeg', 'image/png', 'image/webp'].includes(normalized);
+    const tileLogoOk = (HOMEPAGE_TILE_LOGO_MIMES as readonly string[]).includes(normalized);
     const pdfOk = normalized === 'application/pdf';
     const supportOk = (SUPPORT_ATTACHMENT_MIMES as readonly string[]).includes(normalized);
 
@@ -473,12 +483,14 @@ export class StorageService {
         ? pdfOk
         : purpose === 'support-attachment'
           ? supportOk
-          : purpose === 'avatar' ||
-              purpose === 'question-image' ||
-              purpose === 'news-cover' ||
-              purpose === 'homepage-hero'
-            ? imageOk
-            : false;
+          : purpose === 'homepage-tile-logo'
+            ? tileLogoOk
+            : purpose === 'avatar' ||
+                purpose === 'question-image' ||
+                purpose === 'news-cover' ||
+                purpose === 'homepage-hero'
+              ? imageOk
+              : false;
 
     if (!allowed) {
       throw new BadRequestException(
@@ -495,9 +507,11 @@ export class StorageService {
     const max =
       purpose === 'support-attachment'
         ? SUPPORT_ATTACHMENT_MAX_BYTES
-        : purpose === 'pdf'
-          ? 40 * 1024 * 1024
-          : 8 * 1024 * 1024;
+        : purpose === 'homepage-tile-logo'
+          ? HOMEPAGE_TILE_LOGO_MAX_BYTES
+          : purpose === 'pdf'
+            ? 40 * 1024 * 1024
+            : 8 * 1024 * 1024;
     if (!Number.isFinite(bytes) || bytes < 1 || bytes > max) {
       throw new BadRequestException(
         createErrorResponse(

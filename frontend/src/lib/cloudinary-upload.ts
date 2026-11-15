@@ -10,7 +10,16 @@ type SignResponse = {
   purpose: string;
   resourceType: 'image' | 'raw';
   deliveryType: string;
+  eager?: string;
 };
+
+export type UploadPurposeClient =
+  | 'avatar'
+  | 'question-image'
+  | 'news-cover'
+  | 'homepage-hero'
+  | 'homepage-tile-logo'
+  | 'pdf';
 
 type MediaAsset = {
   id: string;
@@ -29,9 +38,13 @@ export async function getStorageStatus(): Promise<{ configured: boolean }> {
  * Throws if Cloudinary is not configured on the API.
  */
 export async function uploadViaSignedRequest(
-  purpose: 'avatar' | 'question-image' | 'news-cover' | 'homepage-hero' | 'pdf',
+  purpose: UploadPurposeClient,
   file: File,
 ): Promise<MediaAsset> {
+  if (purpose === 'homepage-tile-logo') {
+    assertHomepageTileLogoFile(file);
+  }
+
   const sign = await apiFetch<SignResponse>('/storage/sign-upload', {
     method: 'POST',
     body: JSON.stringify({ purpose }),
@@ -45,6 +58,9 @@ export async function uploadViaSignedRequest(
   form.append('folder', sign.folder);
   if (sign.deliveryType && sign.deliveryType !== 'upload') {
     form.append('type', sign.deliveryType);
+  }
+  if (sign.eager) {
+    form.append('eager', sign.eager);
   }
 
   const endpoint = `https://api.cloudinary.com/v1_1/${sign.cloudName}/${sign.resourceType}/upload`;
@@ -76,4 +92,35 @@ export async function uploadViaSignedRequest(
       originalFilename: file.name,
     }),
   });
+}
+
+const TILE_LOGO_MIMES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/svg+xml',
+]);
+
+/** Client-side validation + basic SVG script rejection before upload. */
+export function assertHomepageTileLogoFile(file: File): void {
+  const mime = (file.type || '').toLowerCase();
+  if (!TILE_LOGO_MIMES.has(mime)) {
+    throw new Error('Logo must be PNG, JPG, JPEG, WebP, or SVG');
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    throw new Error('Logo must be 2MB or smaller');
+  }
+}
+
+export async function sanitizeSvgFileIfNeeded(file: File): Promise<File> {
+  if ((file.type || '').toLowerCase() !== 'image/svg+xml') return file;
+  const text = await file.text();
+  if (/<script[\s>]/i.test(text) || /on\w+\s*=/i.test(text) || /javascript:/i.test(text)) {
+    throw new Error('SVG contains unsafe script content and was rejected');
+  }
+  // Strip script/foreignObject blocks as a light sanitize pass.
+  const cleaned = text
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<foreignObject[\s\S]*?<\/foreignObject>/gi, '');
+  return new File([cleaned], file.name, { type: 'image/svg+xml' });
 }

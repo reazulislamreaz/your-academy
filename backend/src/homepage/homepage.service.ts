@@ -50,7 +50,7 @@ export class HomepageService {
         createErrorResponse('HOMEPAGE_NOT_FOUND', 'Published homepage missing', newRequestId()),
       );
     }
-    const view = this.toView(row);
+    const view = await this.toView(row);
     this.publicCache = { at: now, view };
     return view;
   }
@@ -72,12 +72,16 @@ export class HomepageService {
         createErrorResponse('HOMEPAGE_NOT_FOUND', 'Homepage rows missing', newRequestId()),
       );
     }
+    const [draftView, publishedView] = await Promise.all([
+      this.toView(draft),
+      this.toView(published),
+    ]);
     return {
-      draft: { id: draft.id, heroImageAssetId: draft.heroImageAssetId, ...this.toView(draft) },
+      draft: { id: draft.id, heroImageAssetId: draft.heroImageAssetId, ...draftView },
       published: {
         id: published.id,
         heroImageAssetId: published.heroImageAssetId,
-        ...this.toView(published),
+        ...publishedView,
       },
     };
   }
@@ -87,7 +91,8 @@ export class HomepageService {
     input: { payload: unknown; heroImageAssetId?: string | null },
   ) {
     await this.ensureRows();
-    const payload = this.parsePayload(input.payload);
+    const payload = this.parsePayloadForPersist(input.payload);
+    await this.assertTileLogoAssets(payload);
     const heroImageAssetId =
       input.heroImageAssetId === undefined ? undefined : input.heroImageAssetId;
 
@@ -115,7 +120,7 @@ export class HomepageService {
     return {
       id: updated.id,
       heroImageAssetId: updated.heroImageAssetId,
-      ...this.toView(updated),
+      ...(await this.toView(updated)),
     };
   }
 
@@ -124,7 +129,7 @@ export class HomepageService {
     const draft = await this.prisma.homepageContent.findUniqueOrThrow({
       where: { status: HomepageContentStatus.DRAFT },
     });
-    const payload = this.parsePayload(draft.payload);
+    const payload = this.parsePayloadForPersist(draft.payload);
     const now = new Date();
 
     const published = await this.prisma.homepageContent.update({
@@ -143,7 +148,7 @@ export class HomepageService {
     return {
       id: published.id,
       heroImageAssetId: published.heroImageAssetId,
-      ...this.toView(published),
+      ...(await this.toView(published)),
     };
   }
 
@@ -152,7 +157,7 @@ export class HomepageService {
     const published = await this.prisma.homepageContent.findUniqueOrThrow({
       where: { status: HomepageContentStatus.PUBLISHED },
     });
-    const payload = this.parsePayload(published.payload);
+    const payload = this.parsePayloadForPersist(published.payload);
 
     const draft = await this.prisma.homepageContent.update({
       where: { status: HomepageContentStatus.DRAFT },
@@ -167,7 +172,7 @@ export class HomepageService {
     return {
       id: draft.id,
       heroImageAssetId: draft.heroImageAssetId,
-      ...this.toView(draft),
+      ...(await this.toView(draft)),
     };
   }
 
@@ -189,18 +194,112 @@ export class HomepageService {
     return parsed.data;
   }
 
-  private toView(row: {
+  /** Persist without resolved delivery URLs (those are read-only enrichments). */
+  private parsePayloadForPersist(raw: unknown): HomepagePayload {
+    const payload = this.parsePayload(raw);
+    return {
+      ...payload,
+      categories: {
+        ...payload.categories,
+        tiles: payload.categories.tiles.map((t) => ({
+          ...t,
+          logoUrl: undefined,
+          logoWidth: t.logoWidth ?? undefined,
+          logoHeight: t.logoHeight ?? undefined,
+        })),
+      },
+      topics: {
+        ...payload.topics,
+        tiles: payload.topics.tiles.map((t) => ({
+          ...t,
+          logoUrl: undefined,
+          logoWidth: t.logoWidth ?? undefined,
+          logoHeight: t.logoHeight ?? undefined,
+        })),
+      },
+    };
+  }
+
+  private async assertTileLogoAssets(payload: HomepagePayload) {
+    const ids = [
+      ...payload.categories.tiles.map((t) => t.logoAssetId),
+      ...payload.topics.tiles.map((t) => t.logoAssetId),
+    ].filter((id): id is string => Boolean(id));
+    if (!ids.length) return;
+    const unique = [...new Set(ids)];
+    const found = await this.prisma.mediaAsset.findMany({
+      where: { id: { in: unique }, deletedAt: null },
+      select: { id: true },
+    });
+    if (found.length !== unique.length) {
+      throw new BadRequestException(
+        createErrorResponse(
+          'MEDIA_NOT_FOUND',
+          'One or more tile logo assets were not found',
+          newRequestId(),
+        ),
+      );
+    }
+  }
+
+  private async toView(row: {
     payload: Prisma.JsonValue;
     publishedAt: Date | null;
     updatedAt: Date;
     heroImage: { publicId: string; resourceType: string; deliveryType: string } | null;
-  }): HomepagePublicView {
-    const payload = this.parsePayload(row.payload);
+  }): Promise<HomepagePublicView> {
+    const payload = await this.enrichTileLogos(this.parsePayload(row.payload));
     return {
       payload,
       heroImageUrl: this.resolveHeroUrl(row.heroImage),
       publishedAt: row.publishedAt?.toISOString() ?? null,
       updatedAt: row.updatedAt.toISOString(),
+    };
+  }
+
+  private async enrichTileLogos(payload: HomepagePayload): Promise<HomepagePayload> {
+    const ids = [
+      ...payload.categories.tiles.map((t) => t.logoAssetId),
+      ...payload.topics.tiles.map((t) => t.logoAssetId),
+    ].filter((id): id is string => Boolean(id));
+    if (!ids.length) return payload;
+
+    const assets = await this.prisma.mediaAsset.findMany({
+      where: { id: { in: [...new Set(ids)] }, deletedAt: null },
+      select: {
+        id: true,
+        publicId: true,
+        resourceType: true,
+        deliveryType: true,
+        width: true,
+        height: true,
+      },
+    });
+    const byId = new Map(assets.map((a) => [a.id, a]));
+
+    const mapTile = <T extends { logoAssetId?: string | null }>(tile: T) => {
+      const asset = tile.logoAssetId ? byId.get(tile.logoAssetId) : null;
+      if (!asset) {
+        return { ...tile, logoUrl: null as string | null };
+      }
+      return {
+        ...tile,
+        logoUrl: this.resolveTileLogoUrl(asset),
+        logoWidth: asset.width ?? null,
+        logoHeight: asset.height ?? null,
+      };
+    };
+
+    return {
+      ...payload,
+      categories: {
+        ...payload.categories,
+        tiles: payload.categories.tiles.map(mapTile),
+      },
+      topics: {
+        ...payload.topics,
+        tiles: payload.topics.tiles.map(mapTile),
+      },
     };
   }
 
@@ -220,6 +319,18 @@ export class HomepageService {
     // Public homepage hero uses upload delivery; signed URLs not required.
     if (type !== 'upload') return null;
     return `https://res.cloudinary.com/${cloud}/${resource}/upload/${asset.publicId}`;
+  }
+
+  /** Public delivery with fit transform so oversized logos stay crisp at 256px. */
+  private resolveTileLogoUrl(asset: {
+    publicId: string;
+    resourceType: string;
+    deliveryType: string;
+  }): string | null {
+    const cloud = process.env.CLOUDINARY_CLOUD_NAME?.trim();
+    if (!cloud || cloud === 'demo') return null;
+    if (asset.resourceType === 'RAW' || asset.deliveryType !== 'UPLOAD') return null;
+    return `https://res.cloudinary.com/${cloud}/image/upload/c_fit,w_256,h_256,q_auto:good,f_auto/${asset.publicId}`;
   }
 
   /** Idempotent seed of DRAFT + PUBLISHED with default marketing copy. */
