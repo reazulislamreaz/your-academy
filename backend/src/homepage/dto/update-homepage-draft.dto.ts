@@ -1,5 +1,4 @@
-import { Type } from 'class-transformer';
-import { Allow, IsObject, IsOptional, IsUUID, ValidateNested } from 'class-validator';
+import { Allow, IsObject, IsOptional, IsUUID } from 'class-validator';
 
 /** Payload validated in service via Zod (homepagePayloadSchema). */
 export class UpdateHomepageDraftDto {

@@ -55,7 +55,7 @@ export function parseQuestionDate(raw: string | Date | null | undefined): Parsed
   if (m) return utcDate(Number(m[1]), Number(m[2]), Number(m[3]));
 
   // DD/MM/YYYY | DD-MM-YYYY | DD.MM.YYYY
-  m = t.match(/^(\d{1,2})[./\-](\d{1,2})[./\-](\d{4})$/);
+  m = t.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
   if (m) return utcDate(Number(m[3]), Number(m[2]), Number(m[1]));
 
   // YYYY only → Jan 1

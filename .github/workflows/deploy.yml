@@ -43,13 +43,24 @@ jobs:
             ./scripts/deploy.sh
             DOMAIN="${{ secrets.DEPLOY_DOMAIN }}"
             if [ -n "$DOMAIN" ]; then
-              # Prefer HTTPS when certs exist; fall back to HTTP (TLS deferred).
-              if curl -fsS "https://${DOMAIN}/health" >/dev/null 2>&1; then
-                curl -fsS "https://${DOMAIN}/ready" >/dev/null
-                echo "Public health green (https) for ${DOMAIN}"
-              else
-                curl -fsS "http://${DOMAIN}/health" >/dev/null
-                curl -fsS "http://${DOMAIN}/ready" >/dev/null
-                echo "Public health green (http) for ${DOMAIN}"
+              # Prefer HTTPS; retry briefly (Cloudflare can briefly 525 during edge warm-up).
+              ok=0
+              for i in 1 2 3 4 5; do
+                if curl -fsS "https://${DOMAIN}/ready" >/dev/null 2>&1; then
+                  curl -fsS "https://${DOMAIN}/health" >/dev/null 2>&1 || true
+                  echo "Public health green (https) for ${DOMAIN}"
+                  ok=1
+                  break
+                fi
+                if curl -fsS "http://${DOMAIN}/ready" >/dev/null 2>&1; then
+                  echo "Public health green (http) for ${DOMAIN}"
+                  ok=1
+                  break
+                fi
+                sleep 3
+              done
+              if [ "$ok" -ne 1 ]; then
+                echo "Public health check failed for ${DOMAIN}" >&2
+                exit 1
               fi
             fi
