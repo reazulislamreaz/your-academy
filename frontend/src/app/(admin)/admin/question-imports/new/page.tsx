@@ -114,7 +114,11 @@ export default function NewQuestionImportPage() {
     },
     onError: (err) => {
       setProgress(null);
-      setError(err instanceof ApiError ? err.message : 'Upload failed');
+      if (err instanceof ApiError) {
+        setError(err.code && err.code !== 'HTTP_ERROR' ? `${err.message} (${err.code})` : err.message);
+        return;
+      }
+      setError(err instanceof Error ? err.message : 'Upload failed');
     },
   });
 

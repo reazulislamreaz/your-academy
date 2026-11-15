@@ -45,6 +45,9 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-your_academy}:${POSTGRES_PASSWORD:-your_academy_dev_password}@postgres:5432/${POSTGRES_DB:-your_academy}?schema=public
       REDIS_URL: redis://redis:6379
       WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:3000}
+      QUESTION_IMPORT_DIR: /app/backend/storage/question-imports
+    volumes:
+      - question_import_data:/app/backend/storage/question-imports
     depends_on:
       postgres:
         condition: service_healthy
@@ -136,6 +139,7 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  question_import_data:
 
 networks:
   internal:

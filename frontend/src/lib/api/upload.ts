@@ -28,13 +28,21 @@ export async function apiUploadForm<T>(path: string, form: FormData): Promise<Ap
   try {
     json = JSON.parse(text) as ApiEnvelope<T>;
   } catch {
-    throw new ApiError('INVALID_JSON', 'API returned non-JSON response', res.status);
+    const hint =
+      res.status === 413
+        ? 'File is too large for the server'
+        : res.status === 502 || res.status === 504
+          ? 'API gateway error — try again in a moment'
+          : res.status >= 500
+            ? 'Server error while uploading'
+            : 'Upload failed with a non-JSON response';
+    throw new ApiError('INVALID_JSON', `${hint} (HTTP ${res.status})`, res.status);
   }
 
   if (!res.ok || !json.success) {
     throw new ApiError(
       json.error?.code ?? 'HTTP_ERROR',
-      json.error?.message ?? 'Upload failed',
+      json.error?.message ?? `Upload failed (HTTP ${res.status})`,
       res.status,
     );
   }

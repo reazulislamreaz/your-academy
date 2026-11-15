@@ -30,6 +30,9 @@ COPY --from=build /app/package.json /app/pnpm-workspace.yaml ./
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/shared ./shared
 COPY --from=build /app/backend ./backend
+# Writable upload storage for the non-root runtime user
+RUN mkdir -p /app/backend/storage/question-imports \
+  && chown -R youracademy:youracademy /app/backend/storage
 # prisma CLI must remain available for the one-shot migrate service
 USER youracademy
 WORKDIR /app/backend

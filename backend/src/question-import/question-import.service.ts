@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import {
@@ -12,7 +13,7 @@ import {
   QuestionUploadStatus,
 } from '@prisma/client';
 import { createErrorResponse } from '@your-academy/shared';
-import { createWriteStream, existsSync, mkdirSync, promises as fs } from 'fs';
+import { accessSync, constants, createWriteStream, existsSync, mkdirSync, promises as fs } from 'fs';
 import path from 'path';
 import { pipeline } from 'stream/promises';
 import { Readable } from 'stream';
@@ -56,7 +57,18 @@ export class QuestionImportService {
     const root =
       process.env.QUESTION_IMPORT_DIR?.trim() ||
       path.join(process.cwd(), 'storage', 'question-imports');
-    if (!existsSync(root)) mkdirSync(root, { recursive: true });
+    try {
+      if (!existsSync(root)) mkdirSync(root, { recursive: true });
+      accessSync(root, constants.W_OK);
+    } catch {
+      throw new InternalServerErrorException(
+        createErrorResponse(
+          'STORAGE_UNAVAILABLE',
+          'Cannot save the upload on the server (storage folder is missing or not writable). Fix the API storage permissions and try again.',
+          newRequestId(),
+        ),
+      );
+    }
     return root;
   }
 
