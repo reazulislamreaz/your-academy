@@ -17,10 +17,14 @@ TLS_ENABLED="$(grep -E '^TLS_ENABLED=' "$ENV_FILE" 2>/dev/null | tail -1 | cut -
 COOKIE_SECURE_HINT="$(grep -E '^COOKIE_SECURE=' "$ENV_FILE" 2>/dev/null | tail -1 | cut -d= -f2- | tr -d '"' | tr -d "'" || true)"
 
 COMPOSE_FILES=( -f docker/docker-compose.yml -f docker/docker-compose.prod.yml )
-# HTTP-only when TLS is deferred (COOKIE_SECURE=false or TLS_ENABLED=false).
-if [[ "${TLS_ENABLED:-}" == "false" || "${COOKIE_SECURE_HINT:-}" == "false" ]]; then
+# HTTP-only origin when TLS is explicitly deferred. COOKIE_SECURE may still be true
+# when Cloudflare terminates browser HTTPS (Flexible) — that must not force HTTP overlay
+# once origin has Let's Encrypt certs (Full / Full Strict).
+if [[ "${TLS_ENABLED:-}" == "false" ]]; then
   COMPOSE_FILES+=( -f docker/docker-compose.prod-http.yml )
-  echo "==> HTTP-only mode (TLS deferred)"
+  echo "==> HTTP-only mode (TLS_ENABLED=false)"
+else
+  echo "==> TLS mode (nginx.prod.conf + TLS_CERTS_DIR)"
 fi
 
 COMPOSE=(docker compose "${COMPOSE_FILES[@]}" --env-file "$ENV_FILE")

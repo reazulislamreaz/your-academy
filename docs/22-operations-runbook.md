@@ -12,8 +12,8 @@
 2. Create deploy user (or use `root`); add SSH key used by GitHub Actions (`DEPLOY_SSH_KEY`).
 3. Clone repo to `DEPLOY_PATH` (e.g. `/root/your-academy`).
 4. Point DNS `A`/`AAAA` for your domain at the VPS (Cloudflare orange-cloud OK).
-5. **HTTP origin behind Cloudflare (recommended):** set `TLS_ENABLED=false`. `./scripts/deploy.sh` stacks `docker-compose.prod-http.yml` (Nginx **:80 only**, no certs on the VPS). In Cloudflare SSL/TLS set mode to **Flexible**. You may keep `COOKIE_SECURE=true` and `WEB_ORIGIN=https://…` so browsers on Cloudflare HTTPS still get Secure cookies. Skip TLS steps below and continue at step 8.
-6. Issue TLS certs when ready (Let’s Encrypt recommended):
+5. **Origin TLS behind Cloudflare (recommended, permanent):** issue Let’s Encrypt on the VPS (`certbot` DNS-01 via Cloudflare API token), set `TLS_ENABLED=true`, `TLS_CERTS_DIR=/etc/your-academy/certs`, `COOKIE_SECURE=true`, `WEB_ORIGIN=https://…`. Deploy uses `nginx.prod.conf` (:80 + :443). In Cloudflare SSL/TLS set mode to **Full (strict)**. Auto-renew: `certbot.timer` + `scripts/renew-tls-certs.sh` deploy hook.
+6. Issue TLS certs (Let’s Encrypt DNS-01 example):
 
 ```bash
 sudo apt install certbot
