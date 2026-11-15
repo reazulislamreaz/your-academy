@@ -1,20 +1,16 @@
-# Origin without Let's Encrypt: HTTP :80 + self-signed HTTPS :443 for Cloudflare Full.
+# Origin HTTP-only behind Cloudflare proxy (Flexible SSL — no certs on the VPS).
 #   docker compose -f docker/docker-compose.yml \
 #     -f docker/docker-compose.prod.yml \
 #     -f docker/docker-compose.prod-http.yml \
 #     --env-file .env.production up -d --build
 #
-# Set TLS_CERTS_DIR to the host cert directory (default ./docker/certs).
-# When ready for real certs, omit this file and use nginx.prod.conf.
-
-# Origin speaks HTTP/self-signed; keep COOKIE_SECURE / WEB_ORIGIN from .env.production
-# (Secure cookies + https:// origins when Cloudflare is in front).
+# Keep COOKIE_SECURE / WEB_ORIGIN as https://… so browsers using Cloudflare HTTPS
+# still get Secure cookies. Cloudflare terminates TLS; origin speaks plain HTTP :80.
+# When ready for origin TLS (Full / Full Strict), omit this file and use nginx.prod.conf.
 
 services:
   nginx:
     ports: !override
       - '80:80'
-      - '443:443'
     volumes: !override
       - ./nginx/nginx.prod-http.conf:/etc/nginx/nginx.conf:ro
-      - ${TLS_CERTS_DIR:-./certs}:/etc/nginx/certs:ro
