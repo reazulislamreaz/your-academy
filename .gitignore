@@ -67,3 +67,4 @@ docker/certbot-www/
 # Database dumps
 *.sql.gz
 *.dump
+.tmp/
