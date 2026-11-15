@@ -43,6 +43,13 @@ echo "==> Applying stack with health wait (reduces 502 window during recreate)"
 # --wait blocks until depends_on healthchecks pass; nginx only starts after api+web are healthy.
 "${COMPOSE[@]}" up -d --remove-orphans --wait --wait-timeout 240
 
+# Always bounce nginx last so it picks up fresh upstream DNS + certs after api/web recreate.
+if [[ "${TLS_ENABLED:-}" != "false" ]]; then
+  echo "==> Reloading nginx after healthy upstreams"
+  "${COMPOSE[@]}" up -d --no-deps --force-recreate --wait --wait-timeout 120 nginx || true
+  "${COMPOSE[@]}" exec -T nginx nginx -t
+fi
+
 echo "==> Waiting for API health (in-container; API is not published to the host)"
 for i in $(seq 1 60); do
   if "${COMPOSE[@]}" exec -T api node -e "fetch('http://127.0.0.1:5000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))" >/dev/null 2>&1; then
