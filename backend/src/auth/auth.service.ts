@@ -20,7 +20,11 @@ import { randomUUID } from 'node:crypto';
 import { AuditService } from '../audit/audit.service';
 import { newRequestId } from '../common/request-id';
 import { randomToken, sha256 } from '../common/utils/crypto';
-import { isValidWhatsapp, normalizeWhatsapp } from '../common/utils/whatsapp';
+import {
+  WHATSAPP_INVALID_MESSAGE,
+  isValidWhatsapp,
+  normalizeWhatsapp,
+} from '../common/utils/whatsapp';
 import { getJwtAccessSecret } from '../config/env';
 import { PrismaService } from '../database/prisma.service';
 import { LearningActivityService } from '../learning-activity/learning-activity.service';
@@ -50,7 +54,7 @@ export class AuthService {
     const whatsappNumber = normalizeWhatsapp(dto.whatsappNumber);
     if (!isValidWhatsapp(whatsappNumber)) {
       throw new UnprocessableEntityException(
-        createErrorResponse('VALIDATION_ERROR', 'Invalid WhatsApp number', newRequestId()),
+        createErrorResponse('VALIDATION_ERROR', WHATSAPP_INVALID_MESSAGE, newRequestId()),
       );
     }
 
@@ -93,6 +97,13 @@ export class AuthService {
 
   async login(dto: LoginDto) {
     const whatsappNumber = normalizeWhatsapp(dto.whatsappNumber);
+    // Same normalize path as register; invalid format still maps to generic credentials
+    // so we do not leak whether a number is registered.
+    if (!isValidWhatsapp(whatsappNumber)) {
+      throw new UnauthorizedException(
+        createErrorResponse('INVALID_CREDENTIALS', 'Invalid credentials', newRequestId()),
+      );
+    }
     const user = await this.prisma.user.findUnique({ where: { whatsappNumber } });
     if (!user || user.deletedAt || user.status !== UserStatus.ACTIVE) {
       throw new UnauthorizedException(

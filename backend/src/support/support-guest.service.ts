@@ -6,7 +6,11 @@ import {
 import { createErrorResponse } from '@your-academy/shared';
 import type { Request, Response } from 'express';
 import { randomToken, sha256 } from '../common/utils/crypto';
-import { isValidWhatsapp, normalizeWhatsapp } from '../common/utils/whatsapp';
+import {
+  WHATSAPP_INVALID_MESSAGE,
+  isValidWhatsapp,
+  normalizeWhatsapp,
+} from '../common/utils/whatsapp';
 import { newRequestId } from '../common/request-id';
 import { PrismaService } from '../database/prisma.service';
 import {
@@ -38,7 +42,7 @@ export class SupportGuestService {
     const whatsappNumber = normalizeWhatsapp(input.whatsappNumber);
     if (!isValidWhatsapp(whatsappNumber)) {
       throw new UnprocessableEntityException(
-        createErrorResponse('VALIDATION_ERROR', 'Invalid WhatsApp number', newRequestId()),
+        createErrorResponse('VALIDATION_ERROR', WHATSAPP_INVALID_MESSAGE, newRequestId()),
       );
     }
     const name = input.name.trim();

@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Surface } from '@/components/ui/surface';
 import { ApiError, apiFetch } from '@/lib/api/client';
+
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -35,13 +36,17 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="space-y-6">
-      <div>
+      <div className="motion-rise space-y-2">
         <h1 className="font-display text-3xl font-bold tracking-tight">Reset password</h1>
-        <p className="mt-2 text-sm leading-relaxed text-[var(--muted-strong)] sm:text-base">
+        <p className="text-sm leading-relaxed text-[var(--muted-strong)] sm:text-base">
           Enter the email on your account. If it matches, we send a reset link.
         </p>
       </div>
-      <Surface elevated className="p-6 sm:p-7">
+      <Surface
+        elevated
+        className="motion-rise ya-panel-shine p-6 shadow-[var(--shadow)] sm:p-7"
+        style={{ animationDelay: '60ms' }}
+      >
         {done ? (
           <Alert variant="success">
             If an account with that email exists, a reset link has been sent. Check your inbox — in
@@ -61,7 +66,7 @@ export default function ForgotPasswordPage() {
               />
             </Field>
             {error ? <Alert variant="danger">{error}</Alert> : null}
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="motion-press w-full" disabled={loading} loading={loading}>
               {loading ? 'Sending…' : 'Send reset link'}
             </Button>
           </form>

@@ -1,12 +1,11 @@
-/** Normalize to E.164-like form: leading +, digits only after. */
-export function normalizeWhatsapp(input: string): string {
-  const trimmed = input.trim().replace(/[\s\-()]/g, '');
-  if (trimmed.startsWith('+')) {
-    return `+${trimmed.slice(1).replace(/\D/g, '')}`;
-  }
-  return `+${trimmed.replace(/\D/g, '')}`;
-}
-
-export function isValidWhatsapp(normalized: string): boolean {
-  return /^\+[1-9]\d{7,14}$/.test(normalized);
-}
+/**
+ * Re-export shared BD WhatsApp helpers so auth, support, and tests
+ * stay on one normalization path (no duplicated rules).
+ */
+export {
+  BD_MOBILE_OPERATOR_PREFIXES,
+  WHATSAPP_INVALID_MESSAGE,
+  formatWhatsappHint,
+  isValidWhatsapp,
+  normalizeWhatsapp,
+} from '@your-academy/shared';

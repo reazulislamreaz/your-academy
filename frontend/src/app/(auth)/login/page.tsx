@@ -4,35 +4,52 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { isValidWhatsapp } from '@your-academy/shared';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Surface } from '@/components/ui/surface';
+import { LoginPageSkeleton } from '@/components/skeletons';
+import { AuthMobileTrialBanner } from '@/features/auth/auth-promo-panel';
+import { PasswordField } from '@/features/auth/password-field';
 import { postLoginPath } from '@/features/auth/post-login-path';
 import { meQueryKey } from '@/features/auth/use-auth';
+import {
+  WhatsappField,
+  toAuthWhatsappPayload,
+} from '@/features/auth/whatsapp-field';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import type { MeUser } from '@/lib/api/types';
-import { LoginPageSkeleton } from '@/components/skeletons';
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const qc = useQueryClient();
-  const [whatsappNumber, setWhatsapp] = useState('+880');
+  const [whatsappNumber, setWhatsapp] = useState('');
   const [password, setPassword] = useState('');
+  const [touchedWa, setTouchedWa] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
+    setTouchedWa(true);
     setError(null);
+
+    if (!isValidWhatsapp(whatsappNumber)) {
+      setError('Please enter a valid Bangladeshi WhatsApp number.');
+      return;
+    }
+
+    setLoading(true);
     try {
       const result = await apiFetch<{ user: MeUser }>('/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ whatsappNumber, password }),
+        body: JSON.stringify({
+          whatsappNumber: toAuthWhatsappPayload(whatsappNumber),
+          password,
+        }),
         skipRefresh: true,
       });
       qc.setQueryData(meQueryKey, result.user);
@@ -47,22 +64,34 @@ function LoginForm() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-3xl font-bold tracking-tight">Welcome back</h1>
-        <p className="mt-2 text-sm leading-relaxed text-[var(--muted-strong)] sm:text-base">
-          Sign in with your WhatsApp number.
+      <div className="motion-rise space-y-2">
+        <h1 className="font-display text-3xl font-bold tracking-tight text-[var(--ink)] sm:text-[2rem]">
+          Welcome Back
+        </h1>
+        <p className="text-sm leading-relaxed text-[var(--muted-strong)] sm:text-base">
+          Continue your journey towards exam success.
         </p>
       </div>
-      <Surface elevated className="p-6 sm:p-7">
-        <form onSubmit={onSubmit} className="space-y-4">
+
+      <AuthMobileTrialBanner className="lg:hidden" />
+
+      <Surface
+        elevated
+        className="motion-rise ya-panel-shine border-[var(--line)]/80 p-6 shadow-[var(--shadow)] sm:p-7"
+        style={{ animationDelay: '60ms' }}
+      >
+        <form onSubmit={onSubmit} className="space-y-4" noValidate>
           <Field>
             <Label htmlFor="whatsapp">WhatsApp number</Label>
-            <Input
+            <WhatsappField
               id="whatsapp"
               value={whatsappNumber}
-              onChange={(e) => setWhatsapp(e.target.value)}
+              onChange={(v) => {
+                setWhatsapp(v);
+                if (!touchedWa && v.trim().length >= 10) setTouchedWa(true);
+              }}
+              touched={touchedWa}
               autoComplete="username"
-              required
             />
           </Field>
           <Field>
@@ -70,14 +99,13 @@ function LoginForm() {
               <Label htmlFor="password">Password</Label>
               <Link
                 href="/forgot-password"
-                className="text-xs font-medium text-[var(--muted-strong)] hover:text-[var(--highlight)]"
+                className="text-xs font-medium text-[var(--muted-strong)] transition-colors hover:text-[var(--highlight)]"
               >
                 Forgot password?
               </Link>
             </div>
-            <Input
+            <PasswordField
               id="password"
-              type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
@@ -85,18 +113,19 @@ function LoginForm() {
             />
           </Field>
           {error ? <Alert variant="danger">{error}</Alert> : null}
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Signing in…' : 'Sign in'}
+          <Button type="submit" className="motion-press w-full" disabled={loading} loading={loading}>
+            {loading ? 'Signing in…' : 'Sign In'}
           </Button>
         </form>
       </Surface>
-      <p className="text-sm text-[var(--muted-strong)]">
-        New here?{' '}
+
+      <p className="motion-fade-in text-sm text-[var(--muted-strong)]" style={{ animationDelay: '120ms' }}>
+        New to Your Academy?{' '}
         <Link
           href="/register"
           className="font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
         >
-          Create account
+          Create Account
         </Link>
       </p>
     </div>
