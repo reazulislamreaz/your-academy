@@ -997,17 +997,130 @@ input:disabled {
   mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.85), transparent 92%);
 }
 
+/* Deep navy + brand wash so white copy stays readable over the photo */
+.auth-promo-overlay {
+  background:
+    linear-gradient(
+      115deg,
+      rgba(0, 22, 56, 0.92) 0%,
+      rgba(0, 32, 80, 0.78) 42%,
+      rgba(0, 28, 68, 0.72) 68%,
+      rgba(10, 24, 52, 0.86) 100%
+    ),
+    linear-gradient(180deg, rgba(0, 18, 48, 0.35) 0%, transparent 28%, rgba(0, 16, 40, 0.55) 100%),
+    radial-gradient(ellipse 55% 45% at 85% 15%, rgba(227, 30, 36, 0.22), transparent 60%);
+}
+
+.auth-promo-photo-wrap {
+  overflow: hidden;
+}
+
+.auth-promo-photo {
+  transform: scale(1.06);
+  transform-origin: center 35%;
+  will-change: transform;
+}
+
 .auth-promo-sheen {
   background:
     radial-gradient(ellipse 70% 50% at 15% 10%, rgba(255, 255, 255, 0.1), transparent 55%),
-    linear-gradient(165deg, transparent 40%, rgba(227, 30, 36, 0.06) 100%);
+    linear-gradient(165deg, transparent 40%, rgba(227, 30, 36, 0.08) 100%);
+}
+
+.auth-promo-spark {
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.45);
+  opacity: 0.55;
+}
+
+.auth-trial-chip {
+  position: relative;
+  isolation: isolate;
+}
+
+.auth-trial-chip::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(
+    120deg,
+    rgba(227, 30, 36, 0.45),
+    rgba(255, 255, 255, 0.12),
+    rgba(59, 111, 217, 0.35)
+  );
+  opacity: 0.55;
+  filter: blur(8px);
+}
+
+.auth-trial-badge {
+  overflow: visible;
+}
+
+.auth-trial-ring {
+  position: absolute;
+  inset: -4px;
+  border-radius: 0.65rem;
+  border: 1px solid rgba(227, 30, 36, 0.55);
+  opacity: 0;
+  pointer-events: none;
 }
 
 .auth-feature-card {
   transition:
     border-color var(--duration-fast) var(--ease-out),
     background-color var(--duration-fast) var(--ease-out),
-    transform var(--duration-fast) var(--ease-out);
+    transform var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+}
+
+@keyframes ya-auth-kenburns {
+  0% {
+    transform: scale(1.06) translate3d(0, 0, 0);
+  }
+  50% {
+    transform: scale(1.12) translate3d(-1.2%, -0.6%, 0);
+  }
+  100% {
+    transform: scale(1.06) translate3d(0, 0, 0);
+  }
+}
+
+@keyframes ya-auth-spark {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    opacity: 0.95;
+    transform: translate3d(0, -4px, 0) scale(1.15);
+  }
+}
+
+@keyframes ya-auth-trial-ring {
+  0% {
+    opacity: 0.65;
+    transform: scale(1);
+  }
+  70% {
+    opacity: 0;
+    transform: scale(1.35);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.35);
+  }
+}
+
+@keyframes ya-auth-trial-glow {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.85;
+  }
 }
 
 .auth-input {
@@ -1057,10 +1170,37 @@ input:disabled {
     animation: ya-auth-glow 10s ease-in-out infinite;
   }
 
+  .auth-promo-photo {
+    animation: ya-auth-kenburns 28s ease-in-out infinite;
+  }
+
+  .auth-promo-spark--a {
+    animation: ya-auth-spark 5.5s ease-in-out infinite;
+  }
+
+  .auth-promo-spark--b {
+    animation: ya-auth-spark 7s ease-in-out infinite 1.2s;
+  }
+
+  .auth-promo-spark--c {
+    animation: ya-auth-spark 6.2s ease-in-out infinite 2.4s;
+  }
+
+  .auth-trial-chip::before {
+    animation: ya-auth-trial-glow 4.5s ease-in-out infinite;
+  }
+
+  .auth-trial-ring {
+    animation: ya-auth-trial-ring 2.8s ease-out infinite;
+  }
+
   .auth-feature-card:hover {
-    border-color: rgba(255, 255, 255, 0.22);
-    background-color: rgba(255, 255, 255, 0.1);
-    transform: translateY(-1px);
+    border-color: rgba(255, 255, 255, 0.28);
+    background-color: rgba(255, 255, 255, 0.14);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.12),
+      0 10px 28px rgba(0, 16, 40, 0.28);
+    transform: translateY(-2px);
   }
 
   .auth-form-enter {
@@ -1084,8 +1224,22 @@ input:disabled {
 @media (prefers-reduced-motion: reduce) {
   .auth-orb-drift,
   .auth-promo-sheen,
+  .auth-promo-photo,
+  .auth-promo-spark--a,
+  .auth-promo-spark--b,
+  .auth-promo-spark--c,
+  .auth-trial-chip::before,
+  .auth-trial-ring,
   .auth-form-enter {
     animation: none !important;
+  }
+
+  .auth-promo-photo {
+    transform: scale(1.04);
+  }
+
+  .auth-trial-ring {
+    opacity: 0;
   }
 
   .auth-feature-card:hover {
