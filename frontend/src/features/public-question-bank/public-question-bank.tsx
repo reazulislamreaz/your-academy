@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ListCardSkeleton, LoadError } from '@/components/loading';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
@@ -19,28 +19,77 @@ import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import { cn } from '@/lib/utils';
 
 type Props = {
-  initialQ?: string;
-  initialSubcategoryId?: string;
-  initialYear?: string;
   className?: string;
 };
 
 const filterControlClass =
   'min-h-12 min-w-0 rounded-full border-[var(--line)] bg-[var(--bg-muted)] px-4 py-2 leading-normal shadow-none';
 
+function buildBankHref(
+  pathname: string,
+  next: {
+    q?: string;
+    categoryId?: string;
+    subcategoryId?: string;
+    year?: string;
+  },
+): string {
+  const sp = new URLSearchParams();
+  if (next.q) sp.set('q', next.q);
+  if (next.categoryId) sp.set('categoryId', next.categoryId);
+  if (next.subcategoryId) sp.set('subcategoryId', next.subcategoryId);
+  if (next.year) sp.set('year', next.year);
+  const qs = sp.toString();
+  return qs ? `${pathname}?${qs}` : pathname;
+}
+
 /** Preli landing: Exam Sets only (name + upload date). Questions live on the set page. */
-export function PublicQuestionBank({
-  initialQ = '',
-  initialSubcategoryId = '',
-  initialYear = '',
-  className,
-}: Props) {
+export function PublicQuestionBank({ className }: Props) {
   const router = useRouter();
   const pathname = usePathname();
-  const [qInput, setQInput] = useState(initialQ);
-  const [subcategoryId, setSubcategoryId] = useState(initialSubcategoryId);
-  const [year, setYear] = useState(initialYear);
-  const q = useDebouncedValue(qInput.trim(), 350);
+  const searchParams = useSearchParams();
+
+  // URL is the source of truth for applied filters (category/topic links, back/forward, refresh).
+  const appliedQ = searchParams.get('q') ?? '';
+  const appliedCategoryId = searchParams.get('categoryId') ?? '';
+  const appliedSubcategoryId = searchParams.get('subcategoryId') ?? '';
+  const appliedYear = searchParams.get('year') ?? '';
+
+  const [qInput, setQInput] = useState(appliedQ);
+  const debouncedQ = useDebouncedValue(qInput.trim(), 350);
+  const skipSearchUrlWrite = useRef(false);
+
+  // Keep the search box aligned when navigation changes `q` (or clears it).
+  useEffect(() => {
+    skipSearchUrlWrite.current = true;
+    setQInput(appliedQ);
+  }, [appliedQ]);
+
+  // Debounced search → URL (preserve category / subcategory / year).
+  useEffect(() => {
+    if (skipSearchUrlWrite.current) {
+      skipSearchUrlWrite.current = false;
+      return;
+    }
+    if (debouncedQ === appliedQ) return;
+    router.replace(
+      buildBankHref(pathname, {
+        q: debouncedQ || undefined,
+        categoryId: appliedCategoryId || undefined,
+        subcategoryId: appliedSubcategoryId || undefined,
+        year: appliedYear || undefined,
+      }),
+      { scroll: false },
+    );
+  }, [
+    debouncedQ,
+    appliedQ,
+    appliedCategoryId,
+    appliedSubcategoryId,
+    appliedYear,
+    pathname,
+    router,
+  ]);
 
   const categories = useQuery({
     queryKey: ['categories'],
@@ -57,13 +106,14 @@ export function PublicQuestionBank({
   /** Flat subcategory list (category dropdown removed; search covers category names). */
   const subcategoryOptions = useMemo(() => {
     const roots = categories.data ?? [];
-    const items: Array<{ id: string; name: string; label: string }> = [];
+    const items: Array<{ id: string; name: string; label: string; parentId: string }> = [];
     for (const root of roots) {
       for (const child of root.children ?? []) {
         items.push({
           id: child.id,
           name: child.name,
           label: `${root.name} · ${child.name}`,
+          parentId: root.id,
         });
       }
     }
@@ -73,8 +123,8 @@ export function PublicQuestionBank({
   }, [categories.data]);
 
   const selectedSubcategory = useMemo(
-    () => subcategoryOptions.find((s) => s.id === subcategoryId) ?? null,
-    [subcategoryOptions, subcategoryId],
+    () => subcategoryOptions.find((s) => s.id === appliedSubcategoryId) ?? null,
+    [subcategoryOptions, appliedSubcategoryId],
   );
 
   const yearOptions = useMemo(() => {
@@ -84,60 +134,100 @@ export function PublicQuestionBank({
     );
   }, [yearsQ.data]);
 
-  // Drop invalid subcategory once catalog loads.
+  // Drop invalid subcategory once catalog loads (keeps shareable URLs honest).
   useEffect(() => {
     if (categories.isLoading || categories.isError) return;
-    if (subcategoryId && subcategoryOptions.length > 0 && !selectedSubcategory) {
-      setSubcategoryId('');
+    if (
+      appliedSubcategoryId &&
+      subcategoryOptions.length > 0 &&
+      !selectedSubcategory
+    ) {
+      router.replace(
+        buildBankHref(pathname, {
+          q: appliedQ || undefined,
+          categoryId: appliedCategoryId || undefined,
+          year: appliedYear || undefined,
+        }),
+        { scroll: false },
+      );
     }
   }, [
     categories.isLoading,
     categories.isError,
-    subcategoryId,
+    appliedSubcategoryId,
     subcategoryOptions.length,
     selectedSubcategory,
+    appliedQ,
+    appliedCategoryId,
+    appliedYear,
+    pathname,
+    router,
   ]);
 
-  // Drop invalid year once catalog loads.
   useEffect(() => {
     if (yearsQ.isLoading || yearsQ.isError) return;
-    if (year && yearOptions.length > 0 && !yearOptions.includes(year)) {
-      setYear('');
+    if (appliedYear && yearOptions.length > 0 && !yearOptions.includes(appliedYear)) {
+      router.replace(
+        buildBankHref(pathname, {
+          q: appliedQ || undefined,
+          categoryId: appliedCategoryId || undefined,
+          subcategoryId: appliedSubcategoryId || undefined,
+        }),
+        { scroll: false },
+      );
     }
-  }, [yearsQ.isLoading, yearsQ.isError, year, yearOptions]);
-
-  // Sync shareable URL with active filters.
-  useEffect(() => {
-    const sp = new URLSearchParams();
-    if (q) sp.set('q', q);
-    if (subcategoryId) sp.set('subcategoryId', subcategoryId);
-    if (year) sp.set('year', year);
-    const next = sp.toString() ? `${pathname}?${sp}` : pathname;
-    router.replace(next, { scroll: false });
-  }, [q, subcategoryId, year, pathname, router]);
+  }, [
+    yearsQ.isLoading,
+    yearsQ.isError,
+    appliedYear,
+    yearOptions,
+    appliedQ,
+    appliedCategoryId,
+    appliedSubcategoryId,
+    pathname,
+    router,
+  ]);
 
   const list = useInfiniteQuery({
-    queryKey: ['public-question-sets', q, subcategoryId, year],
+    queryKey: [
+      'public-question-sets',
+      appliedQ,
+      appliedCategoryId,
+      appliedSubcategoryId,
+      appliedYear,
+    ],
     initialPageParam: undefined as string | undefined,
     queryFn: ({ pageParam }) =>
       listPublicQuestionSets({
         cursor: pageParam,
         limit: 20,
-        q: q || undefined,
-        subcategoryId: subcategoryId || undefined,
-        year: year || undefined,
+        q: appliedQ || undefined,
+        categoryId: appliedCategoryId || undefined,
+        subcategoryId: appliedSubcategoryId || undefined,
+        year: appliedYear || undefined,
       }),
     getNextPageParam: (last) => last.pagination?.nextCursor ?? undefined,
   });
 
   const sets = list.data?.pages.flatMap((p) => p.data) ?? [];
   const total = list.data?.pages[0]?.pagination?.total;
-  const hasFilters = Boolean(q || subcategoryId || year);
+  const hasFilters = Boolean(
+    appliedQ || appliedCategoryId || appliedSubcategoryId || appliedYear,
+  );
+
+  const replaceFilters = (next: {
+    q?: string;
+    categoryId?: string;
+    subcategoryId?: string;
+    year?: string;
+  }) => {
+    router.replace(buildBankHref(pathname, next), { scroll: false });
+  };
 
   const clearFilters = () => {
+    skipSearchUrlWrite.current = true;
     setQInput('');
-    setSubcategoryId('');
-    setYear('');
+    router.replace(pathname, { scroll: false });
   };
 
   return (
@@ -152,6 +242,14 @@ export function PublicQuestionBank({
               aria-label="Search collections by title, category, or subcategory"
               variant="pill"
               className="min-w-0 flex-1"
+              onClear={() => {
+                skipSearchUrlWrite.current = true;
+                replaceFilters({
+                  categoryId: appliedCategoryId || undefined,
+                  subcategoryId: appliedSubcategoryId || undefined,
+                  year: appliedYear || undefined,
+                });
+              }}
             />
 
             <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:shrink-0">
@@ -160,13 +258,21 @@ export function PublicQuestionBank({
               </label>
               <Select
                 id="preli-subcategory"
-                value={subcategoryId}
-                onChange={(e) => setSubcategoryId(e.target.value)}
+                value={appliedSubcategoryId}
+                onChange={(e) => {
+                  const subcategoryId = e.target.value;
+                  replaceFilters({
+                    q: appliedQ || undefined,
+                    // Subcategory is more specific than a root category filter.
+                    subcategoryId: subcategoryId || undefined,
+                    year: appliedYear || undefined,
+                  });
+                }}
                 disabled={categories.isLoading}
                 className={cn(
                   filterControlClass,
                   'flex-1 sm:min-w-[12rem] lg:w-[16rem] lg:flex-none',
-                  subcategoryId &&
+                  appliedSubcategoryId &&
                     'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]',
                 )}
                 aria-label="Filter by subcategory"
@@ -184,13 +290,22 @@ export function PublicQuestionBank({
               </label>
               <Select
                 id="preli-year"
-                value={year}
-                onChange={(e) => setYear(e.target.value)}
+                value={appliedYear}
+                onChange={(e) => {
+                  const year = e.target.value;
+                  replaceFilters({
+                    q: appliedQ || undefined,
+                    categoryId: appliedCategoryId || undefined,
+                    subcategoryId: appliedSubcategoryId || undefined,
+                    year: year || undefined,
+                  });
+                }}
                 disabled={yearsQ.isLoading}
                 className={cn(
                   filterControlClass,
                   'flex-1 sm:min-w-[9rem] lg:w-[11rem] lg:flex-none',
-                  year && 'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]',
+                  appliedYear &&
+                    'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]',
                 )}
                 aria-label="Filter by exam year"
               >
@@ -222,7 +337,7 @@ export function PublicQuestionBank({
                 ? 'Updating…'
                 : `${total} collection${total === 1 ? '' : 's'}`}
               {selectedSubcategory ? ` · ${selectedSubcategory.name}` : ''}
-              {year ? ` · ${year}` : ''}
+              {appliedYear ? ` · ${appliedYear}` : ''}
             </p>
           ) : null}
         </div>

@@ -30,26 +30,34 @@ function AppHeaderInner() {
   );
   const debouncedQ = useDebouncedValue(query.trim(), 350);
   const skipNav = useRef(true);
+  const wasOnQuestions = useRef(onQuestions);
+  const lastSyncedUrlQ = useRef<string | null>(
+    onQuestions ? (searchParams.get('q') ?? '') : null,
+  );
   const searchRef = useRef<HTMLInputElement>(null);
   const inverseLogo = theme === 'dark';
 
+  // Entering/leaving /questions: sync or clear header search so filters don't leak.
   useEffect(() => {
-    if (!onQuestions) return;
-    const urlQ = searchParams.get('q') ?? '';
-    if (urlQ !== debouncedQ) {
+    if (wasOnQuestions.current && !onQuestions) {
       skipNav.current = true;
-      setQuery(urlQ);
+      setQuery('');
+      lastSyncedUrlQ.current = null;
+    } else if (onQuestions) {
+      const urlQ = searchParams.get('q') ?? '';
+      if (!wasOnQuestions.current || lastSyncedUrlQ.current !== urlQ) {
+        skipNav.current = true;
+        setQuery(urlQ);
+        lastSyncedUrlQ.current = urlQ;
+      }
     }
-  }, [onQuestions, searchParams, debouncedQ]);
-
+    wasOnQuestions.current = onQuestions;
+  }, [onQuestions, searchParams]);
   useEffect(() => {
     if (skipNav.current) {
       skipNav.current = false;
       return;
     }
-    const href = debouncedQ
-      ? `/questions?q=${encodeURIComponent(debouncedQ)}`
-      : '/questions';
     if (onQuestions) {
       const current = searchParams.get('q') ?? '';
       if (current === debouncedQ) return;
@@ -61,11 +69,11 @@ function AppHeaderInner() {
       router.replace(qs ? `/questions?${qs}` : '/questions', { scroll: false });
       return;
     }
+    // Off-questions: only navigate when the user intentionally types a new query.
     if (debouncedQ) {
-      router.push(href);
+      router.push(`/questions?q=${encodeURIComponent(debouncedQ)}`);
     }
   }, [debouncedQ, onQuestions, router, searchParams]);
-
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const meta = e.metaKey || e.ctrlKey;

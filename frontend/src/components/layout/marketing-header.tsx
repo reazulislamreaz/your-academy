@@ -93,44 +93,58 @@ function MarketingHeaderInner() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const me = useMe();
+  const onBank = pathname.startsWith('/preli-question-bank');
   const [query, setQuery] = useState(() =>
-    pathname.startsWith('/preli-question-bank') ? (searchParams.get('q') ?? '') : '',
+    onBank ? (searchParams.get('q') ?? '') : '',
   );
   const debouncedQ = useDebouncedValue(query.trim(), 350);
   const skipNav = useRef(true);
+  const wasOnBank = useRef(onBank);
+  const lastSyncedUrlQ = useRef<string | null>(onBank ? (searchParams.get('q') ?? '') : null);
 
   const dashboardHref = me.data ? defaultPathForRole(me.data.role) : null;
   const activeId = resolveActiveMarketingNavId(pathname, searchParams.toString());
-  const onBank = pathname.startsWith('/preli-question-bank');
 
+  // Entering/leaving the bank: sync or clear header search so filters don't leak.
   useEffect(() => {
-    if (!onBank) return;
-    const urlQ = searchParams.get('q') ?? '';
-    if (urlQ !== debouncedQ) {
+    if (wasOnBank.current && !onBank) {
       skipNav.current = true;
-      setQuery(urlQ);
+      setQuery('');
+      lastSyncedUrlQ.current = null;
+    } else if (onBank) {
+      const urlQ = searchParams.get('q') ?? '';
+      if (!wasOnBank.current || lastSyncedUrlQ.current !== urlQ) {
+        skipNav.current = true;
+        setQuery(urlQ);
+        lastSyncedUrlQ.current = urlQ;
+      }
     }
-  }, [onBank, searchParams, debouncedQ]);
+    wasOnBank.current = onBank;
+  }, [onBank, searchParams]);
 
   useEffect(() => {
     if (skipNav.current) {
       skipNav.current = false;
       return;
     }
-    const href = debouncedQ
-      ? `/preli-question-bank?q=${encodeURIComponent(debouncedQ)}`
-      : '/preli-question-bank';
     if (onBank) {
       const current = searchParams.get('q') ?? '';
       if (current === debouncedQ) return;
-      router.replace(href, { scroll: false });
+      // Preserve category / subcategory / year while updating header search.
+      const sp = new URLSearchParams(searchParams.toString());
+      if (debouncedQ) sp.set('q', debouncedQ);
+      else sp.delete('q');
+      const qs = sp.toString();
+      router.replace(qs ? `/preli-question-bank?${qs}` : '/preli-question-bank', {
+        scroll: false,
+      });
       return;
     }
+    // Off-bank: only navigate when the user intentionally types a new query.
     if (debouncedQ) {
-      router.push(href);
+      router.push(`/preli-question-bank?q=${encodeURIComponent(debouncedQ)}`);
     }
   }, [debouncedQ, onBank, router, searchParams]);
-
   return (
     <header
       className="ya-glass sticky top-0 z-30 border-b border-[var(--glass-border)] bg-[var(--glass-bg)] pt-[env(safe-area-inset-top,0px)]"

@@ -15,16 +15,35 @@ type Props = {
   categories: CategoryNode[];
 };
 
+function buildHref(next: {
+  q: string;
+  categoryId: string;
+  subcategoryId: string;
+  difficulty: string;
+  examTag: string;
+}): string {
+  const sp = new URLSearchParams();
+  if (next.q) sp.set('q', next.q);
+  if (next.categoryId) sp.set('categoryId', next.categoryId);
+  if (next.subcategoryId) sp.set('subcategoryId', next.subcategoryId);
+  if (next.difficulty) sp.set('difficulty', next.difficulty);
+  if (next.examTag) sp.set('examTag', next.examTag);
+  return sp.toString() ? `/questions?${sp.toString()}` : '/questions';
+}
+
 export function QuestionFilters({ categories }: Props) {
   const router = useRouter();
   const params = useSearchParams();
   const [pending, startTransition] = useTransition();
 
-  const [q, setQ] = useState(params.get('q') ?? '');
-  const [categoryId, setCategoryId] = useState(params.get('categoryId') ?? '');
-  const [subcategoryId, setSubcategoryId] = useState(params.get('subcategoryId') ?? '');
-  const [difficulty, setDifficulty] = useState(params.get('difficulty') ?? '');
-  const [examTag, setExamTag] = useState(params.get('examTag') ?? '');
+  // Applied filters come from the URL (links, back/forward, refresh).
+  const appliedQ = params.get('q') ?? '';
+  const categoryId = params.get('categoryId') ?? '';
+  const subcategoryId = params.get('subcategoryId') ?? '';
+  const difficulty = params.get('difficulty') ?? '';
+  const examTag = params.get('examTag') ?? '';
+
+  const [q, setQ] = useState(appliedQ);
   const debouncedQ = useDebouncedValue(q.trim(), 350);
   const skipUrlPush = useRef(false);
 
@@ -35,83 +54,67 @@ export function QuestionFilters({ categories }: Props) {
 
   const advancedActive = Boolean(categoryId || subcategoryId || difficulty || examTag);
 
-  function buildHref(next: {
-    q: string;
-    categoryId: string;
-    subcategoryId: string;
-    difficulty: string;
-    examTag: string;
-  }): string {
-    const sp = new URLSearchParams();
-    if (next.q) sp.set('q', next.q);
-    if (next.categoryId) sp.set('categoryId', next.categoryId);
-    if (next.subcategoryId) sp.set('subcategoryId', next.subcategoryId);
-    if (next.difficulty) sp.set('difficulty', next.difficulty);
-    if (next.examTag) sp.set('examTag', next.examTag);
-    return sp.toString() ? `/questions?${sp.toString()}` : '/questions';
-  }
-
-  // Sync local state from URL (browser back / external navigation).
+  // Keep the search box aligned when navigation changes `q`.
   useEffect(() => {
-    const urlQ = params.get('q') ?? '';
-    const urlCategoryId = params.get('categoryId') ?? '';
-    const urlSubcategoryId = params.get('subcategoryId') ?? '';
-    const urlDifficulty = params.get('difficulty') ?? '';
-    const urlExamTag = params.get('examTag') ?? '';
+    skipUrlPush.current = true;
+    setQ(appliedQ);
+  }, [appliedQ]);
 
-    setCategoryId(urlCategoryId);
-    setSubcategoryId(urlSubcategoryId);
-    setDifficulty(urlDifficulty);
-    setExamTag(urlExamTag);
-    // Avoid wiping in-progress typing when URL lags behind debounce.
-    if (urlQ !== debouncedQ) {
-      skipUrlPush.current = true;
-      setQ(urlQ);
-    }
-  }, [params, debouncedQ]);
-
-  // Auto-apply debounced search + filters to the URL (resets list pagination via remount/query key).
+  // Debounced search → URL (preserve other filters).
   useEffect(() => {
     if (skipUrlPush.current) {
       skipUrlPush.current = false;
       return;
     }
-
-    const next = {
-      q: debouncedQ,
-      categoryId,
-      subcategoryId,
-      difficulty,
-      examTag,
-    };
-    const current = {
-      q: params.get('q') ?? '',
-      categoryId: params.get('categoryId') ?? '',
-      subcategoryId: params.get('subcategoryId') ?? '',
-      difficulty: params.get('difficulty') ?? '',
-      examTag: params.get('examTag') ?? '',
-    };
-    if (
-      current.q === next.q &&
-      current.categoryId === next.categoryId &&
-      current.subcategoryId === next.subcategoryId &&
-      current.difficulty === next.difficulty &&
-      current.examTag === next.examTag
-    ) {
-      return;
-    }
+    if (debouncedQ === appliedQ) return;
 
     startTransition(() => {
-      router.push(buildHref(next));
+      router.push(
+        buildHref({
+          q: debouncedQ,
+          categoryId,
+          subcategoryId,
+          difficulty,
+          examTag,
+        }),
+      );
     });
-  }, [debouncedQ, categoryId, subcategoryId, difficulty, examTag, params, router]);
+  }, [
+    debouncedQ,
+    appliedQ,
+    categoryId,
+    subcategoryId,
+    difficulty,
+    examTag,
+    router,
+  ]);
+
+  function pushFilters(next: {
+    q?: string;
+    categoryId?: string;
+    subcategoryId?: string;
+    difficulty?: string;
+    examTag?: string;
+  }) {
+    startTransition(() => {
+      router.push(
+        buildHref({
+          q: next.q ?? appliedQ,
+          categoryId: next.categoryId ?? '',
+          subcategoryId: next.subcategoryId ?? '',
+          difficulty: next.difficulty ?? '',
+          examTag: next.examTag ?? '',
+        }),
+      );
+    });
+  }
 
   function clearAll() {
+    skipUrlPush.current = true;
     setQ('');
-    setCategoryId('');
-    setSubcategoryId('');
-    setDifficulty('');
-    setExamTag('');
+    startTransition(() => {
+      router.push('/questions');
+    });
   }
 
   const fieldProps = {
@@ -121,10 +124,38 @@ export function QuestionFilters({ categories }: Props) {
     subcategoryId,
     difficulty,
     examTag,
-    setCategoryId,
-    setSubcategoryId,
-    setDifficulty,
-    setExamTag,
+    setCategoryId: (value: string) =>
+      pushFilters({
+        q: appliedQ,
+        categoryId: value,
+        subcategoryId: '',
+        difficulty,
+        examTag,
+      }),
+    setSubcategoryId: (value: string) =>
+      pushFilters({
+        q: appliedQ,
+        categoryId,
+        subcategoryId: value,
+        difficulty,
+        examTag,
+      }),
+    setDifficulty: (value: string) =>
+      pushFilters({
+        q: appliedQ,
+        categoryId,
+        subcategoryId,
+        difficulty: value,
+        examTag,
+      }),
+    setExamTag: (value: string) =>
+      pushFilters({
+        q: appliedQ,
+        categoryId,
+        subcategoryId,
+        difficulty,
+        examTag: value,
+      }),
   };
 
   return (
@@ -139,6 +170,16 @@ export function QuestionFilters({ categories }: Props) {
             placeholder="Search by title or content…"
             aria-label="Search questions by title or content"
             disabled={pending}
+            onClear={() => {
+              skipUrlPush.current = true;
+              pushFilters({
+                q: '',
+                categoryId,
+                subcategoryId,
+                difficulty,
+                examTag,
+              });
+            }}
           />
         </Field>
         <Button
@@ -206,7 +247,6 @@ function AdvancedFields({
           value={categoryId}
           onChange={(e) => {
             setCategoryId(e.target.value);
-            setSubcategoryId('');
           }}
         >
           <option value="">All</option>
