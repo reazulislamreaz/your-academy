@@ -15,6 +15,10 @@ export class ConfirmUploadDto {
   resourceType?: 'image' | 'raw';
 
   @IsOptional()
+  @IsIn(['upload', 'authenticated', 'private'])
+  deliveryType?: 'upload' | 'authenticated' | 'private';
+
+  @IsOptional()
   @IsInt()
   @Min(0)
   bytes?: number;
@@ -43,4 +47,9 @@ export class ConfirmUploadDto {
   @IsString()
   @MaxLength(255)
   originalFilename?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  etag?: string;
 }

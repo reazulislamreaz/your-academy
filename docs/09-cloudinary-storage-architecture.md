@@ -41,9 +41,11 @@ interface StorageService {
 
 1. Authenticated client calls `POST /storage/sign-upload` with `purpose` (`avatar` \| `question-image` \| `news-cover` \| `homepage-hero` \| `homepage-tile-logo` \| `pdf` \| `support-attachment`)
 2. API checks role + purpose permissions; returns time-limited signature, folder, resource_type, constraints
-3. Client uploads directly to Cloudinary
-4. Client calls `POST /storage/confirm` with returned public_id + etag/bytes
-5. API verifies asset exists via Admin API / head metadata; writes `MediaAsset`
+3. Client uploads **directly to Cloudinary** (browser → CDN edge). PDFs **> 8 MB** use Cloudinary **chunked** upload (`Content-Range` + `X-Unique-Upload-Id`, 6 MB chunks). Smaller files use a single XHR POST with upload progress events.
+4. Client calls `POST /storage/confirm` with returned `public_id`, `bytes`, `deliveryType`, optional `etag`
+5. API verifies the asset with a **targeted** Admin API lookup (preferred delivery type first, short propagation retries, narrow fallbacks) and writes `MediaAsset` — avoids a multi-type fan-out that previously delayed large PDF confirms
+
+**Why this is fast:** file bytes never transit the Nest/Nginx hop; progress is measured on the Cloudinary transfer; confirm does O(1) metadata checks instead of sequential wrong-type Admin calls.
 
 ### Alternative: Server-side upload
 

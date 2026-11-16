@@ -66,5 +66,6 @@ export type AdminDocumentItem = {
   isPublished: boolean;
   category?: { id: string; name: string } | null;
   mediaAsset?: { originalFilename?: string | null; mimeType: string; bytes: number } | null;
+  createdAt?: string;
   updatedAt: string;
 };

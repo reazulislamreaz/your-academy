@@ -16,10 +16,25 @@ import {
   HOMEPAGE_TILE_LOGO_EAGER,
   HOMEPAGE_TILE_LOGO_MAX_BYTES,
   HOMEPAGE_TILE_LOGO_MIMES,
+  IMAGE_MAX_BYTES,
+  PDF_MAX_BYTES,
   SUPPORT_ATTACHMENT_MAX_BYTES,
   SUPPORT_ATTACHMENT_MIMES,
   UPLOAD_PURPOSES,
 } from './storage.types';
+
+type CloudinaryResource = {
+  bytes?: number;
+  format?: string;
+  width?: number;
+  height?: number;
+  type?: string;
+  resource_type?: string;
+  etag?: string;
+};
+
+const CONFIRM_LOOKUP_ATTEMPTS = 3;
+const CONFIRM_LOOKUP_BACKOFF_MS = 120;
 
 @Injectable()
 export class StorageService {
@@ -141,16 +156,15 @@ export class StorageService {
       | 'image'
       | 'raw';
 
-    let remote: {
-      bytes?: number;
-      format?: string;
-      width?: number;
-      height?: number;
-      resource_type?: string;
-      type?: string;
-    };
+    const preferredDelivery =
+      input.deliveryType ??
+      (purpose === 'pdf' || purpose === 'avatar' || purpose === 'support-attachment'
+        ? 'authenticated'
+        : 'upload');
+
+    let remote: CloudinaryResource;
     try {
-      remote = await this.fetchCloudinaryResource(input.publicId, resourceType, purpose);
+      remote = await this.fetchCloudinaryResource(input.publicId, resourceType, preferredDelivery);
     } catch (err) {
       this.logger.warn(`Cloudinary confirm failed for ${input.publicId}: ${String(err)}`);
       throw new BadRequestException(
@@ -383,9 +397,14 @@ export class StorageService {
       );
     }
     const resourceType = (input.resourceType ?? 'raw') as 'image' | 'raw';
-    let remote: { bytes?: number; format?: string; width?: number; height?: number; type?: string };
+    const preferredDelivery = input.deliveryType ?? 'authenticated';
+    let remote: CloudinaryResource;
     try {
-      remote = await this.fetchCloudinaryResource(input.publicId, resourceType, purpose);
+      remote = await this.fetchCloudinaryResource(
+        input.publicId,
+        resourceType,
+        preferredDelivery,
+      );
     } catch (err) {
       this.logger.warn(`Cloudinary confirm failed for ${input.publicId}: ${String(err)}`);
       throw new BadRequestException(
@@ -426,48 +445,65 @@ export class StorageService {
   }
 
   /**
-   * Authenticated/private assets require `type` on Admin API lookups.
-   * Try delivery-aware options first, then fall back.
+   * Fast Admin API lookup: preferred delivery + exact/stripped publicId first,
+   * short retries only for post-upload propagation, then narrow delivery
+   * fallbacks. Replaces the previous 2×5 sequential fan-out that dominated
+   * confirm latency after large PDF uploads.
    */
   private async fetchCloudinaryResource(
     publicId: string,
     resourceType: 'image' | 'raw',
-    purpose: UploadPurpose,
-  ): Promise<{
-    bytes?: number;
-    format?: string;
-    width?: number;
-    height?: number;
-    type?: string;
-    resource_type?: string;
-  }> {
-    const preferredType =
-      purpose === 'pdf' || purpose === 'avatar' || purpose === 'support-attachment'
-        ? 'authenticated'
-        : 'upload';
-    const attempts: Array<{ resource_type: 'image' | 'raw'; type?: string }> = [
-      { resource_type: resourceType, type: preferredType },
-      { resource_type: resourceType },
-      { resource_type: resourceType, type: 'upload' },
-      { resource_type: resourceType, type: 'authenticated' },
-      { resource_type: resourceType, type: 'private' },
-    ];
-    // Also try without file extension — Cloudinary Admin API sometimes stores raw
-    // public_ids without the uploaded filename extension.
-    const ids = publicId.includes('.')
-      ? [publicId, publicId.replace(/\.[^./]+$/, '')]
-      : [publicId];
+    preferredDelivery: 'upload' | 'authenticated' | 'private',
+  ): Promise<CloudinaryResource> {
+    const stripped = publicId.includes('.')
+      ? publicId.replace(/\.[^./]+$/, '')
+      : null;
+    const preferredIds = stripped && stripped !== publicId ? [publicId, stripped] : [publicId];
 
     let lastErr: unknown;
-    for (const id of ids) {
-      for (const opts of attempts) {
+
+    // 1) Preferred delivery — exact id, then extension-stripped (no backoff yet).
+    for (const id of preferredIds) {
+      try {
+        return await cloudinary.api.resource(id, {
+          resource_type: resourceType,
+          type: preferredDelivery,
+        });
+      } catch (err) {
+        lastErr = err;
+      }
+    }
+
+    // 2) Brief retries for Admin API eventual consistency right after upload.
+    for (let attempt = 1; attempt < CONFIRM_LOOKUP_ATTEMPTS; attempt++) {
+      await sleep(CONFIRM_LOOKUP_BACKOFF_MS * attempt);
+      try {
+        return await cloudinary.api.resource(publicId, {
+          resource_type: resourceType,
+          type: preferredDelivery,
+        });
+      } catch (err) {
+        lastErr = err;
+      }
+    }
+
+    // 3) Last resort: other delivery types (rarely needed when client sends deliveryType).
+    const otherTypes = uniqueStrings(['upload', 'authenticated', 'private']).filter(
+      (t) => t !== preferredDelivery,
+    );
+    for (const id of preferredIds) {
+      for (const type of otherTypes) {
         try {
-          return await cloudinary.api.resource(id, opts);
+          return await cloudinary.api.resource(id, {
+            resource_type: resourceType,
+            type,
+          });
         } catch (err) {
           lastErr = err;
         }
       }
     }
+
     throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
   }
 
@@ -510,8 +546,8 @@ export class StorageService {
         : purpose === 'homepage-tile-logo'
           ? HOMEPAGE_TILE_LOGO_MAX_BYTES
           : purpose === 'pdf'
-            ? 40 * 1024 * 1024
-            : 8 * 1024 * 1024;
+            ? PDF_MAX_BYTES
+            : IMAGE_MAX_BYTES;
     if (!Number.isFinite(bytes) || bytes < 1 || bytes > max) {
       throw new BadRequestException(
         createErrorResponse(
@@ -522,4 +558,12 @@ export class StorageService {
       );
     }
   }
+}
+
+function uniqueStrings(values: string[]): string[] {
+  return [...new Set(values)];
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

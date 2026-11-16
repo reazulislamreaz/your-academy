@@ -1,14 +1,11 @@
 'use client';
 
-import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
-import { ExternalLink, Pencil, Replace } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { FileUp, Replace } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 import { Alert } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ConfirmButton } from '@/components/ui/confirm-button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FormDialog } from '@/components/ui/form-dialog';
 import { Input } from '@/components/ui/input';
@@ -17,16 +14,24 @@ import { LoadMoreButton } from '@/components/ui/load-more-button';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { ContentIn } from '@/components/ui/skeleton';
+import { ProgressBar } from '@/components/loading/progress-bar';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import type { AdminDocumentItem } from '@/lib/api/admin-types';
 import type { CategoryNode } from '@/lib/api/types';
-import { getStorageStatus, uploadViaSignedRequest } from '@/lib/cloudinary-upload';
+import {
+  getStorageStatus,
+  uploadViaSignedRequest,
+  type UploadProgress,
+} from '@/lib/cloudinary-upload';
 import { AdminDocumentsPageSkeleton } from '@/components/skeletons';
 import { useCursorList } from '@/lib/hooks/use-cursor-list';
-import { AdminFormPanel, AdminPage, AdminSection } from '@/components/admin/admin-page';
-import { AdminListCard } from '@/components/admin/admin-list-card';
-import { AdminRowActions } from '@/components/admin/admin-row-actions';
-import { AdminPublishedFlag } from '@/components/admin/admin-status';
+import {
+  AdminFormPanel,
+  AdminListMeta,
+  AdminPage,
+  AdminSection,
+} from '@/components/admin/admin-page';
+import { DocumentLibraryCard } from '@/features/admin/documents/document-library-card';
 
 type EditState = {
   id: string;
@@ -47,6 +52,9 @@ export default function AdminDocumentsPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [edit, setEdit] = useState<EditState | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
+  const [createProgress, setCreateProgress] = useState<UploadProgress | null>(null);
+  const [editProgress, setEditProgress] = useState<UploadProgress | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   const storage = useQuery({
     queryKey: ['storage-status'],
@@ -64,6 +72,11 @@ export default function AdminDocumentsPage() {
     return `/admin/documents?${qs}`;
   });
 
+  const publishedCount = useMemo(
+    () => list.items.filter((d) => d.isPublished).length,
+    [list.items],
+  );
+
   const invalidateDocs = () => {
     void qc.invalidateQueries({ queryKey: ['admin-documents'] });
     void qc.invalidateQueries({ queryKey: ['documents'] });
@@ -77,9 +90,13 @@ export default function AdminDocumentsPage() {
       }
       let mediaAssetId: string | undefined;
       if (storage.data?.configured && file) {
-        const media = await uploadViaSignedRequest('pdf', file);
+        setCreateProgress({ phase: 'signing', percent: 0 });
+        const media = await uploadViaSignedRequest('pdf', file, {
+          onProgress: setCreateProgress,
+        });
         mediaAssetId = media.id;
       }
+      setCreateProgress({ phase: 'confirming', percent: 98 });
       return apiFetch('/admin/documents', {
         method: 'POST',
         body: JSON.stringify({
@@ -98,23 +115,19 @@ export default function AdminDocumentsPage() {
       setDescription('');
       setFile(null);
       setCategoryId('');
+      setCreateProgress(null);
       setMsg(
         storage.data?.configured
-          ? 'Document created — published PUBLIC docs appear on পত্রিকার গুরুত্বপূর্ণ কলাম.'
+          ? 'Document uploaded. Published public PDFs appear on পত্রিকার গুরুত্বপূর্ণ কলাম.'
           : 'Document created (metadata/placeholder — configure Cloudinary for real PDFs).',
       );
       setError(null);
       invalidateDocs();
     },
     onError: (err) => {
+      setCreateProgress(null);
       setMsg(null);
-      setError(
-        err instanceof ApiError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : 'Create failed',
-      );
+      setError(errMessage(err, 'Create failed'));
     },
   });
 
@@ -126,8 +139,12 @@ export default function AdminDocumentsPage() {
         if (!storage.data?.configured) {
           throw new Error('Cloudinary is not configured — cannot replace PDF.');
         }
-        const media = await uploadViaSignedRequest('pdf', edit.file);
+        setEditProgress({ phase: 'signing', percent: 0 });
+        const media = await uploadViaSignedRequest('pdf', edit.file, {
+          onProgress: setEditProgress,
+        });
         mediaAssetId = media.id;
+        setEditProgress({ phase: 'confirming', percent: 98 });
       }
       return apiFetch(`/admin/documents/${edit.id}`, {
         method: 'PATCH',
@@ -142,32 +159,76 @@ export default function AdminDocumentsPage() {
     onSuccess: () => {
       setEdit(null);
       setEditError(null);
+      setEditProgress(null);
       setMsg('Document updated.');
       invalidateDocs();
     },
     onError: (err) => {
-      setEditError(
-        err instanceof ApiError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : 'Update failed',
-      );
+      setEditProgress(null);
+      setEditError(errMessage(err, 'Update failed'));
     },
   });
 
   const togglePublish = useMutation({
-    mutationFn: (item: AdminDocumentItem) =>
-      apiFetch(`/admin/documents/${item.id}`, {
+    mutationFn: async (item: AdminDocumentItem) => {
+      setBusyId(item.id);
+      await apiFetch(`/admin/documents/${item.id}`, {
         method: 'PATCH',
         body: JSON.stringify({ isPublished: !item.isPublished }),
-      }),
-    onSuccess: () => invalidateDocs(),
+      });
+      return item;
+    },
+    onSuccess: (item) => {
+      setBusyId(null);
+      setMsg(item.isPublished ? 'Document unpublished.' : 'Document published.');
+      setError(null);
+      invalidateDocs();
+    },
+    onError: (err) => {
+      setBusyId(null);
+      setMsg(null);
+      setError(errMessage(err, 'Could not update publish state'));
+    },
+  });
+
+  const makePublic = useMutation({
+    mutationFn: async (item: AdminDocumentItem) => {
+      setBusyId(item.id);
+      await apiFetch(`/admin/documents/${item.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ visibility: 'PUBLIC' }),
+      });
+    },
+    onSuccess: () => {
+      setBusyId(null);
+      setMsg('Document is now public.');
+      setError(null);
+      invalidateDocs();
+    },
+    onError: (err) => {
+      setBusyId(null);
+      setMsg(null);
+      setError(errMessage(err, 'Could not update visibility'));
+    },
   });
 
   const remove = useMutation({
-    mutationFn: (id: string) => apiFetch(`/admin/documents/${id}`, { method: 'DELETE' }),
-    onSuccess: () => invalidateDocs(),
+    mutationFn: async (item: AdminDocumentItem) => {
+      setBusyId(item.id);
+      await apiFetch(`/admin/documents/${item.id}`, { method: 'DELETE' });
+      return item;
+    },
+    onSuccess: (item) => {
+      setBusyId(null);
+      setMsg(`Deleted “${item.title}”.`);
+      setError(null);
+      invalidateDocs();
+    },
+    onError: (err) => {
+      setBusyId(null);
+      setMsg(null);
+      setError(errMessage(err, 'Delete failed'));
+    },
   });
 
   return (
@@ -175,24 +236,45 @@ export default function AdminDocumentsPage() {
       <PageHeader
         eyebrow="Content"
         title="Documents"
-        description="Publish PDF columns for পত্রিকার গুরুত্বপূর্ণ কলাম (public). Uploads use signed Cloudinary when configured. Readers view in-app only — no download."
+        description="Upload and manage PDF columns for পত্রিকার গুরুত্বপূর্ণ কলাম. Readers open files in-app — downloads stay disabled."
       />
 
       {storage.data ? (
         <Alert variant={storage.data.configured ? 'success' : 'info'}>
-          Cloudinary:{' '}
           {storage.data.configured
-            ? 'configured — PDF file upload enabled'
-            : 'not configured — metadata/placeholder mode only (set real CLOUDINARY_* in .env)'}
+            ? 'Cloudinary is configured — PDF uploads are enabled.'
+            : 'Cloudinary is not configured — you can save metadata only until CLOUDINARY_* credentials are set.'}
+        </Alert>
+      ) : null}
+
+      {(error || msg) && !create.isPending ? (
+        <Alert variant={error ? 'danger' : 'success'}>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <p className="min-w-0 flex-1">{error ?? msg}</p>
+            <button
+              type="button"
+              className="shrink-0 text-xs font-semibold underline-offset-2 hover:underline"
+              onClick={() => {
+                setError(null);
+                setMsg(null);
+              }}
+            >
+              Dismiss
+            </button>
+          </div>
         </Alert>
       ) : null}
 
       <AdminFormPanel
-        title="Add document"
-        description="Public published PDFs appear on the public columns page. A real PDF file is required when Cloudinary is configured."
+        title="Upload document"
+        description="Add a title, optional details, and a PDF. Public + published documents appear on the marketing columns page."
         footer={
           <Button type="submit" form="admin-document-create" loading={create.isPending}>
-            {create.isPending ? 'Creating…' : 'Create'}
+            {create.isPending
+              ? createProgress
+                ? uploadProgressLabel(createProgress)
+                : 'Uploading…'
+              : 'Upload document'}
           </Button>
         }
       >
@@ -201,145 +283,166 @@ export default function AdminDocumentsPage() {
           className="space-y-4"
           onSubmit={(e) => {
             e.preventDefault();
+            setError(null);
+            setMsg(null);
             create.mutate();
           }}
         >
-          <div className="space-y-2">
-            <Label htmlFor="title">Title</Label>
-            <Input id="title" required value={title} onChange={(e) => setTitle(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="desc">Description</Label>
-            <Textarea
-              id="desc"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="cat">Category</Label>
-              <Select id="cat" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-                <option value="">None</option>
-                {categories.data?.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </Select>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="title">Title</Label>
+                <Input
+                  id="title"
+                  required
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="e.g. BCS Preliminary current affairs"
+                  disabled={create.isPending}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="desc">Description</Label>
+                <Textarea
+                  id="desc"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Short summary for admins and library cards"
+                  disabled={create.isPending}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="cat">Category</Label>
+                <Select
+                  id="cat"
+                  value={categoryId}
+                  onChange={(e) => setCategoryId(e.target.value)}
+                  disabled={create.isPending}
+                >
+                  <option value="">None</option>
+                  {categories.data?.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </Select>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="file">PDF file{storage.data?.configured ? ' (required)' : ''}</Label>
-              <Input
-                id="file"
-                type="file"
-                accept="application/pdf"
-                required={Boolean(storage.data?.configured)}
-                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-              />
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="file">
+                  PDF file{storage.data?.configured ? ' (required)' : ''}
+                </Label>
+                <label
+                  htmlFor="file"
+                  className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-[var(--radius-lg)] border border-dashed border-[var(--line-strong)] bg-[var(--bg-desk)]/60 px-4 py-8 text-center transition-colors hover:border-[var(--accent)]/40 hover:bg-[var(--bg-desk)]"
+                >
+                  <span className="flex size-11 items-center justify-center rounded-full bg-[var(--highlight-soft)] text-[var(--highlight)]">
+                    <FileUp className="size-5" aria-hidden />
+                  </span>
+                  <span className="text-sm font-semibold text-[var(--ink)]">
+                    {file ? file.name : 'Choose a PDF to upload'}
+                  </span>
+                  <span className="text-xs text-[var(--muted-strong)]">
+                    {file
+                      ? formatBytes(file.size)
+                      : storage.data?.configured
+                        ? 'Up to 40 MB · application/pdf'
+                        : 'Optional until Cloudinary is configured'}
+                  </span>
+                  <input
+                    id="file"
+                    type="file"
+                    accept="application/pdf"
+                    required={Boolean(storage.data?.configured)}
+                    disabled={create.isPending}
+                    className="sr-only"
+                    onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                  />
+                </label>
+              </div>
+              <label className="flex items-start gap-2.5 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] px-3 py-2.5 text-sm">
+                <input
+                  type="checkbox"
+                  className="admin-checkbox mt-0.5"
+                  checked={publishNow}
+                  disabled={create.isPending}
+                  onChange={(e) => setPublishNow(e.target.checked)}
+                />
+                <span>
+                  <span className="font-semibold text-[var(--ink)]">Publish immediately</span>
+                  <span className="mt-0.5 block text-xs text-[var(--muted-strong)]">
+                    Leave unchecked to save as draft. Visibility defaults to Public.
+                  </span>
+                </span>
+              </label>
             </div>
           </div>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={publishNow}
-              onChange={(e) => setPublishNow(e.target.checked)}
-            />
-            Publish immediately
-          </label>
-          {error ? <Alert variant="danger">{error}</Alert> : null}
-          {msg ? <Alert variant="success">{msg}</Alert> : null}
+
+          {create.isPending && createProgress ? (
+            <div className="space-y-2 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-desk)]/50 p-3">
+              <div className="flex items-center justify-between gap-3 text-xs text-[var(--muted-strong)]">
+                <span>{uploadProgressLabel(createProgress)}</span>
+                <span className="tabular-nums">{Math.round(createProgress.percent)}%</span>
+              </div>
+              <ProgressBar value={createProgress.percent} label="PDF upload progress" />
+            </div>
+          ) : null}
+
+          {error && create.isPending ? <Alert variant="danger">{error}</Alert> : null}
         </form>
       </AdminFormPanel>
 
-      <AdminSection title="Library" description="Edit metadata, replace PDFs, publish, or remove.">
+      <AdminSection
+        title="Document library"
+        description="Edit details, replace PDFs, publish, preview, or delete. Actions stay on each card."
+        actions={
+          !list.isLoading && list.items.length > 0 ? (
+            <AdminListMeta
+              count={list.items.length}
+              noun="document"
+              hasMore={list.hasNextPage}
+            />
+          ) : null
+        }
+      >
         {list.isLoading ? <AdminDocumentsPageSkeleton omitHeader /> : null}
+
         {!list.isLoading && list.items.length === 0 ? (
-          <EmptyState title="No documents" description="Create an entry above." />
+          <EmptyState
+            align="center"
+            title="No documents yet"
+            description="Upload your first PDF above. Published public documents will appear on the columns page for readers."
+          />
         ) : null}
 
         {!list.isLoading && list.items.length > 0 ? (
           <ContentIn className="space-y-3">
+            <p className="text-sm text-[var(--muted-strong)]">
+              <span className="font-semibold tabular-nums text-[var(--ink-soft)]">
+                {publishedCount}
+              </span>{' '}
+              published
+              {list.hasNextPage ? ' in this page' : ''} · manage each card below
+            </p>
             {list.items.map((doc) => (
-              <AdminListCard
+              <DocumentLibraryCard
                 key={doc.id}
-                badges={
-                  <>
-                    <AdminPublishedFlag published={doc.isPublished} />
-                    <Badge variant={doc.visibility === 'PUBLIC' ? 'success' : 'outline'}>
-                      {doc.visibility}
-                    </Badge>
-                  </>
+                doc={doc}
+                busy={busyId === doc.id}
+                onEdit={(item) =>
+                  setEdit({
+                    id: item.id,
+                    title: item.title,
+                    description: item.description ?? '',
+                    categoryId: item.category?.id ?? '',
+                    file: null,
+                  })
                 }
-                title={doc.title}
-                meta={
-                  <>
-                    {doc.mediaAsset?.originalFilename ?? 'file'}
-                    {doc.mediaAsset?.bytes
-                      ? ` · ${Math.max(1, Math.round(doc.mediaAsset.bytes / 1024))} KB`
-                      : ''}{' '}
-                    · {doc.category?.name ?? 'Uncategorized'}
-                  </>
-                }
-                actions={
-                  <AdminRowActions
-                    primary={
-                      <Button size="sm" variant="outline" onClick={() => togglePublish.mutate(doc)}>
-                        {doc.isPublished ? 'Unpublish' : 'Publish'}
-                      </Button>
-                    }
-                  >
-                    {doc.visibility === 'PUBLIC' && doc.isPublished ? (
-                      <Link href={`/news/d/${doc.id}`} target="_blank" rel="noreferrer">
-                        <Button size="sm" variant="ghost">
-                          <ExternalLink className="size-3.5" aria-hidden />
-                          Preview
-                        </Button>
-                      </Link>
-                    ) : null}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() =>
-                        setEdit({
-                          id: doc.id,
-                          title: doc.title,
-                          description: doc.description ?? '',
-                          categoryId: doc.category?.id ?? '',
-                          file: null,
-                        })
-                      }
-                    >
-                      <Pencil className="size-3.5" aria-hidden />
-                      Edit
-                    </Button>
-                    {doc.visibility !== 'PUBLIC' ? (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() =>
-                          apiFetch(`/admin/documents/${doc.id}`, {
-                            method: 'PATCH',
-                            body: JSON.stringify({ visibility: 'PUBLIC' }),
-                          }).then(() => invalidateDocs())
-                        }
-                      >
-                        Make public
-                      </Button>
-                    ) : null}
-                    <ConfirmButton
-                      size="sm"
-                      variant="ghost"
-                      confirmTitle="Delete this document?"
-                      confirmMessage="Soft-delete this document?"
-                      confirmLabel="Delete"
-                      reversible={false}
-                      onConfirm={() => remove.mutateAsync(doc.id)}
-                    >
-                      Delete
-                    </ConfirmButton>
-                  </AdminRowActions>
-                }
+                onTogglePublish={(item) => togglePublish.mutate(item)}
+                onMakePublic={(item) => makePublic.mutate(item)}
+                onDelete={(item) => remove.mutateAsync(item)}
               />
             ))}
             <LoadMoreButton
@@ -356,12 +459,14 @@ export default function AdminDocumentsPage() {
         title="Edit document"
         description="Update title, description, category, or replace the PDF file."
         onClose={() => {
+          if (saveEdit.isPending) return;
           setEdit(null);
           setEditError(null);
+          setEditProgress(null);
         }}
         onSubmit={() => saveEdit.mutate()}
         pending={saveEdit.isPending}
-        confirmLabel="Save"
+        confirmLabel={saveEdit.isPending && editProgress ? uploadProgressLabel(editProgress) : 'Save changes'}
         error={editError}
       >
         {edit ? (
@@ -372,6 +477,7 @@ export default function AdminDocumentsPage() {
                 id="edit-title"
                 required
                 value={edit.title}
+                disabled={saveEdit.isPending}
                 onChange={(e) => setEdit({ ...edit, title: e.target.value })}
               />
             </div>
@@ -380,6 +486,7 @@ export default function AdminDocumentsPage() {
               <Textarea
                 id="edit-desc"
                 value={edit.description}
+                disabled={saveEdit.isPending}
                 onChange={(e) => setEdit({ ...edit, description: e.target.value })}
               />
             </div>
@@ -388,6 +495,7 @@ export default function AdminDocumentsPage() {
               <Select
                 id="edit-cat"
                 value={edit.categoryId}
+                disabled={saveEdit.isPending}
                 onChange={(e) => setEdit({ ...edit, categoryId: e.target.value })}
               >
                 <option value="">None</option>
@@ -409,12 +517,50 @@ export default function AdminDocumentsPage() {
                 id="edit-file"
                 type="file"
                 accept="application/pdf"
+                disabled={saveEdit.isPending}
                 onChange={(e) => setEdit({ ...edit, file: e.target.files?.[0] ?? null })}
               />
+              {edit.file ? (
+                <p className="text-xs text-[var(--muted-strong)]">
+                  Selected: {edit.file.name} · {formatBytes(edit.file.size)}
+                </p>
+              ) : null}
             </div>
+            {saveEdit.isPending && editProgress ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-3 text-xs text-[var(--muted-strong)]">
+                  <span>{uploadProgressLabel(editProgress)}</span>
+                  <span className="tabular-nums">{Math.round(editProgress.percent)}%</span>
+                </div>
+                <ProgressBar value={editProgress.percent} label="PDF replace progress" />
+              </div>
+            ) : null}
           </div>
         ) : null}
       </FormDialog>
     </AdminPage>
   );
+}
+
+function errMessage(err: unknown, fallback: string): string {
+  if (err instanceof ApiError) return err.message;
+  if (err instanceof Error) return err.message;
+  return fallback;
+}
+
+function uploadProgressLabel(progress: UploadProgress): string {
+  if (progress.phase === 'signing') return 'Preparing upload…';
+  if (progress.phase === 'uploading') {
+    if (progress.loaded != null && progress.total) {
+      return `Uploading ${formatBytes(progress.loaded)} / ${formatBytes(progress.total)}`;
+    }
+    return 'Uploading PDF…';
+  }
+  return 'Saving document…';
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }

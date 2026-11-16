@@ -39,12 +39,16 @@ export type ConfirmUploadInput = {
   purpose: UploadPurpose;
   publicId: string;
   resourceType?: 'image' | 'raw';
+  /** Delivery type reported by Cloudinary upload response (`type` field). */
+  deliveryType?: 'upload' | 'authenticated' | 'private';
   bytes?: number;
   mimeType?: string;
   format?: string;
   width?: number;
   height?: number;
   originalFilename?: string;
+  /** Optional Cloudinary etag from upload response (integrity hint). */
+  etag?: string;
 };
 
 export const SUPPORT_ATTACHMENT_MIMES = [
@@ -60,3 +64,9 @@ export const SUPPORT_ATTACHMENT_MIMES = [
 ] as const;
 
 export const SUPPORT_ATTACHMENT_MAX_BYTES = 10 * 1024 * 1024;
+
+/** PDF / document uploads (admin signed Cloudinary raw). */
+export const PDF_MAX_BYTES = 40 * 1024 * 1024;
+
+/** Default max for image purposes (avatar / covers / heroes). */
+export const IMAGE_MAX_BYTES = 8 * 1024 * 1024;

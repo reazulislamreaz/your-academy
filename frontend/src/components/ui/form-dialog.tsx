@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useId, useRef, type FormEvent, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -83,15 +84,15 @@ export function FormDialog({
     };
   }, [open, pending, onClose]);
 
-  if (!open) return null;
+  if (!open || typeof document === 'undefined') return null;
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!pending && !disableSubmit) onSubmit();
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:items-center sm:p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-[90] flex items-end justify-center p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:items-center sm:p-4">
       <button
         type="button"
         aria-label="Dismiss"
@@ -156,6 +157,7 @@ export function FormDialog({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

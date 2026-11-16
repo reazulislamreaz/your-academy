@@ -337,6 +337,7 @@ export class DocumentsService {
         mediaAsset: {
           select: { originalFilename: true, mimeType: true, bytes: true },
         },
+        createdAt: true,
         updatedAt: true,
       },
     });

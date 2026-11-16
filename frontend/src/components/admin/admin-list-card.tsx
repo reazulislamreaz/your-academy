@@ -20,7 +20,8 @@ export function AdminListCard({ title, meta, badges, actions, children, classNam
     <Surface
       interactive
       className={cn(
-        'admin-list-card flex flex-col gap-3 p-4 transition-[border-color,box-shadow] duration-150 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:p-5',
+        // overflow-visible so absolute menus are not clipped if a consumer skips portals
+        'admin-list-card overflow-visible flex flex-col gap-3 p-4 transition-[border-color,box-shadow] duration-150 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:p-5',
         className,
       )}
     >
@@ -33,7 +34,9 @@ export function AdminListCard({ title, meta, badges, actions, children, classNam
         {children}
       </div>
       {actions ? (
-        <div className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:justify-end">{actions}</div>
+        <div className="relative z-10 flex flex-wrap items-center gap-2 sm:shrink-0 sm:justify-end">
+          {actions}
+        </div>
       ) : null}
     </Surface>
   );

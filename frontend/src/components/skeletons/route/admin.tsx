@@ -691,15 +691,28 @@ export function AdminNewsEditPageSkeleton() {
 /** `/admin/documents` */
 export function AdminDocumentsPageSkeleton({ omitHeader }: { omitHeader?: boolean } = {}) {
   const list = (
-    <div className="space-y-2">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <Surface key={i} className="flex flex-wrap items-center justify-between gap-3 p-4">
-          <div className="min-w-0 flex-1 space-y-1.5">
-            <Skeleton className="h-4 w-1/2 max-w-sm" />
-            <SkLine className="h-3 w-40" />
+    <div className="space-y-3">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <Surface key={i} className="space-y-4 overflow-visible p-4 sm:p-5">
+          <div className="flex gap-3 sm:gap-4">
+            <Skeleton className="size-11 shrink-0 rounded-[var(--radius)] sm:size-12" />
+            <div className="min-w-0 flex-1 space-y-2.5">
+              <div className="flex flex-wrap gap-1.5">
+                <SkBadge />
+                <SkBadge />
+              </div>
+              <Skeleton className="h-4 w-1/2 max-w-sm" />
+              <SkLine className="h-3 w-56" />
+              <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                {Array.from({ length: 4 }).map((_, j) => (
+                  <Skeleton key={j} className="h-12 w-full rounded-[var(--radius)]" />
+                ))}
+              </div>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <SkBadge />
+          <div className="flex flex-wrap gap-2 border-t border-[var(--line)] pt-3">
+            <SkPill className="h-9 w-20" />
+            <SkPill className="h-9 w-24" />
             <SkPill className="h-9 w-20" />
           </div>
         </Surface>
