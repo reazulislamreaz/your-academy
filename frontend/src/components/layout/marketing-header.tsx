@@ -150,7 +150,7 @@ function MarketingHeaderInner() {
       className="ya-glass sticky top-0 z-30 border-b border-[var(--glass-border)] bg-[var(--glass-bg)] pt-[env(safe-area-inset-top,0px)]"
       style={{ '--header-h': '64px' } as CSSProperties}
     >
-      <div className="mx-auto flex h-14 w-full max-w-[1280px] items-center gap-2 px-3 sm:h-16 sm:gap-3 sm:px-6">
+      <div className="mx-auto flex h-14 w-full min-w-0 max-w-[var(--marketing-content-max)] items-center gap-2 px-3 sm:h-16 sm:gap-3 sm:px-6">
         <BrandMark markOnly className="shrink-0 lg:hidden [&_img]:h-8" priority />
         <BrandMark className="hidden shrink-0 lg:inline-flex [&_img]:h-10" priority />
 
@@ -262,7 +262,7 @@ export function MarketingHeader() {
           className="sticky top-0 z-30 border-b border-[var(--line)] bg-white/95"
           style={{ '--header-h': '64px' } as CSSProperties}
         >
-          <div className="mx-auto flex h-16 w-full max-w-[1280px] items-center px-3 sm:px-6">
+          <div className="mx-auto flex h-16 w-full min-w-0 max-w-[var(--marketing-content-max)] items-center px-3 sm:px-6">
             <BrandMark markOnly className="shrink-0 [&_img]:h-8" priority />
           </div>
         </header>

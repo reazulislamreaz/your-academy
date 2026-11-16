@@ -51,7 +51,7 @@ export function HomepageBankBrowse({ categories, topics }: Props) {
     <>
       {categories.visible ? (
         <section className="section-pad">
-          <Reveal className="mx-auto grid w-full max-w-[1280px] items-center gap-8 px-4 sm:px-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,2.2fr)] lg:gap-10">
+          <Reveal className="marketing-container grid items-center gap-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,2.2fr)] lg:gap-10">
             <div className="space-y-4">
               <span
                 className="mb-1 block h-[3px] w-7 rounded-full bg-[var(--highlight)]"
@@ -92,7 +92,7 @@ export function HomepageBankBrowse({ categories, topics }: Props) {
 
       {topics.visible ? (
         <section className="pb-[var(--space-section)]">
-          <Reveal className="mx-auto w-full max-w-[1280px] px-4 sm:px-6">
+          <Reveal className="marketing-container">
             <div className="rounded-[var(--radius-xl)] border border-[var(--line)] bg-[var(--info-soft)] px-5 py-7 shadow-[var(--shadow-sm)] sm:px-8 sm:py-8">
               <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,2.2fr)] lg:gap-10">
                 <div className="space-y-4">

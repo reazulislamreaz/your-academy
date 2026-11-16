@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { FileText } from 'lucide-react';
+import { MarketingPage } from '@/components/layout/marketing-page';
 import { PageHeader } from '@/components/layout/page-header';
 import { LoadError } from '@/components/loading';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -36,7 +37,7 @@ export default function NewsPage() {
   const items = list.data?.pages.flatMap((p) => p.data) ?? [];
 
   return (
-    <div className="mx-auto w-full max-w-[960px] space-y-8 px-4 py-8 sm:px-6 sm:py-10">
+    <MarketingPage className="space-y-8">
       <PageHeader
         eyebrow="কলাম"
         title="পত্রিকার গুরুত্বপূর্ণ কলাম"
@@ -67,7 +68,7 @@ export default function NewsPage() {
 
       {!list.isLoading && !list.isError && items.length > 0 ? (
         <ContentIn>
-          <ul className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] shadow-[var(--shadow-sm)]">
+          <ul className="w-full overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] shadow-[var(--shadow-sm)]">
             {items.map((item) => {
               const size = formatBytes(item.mediaAsset?.bytes);
               const filename = item.mediaAsset?.originalFilename;
@@ -110,6 +111,6 @@ export default function NewsPage() {
           />
         </ContentIn>
       ) : null}
-    </div>
+    </MarketingPage>
   );
 }

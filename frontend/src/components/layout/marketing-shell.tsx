@@ -23,16 +23,22 @@ export function MarketingShell({ children }: { children: ReactNode }) {
   return (
     <div
       className={cn(
-        'flex min-h-screen flex-col',
+        'flex min-h-dvh flex-col',
         reader && 'h-dvh max-h-dvh overflow-hidden',
       )}
     >
       <MarketingHeader />
       <main
-        className={cn('flex min-h-0 flex-1 flex-col', reader && 'overflow-hidden')}
+        className={cn(
+          'flex min-h-0 w-full flex-1 flex-col',
+          reader && 'overflow-hidden',
+        )}
       >
         <PageShell
-          className={cn(reader && 'flex min-h-0 flex-1 flex-col')}
+          className={cn(
+            'flex min-h-0 w-full flex-1 flex-col',
+            reader && 'overflow-hidden',
+          )}
           motionClassName={reader ? '' : 'motion-page'}
         >
           {children}

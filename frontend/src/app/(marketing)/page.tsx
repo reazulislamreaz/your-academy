@@ -44,7 +44,7 @@ export default async function HomePage() {
       />
       <HomepageLatestQuestions latest={payload.latest} />
       <section className="pb-[var(--space-section)]">
-        <Reveal className="mx-auto w-full max-w-[1280px] px-4 sm:px-6">
+        <Reveal className="marketing-container">
           <NewsletterBar newsletter={payload.newsletter} />
         </Reveal>
       </section>

@@ -28,7 +28,7 @@ export function HomepageHero({ hero, heroImageUrl }: Props) {
         <div className="hero-grid absolute inset-0 opacity-[0.06] sm:opacity-[0.07]" />
       </div>
 
-      <div className="relative mx-auto grid w-full max-w-[1280px] min-w-0 items-stretch lg:grid-cols-2">
+      <div className="relative mx-auto grid w-full min-w-0 max-w-[var(--marketing-content-max)] items-stretch lg:grid-cols-2">
         <div className="relative z-10 flex min-w-0 flex-col justify-center px-4 py-10 sm:px-8 sm:py-14 lg:min-h-[560px] lg:py-20 lg:pr-10 lg:pl-6 xl:pl-8">
           <div
             className="motion-stagger mx-auto flex w-full min-w-0 max-w-xl flex-col items-center gap-5 sm:gap-7 lg:mx-0 lg:items-start lg:gap-8"

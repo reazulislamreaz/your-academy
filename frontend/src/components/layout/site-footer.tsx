@@ -23,7 +23,7 @@ export function SiteFooter() {
             'radial-gradient(ellipse 50% 80% at 0% 100%, rgba(227,30,36,0.18), transparent 55%), radial-gradient(ellipse 40% 60% at 100% 0%, rgba(59,111,217,0.16), transparent 50%)',
         }}
       />
-      <div className="relative mx-auto w-full max-w-[1280px] px-4 py-10 sm:px-6">
+      <div className="marketing-container relative w-full py-10">
         <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-2 text-center sm:text-left">
             <BrandMark inverse className="justify-center sm:justify-start" />

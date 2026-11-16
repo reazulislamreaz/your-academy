@@ -36,7 +36,7 @@ export function HomepageLatestQuestions({ latest }: Props) {
 
   return (
     <section className="section-pad bg-[var(--bg-desk)]">
-      <div className="mx-auto w-full max-w-[1280px] space-y-6 px-4 sm:px-6">
+      <div className="marketing-container space-y-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="space-y-2">
             <span

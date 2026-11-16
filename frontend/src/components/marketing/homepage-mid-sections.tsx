@@ -42,7 +42,7 @@ export function HomepageMidSections({ why, progress, ctaBanner }: Props) {
 
   return (
     <section id="how-it-works" className="scroll-mt-24 pb-[var(--space-section)]">
-      <Reveal className="motion-stagger mx-auto grid w-full max-w-[1280px] gap-5 px-4 sm:px-6 lg:grid-cols-3 lg:gap-6">
+      <Reveal className="marketing-container motion-stagger grid gap-5 lg:grid-cols-3 lg:gap-6">
         {why.visible ? (
           <div className="ya-panel-shine relative overflow-hidden rounded-[var(--radius-xl)] border border-[var(--line)] bg-[var(--info-soft)] p-6 shadow-[var(--shadow-sm)] sm:p-7">
             <div className="relative z-[1]">
