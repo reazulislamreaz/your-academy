@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
 import { FileText } from 'lucide-react';
 import { MarketingPage } from '@/components/layout/marketing-page';
 import { PageHeader } from '@/components/layout/page-header';
@@ -32,9 +32,12 @@ export default function NewsPage() {
     queryFn: ({ pageParam }) =>
       listPublicDocuments({ cursor: pageParam, limit: 20, q: debouncedQ || undefined }),
     getNextPageParam: (last) => last.pagination?.nextCursor ?? undefined,
+    placeholderData: keepPreviousData,
+    staleTime: 30_000,
   });
 
   const items = list.data?.pages.flatMap((p) => p.data) ?? [];
+  const showSkeleton = list.isLoading && !list.isPlaceholderData;
 
   return (
     <MarketingPage className="space-y-8">
@@ -51,11 +54,17 @@ export default function NewsPage() {
         aria-label="Search newspaper columns"
       />
 
-      {list.isLoading ? <NewsPageSkeleton omitHeader /> : null}
+      {list.isFetching && !list.isFetchingNextPage && list.isPlaceholderData ? (
+        <p className="text-xs font-medium text-[var(--muted)]" aria-live="polite">
+          Updating…
+        </p>
+      ) : null}
+
+      {showSkeleton ? <NewsPageSkeleton omitHeader /> : null}
       {list.error ? (
         <LoadError message="Could not load columns." onRetry={() => void list.refetch()} />
       ) : null}
-      {!list.isLoading && !list.isError && items.length === 0 ? (
+      {!showSkeleton && !list.isError && items.length === 0 ? (
         <EmptyState
           title={debouncedQ ? 'No matching columns' : 'No published columns yet'}
           description={
@@ -66,9 +75,16 @@ export default function NewsPage() {
         />
       ) : null}
 
-      {!list.isLoading && !list.isError && items.length > 0 ? (
+      {!showSkeleton && !list.isError && items.length > 0 ? (
         <ContentIn>
-          <ul className="w-full overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] shadow-[var(--shadow-sm)]">
+          <ul
+            className={`w-full overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] shadow-[var(--shadow-sm)] transition-opacity duration-150 ${
+              list.isFetching && !list.isFetchingNextPage && list.isPlaceholderData
+                ? 'opacity-60'
+                : 'opacity-100'
+            }`}
+            aria-busy={list.isFetching && !list.isFetchingNextPage}
+          >
             {items.map((item) => {
               const size = formatBytes(item.mediaAsset?.bytes);
               const filename = item.mediaAsset?.originalFilename;

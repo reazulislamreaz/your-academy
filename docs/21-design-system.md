@@ -237,4 +237,5 @@ Tokens: `--duration-fast` / `--duration` / `--duration-slow` + `--ease-out`. Pre
 7. When adding shadcn-generated files later, map them onto these CSS variables.
 8. Do not invent testimonials or fake correctness for non-entitled users.
 9. Marketing homepage (`(marketing)/page.tsx`): brand-first hero + 7-day trial CTAs; live counts from `GET /public/stats`; real MCQ/collections/news; omit testimonials and fabricated progress; paid pricing stays “coming later” until checkout ships. Presentation merge in `lib/marketing/homepage-presentation.ts` upgrades legacy CMS copy without inventing social proof.
-10. Update this doc when tokens or shells change.
+10. Loading UX: route-group `loading.tsx` uses content skeletons (not BrandPulse). `GlobalLoader` = cold start only. `RouteProgress` = soft client nav. Lists use `keepPreviousData` + soft opacity on filter refetch. Prefer SSR `initialData` for homepage islands.
+11. Update this doc when tokens or shells change.

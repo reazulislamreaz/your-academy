@@ -1,4 +1,5 @@
-import { apiFetch, apiFetchResult } from './client';
+import { apiFetch, apiFetchResult, serverApiBase } from './client';
+import type { ApiResult } from './client';
 import type { DocumentListItem } from './types';
 
 export type PublicDocumentListItem = DocumentListItem & {
@@ -54,4 +55,27 @@ export async function getPublicDocument(id: string) {
   return apiFetch<PublicDocumentDetail>(`/public/documents/${id}`, {
     skipRefresh: true,
   });
+}
+
+/** RSC prefetch for marketing homepage newspaper strip. */
+export async function getPublicDocumentsServer(params: {
+  limit?: number;
+}): Promise<ApiResult<PublicDocumentListItem[]> | null> {
+  try {
+    const qs = new URLSearchParams();
+    qs.set('limit', String(params.limit ?? 4));
+    const res = await fetch(`${serverApiBase()}/public/documents?${qs}`, {
+      next: { revalidate: 60, tags: ['public-documents'] },
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as {
+      success: boolean;
+      data?: PublicDocumentListItem[];
+      meta?: { pagination?: ApiResult<PublicDocumentListItem[]>['pagination'] };
+    };
+    if (!json.success || !json.data) return null;
+    return { data: json.data, pagination: json.meta?.pagination };
+  } catch {
+    return null;
+  }
 }

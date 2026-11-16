@@ -1,4 +1,5 @@
-import { apiFetch, apiFetchResult } from './client';
+import { apiFetch, apiFetchResult, serverApiBase } from './client';
+import type { ApiResult } from './client';
 
 export type PublicQuestionCard = {
   id: string;
@@ -109,4 +110,27 @@ export async function listPublicQuestions(params: {
   return apiFetchResult<PublicQuestionCard[]>(`/public/questions?${qs}`, {
     skipRefresh: true,
   });
+}
+
+/** RSC prefetch for marketing homepage MCQ preview. */
+export async function getPublicQuestionsServer(params: {
+  limit?: number;
+}): Promise<ApiResult<PublicQuestionCard[]> | null> {
+  try {
+    const qs = new URLSearchParams();
+    qs.set('limit', String(params.limit ?? 1));
+    const res = await fetch(`${serverApiBase()}/public/questions?${qs}`, {
+      next: { revalidate: 60, tags: ['public-questions'] },
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as {
+      success: boolean;
+      data?: PublicQuestionCard[];
+      meta?: { pagination?: ApiResult<PublicQuestionCard[]>['pagination'] };
+    };
+    if (!json.success || !json.data) return null;
+    return { data: json.data, pagination: json.meta?.pagination };
+  } catch {
+    return null;
+  }
 }

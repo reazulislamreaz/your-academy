@@ -6,7 +6,11 @@ import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ListCardSkeleton, LoadError } from '@/components/loading';
 import { EmptyState } from '@/components/ui/empty-state';
-import { listPublicQuestions, type PublicQuestionCard } from '@/lib/api/public-questions';
+import {
+  listPublicQuestions,
+  type PublicQuestionCard,
+} from '@/lib/api/public-questions';
+import type { ApiResult } from '@/lib/api/client';
 
 function McqPreviewCard({ question }: { question: PublicQuestionCard }) {
   return (
@@ -48,15 +52,22 @@ function McqPreviewCard({ question }: { question: PublicQuestionCard }) {
   );
 }
 
+type Props = {
+  /** SSR seed — avoids a client waterfall after homepage paint. */
+  initial?: ApiResult<PublicQuestionCard[]> | null;
+};
+
 /** Interactive preview using a real published public question. */
-export function HomepageSampleMcq() {
+export function HomepageSampleMcq({ initial = null }: Props) {
   const list = useQuery({
     queryKey: ['homepage-sample-mcq'],
     queryFn: () => listPublicQuestions({ limit: 1 }),
     staleTime: 60_000,
+    initialData: initial ?? undefined,
   });
 
   const question = list.data?.data?.[0] ?? null;
+  const showSkeleton = list.isLoading && !question;
 
   return (
     <section
@@ -86,11 +97,11 @@ export function HomepageSampleMcq() {
           </Link>
         </div>
 
-        {list.isLoading ? <ListCardSkeleton /> : null}
+        {showSkeleton ? <ListCardSkeleton /> : null}
         {list.isError ? (
           <LoadError message="Could not load a sample question." onRetry={() => void list.refetch()} />
         ) : null}
-        {!list.isLoading && !list.isError && !question ? (
+        {!showSkeleton && !list.isError && !question ? (
           <EmptyState
             title="No published questions yet"
             description="When admins publish MCQs, a live sample will appear here."

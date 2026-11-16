@@ -28,13 +28,13 @@ function RouteProgressInner() {
     setDone(false);
     setActive(true);
 
-    // Soft ramp then complete — feels responsive without blocking paint.
+    // Short soft ramp — primary nav signal; avoid stacking with long skeleton waits.
     timers.current.push(
-      window.setTimeout(() => setDone(true), 280),
+      window.setTimeout(() => setDone(true), 220),
       window.setTimeout(() => {
         setActive(false);
         setDone(false);
-      }, 520),
+      }, 400),
     );
 
     return () => {

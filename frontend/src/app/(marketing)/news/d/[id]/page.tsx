@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
 import { Alert } from '@/components/ui/alert';
 import { PdfViewer } from '@/components/pdf/pdf-viewer-dynamic';
-import { PageLoader } from '@/components/loading';
+import { DocumentDetailPageSkeleton } from '@/components/skeletons';
 import { SaveDocumentButton } from '@/features/bookmarks/save-document-button';
 import { ApiError } from '@/lib/api/client';
 import { getPublicDocument, publicDocumentFileUrl } from '@/lib/api/public-documents';
@@ -17,12 +17,13 @@ export default function PublicDocumentDetailPage() {
     queryKey: ['public-document', params.id],
     queryFn: () => getPublicDocument(params.id),
     retry: false,
+    staleTime: 60_000,
   });
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[70vh] items-center justify-center px-4">
-        <PageLoader label="Loading column" />
+      <div className="mx-auto w-full max-w-[720px] px-4 py-8 sm:px-6">
+        <DocumentDetailPageSkeleton />
       </div>
     );
   }

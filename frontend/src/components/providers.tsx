@@ -11,7 +11,9 @@ function createQueryClient() {
     defaultOptions: {
       queries: {
         refetchOnWindowFocus: false,
+        // Prefer cache reuse on soft navigations; pages override when data must be fresher.
         staleTime: 30_000,
+        gcTime: 5 * 60_000,
         // Bound hanging requests so pages leave the loading state on outages.
         networkMode: 'online',
         retry: (failureCount, error) => {

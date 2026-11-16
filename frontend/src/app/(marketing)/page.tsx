@@ -16,6 +16,8 @@ import { HomepageTrialStrip } from '@/components/marketing/homepage-trial-strip'
 import { NewsletterBar } from '@/components/marketing/newsletter-bar';
 import { Reveal } from '@/components/motion/reveal';
 import { getPublicHomepage } from '@/lib/api/homepage';
+import { getPublicDocumentsServer } from '@/lib/api/public-documents';
+import { getPublicQuestionsServer } from '@/lib/api/public-questions';
 import { getPublicPlatformStats } from '@/lib/api/public-stats';
 import {
   HOMEPAGE_SUPPORTING_COPY,
@@ -62,7 +64,12 @@ async function loadHomepage() {
 }
 
 export default async function HomePage() {
-  const [home, liveStats] = await Promise.all([loadHomepage(), getPublicPlatformStats()]);
+  const [home, liveStats, sampleMcq, newsDocs] = await Promise.all([
+    loadHomepage(),
+    getPublicPlatformStats(),
+    getPublicQuestionsServer({ limit: 1 }),
+    getPublicDocumentsServer({ limit: 4 }),
+  ]);
   const payload = presentHomepagePayload(home.payload, liveStats);
   const { heroImageUrl } = home;
 
@@ -76,13 +83,13 @@ export default async function HomePage() {
       <HomepageTrialStrip />
       <HomepageLiveStats stats={liveStats} />
       <HomepageBankBrowse categories={payload.categories} topics={payload.topics} />
-      <HomepageSampleMcq />
+      <HomepageSampleMcq initial={sampleMcq} />
       <HomepageProductFeatures />
       <HomepageHowItWorks />
       <HomepageDashboardPreview />
       <HomepageMidSections why={payload.why} />
       <HomepageLatestQuestions latest={payload.latest} />
-      <HomepageNewsStrip />
+      <HomepageNewsStrip initial={newsDocs} />
       <HomepageAccessFaq />
       <HomepageFinalCta ctaBanner={payload.ctaBanner} />
       <section className="pb-[var(--space-section)]">

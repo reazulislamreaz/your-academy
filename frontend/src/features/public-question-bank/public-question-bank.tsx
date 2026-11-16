@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ListCardSkeleton, LoadError } from '@/components/loading';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -92,7 +92,7 @@ export function PublicQuestionBank({ className }: Props) {
   ]);
 
   const categories = useQuery({
-    queryKey: ['categories'],
+    queryKey: ['categories', 'public'],
     queryFn: () => apiFetch<CategoryNode[]>('/categories', { skipRefresh: true }),
     staleTime: 60_000,
   });
@@ -207,10 +207,13 @@ export function PublicQuestionBank({ className }: Props) {
         year: appliedYear || undefined,
       }),
     getNextPageParam: (last) => last.pagination?.nextCursor ?? undefined,
+    placeholderData: keepPreviousData,
+    staleTime: 30_000,
   });
 
   const sets = list.data?.pages.flatMap((p) => p.data) ?? [];
   const total = list.data?.pages[0]?.pagination?.total;
+  const showListSkeleton = list.isLoading && !list.isPlaceholderData;
   const hasFilters = Boolean(
     appliedQ || appliedCategoryId || appliedSubcategoryId || appliedYear,
   );
@@ -343,7 +346,7 @@ export function PublicQuestionBank({ className }: Props) {
         </div>
       </div>
 
-      {list.isLoading ? <ListCardSkeleton rows={5} /> : null}
+      {showListSkeleton ? <ListCardSkeleton rows={5} /> : null}
 
       {list.isError ? (
         <LoadError
@@ -352,7 +355,7 @@ export function PublicQuestionBank({ className }: Props) {
         />
       ) : null}
 
-      {!list.isLoading && !list.isError && sets.length === 0 ? (
+      {!showListSkeleton && !list.isError && sets.length === 0 ? (
         <EmptyState
           align="center"
           title={hasFilters ? 'No matching collections' : 'No collections yet'}
@@ -364,7 +367,15 @@ export function PublicQuestionBank({ className }: Props) {
         />
       ) : null}
 
-      <ul className="space-y-3">
+      <ul
+        className={cn(
+          'space-y-3 transition-opacity duration-150',
+          list.isFetching && !list.isFetchingNextPage && list.isPlaceholderData
+            ? 'opacity-60'
+            : 'opacity-100',
+        )}
+        aria-busy={list.isFetching && !list.isFetchingNextPage}
+      >
         {sets.map((set) => (
           <li key={set.id}>
             <Link

@@ -152,8 +152,21 @@ export default function AdminHomepagePage() {
   if (adminQ.isLoading) {
     return (
       <AdminPage>
-        <PageHeader title="Homepage Management" description="Loading…" />
-        <p className="text-sm text-[var(--muted)]">Loading homepage CMS…</p>
+        <PageHeader
+          title="Homepage Management"
+          description="Edit draft homepage content, then publish to update the live marketing site."
+        />
+        <div
+          className="space-y-4"
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+          aria-label="Loading homepage CMS"
+        >
+          <div className="h-24 animate-pulse rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-muted)]" />
+          <div className="h-40 animate-pulse rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-muted)]" />
+          <div className="h-40 animate-pulse rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-muted)]" />
+        </div>
       </AdminPage>
     );
   }

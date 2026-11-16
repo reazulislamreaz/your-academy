@@ -27,7 +27,7 @@ export function AllTopicsDirectory({
   );
 
   const tree = useQuery({
-    queryKey: ['categories'],
+    queryKey: ['categories', 'public'],
     queryFn: () => apiFetch<CategoryNode[]>('/categories', { skipRefresh: true }),
     staleTime: 60_000,
     enabled: visibleTiles.length > 0,

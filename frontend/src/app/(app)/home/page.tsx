@@ -108,27 +108,33 @@ export default function StudyHomePage() {
     queryKey: ['stats'],
     queryFn: () => apiFetch<UserStats>('/users/me/stats'),
     enabled: Boolean(me.data),
+    staleTime: 30_000,
   });
 
   const analytics = useQuery({
     queryKey: ['analytics-summary'],
     queryFn: () => apiFetch<AnalyticsSummary>('/analytics/me/summary'),
     enabled: Boolean(me.data),
+    staleTime: 30_000,
   });
 
   const categories = useQuery({
     queryKey: ['categories'],
     queryFn: () => apiFetch<CategoryNode[]>('/categories'),
     enabled: Boolean(me.data),
+    staleTime: 60_000,
   });
 
   const news = useQuery({
     queryKey: ['news', 'home'],
     queryFn: () => apiFetch<NewsListItem[]>('/news'),
     enabled: Boolean(me.data),
+    staleTime: 60_000,
   });
 
-  if (me.isLoading) {
+  // LearnerGate already resolves `me` — avoid a second full-page BrandPulse/skeleton flash.
+  // Only show the full home skeleton if this page is reached before the gate finishes.
+  if (me.isLoading && !me.data) {
     return <HomePageSkeleton />;
   }
 

@@ -28,7 +28,7 @@ type Props = {
 export function QuestionBankCategoriesDirectory({ heading, subtitle, tiles }: Props) {
   const visibleTiles = tiles.filter((t) => t.visible);
   const tree = useQuery({
-    queryKey: ['categories'],
+    queryKey: ['categories', 'public'],
     queryFn: () => apiFetch<CategoryNode[]>('/categories', { skipRefresh: true }),
     staleTime: 60_000,
   });

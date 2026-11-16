@@ -29,7 +29,7 @@ type Props = {
 
 export function HomepageBankBrowse({ categories, topics }: Props) {
   const categoryTree = useQuery({
-    queryKey: ['categories'],
+    queryKey: ['categories', 'public'],
     queryFn: () => apiFetch<CategoryNode[]>('/categories', { skipRefresh: true }),
     staleTime: 60_000,
   });

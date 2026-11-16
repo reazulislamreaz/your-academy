@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { ChevronRight } from 'lucide-react';
 import { Suspense } from 'react';
 import { PageHeader } from '@/components/layout/page-header';
@@ -51,6 +51,8 @@ function QuestionsContent() {
       return apiFetchResult<QuestionListItem[]>(`/questions?${qs}`);
     },
     getNextPageParam: (last) => last.pagination?.nextCursor ?? undefined,
+    placeholderData: keepPreviousData,
+    staleTime: 20_000,
     retry: false,
   });
 
@@ -58,6 +60,7 @@ function QuestionsContent() {
     list.error instanceof ApiError && (list.error.status === 401 || list.error.status === 403);
   const items = list.data?.pages.flatMap((p) => p.data) ?? [];
   const hasMore = Boolean(list.hasNextPage);
+  const showListSkeleton = list.isLoading && !list.isPlaceholderData;
 
   return (
     <div className="space-y-8">
@@ -78,16 +81,24 @@ function QuestionsContent() {
         examTag={examTag}
       />
 
-      {!list.isLoading && !list.isError ? (
+      {!showListSkeleton && !list.isError ? (
         <p className="text-sm text-[var(--muted-strong)]" aria-live="polite">
-          Showing{' '}
-          <span className="font-semibold text-[var(--ink-soft)] tabular-nums">{items.length}</span>
-          {hasMore ? '+' : ''} question{items.length === 1 ? '' : 's'}
-          {hasFilters ? ' matching your filters' : ''}
+          {list.isFetching && !list.isFetchingNextPage && list.isPlaceholderData
+            ? 'Updating…'
+            : (
+              <>
+                Showing{' '}
+                <span className="font-semibold text-[var(--ink-soft)] tabular-nums">
+                  {items.length}
+                </span>
+                {hasMore ? '+' : ''} question{items.length === 1 ? '' : 's'}
+                {hasFilters ? ' matching your filters' : ''}
+              </>
+            )}
         </p>
       ) : null}
 
-      {list.isLoading ? <QuestionsListBodySkeleton /> : null}
+      {showListSkeleton ? <QuestionsListBodySkeleton /> : null}
 
       {unauthorized ? (
         <EmptyState
@@ -112,7 +123,7 @@ function QuestionsContent() {
         <Alert variant="danger">Could not load questions. Try again shortly.</Alert>
       ) : null}
 
-      {!list.isLoading && !list.isError && items.length === 0 ? (
+      {!showListSkeleton && !list.isError && items.length === 0 ? (
         <EmptyState
           title="No questions match"
           description={
@@ -132,9 +143,16 @@ function QuestionsContent() {
         />
       ) : null}
 
-      {!list.isLoading && !list.isError && items.length > 0 ? (
+      {!showListSkeleton && !list.isError && items.length > 0 ? (
         <>
-          <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] shadow-[var(--shadow-sm)]">
+          <div
+            className={`overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] shadow-[var(--shadow-sm)] transition-opacity duration-150 ${
+              list.isFetching && !list.isFetchingNextPage && list.isPlaceholderData
+                ? 'opacity-60'
+                : 'opacity-100'
+            }`}
+            aria-busy={list.isFetching && !list.isFetchingNextPage}
+          >
             {items.map((item) => (
               <ListRow
                 key={item.id}

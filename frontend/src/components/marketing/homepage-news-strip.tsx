@@ -6,17 +6,27 @@ import { ArrowRight, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ListCardSkeleton, LoadError } from '@/components/loading';
 import { EmptyState } from '@/components/ui/empty-state';
-import { listPublicDocuments } from '@/lib/api/public-documents';
+import {
+  listPublicDocuments,
+  type PublicDocumentListItem,
+} from '@/lib/api/public-documents';
+import type { ApiResult } from '@/lib/api/client';
+
+type Props = {
+  initial?: ApiResult<PublicDocumentListItem[]> | null;
+};
 
 /** Latest published newspaper PDF columns. */
-export function HomepageNewsStrip() {
+export function HomepageNewsStrip({ initial = null }: Props) {
   const list = useQuery({
     queryKey: ['homepage-news-docs', 4],
     queryFn: () => listPublicDocuments({ limit: 4 }),
     staleTime: 60_000,
+    initialData: initial ?? undefined,
   });
 
   const items = list.data?.data ?? [];
+  const showSkeleton = list.isLoading && items.length === 0;
 
   return (
     <section
@@ -46,11 +56,11 @@ export function HomepageNewsStrip() {
           </Link>
         </div>
 
-        {list.isLoading ? <ListCardSkeleton /> : null}
+        {showSkeleton ? <ListCardSkeleton /> : null}
         {list.isError ? (
           <LoadError message="Could not load columns." onRetry={() => void list.refetch()} />
         ) : null}
-        {!list.isLoading && !list.isError && items.length === 0 ? (
+        {!showSkeleton && !list.isError && items.length === 0 ? (
           <EmptyState
             title="No published columns yet"
             description="When an admin publishes a PDF document, it will appear here."
