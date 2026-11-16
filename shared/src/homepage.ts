@@ -312,8 +312,8 @@ export function createDefaultHomepagePayload(): HomepagePayload {
     newsletter: {
       visible: true,
       title: 'Stay updated',
-      body: "Create a free account for a seven-day trial with full answers and explanations. Email newsletters aren't live yet.",
-      cta: { label: 'Start free trial', href: '/register', visible: true },
+      body: "Create a free account to practice with Your Academy. Email newsletters aren't live yet.",
+      cta: { label: 'Create account', href: '/register', visible: true },
     },
   });
 }

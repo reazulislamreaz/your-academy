@@ -92,7 +92,7 @@ function QuestionsContent() {
       {unauthorized ? (
         <EmptyState
           title="Sign in to browse"
-          description="The question bank requires an account. Start a free seven-day trial to unlock answers and explanations."
+          description="The question bank requires an account. Sign in or create an account to continue."
           action={
             <div className="flex flex-wrap justify-center gap-2">
               <Link href="/login">
@@ -101,7 +101,7 @@ function QuestionsContent() {
                 </Button>
               </Link>
               <Link href="/register">
-                <Button size="sm">Start free trial</Button>
+                <Button size="sm">Create account</Button>
               </Link>
             </div>
           }

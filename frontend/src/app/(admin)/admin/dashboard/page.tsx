@@ -143,7 +143,7 @@ export default function AdminDashboardPage() {
                   </span>
                 </div>
                 <p className="mt-2 text-sm text-[var(--muted-strong)]">
-                  Learners with an active seven-day trial right now.
+                  Learners with an active trial right now.
                 </p>
               </div>
               <Link href="/admin/users">

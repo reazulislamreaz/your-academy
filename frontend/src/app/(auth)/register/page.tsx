@@ -11,7 +11,6 @@ import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Surface } from '@/components/ui/surface';
-import { AuthMobileTrialBanner } from '@/features/auth/auth-promo-panel';
 import { PasswordField } from '@/features/auth/password-field';
 import { PasswordStrength } from '@/features/auth/password-strength';
 import { meQueryKey } from '@/features/auth/use-auth';
@@ -86,10 +85,8 @@ export default function RegisterPage() {
         <h1 className="font-display text-2xl font-bold tracking-tight text-[var(--ink)] sm:text-[1.75rem]">
           Create Account
         </h1>
-        <p className="text-sm text-[var(--muted-strong)]">Start your 7-day free trial today.</p>
+        <p className="text-sm text-[var(--muted-strong)]">Join Your Academy and start practicing today.</p>
       </div>
-
-      <AuthMobileTrialBanner className="lg:hidden" />
 
       <Surface
         elevated
@@ -176,10 +173,6 @@ export default function RegisterPage() {
           >
             {loading ? 'Creating…' : 'Create Account'}
           </Button>
-
-          <p className="text-center text-[0.6875rem] leading-snug text-[var(--muted)]">
-            7-day free trial included. Full answers available during your trial.
-          </p>
         </form>
       </Surface>
 

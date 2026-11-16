@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     default: 'Your Academy',
     template: '%s · Your Academy',
   },
-  description: 'Modern MCQ learning with a fair free trial',
+  description: 'Modern MCQ learning for competitive exam success',
   icons: {
     icon: [{ url: '/images/favicon.png', type: 'image/png' }],
     apple: '/images/apple-touch-icon.png',

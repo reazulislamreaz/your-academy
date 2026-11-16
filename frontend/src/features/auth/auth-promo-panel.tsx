@@ -81,14 +81,6 @@ export function AuthPromoPanel({ className }: { className?: string }) {
             </p>
           </div>
 
-          <div className="auth-trial-chip inline-flex items-center gap-2.5 rounded-xl border border-[var(--highlight)]/45 bg-[var(--highlight)]/22 px-3 py-2 shadow-[0_0_0_1px_rgba(227,30,36,0.12)] backdrop-blur-md">
-            <span className="auth-trial-badge relative flex size-8 shrink-0 items-center justify-center rounded-lg bg-[var(--highlight)] text-xs font-bold shadow-sm">
-              <span aria-hidden className="auth-trial-ring" />
-              7
-            </span>
-            <p className="font-display text-sm font-bold tracking-tight">Days Free Access</p>
-          </div>
-
           <ul className="auth-feature-grid grid grid-cols-2 gap-2.5">
             {FEATURES.map((feature) => (
               <li
@@ -112,22 +104,5 @@ export function AuthPromoPanel({ className }: { className?: string }) {
         </div>
       </div>
     </aside>
-  );
-}
-
-/** Compact trial chip for mobile auth forms. */
-export function AuthMobileTrialBanner({ className }: { className?: string }) {
-  return (
-    <div
-      className={cn(
-        'motion-rise flex items-center gap-2.5 rounded-xl border border-[var(--highlight)]/20 bg-[var(--highlight-soft)] px-3 py-2.5',
-        className,
-      )}
-    >
-      <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[var(--highlight)] text-[0.6875rem] font-bold text-white">
-        7
-      </span>
-      <p className="text-xs font-semibold text-[var(--ink)]">Days free access · full answers in trial</p>
-    </div>
   );
 }

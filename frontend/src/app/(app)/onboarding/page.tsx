@@ -87,11 +87,11 @@ export default function OnboardingPage() {
     <div className="mx-auto max-w-2xl space-y-8">
       <PageHeader
         eyebrow="Getting started"
-        title={step === 1 ? 'What do you want to practice?' : 'Your seven-day trial'}
+        title={step === 1 ? 'What do you want to practice?' : 'How answers work'}
         description={
           step === 1
             ? 'Pick up to three topics. We save these on your account to suggest a starting path.'
-            : 'Full answers unlock for one week. After that, browsing stays open — answer keys stay premium.'
+            : 'Browse the full question bank anytime. Correct answers and explanations depend on your access status.'
         }
       />
 
@@ -157,9 +157,9 @@ export default function OnboardingPage() {
             <li className="flex gap-3">
               <span className="font-display text-sm font-bold text-[var(--highlight)]">01</span>
               <div>
-                <p className="font-semibold">Trial starts now</p>
+                <p className="font-semibold">Access is active</p>
                 <p className="text-sm text-[var(--muted-strong)]">
-                  Ends {new Date(me.data.access.trialEndsAt).toLocaleString()}.
+                  Available until {new Date(me.data.access.trialEndsAt).toLocaleString()}.
                 </p>
               </div>
             </li>
@@ -168,16 +168,16 @@ export default function OnboardingPage() {
               <div>
                 <p className="font-semibold">Practice with explanations</p>
                 <p className="text-sm text-[var(--muted-strong)]">
-                  Correct answers are shown only while your trial (or a future plan) is active.
+                  Correct answers are shown while your access (or a future plan) is active.
                 </p>
               </div>
             </li>
             <li className="flex gap-3">
               <span className="font-display text-sm font-bold text-[var(--highlight)]">03</span>
               <div>
-                <p className="font-semibold">Nothing vanishes after day seven</p>
+                <p className="font-semibold">Browsing stays open</p>
                 <p className="text-sm text-[var(--muted-strong)]">
-                  Keep browsing questions, options, PDFs, and news for free.
+                  Keep browsing questions, options, PDFs, and news anytime.
                 </p>
               </div>
             </li>

@@ -11,7 +11,6 @@ import { Field } from '@/components/ui/field';
 import { Label } from '@/components/ui/label';
 import { Surface } from '@/components/ui/surface';
 import { LoginPageSkeleton } from '@/components/skeletons';
-import { AuthMobileTrialBanner } from '@/features/auth/auth-promo-panel';
 import { PasswordField } from '@/features/auth/password-field';
 import { postLoginPath } from '@/features/auth/post-login-path';
 import { meQueryKey } from '@/features/auth/use-auth';
@@ -73,8 +72,6 @@ function LoginForm() {
         </p>
       </div>
 
-      <AuthMobileTrialBanner className="lg:hidden" />
-
       <Surface
         elevated
         className="motion-rise ya-panel-shine auth-card border-[var(--line)]/80 p-4 shadow-[var(--shadow)] sm:p-5"
@@ -116,9 +113,6 @@ function LoginForm() {
           <Button type="submit" className="motion-press auth-submit w-full" disabled={loading} loading={loading}>
             {loading ? 'Signing in…' : 'Sign In'}
           </Button>
-          <p className="text-center text-[0.6875rem] leading-snug text-[var(--muted)]">
-            7-day free trial included. Full answers available during your trial.
-          </p>
         </form>
       </Surface>
 

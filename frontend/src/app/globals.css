@@ -1099,40 +1099,6 @@ input:disabled {
   transform-origin: center;
 }
 
-.auth-trial-chip {
-  position: relative;
-  isolation: isolate;
-}
-
-.auth-trial-chip::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  z-index: -1;
-  border-radius: inherit;
-  background: linear-gradient(
-    120deg,
-    rgba(227, 30, 36, 0.45),
-    rgba(255, 255, 255, 0.12),
-    rgba(59, 111, 217, 0.35)
-  );
-  opacity: 0.55;
-  filter: blur(8px);
-}
-
-.auth-trial-badge {
-  overflow: visible;
-}
-
-.auth-trial-ring {
-  position: absolute;
-  inset: -4px;
-  border-radius: 0.65rem;
-  border: 1px solid rgba(227, 30, 36, 0.55);
-  opacity: 0;
-  pointer-events: none;
-}
-
 .auth-feature-card {
   transition:
     border-color var(--duration-fast) var(--ease-out),
@@ -1169,31 +1135,6 @@ input:disabled {
   50% {
     opacity: 0.95;
     transform: translate3d(0, -4px, 0) scale(1.15);
-  }
-}
-
-@keyframes ya-auth-trial-ring {
-  0% {
-    opacity: 0.65;
-    transform: scale(1);
-  }
-  70% {
-    opacity: 0;
-    transform: scale(1.35);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(1.35);
-  }
-}
-
-@keyframes ya-auth-trial-glow {
-  0%,
-  100% {
-    opacity: 0.4;
-  }
-  50% {
-    opacity: 0.85;
   }
 }
 
@@ -1356,33 +1297,21 @@ input:disabled {
     animation: ya-auth-accent-shine 7s ease-in-out 400ms infinite;
   }
 
-  .auth-trial-chip {
-    animation: ya-auth-copy-in 560ms var(--ease-out) 200ms both;
-  }
-
-  .auth-trial-chip::before {
-    animation: ya-auth-trial-glow 4.5s ease-in-out infinite;
-  }
-
-  .auth-trial-ring {
-    animation: ya-auth-trial-ring 2.8s ease-out infinite;
-  }
-
   .auth-feature-grid > .auth-feature-card {
     animation: ya-auth-feature-in 560ms var(--ease-out) both;
   }
 
   .auth-feature-grid > .auth-feature-card:nth-child(1) {
-    animation-delay: 240ms;
+    animation-delay: 180ms;
   }
   .auth-feature-grid > .auth-feature-card:nth-child(2) {
-    animation-delay: 300ms;
+    animation-delay: 240ms;
   }
   .auth-feature-grid > .auth-feature-card:nth-child(3) {
-    animation-delay: 360ms;
+    animation-delay: 300ms;
   }
   .auth-feature-grid > .auth-feature-card:nth-child(4) {
-    animation-delay: 420ms;
+    animation-delay: 360ms;
   }
 
   .auth-feature-card:hover {
@@ -1432,9 +1361,6 @@ input:disabled {
   .auth-promo-headline,
   .auth-promo-sub,
   .auth-promo-accent,
-  .auth-trial-chip,
-  .auth-trial-chip::before,
-  .auth-trial-ring,
   .auth-feature-grid > .auth-feature-card,
   .auth-form-enter {
     animation: none !important;
@@ -1446,10 +1372,6 @@ input:disabled {
 
   .auth-promo-logo:hover {
     transform: none;
-  }
-
-  .auth-trial-ring {
-    opacity: 0;
   }
 
   .auth-feature-card:hover {

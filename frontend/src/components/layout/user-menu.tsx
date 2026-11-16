@@ -94,7 +94,7 @@ export function UserMenu({
         </Link>
         <Link href="/register" className={compact ? 'w-full' : undefined}>
           <Button size="sm" className={compact ? 'w-full' : undefined}>
-            Start free trial
+            Create account
           </Button>
         </Link>
       </div>

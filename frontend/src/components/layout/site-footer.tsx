@@ -6,7 +6,7 @@ const FOOTER_LINKS = [
   { href: '/', label: 'Home' },
   { href: '/#how-it-works', label: 'How it works' },
   { href: '/#contact', label: 'Contact' },
-  { href: '/register', label: 'Start free trial' },
+  { href: '/register', label: 'Create account' },
   { href: '/login', label: 'Sign in' },
 ] as const;
 
@@ -57,7 +57,7 @@ export function SiteFooter() {
               href="/register"
               className="rounded-full bg-[var(--highlight)] px-4 py-2 text-sm font-semibold text-white hover:brightness-105"
             >
-              Free trial
+              Create account
             </Link>
           </div>
         </div>
