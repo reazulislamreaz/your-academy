@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  ConflictException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -395,16 +394,12 @@ export class QuestionImportService {
       select: { id: true, batchCode: true, displayName: true, status: true },
     });
 
-    if (existingFile?.status === QuestionUploadStatus.COMPLETED) {
-      throw new ConflictException(
-        createErrorResponse(
-          'DUPLICATE_FILE',
-          `This exact file was already imported as batch ${existingFile.batchCode}`,
-          newRequestId(),
-          [{ existingBatchId: existingFile.id, existingBatchCode: existingFile.batchCode }],
-        ),
-      );
-    }
+    // Re-uploading an identical file is allowed: the per-row duplicate
+    // detection below marks every already-imported question DUPLICATE and
+    // confirm skips them, so nothing is imported twice. The earlier batch
+    // stays linked via duplicateFileBatchId so the admin can see where the
+    // file came from. (Previously this threw DUPLICATE_FILE, which blocked
+    // admins from re-uploading a file to pick up the rows they missed.)
 
     const displayName =
       input.displayName?.trim() ||
@@ -1036,17 +1031,25 @@ export class QuestionImportService {
             });
             importedCount += 1;
           } catch (err) {
-            failedCount += 1;
-            const message =
-              err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002'
-                ? 'Duplicate question — same question text and correct answer already exist'
-                : err instanceof Error
-                  ? err.message.slice(0, 500)
-                  : 'Import failed';
+            // A row that slipped past the upload-time check — created elsewhere
+            // after the upload, or by a concurrent import — hits the partial
+            // unique index on contentHash. That is a duplicate to skip, not a
+            // failed row: mark it SKIPPED so the batch counts it with the
+            // other duplicates instead of failing the import.
+            const isDuplicate =
+              err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002';
+            const message = isDuplicate
+              ? 'Duplicate question — same question text and correct answer already exist'
+              : err instanceof Error
+                ? err.message.slice(0, 500)
+                : 'Import failed';
+            if (!isDuplicate) failedCount += 1;
             await tx.questionImportRow.update({
               where: { id: row.id },
               data: {
-                status: QuestionImportRowStatus.INVALID,
+                status: isDuplicate
+                  ? QuestionImportRowStatus.SKIPPED
+                  : QuestionImportRowStatus.INVALID,
                 errorMessage: message,
               },
             });
