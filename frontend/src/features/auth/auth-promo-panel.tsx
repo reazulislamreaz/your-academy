@@ -68,15 +68,15 @@ export function AuthPromoPanel({ className }: { className?: string }) {
 
         <div className="max-w-md space-y-4">
           <div className="auth-promo-copy space-y-2.5">
-            <p className="auth-promo-eyebrow text-[0.65rem] font-semibold tracking-[0.2em] text-white/70 uppercase">
+            <p className="auth-promo-eyebrow text-[0.65rem] font-semibold tracking-[0.22em] text-white uppercase">
               Your Academy
             </p>
-            <h2 className="auth-promo-headline font-display text-[1.8rem] leading-[1.12] font-bold tracking-tight xl:text-[2.2rem]">
+            <h2 className="auth-promo-headline font-display text-[1.8rem] leading-[1.12] font-bold tracking-tight text-[#FFFFFF] xl:text-[2.2rem]">
               Prepare <span className="auth-promo-accent">Smarter</span>.
               <br className="hidden sm:block" /> Achieve{' '}
               <span className="auth-promo-accent">More</span>.
             </h2>
-            <p className="auth-promo-sub max-w-sm text-sm leading-relaxed text-white/82 xl:text-[0.9375rem]">
+            <p className="auth-promo-sub max-w-sm text-sm leading-relaxed font-medium text-white/95 xl:text-[0.9375rem]">
               Everything you need to succeed in competitive exams, all in one place.
             </p>
           </div>
@@ -85,19 +85,21 @@ export function AuthPromoPanel({ className }: { className?: string }) {
             {FEATURES.map((feature) => (
               <li
                 key={feature.title}
-                className="auth-feature-card rounded-xl border border-white/16 bg-white/[0.1] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] backdrop-blur-[10px]"
+                className="auth-feature-card rounded-xl border border-white/28 bg-white/[0.16] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.22)] backdrop-blur-[12px]"
               >
-                <span className="auth-feature-icon mb-2 inline-flex size-7 items-center justify-center rounded-lg bg-[var(--highlight)]/18 ring-1 ring-[var(--highlight)]/30">
+                <span className="auth-feature-icon mb-2 inline-flex size-7 items-center justify-center rounded-lg bg-[var(--highlight)]/28 ring-1 ring-white/35">
                   <feature.icon
-                    className="size-3.5 text-[var(--highlight)]"
+                    className="size-3.5 text-[#FFEBEE]"
                     aria-hidden
-                    strokeWidth={2}
+                    strokeWidth={2.25}
                   />
                 </span>
-                <p className="font-display text-[0.8125rem] leading-snug font-semibold tracking-tight text-white">
+                <p className="font-display text-[0.8125rem] leading-snug font-semibold tracking-tight text-[#FFFFFF]">
                   {feature.title}
                 </p>
-                <p className="mt-0.5 text-[0.6875rem] leading-snug text-white/72">{feature.body}</p>
+                <p className="mt-0.5 text-[0.6875rem] leading-snug font-medium text-white/90">
+                  {feature.body}
+                </p>
               </li>
             ))}
           </ul>
