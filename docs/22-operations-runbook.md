@@ -12,21 +12,25 @@
 2. Create deploy user (or use `root`); add SSH key used by GitHub Actions (`DEPLOY_SSH_KEY`).
 3. Clone repo to `DEPLOY_PATH` (e.g. `/root/your-academy`).
 4. Point DNS `A`/`AAAA` for your domain at the VPS (Cloudflare orange-cloud OK).
-5. **Origin TLS behind Cloudflare (recommended, permanent):** issue Let’s Encrypt on the VPS (`certbot` DNS-01 via Cloudflare API token), set `TLS_ENABLED=true`, `TLS_CERTS_DIR=/etc/your-academy/certs`, `COOKIE_SECURE=true`, `WEB_ORIGIN=https://…`. Deploy uses `nginx.prod.conf` (:80 + :443). Apply Cloudflare edge settings with `./scripts/cloudflare-prod-ssl.sh` (or manually): SSL/TLS **Full (strict)**, Always Use HTTPS **on**, min TLS **1.2**, **IPv6 Compatibility off** (broken client IPv6 often presents as SSL handshake errors), **HTTP/3 off** (QUIC failures look like TLS errors on some ISPs), Browser Integrity Check **off**, **Origin max HTTP version = HTTP/1.1** (avoids intermittent CF↔origin HTTP/2 TLS failures reported as Error **525**), Authenticated Origin Pulls **off**. Origin nginx listens with `backlog=4096` and keeps **HTTP/2 off** on `:443` so CF speaks HTTP/1.1 to the origin. Auto-renew: `certbot.timer` + `scripts/renew-tls-certs.sh` deploy hook. Nginx must re-resolve Docker upstreams via `127.0.0.11` (see `nginx.prod.conf`) so rolling recreates do not cause Cloudflare 502/520.
-6. Issue TLS certs (Let’s Encrypt DNS-01 example):
+5. **Origin TLS behind Cloudflare (recommended, permanent):** install a publicly trusted origin cert that Cloudflare Full (strict) accepts on **all** edges (including DAC/CGP). Production uses **ZeroSSL (Sectigo/USERTrust chain)** via `acme.sh` DNS-01 — **not** Let’s Encrypt YE1/YR1 (“Root YE/YR”), which caused intermittent Cloudflare **525** from Bangladesh edges under Full (strict). Prefer **Cloudflare Origin CA** when the API token has Account/Zone **SSL and Certificates:Edit** (token used for DNS alone cannot create Origin CA). Set `TLS_ENABLED=true`, `TLS_CERTS_DIR=/etc/your-academy/certs`, `COOKIE_SECURE=true`, `WEB_ORIGIN=https://…`. Deploy uses `nginx.prod.conf` (:80 + :443). Apply edge settings with `./scripts/cloudflare-prod-ssl.sh`: SSL/TLS **Full (strict)**, Always Use HTTPS **on**, min TLS **1.2**, **IPv6 Compatibility off**, **HTTP/3 off**, Browser Integrity Check **off**, **Origin max HTTP version = HTTP/1.1**, Authenticated Origin Pulls **off**, Opportunistic Encryption **off**. Origin nginx: `backlog=4096`, **HTTP/2 off** on `:443`. Auto-renew: `acme.sh` cron → `/etc/your-academy/certs` + `nginx -s reload`. Nginx must re-resolve Docker upstreams via `127.0.0.11` (see `nginx.prod.conf`).
+6. Issue origin TLS (ZeroSSL via `acme.sh` DNS-01 — current production):
 
 ```bash
-sudo apt install certbot
-sudo certbot certonly --webroot -w /var/www/certbot -d your.domain
-# or standalone before nginx is up, then switch to webroot renewals
+# CF_Token from /root/.secrets-cloudflare.ini (Zone DNS Edit)
+export CF_Token=…
+~/.acme.sh/acme.sh --issue --dns dns_cf -d youracademy.com.bd -d www.youracademy.com.bd \
+  --keylength 2048 --server zerossl
+~/.acme.sh/acme.sh --install-cert -d youracademy.com.bd \
+  --fullchain-file /etc/your-academy/certs/fullchain.pem \
+  --key-file /etc/your-academy/certs/privkey.pem \
+  --reloadcmd "docker exec your-academy-nginx-1 nginx -s reload"
 ```
 
-7. Link certs for Compose:
+7. Cert paths for Compose (files, not LE symlinks, when using ZeroSSL):
 
 ```bash
 sudo mkdir -p /etc/your-academy/certs
-sudo ln -sf /etc/letsencrypt/live/your.domain/fullchain.pem /etc/your-academy/certs/fullchain.pem
-sudo ln -sf /etc/letsencrypt/live/your.domain/privkey.pem /etc/your-academy/certs/privkey.pem
+# populated by acme.sh --install-cert (fullchain.pem + privkey.pem)
 ```
 
 8. Create `.env.production` from `.env.example` (chmod `600`). HTTP-first minimum:
@@ -157,7 +161,7 @@ Prefer image/git tags for releases once you add tagged deploys.
 | Next client “Application error” | Often `ChunkLoadError` after deploy (HTML/JS build id mismatch) or mid-deploy 502 on `/_next/static/*`. App auto-reloads once; hard refresh clears stuck tabs. |
 | Web `EACCES` on `.next/cache` | Image must chown cache dirs to `youracademy` (see `docker/web.Dockerfile`). |
 | Cookies fail on HTTPS | `COOKIE_SECURE` not `true` or wrong `WEB_ORIGIN` |
-| TLS error / Cloudflare **525** | Missing/expired files in `TLS_CERTS_DIR`; CF SSL mode not **Full (strict)** while origin has HTTPS; CF **Origin max HTTP version** still HTTP/2 against a flaky HTTP/2 origin; Authenticated Origin Pulls enabled without client certs; broken client IPv6 (set CF IPv6 Compatibility **off**) |)
+| TLS error / Cloudflare **525** | Origin cert untrusted by some CF edges (Let’s Encrypt **YE/YR** chains caused DAC/CGP 525 under Full strict — use ZeroSSL/Sectigo or Cloudflare Origin CA); missing/expired files in `TLS_CERTS_DIR`; Origin max HTTP version still HTTP/2; Authenticated Origin Pulls on without client certs; broken client IPv6 (CF IPv6 **off**) |
 | Migrate failed | Check `migrate` container logs; fix SQL/env; re-run deploy |
 
 ---

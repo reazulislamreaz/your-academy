@@ -42,6 +42,7 @@ settings=(
   "origin_max_http_version:1"
   "tls_client_auth:off"
   "0rtt:off"
+  "opportunistic_encryption:off"
 )
 
 for pair in "${settings[@]}"; do

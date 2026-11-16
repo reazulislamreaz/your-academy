@@ -1,42 +1,39 @@
 # TLS certificates (production)
 
-Mount Let’s Encrypt (or other) material here on the VPS — **do not commit private keys**.
+Mount origin TLS material here on the VPS — **do not commit private keys**.
 
 Expected filenames (see `nginx.prod.conf`):
 
 - `fullchain.pem`
 - `privkey.pem`
 
-## Recommended: Cloudflare Full (strict) + Let’s Encrypt DNS-01
+On production the live mount is `TLS_CERTS_DIR=/etc/your-academy/certs` (Compose bind-mount), not this repo folder.
 
-1. Issue certs on the VPS (Cloudflare API token needs Zone DNS Edit):
+## Recommended: Cloudflare Full (strict) + ZeroSSL (Sectigo chain)
 
-```bash
-certbot certonly \
-  --dns-cloudflare \
-  --dns-cloudflare-credentials /root/.secrets-cloudflare.ini \
-  -d youracademy.com.bd -d www.youracademy.com.bd
-```
+Let’s Encrypt’s newer **YE1/YR1 → Root YE/YR** chains caused intermittent Cloudflare **Error 525** from Bangladesh edges (DAC/CGP) while Full (strict) was on. ZeroSSL DV (issuer ZeroSSL RSA DV SSL CA 2, chain through Sectigo / USERTrust) is accepted under Full (strict) on those edges.
 
-2. Install into the certs dir used by Compose:
+Alternative (preferred when API allows): **Cloudflare Origin CA** — requires API token permission **SSL and Certificates:Edit**. The DNS-only token cannot create Origin CA certificates.
+
+### Issue / renew with acme.sh
 
 ```bash
-sudo mkdir -p /etc/your-academy/certs
-sudo install -m 644 /etc/letsencrypt/live/youracademy.com.bd/fullchain.pem /etc/your-academy/certs/fullchain.pem
-sudo install -m 600 /etc/letsencrypt/live/youracademy.com.bd/privkey.pem /etc/your-academy/certs/privkey.pem
+export CF_Token="$(grep dns_cloudflare_api_token /root/.secrets-cloudflare.ini | cut -d= -f2 | tr -d ' ')"
+
+~/.acme.sh/acme.sh --issue --dns dns_cf \
+  -d youracademy.com.bd -d www.youracademy.com.bd \
+  --keylength 2048 --server zerossl
+
+~/.acme.sh/acme.sh --install-cert -d youracademy.com.bd \
+  --fullchain-file /etc/your-academy/certs/fullchain.pem \
+  --key-file /etc/your-academy/certs/privkey.pem \
+  --reloadcmd "docker exec your-academy-nginx-1 nginx -s reload"
 ```
 
-3. In `.env.production`:
+`acme.sh` cron handles renewal. Keep the Let’s Encrypt `certbot` deploy hook **disabled** while ZeroSSL is the active origin cert so renewals do not overwrite `/etc/your-academy/certs` with a YE/YR chain.
 
-```bash
-TLS_ENABLED=true
-TLS_CERTS_DIR=/etc/your-academy/certs
-COOKIE_SECURE=true
-WEB_ORIGIN=https://youracademy.com.bd
-```
+### Cloudflare edge settings
 
-4. Cloudflare SSL/TLS mode: **Full (strict)**; min TLS **1.2**.
-
-5. Renew hook (already used in prod): `scripts/renew-tls-certs.sh` via `/etc/letsencrypt/renewal-hooks/deploy/`.
+Run `./scripts/cloudflare-prod-ssl.sh` (Full **strict**, origin HTTP/1.1, IPv6/HTTP3/0-RTT/opportunistic encryption off as documented in `docs/22-operations-runbook.md`).
 
 Temporary HTTP-only origin (`docker-compose.prod-http.yml`) is only for bootstrap before certs exist.
