@@ -48,7 +48,8 @@ export function ProgressRing({
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
-          className="transition-[stroke-dashoffset] duration-700 ease-[var(--ease-out)]"
+          className="motion-ring-draw transition-[stroke-dashoffset] duration-700 ease-[var(--ease-out)]"
+          style={{ ['--ring-circumference' as string]: circumference }}
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">

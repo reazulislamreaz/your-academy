@@ -32,6 +32,14 @@ export CF_Token="$(grep dns_cloudflare_api_token /root/.secrets-cloudflare.ini |
 
 `acme.sh` cron handles renewal. Keep the Let’s Encrypt `certbot` deploy hook **disabled** while ZeroSSL is the active origin cert so renewals do not overwrite `/etc/your-academy/certs` with a YE/YR chain.
 
+Guard file (required on the VPS):
+
+```bash
+echo zerossl | sudo tee /etc/your-academy/certs/.origin-provider
+```
+
+`scripts/renew-tls-certs.sh` refuses to install Let’s Encrypt material when that marker is present.
+
 ### Cloudflare edge settings
 
 Run `./scripts/cloudflare-prod-ssl.sh` (Full **strict**, origin HTTP/1.1, IPv6/HTTP3/0-RTT/opportunistic encryption off as documented in `docs/22-operations-runbook.md`).

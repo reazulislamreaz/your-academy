@@ -21,7 +21,7 @@ export function SubjectProgress({ items }: Props) {
         <li key={row.categoryId}>
           <Link
             href={`/questions?categoryId=${row.categoryId}`}
-            className="group flex items-center justify-between gap-3 rounded-md px-2 py-2 hover:bg-[var(--bg-muted)]"
+            className="group flex items-center justify-between gap-3 rounded-md px-2 py-2 transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out)] hover:bg-[var(--bg-muted)]"
           >
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between gap-2">
@@ -35,7 +35,7 @@ export function SubjectProgress({ items }: Props) {
               <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-[var(--bg-muted)]">
                 <div
                   className={cn(
-                    'h-full rounded-full transition-all',
+                    'motion-bar-fill h-full rounded-full',
                     row.accuracyPercent >= 70
                       ? 'bg-[var(--viz-positive)]'
                       : row.accuracyPercent >= 40

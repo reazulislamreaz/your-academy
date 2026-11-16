@@ -19,6 +19,8 @@ import { ProgressRing } from '@/components/dashboard/progress-ring';
 import { QuickLink } from '@/components/dashboard/quick-link';
 import { SubjectProgress } from '@/components/dashboard/subject-progress';
 import { LoadError } from '@/components/loading';
+import { Reveal } from '@/components/motion/reveal';
+import { Stagger } from '@/components/motion/stagger';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -170,7 +172,7 @@ export default function StudyHomePage() {
   return (
     <div className="flex w-full flex-col gap-7 pb-10 sm:gap-8">
       {/* Orbit title block */}
-      <div className="motion-rise flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <Reveal className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0 space-y-1.5">
           <div className="flex items-center gap-2">
             <span
@@ -190,18 +192,18 @@ export default function StudyHomePage() {
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
           <Link href={resumeHref} className="w-full sm:w-auto">
-            <Button className="w-full px-5 sm:w-auto">
+            <Button className="motion-press w-full px-5 sm:w-auto">
               {last ? 'Resume practice' : 'Start practice'}
               <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>
           <Link href="/profile" className="w-full sm:w-auto">
-            <Button variant="outline" className="w-full px-5 sm:w-auto">
+            <Button variant="outline" className="motion-press w-full px-5 sm:w-auto">
               Account
             </Button>
           </Link>
         </div>
-      </div>
+      </Reveal>
 
       {statsFailed || analyticsFailed ? (
         <LoadError
@@ -221,57 +223,59 @@ export default function StudyHomePage() {
 
       {/* Two wide KPI cards */}
       {!statsFailed ? (
-        <div className="motion-stagger grid gap-4 md:grid-cols-2">
-          <HomeStatCard
-            tone="neutral"
-            icon={ClipboardCheck}
-            value={perf.uniqueQuestions.toLocaleString()}
-            label="MCQs practiced"
-            subtitle="Unique questions you have checked"
-            footer={
-              <TrendPill muted={perf.weekAttempts === 0}>
-                {perf.weekAttempts > 0
-                  ? `+${perf.weekAttempts.toLocaleString()} this week`
-                  : 'No checks this week'}
-              </TrendPill>
-            }
-          />
-
-          <HomeStatCard
-            tone="positive"
-            icon={Target}
-            value={`${perf.accuracyPercent}%`}
-            label="Success rate"
-            subtitle={
-              analyticsFailed
-                ? 'Accuracy across all checks'
-                : `Study time ${formatStudyHours(totalSec)} · week ${weekHoursLabel || '0'}`
-            }
-            footer={
-              <div className="flex items-center justify-between gap-4">
-                <TrendPill muted={analyticsFailed || weekSec === 0}>
-                  {analyticsFailed
-                    ? 'Study time unavailable'
-                    : weekSec > 0
-                      ? `+${weekHoursLabel} study this week`
-                      : 'No study time this week'}
+        <Reveal>
+          <Stagger className="grid gap-4 md:grid-cols-2" stepMs={70}>
+            <HomeStatCard
+              tone="neutral"
+              icon={ClipboardCheck}
+              value={perf.uniqueQuestions.toLocaleString()}
+              label="MCQs practiced"
+              subtitle="Unique questions you have checked"
+              footer={
+                <TrendPill muted={perf.weekAttempts === 0}>
+                  {perf.weekAttempts > 0
+                    ? `+${perf.weekAttempts.toLocaleString()} this week`
+                    : 'No checks this week'}
                 </TrendPill>
-                <ProgressRing
-                  value={perf.accuracyPercent}
-                  size={72}
-                  stroke={7}
-                  label={`${perf.accuracyPercent}%`}
-                  color="var(--viz-positive)"
-                  trackColor="var(--line)"
-                />
-              </div>
-            }
-          />
-        </div>
+              }
+            />
+
+            <HomeStatCard
+              tone="positive"
+              icon={Target}
+              value={`${perf.accuracyPercent}%`}
+              label="Success rate"
+              subtitle={
+                analyticsFailed
+                  ? 'Accuracy across all checks'
+                  : `Study time ${formatStudyHours(totalSec)} · week ${weekHoursLabel || '0'}`
+              }
+              footer={
+                <div className="flex items-center justify-between gap-4">
+                  <TrendPill muted={analyticsFailed || weekSec === 0}>
+                    {analyticsFailed
+                      ? 'Study time unavailable'
+                      : weekSec > 0
+                        ? `+${weekHoursLabel} study this week`
+                        : 'No study time this week'}
+                  </TrendPill>
+                  <ProgressRing
+                    value={perf.accuracyPercent}
+                    size={72}
+                    stroke={7}
+                    label={`${perf.accuracyPercent}%`}
+                    color="var(--viz-positive)"
+                    trackColor="var(--line)"
+                  />
+                </div>
+              }
+            />
+          </Stagger>
+        </Reveal>
       ) : null}
 
       {/* Continue + quick actions + answer mix */}
-      <div className="grid gap-4 lg:grid-cols-5">
+      <Reveal delayMs={40} className="grid gap-4 lg:grid-cols-5">
         <Surface elevated className="space-y-5 p-4 sm:p-5 lg:col-span-3">
           <SectionTitle title="Continue practice" href="/questions" linkLabel="Question bank" />
           {last ? (
@@ -306,56 +310,56 @@ export default function StudyHomePage() {
             />
           )}
 
-          <div>
-            <h3 className="mb-3 text-[0.6875rem] font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
-              Quick actions
-            </h3>
-            <div className="grid gap-2.5 sm:grid-cols-2">
-              <QuickLink
-                href="/questions"
-                title="Question bank"
-                description="Subject, topic, and exam-track MCQs"
-                icon={BookOpen}
-              />
-              <QuickLink
-                href="/model-tests"
-                title="Model tests"
-                description="Timed mocks with score review"
-                icon={ClipboardList}
-              />
-              <QuickLink
-                href="/exams"
-                title="Govt job prep"
-                description="BCS, bank, NTRCA, and more"
-                icon={FileText}
-              />
-              <QuickLink
-                href="/quizzes"
-                title="Quiz center"
-                description={
-                  preferredIds.length
-                    ? `${preferredIds.length} preferred subjects ready`
-                    : 'Daily, subject, and topic quizzes'
-                }
-                icon={Sparkles}
-              />
+            <div>
+              <h3 className="mb-3 text-[0.6875rem] font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
+                Quick actions
+              </h3>
+              <Stagger className="grid gap-2.5 sm:grid-cols-2" stepMs={55}>
+                <QuickLink
+                  href="/questions"
+                  title="Question bank"
+                  description="Subject, topic, and exam-track MCQs"
+                  icon={BookOpen}
+                />
+                <QuickLink
+                  href="/model-tests"
+                  title="Model tests"
+                  description="Timed mocks with score review"
+                  icon={ClipboardList}
+                />
+                <QuickLink
+                  href="/exams"
+                  title="Govt job prep"
+                  description="BCS, bank, NTRCA, and more"
+                  icon={FileText}
+                />
+                <QuickLink
+                  href="/quizzes"
+                  title="Quiz center"
+                  description={
+                    preferredIds.length
+                      ? `${preferredIds.length} preferred subjects ready`
+                      : 'Daily, subject, and topic quizzes'
+                  }
+                  icon={Sparkles}
+                />
+              </Stagger>
             </div>
-          </div>
-        </Surface>
+          </Surface>
 
-        <Surface elevated className="space-y-3 p-4 sm:p-5 lg:col-span-2">
-          <SectionTitle title="Answer mix" />
-          {stats.isLoading ? (
-            <HomeAnswerMixSkeleton />
-          ) : (
-            <ContentIn>
-              <AccuracyDonut correct={perf.correct} incorrect={perf.incorrect} />
-            </ContentIn>
-          )}
-        </Surface>
-      </div>
+          <Surface elevated className="space-y-3 p-4 sm:p-5 lg:col-span-2">
+            <SectionTitle title="Answer mix" />
+            {stats.isLoading ? (
+              <HomeAnswerMixSkeleton />
+            ) : (
+              <ContentIn>
+                <AccuracyDonut correct={perf.correct} incorrect={perf.incorrect} />
+              </ContentIn>
+            )}
+          </Surface>
+      </Reveal>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <Reveal delayMs={60} className="grid gap-4 md:grid-cols-2">
         <Surface elevated className="space-y-3 p-4 sm:p-5">
           <SectionTitle title="Subject performance" href="/onboarding" linkLabel="My topics" />
           {stats.isLoading ? (
@@ -385,9 +389,9 @@ export default function StudyHomePage() {
             </ContentIn>
           )}
         </Surface>
-      </div>
+      </Reveal>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <Reveal delayMs={80} className="grid gap-4 lg:grid-cols-2">
         <Surface elevated className="space-y-3 p-4 sm:p-5">
           <SectionTitle
             title={preferredIds.length ? 'Your topics' : 'Recommended topics'}
@@ -403,12 +407,12 @@ export default function StudyHomePage() {
               description="Topics appear once the question bank has published categories."
             />
           ) : (
-            <ul className="space-y-1">
+            <ul className="motion-stagger space-y-1">
               {suggestions.map((cat) => (
                 <li key={cat.id}>
                   <Link
                     href={`/questions?categoryId=${cat.id}`}
-                    className="flex items-center justify-between gap-3 rounded-[var(--radius-sm)] px-1.5 py-2 transition-colors hover:bg-[var(--bg-muted)]"
+                    className="list-row flex items-center justify-between gap-3 rounded-[var(--radius-sm)] px-1.5 py-2"
                   >
                     <span className="min-w-0">
                       <span className="block truncate text-sm font-medium text-[var(--ink)]">
@@ -444,7 +448,7 @@ export default function StudyHomePage() {
                 <li key={item.id}>
                   <Link
                     href={`/news/${item.slug}`}
-                    className="block min-w-0 rounded-[var(--radius-sm)] px-1.5 py-2.5 transition-colors hover:bg-[var(--bg-muted)]"
+                    className="list-row block min-w-0 rounded-[var(--radius-sm)] px-1.5 py-2.5"
                   >
                     <p className="truncate text-sm font-medium text-[var(--ink)]">{item.title}</p>
                     {item.summary ? (
@@ -458,60 +462,64 @@ export default function StudyHomePage() {
             </ul>
           )}
         </Surface>
-      </div>
+      </Reveal>
 
       {stats.data?.examPerformance || !stats.isLoading ? (
-        <ExamPerformancePanel initial={stats.data?.examPerformance ?? null} />
+        <Reveal delayMs={90}>
+          <ExamPerformancePanel initial={stats.data?.examPerformance ?? null} />
+        </Reveal>
       ) : null}
 
-      <Surface elevated className="space-y-3 overflow-hidden p-4 sm:p-5">
-        <SectionTitle title="Saved for later" href="/bookmarks" linkLabel="View all" />
-        {stats.isLoading ? <HomeActivityListSkeleton rows={3} /> : null}
-        {!stats.isLoading &&
-        (!stats.data ||
-          (stats.data.recentQuestions.length === 0 &&
-            stats.data.recentDocuments.length === 0)) ? (
-          <EmptyState
-            nested
-            className="py-8"
-            title="Nothing saved yet"
-            description="Bookmark questions or PDFs while you practice — they land here."
-            action={
-              <Link href="/questions">
-                <Button size="sm" variant="soft">
-                  Browse questions
-                </Button>
-              </Link>
-            }
-          />
-        ) : (
-          <ul className="divide-y divide-[var(--line)] sm:columns-2 sm:gap-6">
-            {(stats.data?.recentQuestions ?? []).slice(0, 4).map((item) => (
-              <li key={item.bookmarkId} className="break-inside-avoid">
-                <Link
-                  href={`/questions/${item.id}`}
-                  className="flex min-w-0 items-center justify-between gap-3 rounded-[var(--radius-sm)] px-1.5 py-2.5 transition-colors hover:bg-[var(--bg-muted)]"
-                >
-                  <span className="min-w-0 truncate text-sm font-medium">{item.title}</span>
-                  <Badge variant="outline" className="shrink-0">
-                    {item.difficulty}
-                  </Badge>
+      <Reveal delayMs={100}>
+        <Surface elevated className="space-y-3 overflow-hidden p-4 sm:p-5">
+          <SectionTitle title="Saved for later" href="/bookmarks" linkLabel="View all" />
+          {stats.isLoading ? <HomeActivityListSkeleton rows={3} /> : null}
+          {!stats.isLoading &&
+          (!stats.data ||
+            (stats.data.recentQuestions.length === 0 &&
+              stats.data.recentDocuments.length === 0)) ? (
+            <EmptyState
+              nested
+              className="py-8"
+              title="Nothing saved yet"
+              description="Bookmark questions or PDFs while you practice — they land here."
+              action={
+                <Link href="/questions">
+                  <Button size="sm" variant="soft">
+                    Browse questions
+                  </Button>
                 </Link>
-              </li>
-            ))}
-            {(stats.data?.recentDocuments ?? []).slice(0, 3).map((item) => (
-              <li key={item.bookmarkId} className="break-inside-avoid">
-                <Link
-                  href={`/documents/${item.id}`}
-                  className="block truncate rounded-[var(--radius-sm)] px-1.5 py-2.5 text-sm font-medium transition-colors hover:bg-[var(--bg-muted)]"
-                >
-                  {item.title}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Surface>
+              }
+            />
+          ) : (
+            <ul className="divide-y divide-[var(--line)] sm:columns-2 sm:gap-6">
+              {(stats.data?.recentQuestions ?? []).slice(0, 4).map((item) => (
+                <li key={item.bookmarkId} className="break-inside-avoid">
+                  <Link
+                    href={`/questions/${item.id}`}
+                    className="list-row flex min-w-0 items-center justify-between gap-3 rounded-[var(--radius-sm)] px-1.5 py-2.5"
+                  >
+                    <span className="min-w-0 truncate text-sm font-medium">{item.title}</span>
+                    <Badge variant="outline" className="shrink-0">
+                      {item.difficulty}
+                    </Badge>
+                  </Link>
+                </li>
+              ))}
+              {(stats.data?.recentDocuments ?? []).slice(0, 3).map((item) => (
+                <li key={item.bookmarkId} className="break-inside-avoid">
+                  <Link
+                    href={`/documents/${item.id}`}
+                    className="list-row block truncate rounded-[var(--radius-sm)] px-1.5 py-2.5 text-sm font-medium"
+                  >
+                    {item.title}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Surface>
+      </Reveal>
     </div>
   );
 }

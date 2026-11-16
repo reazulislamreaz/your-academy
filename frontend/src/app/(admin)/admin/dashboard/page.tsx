@@ -28,6 +28,8 @@ import { QuickLink } from '@/components/dashboard/quick-link';
 import { StatCard } from '@/components/dashboard/stat-card';
 import { PageHeader } from '@/components/layout/page-header';
 import { LoadError } from '@/components/loading';
+import { Reveal } from '@/components/motion/reveal';
+import { Stagger } from '@/components/motion/stagger';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Surface } from '@/components/ui/surface';
@@ -91,85 +93,90 @@ export default function AdminDashboardPage() {
 
   return (
     <AdminPage>
-      <PageHeader
-        eyebrow="Overview"
-        title="Platform console"
-        description="Work queue, live KPIs, and recent platform activity — optimized for daily operations."
-        actions={
-          <Link href="/admin/questions/new">
-            <Button size="sm">
-              <Plus className="h-4 w-4" />
-              New question
-            </Button>
-          </Link>
-        }
-      />
+      <Reveal>
+        <PageHeader
+          eyebrow="Overview"
+          title="Platform console"
+          description="Work queue, live KPIs, and recent platform activity — optimized for daily operations."
+          actions={
+            <Link href="/admin/questions/new">
+              <Button size="sm" className="motion-press">
+                <Plus className="h-4 w-4" />
+                New question
+              </Button>
+            </Link>
+          }
+        />
+      </Reveal>
 
-      <AdminSection
-        title="Work queue"
-        description="Highest-priority ops items before the KPI grid."
-      >
-        <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-3">
-          <Surface elevated className="flex flex-col justify-between gap-4 p-4 sm:p-5">
-            <div>
-              <div className="flex items-center gap-2">
-                <Badge variant="highlight">Drafts</Badge>
-                <span className="font-display text-2xl font-bold tabular-nums">
-                  {data.questions.draft}
-                </span>
+      <Reveal delayMs={40}>
+        <AdminSection
+          title="Work queue"
+          description="Highest-priority ops items before the KPI grid."
+        >
+          <Stagger className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-3" stepMs={65}>
+            <Surface elevated interactive className="flex flex-col justify-between gap-4 p-4 sm:p-5">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="highlight">Drafts</Badge>
+                  <span className="font-display text-2xl font-bold tabular-nums">
+                    {data.questions.draft}
+                  </span>
+                </div>
+                <p className="mt-2 text-sm text-[var(--muted-strong)]">
+                  Questions waiting to publish (need valid options).
+                </p>
               </div>
-              <p className="mt-2 text-sm text-[var(--muted-strong)]">
-                Questions waiting to publish (need valid options).
-              </p>
-            </div>
-            <Link href="/admin/questions?status=DRAFT">
-              <Button size="sm" variant="soft">
-                Review drafts
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-          </Surface>
-          <Surface elevated className="flex flex-col justify-between gap-4 p-4 sm:p-5">
-            <div>
-              <div className="flex items-center gap-2">
-                <Badge variant="success">Trials</Badge>
-                <span className="font-display text-2xl font-bold tabular-nums">
-                  {data.users.trialActive}
-                </span>
+              <Link href="/admin/questions?status=DRAFT">
+                <Button size="sm" variant="soft" className="motion-press">
+                  Review drafts
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            </Surface>
+            <Surface elevated interactive className="flex flex-col justify-between gap-4 p-4 sm:p-5">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="success">Trials</Badge>
+                  <span className="font-display text-2xl font-bold tabular-nums">
+                    {data.users.trialActive}
+                  </span>
+                </div>
+                <p className="mt-2 text-sm text-[var(--muted-strong)]">
+                  Learners with an active seven-day trial right now.
+                </p>
               </div>
-              <p className="mt-2 text-sm text-[var(--muted-strong)]">
-                Learners with an active seven-day trial right now.
-              </p>
-            </div>
-            <Link href="/admin/users">
-              <Button size="sm" variant="outline">
-                Manage users
-              </Button>
-            </Link>
-          </Surface>
-          <Surface elevated className="flex flex-col justify-between gap-4 p-4 sm:p-5">
-            <div>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline">Expired</Badge>
-                <span className="font-display text-2xl font-bold tabular-nums">
-                  {data.users.trialExpired}
-                </span>
+              <Link href="/admin/users">
+                <Button size="sm" variant="outline" className="motion-press">
+                  Manage users
+                </Button>
+              </Link>
+            </Surface>
+            <Surface elevated interactive className="flex flex-col justify-between gap-4 p-4 sm:p-5">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline">Expired</Badge>
+                  <span className="font-display text-2xl font-bold tabular-nums">
+                    {data.users.trialExpired}
+                  </span>
+                </div>
+                <p className="mt-2 text-sm text-[var(--muted-strong)]">
+                  Post-trial browsers — answers gated by entitlement.
+                </p>
               </div>
-              <p className="mt-2 text-sm text-[var(--muted-strong)]">
-                Post-trial browsers — answers gated by entitlement.
-              </p>
-            </div>
-            <Link href="/admin/users">
-              <Button size="sm" variant="ghost">
-                Open users
-              </Button>
-            </Link>
-          </Surface>
-        </div>
-      </AdminSection>
+              <Link href="/admin/users">
+                <Button size="sm" variant="ghost" className="motion-press">
+                  Open users
+                </Button>
+              </Link>
+            </Surface>
+          </Stagger>
+        </AdminSection>
+      </Reveal>
 
-      <AdminSection title="Key metrics" description="Live platform counts.">
-        <AdminStatGrid>
+      <Reveal delayMs={70}>
+        <AdminSection title="Key metrics" description="Live platform counts.">
+          <AdminStatGrid>
           <StatCard
             label="Registered users"
             value={data.users.total}
@@ -214,10 +221,11 @@ export default function AdminDashboardPage() {
             icon={FileText}
             tone="navy"
           />
-        </AdminStatGrid>
-      </AdminSection>
+          </AdminStatGrid>
+        </AdminSection>
+      </Reveal>
 
-      <div className="grid gap-5 sm:gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+      <Reveal delayMs={90} className="grid gap-5 sm:gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
         <AdminSection
           title="Question bank health"
           description="Status mix from live question counts."
@@ -248,7 +256,7 @@ export default function AdminDashboardPage() {
 
         <AdminSection title="Quick actions" description="Jump to common admin tasks.">
           <Surface elevated className="p-4 sm:p-6">
-            <div className="grid gap-3">
+            <Stagger className="grid gap-3" stepMs={50}>
               <QuickLink
                 href="/admin/questions/new"
                 title="Create MCQ"
@@ -279,35 +287,37 @@ export default function AdminDashboardPage() {
                 description="Online users, trends, export"
                 icon={Activity}
               />
-            </div>
+            </Stagger>
           </Surface>
         </AdminSection>
-      </div>
+      </Reveal>
 
       {data.topSubjects.length > 0 ? (
-        <AdminSection
-          title="Top subjects (7d)"
-          description="From real question attempts — not claimed intent."
-          actions={
-            <Link href="/admin/activity">
-              <Button size="sm" variant="outline">
-                Open activity
-              </Button>
-            </Link>
-          }
-        >
-          <Surface elevated className="p-4 sm:p-6">
-            <BarChart
-              data={data.topSubjects.map((s) => ({
-                label: s.name,
-                value: s.attempts,
-              }))}
-            />
-          </Surface>
-        </AdminSection>
+        <Reveal delayMs={100}>
+          <AdminSection
+            title="Top subjects (7d)"
+            description="From real question attempts — not claimed intent."
+            actions={
+              <Link href="/admin/activity">
+                <Button size="sm" variant="outline" className="motion-press">
+                  Open activity
+                </Button>
+              </Link>
+            }
+          >
+            <Surface elevated className="p-4 sm:p-6">
+              <BarChart
+                data={data.topSubjects.map((s) => ({
+                  label: s.name,
+                  value: s.attempts,
+                }))}
+              />
+            </Surface>
+          </AdminSection>
+        </Reveal>
       ) : null}
 
-      <div className="grid gap-5 sm:gap-6 lg:grid-cols-2">
+      <Reveal delayMs={110} className="grid gap-5 sm:gap-6 lg:grid-cols-2">
         <div className="min-w-0 space-y-3">
           <div className="flex items-center justify-between gap-2 md:hidden">
             <h2 className="font-display text-base font-bold tracking-tight">
@@ -422,7 +432,7 @@ export default function AdminDashboardPage() {
               {data.recentActivity.map((item) => (
                 <li
                   key={item.id}
-                  className="px-4 py-3.5 transition-colors sm:px-5 hover:bg-[var(--brand-wash)]"
+                  className="list-row px-4 py-3.5 sm:px-5"
                 >
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge variant="default">{item.action}</Badge>
@@ -440,7 +450,7 @@ export default function AdminDashboardPage() {
             </ul>
           )}
         </Surface>
-      </div>
+      </Reveal>
     </AdminPage>
   );
 }

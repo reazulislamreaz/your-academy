@@ -7,8 +7,8 @@ type Props = HTMLAttributes<HTMLDivElement> & {
   stepMs?: number;
 };
 
-/** Staggered rise for a short list of children (CSS nth-child delays). */
-export function Stagger({ children, className, stepMs = 45, style, ...props }: Props) {
+/** Staggered soft-float enter for dashboard cards / lists (CSS nth-child delays). */
+export function Stagger({ children, className, stepMs = 55, style, ...props }: Props) {
   return (
     <div
       className={cn('motion-stagger', className)}

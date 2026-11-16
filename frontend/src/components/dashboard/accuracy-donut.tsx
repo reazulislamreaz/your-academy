@@ -43,6 +43,8 @@ export function AccuracyDonut({ correct, incorrect }: Props) {
             strokeWidth={stroke}
             strokeDasharray={`${correctLen} ${incorrectLen}`}
             strokeLinecap="butt"
+            className="motion-ring-draw"
+            style={{ ['--ring-circumference' as string]: c }}
           />
           <circle
             cx={size / 2}
@@ -54,6 +56,11 @@ export function AccuracyDonut({ correct, incorrect }: Props) {
             strokeDasharray={`${incorrectLen} ${correctLen}`}
             strokeDashoffset={-correctLen}
             strokeLinecap="butt"
+            className="motion-ring-draw"
+            style={{
+              ['--ring-circumference' as string]: c,
+              animationDelay: '120ms',
+            }}
           />
         </svg>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">

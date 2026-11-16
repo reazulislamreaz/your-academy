@@ -55,12 +55,17 @@ export function StatCard({ label, value, hint, icon: Icon, tone = 'navy', classN
   return (
     <div
       className={cn(
-        'motion-hover-lift ya-panel-shine relative min-w-0 max-w-full overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] p-4 shadow-[var(--shadow-sm)] ring-1 ring-transparent sm:p-5',
+        'motion-hover-lift ya-panel-shine group relative min-w-0 max-w-full overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] p-4 shadow-[var(--shadow-sm)] ring-1 ring-transparent sm:p-5',
         t.ring,
         className,
       )}
     >
-      <div className={cn('absolute -right-8 -bottom-8 h-28 w-28 rounded-full opacity-70 blur-[1px]', t.wash)} />
+      <div
+        className={cn(
+          'absolute -right-8 -bottom-8 h-28 w-28 rounded-full opacity-70 blur-[1px] transition-transform duration-[var(--duration-slow)] ease-[var(--ease-out)] group-hover:scale-125',
+          t.wash,
+        )}
+      />
       <div className="relative z-[1] flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate text-[0.6875rem] font-semibold tracking-[0.14em] text-[var(--muted-strong)] uppercase">
@@ -75,7 +80,7 @@ export function StatCard({ label, value, hint, icon: Icon, tone = 'navy', classN
         </div>
         <span
           className={cn(
-            'flex size-10 shrink-0 items-center justify-center rounded-2xl shadow-[var(--shadow-sm)] sm:size-11',
+            'motion-icon-pop flex size-10 shrink-0 items-center justify-center rounded-2xl shadow-[var(--shadow-sm)] sm:size-11',
             t.icon,
           )}
         >

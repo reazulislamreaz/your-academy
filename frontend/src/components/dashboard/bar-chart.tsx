@@ -32,7 +32,7 @@ export function BarChart({
 
   return (
     <ul className={cn('space-y-3', className)}>
-      {data.map((item) => {
+      {data.map((item, index) => {
         const pct = Math.max(4, Math.round((item.value / max) * 100));
         return (
           <li key={item.label} className="space-y-1.5">
@@ -44,10 +44,11 @@ export function BarChart({
             </div>
             <div className="h-2.5 overflow-hidden rounded-full bg-[var(--bg-muted)]">
               <div
-                className="h-full rounded-full transition-[width] duration-500 ease-[var(--ease-out)]"
+                className="motion-bar-fill h-full rounded-full"
                 style={{
                   width: `${pct}%`,
                   background: item.color ?? 'var(--info)',
+                  animationDelay: `${index * 60}ms`,
                 }}
               />
             </div>

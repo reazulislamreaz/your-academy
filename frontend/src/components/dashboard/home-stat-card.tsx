@@ -74,19 +74,19 @@ export function HomeStatCard({
     >
       <div
         aria-hidden
-        className="absolute top-0 left-0 h-full w-[3px] rounded-l-[var(--radius-xl)]"
+        className="absolute top-0 left-0 h-full w-[3px] rounded-l-[var(--radius-xl)] transition-[width,opacity] duration-[var(--duration)] ease-[var(--ease-out)] group-hover:w-[4px]"
         style={{ background: t.accent }}
       />
       <div
         aria-hidden
         className={cn(
-          'pointer-events-none absolute -top-10 -right-8 size-28 rounded-full opacity-70 transition-transform duration-[var(--duration-slow)] group-hover:scale-110',
+          'pointer-events-none absolute -top-10 -right-8 size-28 rounded-full opacity-70 transition-transform duration-[var(--duration-slow)] ease-[var(--ease-out)] group-hover:scale-125',
           t.wash,
         )}
       />
       <span
         className={cn(
-          'relative flex size-11 items-center justify-center rounded-[var(--radius)] sm:size-12',
+          'motion-icon-pop relative flex size-11 items-center justify-center rounded-[var(--radius)] sm:size-12',
           t.iconBg,
           t.icon,
         )}

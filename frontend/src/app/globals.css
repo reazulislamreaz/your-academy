@@ -252,6 +252,37 @@ body {
   z-index: 0;
 }
 
+/* Soft diagonal sheen — Dashboard V32-style hover accent (brand tokens only) */
+.ya-panel-shine::after {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    color-mix(in srgb, var(--bg-elevated) 35%, transparent) 48%,
+    color-mix(in srgb, var(--highlight) 12%, transparent) 52%,
+    transparent 60%
+  );
+  opacity: 0;
+  transform: translateX(-35%);
+  z-index: 0;
+  transition:
+    opacity var(--duration) var(--ease-out),
+    transform var(--duration-slow) var(--ease-out);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ya-panel-shine:hover::after,
+  .group:hover > .ya-panel-shine::after,
+  .group\/card:hover.ya-panel-shine::after {
+    opacity: 1;
+    transform: translateX(35%);
+  }
+}
+
 /*
   Orbit shell themes (DEC-027 / DEC-028) — scoped to (app) + (admin).
   Marketing / auth keep :root tokens and are never toggled.
@@ -524,15 +555,28 @@ body {
 }
 
 .admin-sidebar .admin-nav-link {
+  position: relative;
   color: var(--admin-sidebar-muted);
   transition:
     background-color var(--duration-fast) var(--ease-out),
-    color var(--duration-fast) var(--ease-out);
+    color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
 }
 
 .admin-sidebar .admin-nav-link:hover {
   background: var(--admin-sidebar-hover);
   color: var(--admin-sidebar-ink);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .admin-sidebar .admin-nav-link:hover {
+    transform: translateX(2px);
+  }
+
+  .admin-sidebar .admin-nav-link[aria-current='page']:hover {
+    transform: none;
+  }
 }
 
 .admin-sidebar .admin-nav-link[aria-current='page'] {
@@ -613,13 +657,47 @@ body {
   cursor: pointer;
 }
 
-/* Active nav pill — soft fill; no colored left rail on dark Orbit chrome */
+/* Active nav pill — soft fill + accent rail (Dashboard V32 interaction feel) */
 .learner-nav-link {
   position: relative;
   transition:
     background-color var(--duration-fast) var(--ease-out),
     color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out),
     transform var(--duration-fast) var(--ease-out);
+}
+
+.learner-nav-link::before {
+  content: '';
+  position: absolute;
+  top: 20%;
+  bottom: 20%;
+  left: 0;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--highlight);
+  opacity: 0;
+  transform: scaleY(0.4);
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    transform var(--duration) var(--ease-out);
+}
+
+.learner-nav-link[data-active='true']::before,
+.learner-nav-link[aria-current='page']::before {
+  opacity: 1;
+  transform: scaleY(1);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .learner-nav-link:hover {
+    transform: translateX(2px);
+  }
+
+  .learner-nav-link[data-active='true']:hover,
+  .learner-nav-link[aria-current='page']:hover {
+    transform: none;
+  }
 }
 
 /* Prefer these for secondary copy instead of ultra-faint muted colors */
@@ -988,6 +1066,32 @@ input:disabled {
   }
 }
 
+@keyframes ya-bar-grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes ya-ring-draw {
+  from {
+    stroke-dashoffset: var(--ring-circumference, 300);
+  }
+}
+
+@keyframes ya-soft-float {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .motion-fade-in {
     animation: ya-fade-in var(--duration-slow) var(--ease-out) both;
@@ -995,6 +1099,10 @@ input:disabled {
 
   .motion-rise {
     animation: ya-rise var(--duration-slow) var(--ease-out) both;
+  }
+
+  .motion-soft-float {
+    animation: ya-soft-float 480ms var(--ease-out) both;
   }
 
   /* Route-change shell — short so navigation never feels delayed */
@@ -1035,36 +1143,60 @@ input:disabled {
     transform: translateY(1px);
   }
 
-  /* Interactive panels / stats — GPU-friendly lift */
+  /* Interactive panels / stats — floating lift + soft brand glow */
   .motion-hover-lift {
     transition:
-      transform var(--duration-fast) var(--ease-out),
-      box-shadow var(--duration-fast) var(--ease-out),
-      border-color var(--duration-fast) var(--ease-out);
+      transform 260ms var(--ease-out),
+      box-shadow 260ms var(--ease-out),
+      border-color 260ms var(--ease-out);
   }
 
   .motion-hover-lift:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow);
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-glow), var(--shadow);
+    border-color: color-mix(in srgb, var(--highlight) 28%, var(--line));
   }
 
   .motion-hover-lift:active {
-    transform: translateY(0);
+    transform: translateY(-1px);
+  }
+
+  /* Icon chip micro-interaction inside hover cards */
+  .motion-icon-pop {
+    transition:
+      transform 260ms var(--ease-out),
+      box-shadow 260ms var(--ease-out),
+      background-color 260ms var(--ease-out);
+  }
+
+  .group:hover .motion-icon-pop,
+  .group\/card:hover .motion-icon-pop {
+    transform: translateY(-1px) scale(1.06);
+  }
+
+  /* Chart / progress fills — grow from the left */
+  .motion-bar-fill {
+    transform-origin: left center;
+    animation: ya-bar-grow 700ms var(--ease-out) both;
+  }
+
+  .motion-ring-draw {
+    animation: ya-ring-draw 900ms var(--ease-out) both;
   }
 
   /* Scroll reveal — toggled by .is-visible from Reveal */
   .motion-reveal {
     opacity: 0;
-    transform: translateY(14px);
+    transform: translateY(16px) scale(0.99);
     transition:
-      opacity var(--duration-slow) var(--ease-out),
-      transform var(--duration-slow) var(--ease-out);
+      opacity 420ms var(--ease-out),
+      transform 420ms var(--ease-out);
     transition-delay: var(--reveal-delay, 0ms);
   }
 
   .motion-reveal.is-visible {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 
   /*
@@ -1072,7 +1204,7 @@ input:disabled {
     delays start when the section becomes .is-visible (not on first paint).
   */
   .motion-stagger > * {
-    animation: ya-rise var(--duration-slow) var(--ease-out) both;
+    animation: ya-soft-float 480ms var(--ease-out) both;
   }
 
   .motion-reveal:not(.is-visible) .motion-stagger > *,
@@ -1123,6 +1255,7 @@ input:disabled {
 
   .motion-fade-in,
   .motion-rise,
+  .motion-soft-float,
   .motion-page,
   .motion-pop,
   .motion-drawer-in,
@@ -1130,8 +1263,14 @@ input:disabled {
   .motion-content-in,
   .motion-press,
   .motion-hover-lift,
+  .motion-icon-pop,
+  .motion-bar-fill,
+  .motion-ring-draw,
   .motion-reveal,
-  .motion-stagger > * {
+  .motion-stagger > *,
+  .ya-panel-shine::after,
+  .learner-nav-link,
+  .learner-nav-link::before {
     animation: none !important;
     transition: none !important;
     transform: none !important;
@@ -1141,6 +1280,15 @@ input:disabled {
   .motion-reveal {
     opacity: 1;
     transform: none;
+  }
+
+  .learner-nav-link::before {
+    opacity: 0;
+  }
+
+  .learner-nav-link[data-active='true']::before,
+  .learner-nav-link[aria-current='page']::before {
+    opacity: 1;
   }
 }
 
