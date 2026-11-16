@@ -26,8 +26,8 @@ export function PasswordStrength({ password }: { password: string }) {
   if (!password) return null;
 
   return (
-    <div className="space-y-1.5" aria-live="polite">
-      <div className="flex gap-1.5">
+    <div className="flex items-center gap-2" aria-live="polite">
+      <div className="flex min-w-0 flex-1 gap-1">
         {Array.from({ length: 4 }, (_, i) => (
           <span
             key={i}
@@ -38,10 +38,9 @@ export function PasswordStrength({ password }: { password: string }) {
           />
         ))}
       </div>
-      <p className="text-xs text-[var(--muted-strong)]">
-        Strength: <span className="font-medium text-[var(--ink-soft)]">{label}</span>
-        {score < 3 ? ' — use letters and numbers (8+ characters).' : null}
-      </p>
+      <span className="shrink-0 text-[0.6875rem] font-medium text-[var(--muted-strong)]">
+        {label}
+      </span>
     </div>
   );
 }

@@ -63,12 +63,12 @@ function LoginForm() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="motion-rise space-y-2">
-        <h1 className="font-display text-3xl font-bold tracking-tight text-[var(--ink)] sm:text-[2rem]">
+    <div className="auth-form-stack space-y-4 lg:space-y-3.5">
+      <div className="motion-rise space-y-1">
+        <h1 className="font-display text-2xl font-bold tracking-tight text-[var(--ink)] sm:text-[1.75rem]">
           Welcome Back
         </h1>
-        <p className="text-sm leading-relaxed text-[var(--muted-strong)] sm:text-base">
+        <p className="text-sm text-[var(--muted-strong)]">
           Continue your journey towards exam success.
         </p>
       </div>
@@ -77,11 +77,11 @@ function LoginForm() {
 
       <Surface
         elevated
-        className="motion-rise ya-panel-shine border-[var(--line)]/80 p-6 shadow-[var(--shadow)] sm:p-7"
-        style={{ animationDelay: '60ms' }}
+        className="motion-rise ya-panel-shine auth-card border-[var(--line)]/80 p-4 shadow-[var(--shadow)] sm:p-5"
+        style={{ animationDelay: '50ms' }}
       >
-        <form onSubmit={onSubmit} className="space-y-4" noValidate>
-          <Field>
+        <form onSubmit={onSubmit} className="space-y-3" noValidate>
+          <Field className="space-y-1.5">
             <Label htmlFor="whatsapp">WhatsApp number</Label>
             <WhatsappField
               id="whatsapp"
@@ -94,12 +94,12 @@ function LoginForm() {
               autoComplete="username"
             />
           </Field>
-          <Field>
+          <Field className="space-y-1.5">
             <div className="flex items-center justify-between gap-2">
               <Label htmlFor="password">Password</Label>
               <Link
                 href="/forgot-password"
-                className="text-xs font-medium text-[var(--muted-strong)] transition-colors hover:text-[var(--highlight)]"
+                className="text-[0.6875rem] font-medium text-[var(--muted-strong)] transition-colors hover:text-[var(--highlight)]"
               >
                 Forgot password?
               </Link>
@@ -113,13 +113,16 @@ function LoginForm() {
             />
           </Field>
           {error ? <Alert variant="danger">{error}</Alert> : null}
-          <Button type="submit" className="motion-press w-full" disabled={loading} loading={loading}>
+          <Button type="submit" className="motion-press auth-submit w-full" disabled={loading} loading={loading}>
             {loading ? 'Signing in…' : 'Sign In'}
           </Button>
+          <p className="text-center text-[0.6875rem] leading-snug text-[var(--muted)]">
+            7-day free trial included. Full answers available during your trial.
+          </p>
         </form>
       </Surface>
 
-      <p className="motion-fade-in text-sm text-[var(--muted-strong)]" style={{ animationDelay: '120ms' }}>
+      <p className="motion-fade-in text-center text-sm text-[var(--muted-strong)]" style={{ animationDelay: '100ms' }}>
         New to Your Academy?{' '}
         <Link
           href="/register"

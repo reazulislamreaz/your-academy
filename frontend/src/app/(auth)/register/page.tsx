@@ -7,7 +7,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { isValidWhatsapp } from '@your-academy/shared';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Field, FieldHint } from '@/components/ui/field';
+import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Surface } from '@/components/ui/surface';
@@ -81,25 +81,23 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="motion-rise space-y-2">
-        <h1 className="font-display text-3xl font-bold tracking-tight text-[var(--ink)] sm:text-[2rem]">
+    <div className="auth-form-stack space-y-3.5 lg:space-y-3">
+      <div className="motion-rise space-y-1">
+        <h1 className="font-display text-2xl font-bold tracking-tight text-[var(--ink)] sm:text-[1.75rem]">
           Create Account
         </h1>
-        <p className="text-sm leading-relaxed text-[var(--muted-strong)] sm:text-base">
-          Join Your Academy and start your 7-day free trial.
-        </p>
+        <p className="text-sm text-[var(--muted-strong)]">Start your 7-day free trial today.</p>
       </div>
 
       <AuthMobileTrialBanner className="lg:hidden" />
 
       <Surface
         elevated
-        className="motion-rise ya-panel-shine border-[var(--line)]/80 p-6 shadow-[var(--shadow)] sm:p-7"
-        style={{ animationDelay: '60ms' }}
+        className="motion-rise ya-panel-shine auth-card border-[var(--line)]/80 p-4 shadow-[var(--shadow)] sm:p-5"
+        style={{ animationDelay: '50ms' }}
       >
-        <form onSubmit={onSubmit} className="space-y-4" noValidate>
-          <Field>
+        <form onSubmit={onSubmit} className="space-y-2.5 lg:space-y-2.5" noValidate>
+          <Field className="space-y-1.5">
             <Label htmlFor="name">Full name</Label>
             <Input
               id="name"
@@ -108,10 +106,11 @@ export default function RegisterPage() {
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               autoComplete="name"
               placeholder="Your full name"
+              className="auth-input"
             />
           </Field>
 
-          <Field>
+          <Field className="space-y-1.5">
             <Label htmlFor="whatsapp">WhatsApp mobile number</Label>
             <WhatsappField
               id="whatsapp"
@@ -124,7 +123,7 @@ export default function RegisterPage() {
             />
           </Field>
 
-          <Field>
+          <Field className="space-y-1.5">
             <Label htmlFor="email">Email (optional)</Label>
             <Input
               id="email"
@@ -133,11 +132,11 @@ export default function RegisterPage() {
               onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
               autoComplete="email"
               placeholder="you@example.com"
+              className="auth-input"
             />
-            <FieldHint>Needed later if you use email password reset.</FieldHint>
           </Field>
 
-          <Field>
+          <Field className="space-y-1.5">
             <Label htmlFor="password">Password</Label>
             <PasswordField
               id="password"
@@ -150,7 +149,7 @@ export default function RegisterPage() {
             <PasswordStrength password={form.password} />
           </Field>
 
-          <Field>
+          <Field className="space-y-1.5">
             <Label htmlFor="confirmPassword">Confirm password</Label>
             <PasswordField
               id="confirmPassword"
@@ -161,7 +160,7 @@ export default function RegisterPage() {
               minLength={8}
             />
             {form.confirmPassword && form.confirmPassword !== form.password ? (
-              <p className="text-xs font-medium text-[var(--danger-fg)]" role="alert">
+              <p className="text-[0.6875rem] font-medium text-[var(--danger-fg)]" role="alert">
                 Passwords do not match.
               </p>
             ) : null}
@@ -169,18 +168,22 @@ export default function RegisterPage() {
 
           {error ? <Alert variant="danger">{error}</Alert> : null}
 
-          <Button type="submit" className="motion-press w-full" disabled={loading} loading={loading}>
+          <Button
+            type="submit"
+            className="motion-press auth-submit mt-0.5 w-full"
+            disabled={loading}
+            loading={loading}
+          >
             {loading ? 'Creating…' : 'Create Account'}
           </Button>
 
-          <p className="text-center text-xs leading-relaxed text-[var(--muted)]">
-            By creating an account you start a 7-day trial with full answers. After the trial, browsing
-            stays available; answers remain for entitled learners.
+          <p className="text-center text-[0.6875rem] leading-snug text-[var(--muted)]">
+            7-day free trial included. Full answers available during your trial.
           </p>
         </form>
       </Surface>
 
-      <p className="motion-fade-in text-sm text-[var(--muted-strong)]" style={{ animationDelay: '120ms' }}>
+      <p className="motion-fade-in text-center text-sm text-[var(--muted-strong)]" style={{ animationDelay: '100ms' }}>
         Already have an account?{' '}
         <Link
           href="/login"

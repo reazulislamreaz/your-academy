@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { BrandMark } from './brand-mark';
+import { FooterDeveloperCredit } from './footer-developer-credit';
 
 const FOOTER_LINKS = [
   { href: '/', label: 'Home' },
@@ -63,6 +64,7 @@ export function SiteFooter() {
 
         <div className="mt-8 border-t border-white/15 pt-5 text-center">
           <p className="text-xs text-white/55">© 2026 Your Academy. All rights reserved.</p>
+          <FooterDeveloperCredit />
         </div>
       </div>
     </footer>

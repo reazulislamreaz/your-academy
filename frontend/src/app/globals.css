@@ -917,12 +917,93 @@ input:disabled {
     linear-gradient(165deg, #001a44 0%, var(--bg-inverse) 48%, #001638 100%);
 }
 
+/* Footer developer portfolio link */
+.footer-dev-link {
+  position: relative;
+  display: inline-block;
+  text-decoration: none;
+  transition:
+    color var(--duration-fast) var(--ease-out),
+    text-shadow var(--duration-fast) var(--ease-out);
+}
+
+.footer-dev-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 100%;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--duration) var(--ease-out);
+  opacity: 0.85;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .footer-dev-link:hover,
+  .footer-dev-link:focus-visible {
+    color: #fff;
+    text-shadow: 0 0 18px rgba(227, 30, 36, 0.45);
+  }
+
+  .footer-dev-link:hover::after,
+  .footer-dev-link:focus-visible::after {
+    transform: scaleX(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .footer-dev-link:hover,
+  .footer-dev-link:focus-visible {
+    color: #fff;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .footer-dev-link::after {
+    display: none;
+  }
+}
+
 .auth-promo-grid {
   background-image:
     linear-gradient(rgba(255, 255, 255, 0.14) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
-  background-size: 44px 44px;
+  background-size: 40px 40px;
   mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.85), transparent 92%);
+}
+
+.auth-promo-sheen {
+  background:
+    radial-gradient(ellipse 70% 50% at 15% 10%, rgba(255, 255, 255, 0.1), transparent 55%),
+    linear-gradient(165deg, transparent 40%, rgba(227, 30, 36, 0.06) 100%);
+}
+
+.auth-feature-card {
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+
+.auth-input {
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out);
+}
+
+.auth-submit {
+  transition:
+    filter var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.auth-submit:hover:not(:disabled) {
+  box-shadow: 0 8px 22px rgba(227, 30, 36, 0.28);
 }
 
 @keyframes ya-auth-orb {
@@ -931,13 +1012,62 @@ input:disabled {
     transform: translate3d(0, 0, 0) scale(1);
   }
   50% {
-    transform: translate3d(12px, -18px, 0) scale(1.05);
+    transform: translate3d(10px, -14px, 0) scale(1.04);
+  }
+}
+
+@keyframes ya-auth-glow {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 0.9;
   }
 }
 
 @media (prefers-reduced-motion: no-preference) {
   .auth-orb-drift {
     animation: ya-auth-orb 14s ease-in-out infinite;
+  }
+
+  .auth-promo-sheen {
+    animation: ya-auth-glow 10s ease-in-out infinite;
+  }
+
+  .auth-feature-card:hover {
+    border-color: rgba(255, 255, 255, 0.22);
+    background-color: rgba(255, 255, 255, 0.1);
+    transform: translateY(-1px);
+  }
+
+  .auth-form-enter {
+    animation: ya-page-in var(--duration) var(--ease-out) both;
+  }
+}
+
+/* Compact auth controls on desktop so forms fit one viewport */
+@media (min-width: 1024px) {
+  .auth-shell .ya-control {
+    min-height: 2.5rem;
+    padding-top: 0.4rem;
+    padding-bottom: 0.4rem;
+  }
+
+  .auth-shell .auth-submit {
+    min-height: 2.625rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-orb-drift,
+  .auth-promo-sheen,
+  .auth-form-enter {
+    animation: none !important;
+  }
+
+  .auth-feature-card:hover {
+    transform: none;
   }
 }
 

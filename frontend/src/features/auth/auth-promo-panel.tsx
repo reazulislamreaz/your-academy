@@ -1,11 +1,4 @@
-import {
-  BookOpen,
-  FileText,
-  Layers,
-  Newspaper,
-  Sparkles,
-  Target,
-} from 'lucide-react';
+import { BookOpen, Layers, Sparkles, Target } from 'lucide-react';
 import { BrandMark } from '@/components/layout/brand-mark';
 import { cn } from '@/lib/utils';
 
@@ -13,121 +6,101 @@ const FEATURES = [
   {
     icon: Layers,
     title: 'Extensive Question Bank',
-    body: 'Practice BCS, Bank, Government Jobs, Primary, NTRCA, and more.',
+    body: 'BCS, Bank, Govt & more.',
   },
   {
     icon: Target,
-    title: 'Topic-Based Analysis',
-    body: 'Strengthen knowledge with subject-wise and topic-wise practice.',
+    title: 'Topic-Based Practice',
+    body: 'Subject-wise mastery.',
   },
   {
     icon: BookOpen,
-    title: 'Written Question Bank',
-    body: 'Build written-exam confidence with structured written sets.',
-  },
-  {
-    icon: Newspaper,
-    title: 'Important Newspaper Columns',
-    body: 'Stay current with curated columns and study PDFs.',
-  },
-  {
-    icon: FileText,
-    title: 'Study Materials & PDFs',
-    body: 'Access organized educational resources in one place.',
+    title: 'Written Exam Prep',
+    body: 'Written sets, ready to use.',
   },
   {
     icon: Sparkles,
-    title: 'Smart Learning Experience',
-    body: 'Track preparation and practice more efficiently.',
+    title: 'Smart Study Resources',
+    body: 'PDFs, columns & tracking.',
   },
 ] as const;
 
-/** Desktop promo rail + compact mobile strip for auth pages. */
+/** Desktop promo rail — compact, viewport-friendly. */
 export function AuthPromoPanel({ className }: { className?: string }) {
   return (
     <aside
       className={cn(
-        'auth-promo relative flex flex-col overflow-hidden bg-[var(--bg-inverse)] text-white',
+        'auth-promo relative flex h-full min-h-0 flex-col overflow-hidden bg-[var(--bg-inverse)] text-white',
         className,
       )}
     >
       <div aria-hidden className="pointer-events-none absolute inset-0">
         <div className="auth-promo-grid absolute inset-0 opacity-[0.07]" />
-        <div className="auth-orb-drift absolute -top-24 left-[12%] h-72 w-72 rounded-full bg-[color-mix(in_srgb,var(--highlight)_22%,transparent)] blur-3xl" />
-        <div className="auth-orb-drift absolute right-[-10%] bottom-[-10%] h-80 w-80 rounded-full bg-[#1a4a8a]/45 blur-3xl [animation-delay:2.5s]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(255,255,255,0.08),transparent_55%)]" />
+        <div className="auth-orb-drift absolute -top-20 left-[10%] h-56 w-56 rounded-full bg-[color-mix(in_srgb,var(--highlight)_24%,transparent)] blur-3xl" />
+        <div className="auth-orb-drift absolute right-[-12%] bottom-[-8%] h-64 w-64 rounded-full bg-[#1a4a8a]/50 blur-3xl [animation-delay:2.5s]" />
+        <div className="auth-promo-sheen absolute inset-0" />
       </div>
 
-      <div className="relative z-[1] flex h-full flex-col justify-between gap-8 p-8 xl:p-12">
-        <BrandMark inverse priority className="shrink-0" />
+      <div className="relative z-[1] flex min-h-0 flex-1 flex-col justify-center gap-5 px-8 py-8 xl:gap-6 xl:px-11 xl:py-10">
+        <BrandMark inverse priority className="shrink-0 self-start" />
 
-        <div className="motion-stagger max-w-lg space-y-6">
-          <div className="space-y-3">
-            <p className="text-[0.6875rem] font-semibold tracking-[0.2em] text-white/55 uppercase">
+        <div className="motion-stagger max-w-md space-y-4" style={{ ['--stagger-step' as string]: '55ms' }}>
+          <div className="space-y-2">
+            <p className="text-[0.65rem] font-semibold tracking-[0.18em] text-white/50 uppercase">
               Your Academy
             </p>
-            <h2 className="font-display text-3xl leading-tight font-bold tracking-tight xl:text-4xl">
-              Your Journey to Exam Success Starts Here.
+            <h2 className="font-display text-[1.75rem] leading-[1.15] font-bold tracking-tight xl:text-[2.125rem]">
+              Prepare Smarter. Achieve More.
             </h2>
-            <p className="text-base leading-relaxed text-white/70">
-              Prepare smarter, practice consistently, and build the confidence to achieve your goals
-              with Your Academy.
+            <p className="text-sm leading-snug text-white/68 xl:text-[0.9375rem]">
+              Everything you need to succeed in competitive exams, all in one place.
             </p>
           </div>
 
-          <div className="inline-flex max-w-full items-center gap-2 rounded-2xl border border-[var(--highlight)]/35 bg-[var(--highlight)]/15 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-md">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--highlight)] text-sm font-bold shadow-sm">
+          <div className="inline-flex items-center gap-2.5 rounded-xl border border-[var(--highlight)]/40 bg-[var(--highlight)]/15 px-3 py-2 backdrop-blur-md">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[var(--highlight)] text-xs font-bold shadow-sm">
               7
             </span>
-            <div className="min-w-0">
-              <p className="font-display text-sm font-bold tracking-tight">
-                Enjoy 7 Days of Free Access!
-              </p>
-              <p className="text-xs leading-snug text-white/70">
-                Explore practice features with full answers during your trial.
-              </p>
-            </div>
+            <p className="font-display text-sm font-bold tracking-tight">Days Free Access</p>
           </div>
 
-          <ul className="grid gap-2.5 sm:grid-cols-2">
+          <ul className="grid grid-cols-2 gap-2">
             {FEATURES.map((feature) => (
               <li
                 key={feature.title}
-                className="motion-hover-lift rounded-2xl border border-white/10 bg-white/5 p-3.5 backdrop-blur-sm"
+                className="auth-feature-card rounded-xl border border-white/10 bg-white/[0.06] p-3 backdrop-blur-sm"
               >
                 <feature.icon
-                  className="mb-2 size-5 text-[var(--highlight)]"
+                  className="mb-1.5 size-4 text-[var(--highlight)]"
                   aria-hidden
                   strokeWidth={1.75}
                 />
-                <p className="font-display text-sm font-semibold tracking-tight">{feature.title}</p>
-                <p className="mt-1 text-xs leading-relaxed text-white/65">{feature.body}</p>
+                <p className="font-display text-[0.8125rem] leading-snug font-semibold tracking-tight">
+                  {feature.title}
+                </p>
+                <p className="mt-0.5 text-[0.6875rem] leading-snug text-white/60">{feature.body}</p>
               </li>
             ))}
           </ul>
         </div>
-
-        <p className="relative text-xs text-white/40">Your Academy · Learn · Practice · Succeed</p>
       </div>
     </aside>
   );
 }
 
-/** Compact trial callout for mobile auth forms. */
+/** Compact trial chip for mobile auth forms. */
 export function AuthMobileTrialBanner({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        'motion-rise rounded-2xl border border-[var(--highlight)]/25 bg-[linear-gradient(135deg,var(--highlight-soft),rgba(255,255,255,0.9))] p-4 shadow-[var(--shadow-sm)]',
+        'motion-rise flex items-center gap-2.5 rounded-xl border border-[var(--highlight)]/20 bg-[var(--highlight-soft)] px-3 py-2.5',
         className,
       )}
     >
-      <p className="font-display text-sm font-bold text-[var(--ink)]">
-        Enjoy 7 Days of Free Access!
-      </p>
-      <p className="mt-1 text-xs leading-relaxed text-[var(--muted-strong)]">
-        Prepare smarter with our question banks, topics, and study materials during your trial.
-      </p>
+      <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[var(--highlight)] text-[0.6875rem] font-bold text-white">
+        7
+      </span>
+      <p className="text-xs font-semibold text-[var(--ink)]">Days free access · full answers in trial</p>
     </div>
   );
 }
