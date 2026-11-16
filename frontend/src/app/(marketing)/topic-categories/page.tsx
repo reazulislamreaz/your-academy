@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 import { createDefaultHomepagePayload } from '@your-academy/shared';
-import { CategoryDirectory } from '@/components/marketing/category-directory';
+import { AllTopicsDirectory } from '@/components/marketing/all-topics-directory';
 import { getPublicHomepage } from '@/lib/api/homepage';
 
 export const metadata: Metadata = {
-  title: 'Topic Categories — Your Academy',
-  description: 'Browse all topic-based question analysis categories.',
+  title: 'All Topics — Your Academy',
+  description: 'Browse all topic-based question analysis categories with logos.',
 };
 
 export const revalidate = 60;
@@ -13,23 +13,20 @@ export const revalidate = 60;
 async function loadTopics() {
   try {
     const home = await getPublicHomepage();
-    return home.payload.topics;
+    return home.payload.topics.tiles;
   } catch {
-    return createDefaultHomepagePayload().topics;
+    return createDefaultHomepagePayload().topics.tiles;
   }
 }
 
 export default async function TopicCategoriesPage() {
-  const section = await loadTopics();
+  const tiles = await loadTopics();
 
   return (
-    <CategoryDirectory
-      kind="topics"
-      heading={section.heading}
+    <AllTopicsDirectory
+      heading="All Topics"
       subtitle="Explore every topic tile published for question analysis."
-      tiles={section.tiles}
-      backHref="/"
-      backLabel="Back to home"
+      tiles={tiles}
     />
   );
 }

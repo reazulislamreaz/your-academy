@@ -15,37 +15,17 @@ import {
 } from '@/components/marketing/homepage-tile-card';
 import { apiFetch } from '@/lib/api/client';
 import type { CategoryNode } from '@/lib/api/types';
+import {
+  ALL_TOPICS_PATH,
+  QUESTION_BANK_CATEGORIES_PATH,
+  categoryTileHref,
+  topicTileHref,
+} from '@/lib/homepage-tile-links';
 
 type Props = {
   categories: HomepagePayload['categories'];
   topics: HomepagePayload['topics'];
 };
-
-function categoryHref(tile: HomepagePayload['categories']['tiles'][number]): string {
-  return tile.categoryId
-    ? `/preli-question-bank?categoryId=${encodeURIComponent(tile.categoryId)}`
-    : tile.fallbackHref;
-}
-
-function topicHref(
-  tile: HomepagePayload['topics']['tiles'][number],
-  roots: CategoryNode[],
-): string {
-  if (tile.categoryId && tile.subcategoryId) {
-    return `/preli-question-bank?categoryId=${encodeURIComponent(tile.categoryId)}&subcategoryId=${encodeURIComponent(tile.subcategoryId)}`;
-  }
-  if (tile.categoryId) {
-    return `/preli-question-bank?categoryId=${encodeURIComponent(tile.categoryId)}`;
-  }
-  if (tile.subcategoryId) {
-    for (const root of roots) {
-      if ((root.children ?? []).some((c) => c.id === tile.subcategoryId)) {
-        return `/preli-question-bank?categoryId=${encodeURIComponent(root.id)}&subcategoryId=${encodeURIComponent(tile.subcategoryId)}`;
-      }
-    }
-  }
-  return tile.fallbackHref;
-}
 
 export function HomepageBankBrowse({ categories, topics }: Props) {
   const categoryTree = useQuery({
@@ -55,12 +35,17 @@ export function HomepageBankBrowse({ categories, topics }: Props) {
   });
 
   const roots = categoryTree.data ?? [];
-  const visibleCategories = categories.tiles.filter((t) => t.visible);
-  const visibleTopics = topics.tiles.filter((t) => t.visible);
+  const visibleCategories = categories.tiles.filter(
+    (t) => t.visible && t.displayTitle.trim().toLowerCase() !== 'others',
+  );
+  const visibleTopics = topics.tiles.filter(
+    (t) => t.visible && t.displayTitle.trim().toLowerCase() !== 'others',
+  );
   const previewCategories = visibleCategories.slice(0, HOMEPAGE_SECTION_PREVIEW_LIMIT);
   const previewTopics = visibleTopics.slice(0, HOMEPAGE_SECTION_PREVIEW_LIMIT);
-  const categoriesOthersHref = categories.cta.href || '/question-bank-categories';
-  const topicsOthersHref = topics.cta.href || '/topic-categories';
+  // CTA may point at the question bank; Others always opens the full directory pages.
+  const categoriesCtaHref = categories.cta.href || QUESTION_BANK_CATEGORIES_PATH;
+  const topicsCtaHref = topics.cta.href || ALL_TOPICS_PATH;
 
   return (
     <>
@@ -77,7 +62,7 @@ export function HomepageBankBrowse({ categories, topics }: Props) {
               </h2>
               <p className="text-[var(--muted-strong)]">{categories.subtitle}</p>
               {categories.cta.visible ? (
-                <Link href={categoriesOthersHref} className="inline-flex pt-1">
+                <Link href={categoriesCtaHref} className="inline-flex pt-1">
                   <Button className="rounded-full px-6 shadow-sm">
                     {categories.cta.label}
                     <ArrowRight className="h-4 w-4" />
@@ -89,7 +74,7 @@ export function HomepageBankBrowse({ categories, topics }: Props) {
               {previewCategories.map((tile) => (
                 <li key={tile.id}>
                   <HomepageTileCard
-                    href={categoryHref(tile)}
+                    href={categoryTileHref(tile)}
                     title={tile.displayTitle}
                     subtitle={tile.subtitle}
                     iconKey={tile.iconKey}
@@ -98,7 +83,7 @@ export function HomepageBankBrowse({ categories, topics }: Props) {
                 </li>
               ))}
               <li>
-                <HomepageOthersTile href={categoriesOthersHref} />
+                <HomepageOthersTile href={QUESTION_BANK_CATEGORIES_PATH} />
               </li>
             </ul>
           </Reveal>
@@ -119,7 +104,7 @@ export function HomepageBankBrowse({ categories, topics }: Props) {
                     {topics.heading}
                   </h2>
                   {topics.cta.visible ? (
-                    <Link href={topicsOthersHref} className="inline-flex pt-1">
+                    <Link href={topicsCtaHref} className="inline-flex pt-1">
                       <Button className="rounded-full px-6 shadow-sm">
                         {topics.cta.label}
                         <ArrowRight className="h-4 w-4" />
@@ -131,7 +116,7 @@ export function HomepageBankBrowse({ categories, topics }: Props) {
                   {previewTopics.map((tile) => (
                     <li key={tile.id}>
                       <HomepageTileCard
-                        href={topicHref(tile, roots)}
+                        href={topicTileHref(tile, roots)}
                         title={tile.displayTitle}
                         iconKey={tile.iconKey}
                         logoUrl={tile.logoUrl}
@@ -139,7 +124,7 @@ export function HomepageBankBrowse({ categories, topics }: Props) {
                     </li>
                   ))}
                   <li>
-                    <HomepageOthersTile href={topicsOthersHref} />
+                    <HomepageOthersTile href={ALL_TOPICS_PATH} />
                   </li>
                 </ul>
               </div>

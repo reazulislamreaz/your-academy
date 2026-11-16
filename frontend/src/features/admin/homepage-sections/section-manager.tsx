@@ -657,8 +657,9 @@ export function HomepageSectionManager({ section, title, description }: Props) {
               <h2 className="font-display text-lg font-semibold text-[var(--ink)]">Editor</h2>
               <p>Select a category to edit, or create a new one.</p>
               <p>
-                Array order is the display order. Publish to push changes to the live homepage and
-                Others pages.
+                Array order is the display order. Homepage shows the first 4 visible tiles plus
+                Others. Others opens the full directory pages (DB categories/subcategories, or all
+                topic tiles with logos). Publish to update the live site.
               </p>
             </div>
           )}
