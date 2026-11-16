@@ -12,7 +12,7 @@
 2. Create deploy user (or use `root`); add SSH key used by GitHub Actions (`DEPLOY_SSH_KEY`).
 3. Clone repo to `DEPLOY_PATH` (e.g. `/root/your-academy`).
 4. Point DNS `A`/`AAAA` for your domain at the VPS (Cloudflare orange-cloud OK).
-5. **Origin TLS behind Cloudflare (recommended, permanent):** issue Let’s Encrypt on the VPS (`certbot` DNS-01 via Cloudflare API token), set `TLS_ENABLED=true`, `TLS_CERTS_DIR=/etc/your-academy/certs`, `COOKIE_SECURE=true`, `WEB_ORIGIN=https://…`. Deploy uses `nginx.prod.conf` (:80 + :443). Apply Cloudflare edge settings with `./scripts/cloudflare-prod-ssl.sh` (or manually): SSL/TLS **Full (strict)**, Always Use HTTPS **on**, min TLS **1.2**, **IPv6 Compatibility off** (broken client IPv6 often presents as SSL handshake errors), **HTTP/3 off** (QUIC failures look like TLS errors on some ISPs), Browser Integrity Check **off**. Auto-renew: `certbot.timer` + `scripts/renew-tls-certs.sh` deploy hook. Nginx must re-resolve Docker upstreams via `127.0.0.11` (see `nginx.prod.conf`) so rolling recreates do not cause Cloudflare 502/520.
+5. **Origin TLS behind Cloudflare (recommended, permanent):** issue Let’s Encrypt on the VPS (`certbot` DNS-01 via Cloudflare API token), set `TLS_ENABLED=true`, `TLS_CERTS_DIR=/etc/your-academy/certs`, `COOKIE_SECURE=true`, `WEB_ORIGIN=https://…`. Deploy uses `nginx.prod.conf` (:80 + :443). Apply Cloudflare edge settings with `./scripts/cloudflare-prod-ssl.sh` (or manually): SSL/TLS **Full (strict)**, Always Use HTTPS **on**, min TLS **1.2**, **IPv6 Compatibility off** (broken client IPv6 often presents as SSL handshake errors), **HTTP/3 off** (QUIC failures look like TLS errors on some ISPs), Browser Integrity Check **off**, **Origin max HTTP version = HTTP/1.1** (avoids intermittent CF↔origin HTTP/2 TLS failures reported as Error **525**), Authenticated Origin Pulls **off**. Origin nginx listens with `backlog=4096` and keeps **HTTP/2 off** on `:443` so CF speaks HTTP/1.1 to the origin. Auto-renew: `certbot.timer` + `scripts/renew-tls-certs.sh` deploy hook. Nginx must re-resolve Docker upstreams via `127.0.0.11` (see `nginx.prod.conf`) so rolling recreates do not cause Cloudflare 502/520.
 6. Issue TLS certs (Let’s Encrypt DNS-01 example):
 
 ```bash
@@ -157,7 +157,7 @@ Prefer image/git tags for releases once you add tagged deploys.
 | Next client “Application error” | Often `ChunkLoadError` after deploy (HTML/JS build id mismatch) or mid-deploy 502 on `/_next/static/*`. App auto-reloads once; hard refresh clears stuck tabs. |
 | Web `EACCES` on `.next/cache` | Image must chown cache dirs to `youracademy` (see `docker/web.Dockerfile`). |
 | Cookies fail on HTTPS | `COOKIE_SECURE` not `true` or wrong `WEB_ORIGIN` |
-| TLS error | Missing/expired files in `TLS_CERTS_DIR` |
+| TLS error / Cloudflare **525** | Missing/expired files in `TLS_CERTS_DIR`; CF SSL mode not **Full (strict)** while origin has HTTPS; CF **Origin max HTTP version** still HTTP/2 against a flaky HTTP/2 origin; Authenticated Origin Pulls enabled without client certs; broken client IPv6 (set CF IPv6 Compatibility **off**) |)
 | Migrate failed | Check `migrate` container logs; fix SQL/env; re-run deploy |
 
 ---

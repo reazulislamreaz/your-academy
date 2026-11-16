@@ -27,6 +27,7 @@ echo "Zone ${ZONE_NAME} id=${zid}"
 # Full (strict) requires a valid origin cert on :443 (Let's Encrypt / Origin CA).
 # ipv6=off avoids broken client IPv6 paths that surface as SSL handshake errors.
 # http3=off avoids QUIC failures that browsers often label as SSL/TLS errors.
+# origin_max_http_version=1 avoids intermittent CF↔origin HTTP/2 TLS issues (Error 525).
 settings=(
   "ssl:strict"
   "always_use_https:on"
@@ -38,6 +39,9 @@ settings=(
   "websockets:on"
   "ipv6:off"
   "http3:off"
+  "origin_max_http_version:1"
+  "tls_client_auth:off"
+  "0rtt:off"
 )
 
 for pair in "${settings[@]}"; do
