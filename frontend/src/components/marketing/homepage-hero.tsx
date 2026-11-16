@@ -8,15 +8,18 @@ import { HomepageIcon } from '@/lib/homepage-icon-map';
 type Props = {
   hero: HomepagePayload['hero'];
   heroImageUrl?: string | null;
+  /** Supporting sentence under the value proposition (presentation-layer only). */
+  supportingText?: string;
 };
 
-export function HomepageHero({ hero, heroImageUrl }: Props) {
+export function HomepageHero({ hero, heroImageUrl, supportingText }: Props) {
   if (!hero.visible) return null;
 
   const imageSrc = heroImageUrl?.trim() || '/images/hero-students.jpg';
   const brand = hero.titleBefore.trim();
   const sideLabel = (hero.titleAfter?.trim() || hero.titleHighlight.trim()).trim();
   const tagline = hero.description.trim();
+  const lede = supportingText?.trim() ?? '';
 
   return (
     <section className="hero-section relative overflow-x-hidden overflow-y-hidden bg-[var(--bg-inverse)] text-white">
@@ -56,7 +59,7 @@ export function HomepageHero({ hero, heroImageUrl }: Props) {
                   ) : null}
                 </h1>
                 {tagline ? (
-                  <p className="relative text-center font-display text-[clamp(1rem,3.2vw,1.5rem)] leading-snug font-semibold tracking-[0.015em] text-white">
+                  <p className="relative text-center font-display text-[clamp(1rem,3.2vw,1.5rem)] leading-snug font-semibold tracking-[0.015em] text-white lg:text-left">
                     <span className="relative inline-block max-w-full px-1 pb-1.5">
                       {tagline}
                       <span
@@ -64,6 +67,11 @@ export function HomepageHero({ hero, heroImageUrl }: Props) {
                         className="absolute inset-x-3 -bottom-0.5 h-[3px] rounded-full bg-[var(--highlight)] sm:inset-x-2"
                       />
                     </span>
+                  </p>
+                ) : null}
+                {lede ? (
+                  <p className="mx-auto max-w-lg text-center text-sm leading-relaxed text-pretty text-white/75 sm:text-[0.9375rem] lg:mx-0 lg:text-left">
+                    {lede}
                   </p>
                 ) : null}
               </div>

@@ -20,6 +20,7 @@ import { newRequestId } from '../common/request-id';
 import {
   CreatePracticeSetDto,
   SaveProgressDto,
+  StartAttemptDto,
   SubmitAttemptDto,
   UpdatePracticeSetDto,
 } from './dto/submit-attempt.dto';
@@ -68,8 +69,15 @@ export class PracticeController {
 
   @Post('practice-sets/:idOrSlug/attempts')
   @UseGuards(JwtAuthGuard, CsrfGuard)
-  async start(@CurrentUser() user: RequestUser, @Param('idOrSlug') idOrSlug: string) {
-    return createSuccessResponse(await this.practice.startAttempt(user, idOrSlug), newRequestId());
+  async start(
+    @CurrentUser() user: RequestUser,
+    @Param('idOrSlug') idOrSlug: string,
+    @Body() dto: StartAttemptDto,
+  ) {
+    return createSuccessResponse(
+      await this.practice.startAttempt(user, idOrSlug, dto ?? {}),
+      newRequestId(),
+    );
   }
 
   @Patch('practice-attempts/:id/progress')

@@ -20,6 +20,10 @@ class AttemptAnswerDto {
   @IsOptional()
   @IsUUID()
   selectedOptionId?: string | null;
+
+  @IsOptional()
+  @IsBoolean()
+  markedForReview?: boolean;
 }
 
 export class SubmitAttemptDto {
@@ -36,6 +40,25 @@ export class SaveProgressDto {
   @Type(() => AttemptAnswerDto)
   answers!: AttemptAnswerDto[];
 }
+
+const TIMER_PRESETS = [15 * 60, 30 * 60, 45 * 60, 60 * 60] as const;
+
+/** Learner start options — timed uses set duration or allowlisted presets when set is untimed. */
+export class StartAttemptDto {
+  @IsOptional()
+  @IsBoolean()
+  timed?: boolean;
+
+  /** Seconds; only used when timed and the practice set has no admin duration. */
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(60)
+  @Max(60 * 60)
+  durationSeconds?: number;
+}
+
+export { TIMER_PRESETS };
 
 export class CreatePracticeSetDto {
   @IsString()

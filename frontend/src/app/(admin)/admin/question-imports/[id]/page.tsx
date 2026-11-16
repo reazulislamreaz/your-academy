@@ -480,7 +480,8 @@ function QuestionImportDetailContent() {
           <div>
             <h2 className="font-display text-base font-bold">Question preview</h2>
             <p className="text-sm text-[var(--muted-strong)]">
-              Row-level validation with options. Duplicates require matching question text and correct answer.
+              Row-level validation with options. Duplicates require matching question text and correct
+              answer (missing answers allowed; unanswered imports save as draft).
             </p>
           </div>
           <Select
@@ -574,11 +575,30 @@ function QuestionImportDetailContent() {
                       </span>
                     )}
                   </td>
-                  <td className="px-3 py-3 text-sm leading-relaxed text-[var(--ink-soft)]">
-                    <p>A. {row.optionA}</p>
-                    <p>B. {row.optionB}</p>
-                    <p>C. {row.optionC}</p>
-                    <p>D. {row.optionD}</p>
+                  <td className="px-3 py-3 text-sm leading-relaxed text-[var(--ink)]">
+                    {(['A', 'B', 'C', 'D'] as const).map((label) => {
+                      const text =
+                        label === 'A'
+                          ? row.optionA
+                          : label === 'B'
+                            ? row.optionB
+                            : label === 'C'
+                              ? row.optionC
+                              : row.optionD;
+                      const isCorrect = Boolean(row.correctAnswer) && row.correctAnswer === label;
+                      return (
+                        <p
+                          key={label}
+                          className={
+                            isCorrect
+                              ? 'font-medium text-[var(--success-fg)]'
+                              : 'text-[var(--ink)]'
+                          }
+                        >
+                          {label}. {text}
+                        </p>
+                      );
+                    })}
                   </td>
                   <td className="px-3 py-3 text-sm font-semibold text-[var(--ink)]">
                     {row.correctAnswer ?? '—'}

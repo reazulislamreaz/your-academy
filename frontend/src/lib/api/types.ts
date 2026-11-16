@@ -135,9 +135,15 @@ export type PracticeSetDetail = PracticeSetListItem & {
     status: string;
     startedAt: string;
     maxScore?: number | null;
+    /** Attempt-scoped timer (null = untimed). */
+    timerSeconds?: number | null;
     durationSeconds?: number | null;
     expiresAt?: string | null;
-    savedAnswers?: Array<{ questionId: string; selectedOptionId: string }>;
+    savedAnswers?: Array<{
+      questionId: string;
+      selectedOptionId: string | null;
+      markedForReview?: boolean;
+    }>;
     serverNow?: string;
   } | null;
   serverNow?: string;

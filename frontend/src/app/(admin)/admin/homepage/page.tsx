@@ -769,11 +769,7 @@ export default function AdminHomepagePage() {
             <div className="origin-top scale-[0.92] sm:scale-100">
               <HomepageHero hero={payload.hero} heroImageUrl={heroPreviewUrl} />
               <HomepageBankBrowse categories={payload.categories} topics={payload.topics} />
-              <HomepageMidSections
-                why={payload.why}
-                progress={payload.progress}
-                ctaBanner={payload.ctaBanner}
-              />
+              <HomepageMidSections why={payload.why} />
               <HomepageLatestQuestions latest={payload.latest} />
               <div className="mx-auto max-w-[1280px] px-4 pb-8 sm:px-6">
                 <NewsletterBar newsletter={payload.newsletter} />

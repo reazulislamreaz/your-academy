@@ -688,6 +688,8 @@ model PracticeAttempt {
   status         PracticeAttemptStatus @default(IN_PROGRESS)
   startedAt      DateTime              @default(now()) @map("started_at") @db.Timestamptz(3)
   submittedAt    DateTime?             @map("submitted_at") @db.Timestamptz(3)
+  /// Attempt-scoped timer (null = untimed). Set at start; used for deadline instead of PracticeSet.durationSeconds.
+  timerSeconds   Int?                  @map("timer_seconds")
   /// Wall-clock seconds from start to submit (capped by duration when timed).
   elapsedSeconds Int?                  @map("elapsed_seconds")
   score          Float?
@@ -716,6 +718,8 @@ model PracticeAttemptAnswer {
   questionId       String    @map("question_id") @db.Uuid
   selectedOptionId String?   @map("selected_option_id") @db.Uuid
   isCorrect        Boolean?  @map("is_correct")
+  /// Learner flag for later review (does not affect scoring).
+  markedForReview  Boolean   @default(false) @map("marked_for_review")
   /// Last progress save / final answer time (mid-attempt autosave).
   answeredAt       DateTime? @map("answered_at") @db.Timestamptz(3)
   /// Snapshots so review survives later MCQ edits (DEC-035).

@@ -470,13 +470,14 @@ export class QuestionImportService {
       if (!row.question) continue;
       legacyTextHashes.push(hashQuestionContent(row.question));
       const correct = normalizeCorrectAnswer(row.correctAnswer);
-      if (!correct) continue;
       const correctContent = resolveCorrectOptionContent(correct, {
         A: row.optionA,
         B: row.optionB,
         C: row.optionC,
         D: row.optionD,
       });
+      // Always hash identity (empty answer content when missing) so unanswered
+      // duplicates and answered duplicates are both caught against the DB.
       identityHashes.push(hashQuestionIdentity(row.question, correctContent));
     }
     const existingDuplicates = await this.loadExistingDuplicates(identityHashes, legacyTextHashes);
@@ -600,11 +601,12 @@ export class QuestionImportService {
       if (!row.optionC) errors.push('Column "গ": option is required');
       if (!row.optionD) errors.push('Column "ঘ": option is required');
 
+      const answerRaw = row.correctAnswer?.trim() ?? '';
       const correct = normalizeCorrectAnswer(row.correctAnswer);
-      if (!correct) {
+      // Missing answer is allowed (null). Only reject non-empty unparseable values.
+      if (answerRaw && !correct) {
         errors.push(
-          'Column "উত্তর": must be ক/খ/গ/ঘ (or A/B/C/D). Got: ' +
-            (row.correctAnswer.trim() || '(empty)'),
+          'Column "উত্তর": must be ক/খ/গ/ঘ (or A/B/C/D) when provided. Got: ' + answerRaw,
         );
       }
 
@@ -614,11 +616,10 @@ export class QuestionImportService {
         C: row.optionC,
         D: row.optionD,
       });
-      /** Identity hash requires both question text and correct-answer content. */
-      const hash =
-        row.question && correct
-          ? hashQuestionIdentity(row.question, correctContent)
-          : null;
+      /** Identity = normalized stem + correct-option text (empty when unanswered). */
+      const hash = row.question
+        ? hashQuestionIdentity(row.question, correctContent)
+        : null;
       const legacyTextHash = row.question ? hashQuestionContent(row.question) : null;
 
       const difficulty = parseDifficulty(row.difficulty);
@@ -727,7 +728,7 @@ export class QuestionImportService {
           optionB: row.optionB,
           optionC: row.optionC,
           optionD: row.optionD,
-          correctAnswer: correct!,
+          correctAnswer: correct,
           explanation: row.explanation || null,
           subjectName,
           topicName,
@@ -762,7 +763,7 @@ export class QuestionImportService {
           optionB: row.optionB,
           optionC: row.optionC,
           optionD: row.optionD,
-          correctAnswer: correct!,
+          correctAnswer: correct,
           explanation: row.explanation || null,
           subjectName,
           topicName,
@@ -795,7 +796,7 @@ export class QuestionImportService {
         optionB: row.optionB,
         optionC: row.optionC,
         optionD: row.optionD,
-        correctAnswer: correct!,
+        correctAnswer: correct,
         explanation: row.explanation || null,
         subjectName,
         topicName,
@@ -977,12 +978,21 @@ export class QuestionImportService {
               `Batch ${batchId.slice(0, 8)}`,
             ].filter(Boolean);
 
+            const hasCorrect =
+              row.correctAnswer === 'A' ||
+              row.correctAnswer === 'B' ||
+              row.correctAnswer === 'C' ||
+              row.correctAnswer === 'D';
             const options = [
               { label: 'A', content: row.optionA!, isCorrect: row.correctAnswer === 'A' },
               { label: 'B', content: row.optionB!, isCorrect: row.correctAnswer === 'B' },
               { label: 'C', content: row.optionC!, isCorrect: row.correctAnswer === 'C' },
               { label: 'D', content: row.optionD!, isCorrect: row.correctAnswer === 'D' },
             ];
+
+            // Unanswered imports stay draft so they do not enter the learner bank
+            // until an admin sets a correct option and publishes.
+            const publishNow = hasCorrect;
 
             const title = row.questionText.slice(0, 200);
             const created = await tx.question.create({
@@ -993,8 +1003,8 @@ export class QuestionImportService {
                 categoryId: subject.id,
                 subcategoryId: topicId,
                 difficulty,
-                status: QuestionStatus.PUBLISHED,
-                publishedAt: new Date(),
+                status: publishNow ? QuestionStatus.PUBLISHED : QuestionStatus.DRAFT,
+                publishedAt: publishNow ? new Date() : null,
                 examTags: examTag ? [examTag] : [],
                 sourceNote: sourceParts.join(' · ').slice(0, 240),
                 sourceSerial: row.serial?.trim().slice(0, 32) || null,

@@ -25,6 +25,11 @@ describe('question-normalize', () => {
       const bn = 'বাংলাদেশের রাজধানী কোনটি?';
       expect(normalizeQuestionText(bn)).toBe(bn);
     });
+
+    it('collapses newlines, tabs, and fancy spaces/dashes', () => {
+      expect(normalizeQuestionText('What\nis\tthe\u00a0capital?')).toBe('what is the capital?');
+      expect(normalizeQuestionText('A\u2013B')).toBe('a-b');
+    });
   });
 
   describe('hashQuestionIdentity', () => {
@@ -69,6 +74,13 @@ describe('question-normalize', () => {
       const textOnly = hashQuestionContent('What is the capital of Bangladesh?');
       const identity = hashQuestionIdentity('What is the capital of Bangladesh?', 'Dhaka');
       expect(identity).not.toBe(textOnly);
+    });
+
+    it('treats missing answers as empty identity content', () => {
+      const a = hashQuestionIdentity('Capital of Bangladesh?', '');
+      const b = hashQuestionIdentity('  capital of Bangladesh?  ', '');
+      expect(a).toBe(b);
+      expect(a).not.toBe(hashQuestionIdentity('Capital of Bangladesh?', 'Dhaka'));
     });
   });
 

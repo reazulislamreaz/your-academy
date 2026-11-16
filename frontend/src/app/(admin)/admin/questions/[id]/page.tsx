@@ -43,7 +43,7 @@ export default function EditQuestionPage() {
     const sorted = [...q.options].sort((a, b) => a.sortOrder - b.sortOrder);
     const labels = ['A', 'B', 'C', 'D'];
     const options = labels.map((label) => sorted.find((o) => o.label === label)?.content ?? '');
-    const correct = sorted.find((o) => o.isCorrect)?.label ?? 'A';
+    const correct = sorted.find((o) => o.isCorrect)?.label ?? '';
     return {
       title: q.title,
       content: q.content,

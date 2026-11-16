@@ -42,7 +42,7 @@ export function emptyQuestionForm(categoryId = ''): QuestionFormValues {
     questionDate: '',
     difficulty: 'MEDIUM',
     options: ['', '', '', ''],
-    correct: 'A',
+    correct: '',
   };
 }
 
@@ -184,26 +184,36 @@ export function QuestionForm({
             Answer options
           </h3>
           <p className="mt-1 text-xs text-[var(--muted-strong)]">
-            Exactly one option must be marked correct before publishing.
+            Exactly one option must be marked correct before publishing. Missing answers are allowed
+            while drafting.
           </p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
-          {values.options.map((opt, i) => (
-            <Field key={i}>
-              <Label htmlFor={`opt-${i}`}>Option {['A', 'B', 'C', 'D'][i]}</Label>
-              <Input
-                id={`opt-${i}`}
-                required
-                value={opt}
-                onChange={(e) =>
-                  setValues((v) => ({
-                    ...v,
-                    options: v.options.map((p, idx) => (idx === i ? e.target.value : p)),
-                  }))
-                }
-              />
-            </Field>
-          ))}
+          {values.options.map((opt, i) => {
+            const label = ['A', 'B', 'C', 'D'][i]!;
+            const isMarked = values.correct === label;
+            return (
+              <Field key={i}>
+                <Label htmlFor={`opt-${i}`}>Option {label}</Label>
+                <Input
+                  id={`opt-${i}`}
+                  required
+                  value={opt}
+                  onChange={(e) =>
+                    setValues((v) => ({
+                      ...v,
+                      options: v.options.map((p, idx) => (idx === i ? e.target.value : p)),
+                    }))
+                  }
+                  className={
+                    isMarked
+                      ? 'border-[var(--success)]/50 bg-[var(--success-soft)]'
+                      : undefined
+                  }
+                />
+              </Field>
+            );
+          })}
         </div>
         <Field className="max-w-xs">
           <Label htmlFor="correct">Correct option</Label>
@@ -212,6 +222,7 @@ export function QuestionForm({
             value={values.correct}
             onChange={(e) => setValues((v) => ({ ...v, correct: e.target.value }))}
           >
+            <option value="">None (missing)</option>
             {['A', 'B', 'C', 'D'].map((l) => (
               <option key={l} value={l}>
                 {l}
@@ -244,7 +255,7 @@ export function toQuestionPayload(values: QuestionFormValues) {
     options: values.options.map((text, i) => ({
       label: labels[i],
       content: text,
-      isCorrect: labels[i] === values.correct,
+      isCorrect: Boolean(values.correct) && labels[i] === values.correct,
     })),
   };
 }

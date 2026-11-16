@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
   UnprocessableEntityException,
@@ -13,6 +14,7 @@ import { PrismaService } from '../database/prisma.service';
 import { LearningActivityService } from '../learning-activity/learning-activity.service';
 import { AccessControlService } from '../subscriptions/access-control.service';
 import { parseQuestionDate } from '../question-import/question-date.util';
+import { hashQuestionIdentity } from '../question-import/question-normalize';
 import type { CreateQuestionDto } from './dto/create-question.dto';
 import type { UpdateQuestionDto } from './dto/update-question.dto';
 
@@ -47,30 +49,38 @@ export class QuestionsService {
     await this.assertCategoryPair(dto.categoryId, dto.subcategoryId);
     this.assertOptionShape(dto.options, false);
     const { questionDate, examYear } = this.resolveQuestionDate(dto.questionDate);
+    const contentHash = this.computeContentHash(dto.content, dto.options);
+    await this.assertUniqueContentHash(contentHash);
 
-    return this.prisma.question.create({
-      data: {
-        title: dto.title.trim(),
-        content: dto.content,
-        explanation: dto.explanation,
-        categoryId: dto.categoryId,
-        subcategoryId: dto.subcategoryId,
-        difficulty: dto.difficulty ?? Difficulty.MEDIUM,
-        status: QuestionStatus.DRAFT,
-        questionDate,
-        examYear,
-        createdById: user.userId,
-        options: {
-          create: dto.options.map((o, index) => ({
-            label: o.label,
-            content: o.content,
-            isCorrect: o.isCorrect,
-            sortOrder: index,
-          })),
+    try {
+      return await this.prisma.question.create({
+        data: {
+          title: dto.title.trim(),
+          content: dto.content,
+          explanation: dto.explanation,
+          categoryId: dto.categoryId,
+          subcategoryId: dto.subcategoryId,
+          difficulty: dto.difficulty ?? Difficulty.MEDIUM,
+          status: QuestionStatus.DRAFT,
+          questionDate,
+          examYear,
+          contentHash,
+          createdById: user.userId,
+          options: {
+            create: dto.options.map((o, index) => ({
+              label: o.label,
+              content: o.content,
+              isCorrect: o.isCorrect,
+              sortOrder: index,
+            })),
+          },
         },
-      },
-      include: { options: { orderBy: { sortOrder: 'asc' } } },
-    });
+        include: { options: { orderBy: { sortOrder: 'asc' } } },
+      });
+    } catch (err) {
+      this.rethrowDuplicateHash(err);
+      throw err;
+    }
   }
 
   async update(id: string, dto: UpdateQuestionDto) {
@@ -88,40 +98,59 @@ export class QuestionsService {
       );
     }
 
-    return this.prisma.$transaction(async (tx) => {
-      if (dto.options) {
-        this.assertOptionShape(dto.options, false);
-        await tx.questionOption.deleteMany({ where: { questionId: id } });
-        await tx.questionOption.createMany({
-          data: dto.options.map((o, index) => ({
-            questionId: id,
-            label: o.label,
-            content: o.content,
-            isCorrect: o.isCorrect,
-            sortOrder: index,
-          })),
-        });
-      }
-
-      const datePatch =
-        dto.questionDate !== undefined ? this.resolveQuestionDate(dto.questionDate) : null;
-
-      return tx.question.update({
-        where: { id },
-        data: {
-          ...(dto.title ? { title: dto.title.trim() } : {}),
-          ...(dto.content ? { content: dto.content } : {}),
-          ...(dto.explanation !== undefined ? { explanation: dto.explanation } : {}),
-          ...(dto.categoryId ? { categoryId: dto.categoryId } : {}),
-          ...(dto.subcategoryId !== undefined ? { subcategoryId: dto.subcategoryId } : {}),
-          ...(dto.difficulty ? { difficulty: dto.difficulty } : {}),
-          ...(datePatch
-            ? { questionDate: datePatch.questionDate, examYear: datePatch.examYear }
-            : {}),
-        },
-        include: { options: { orderBy: { sortOrder: 'asc' } } },
+    const nextContent = dto.content ?? existing.content;
+    let hashOptions: Array<{ content: string; isCorrect: boolean }>;
+    if (dto.options) {
+      this.assertOptionShape(dto.options, false);
+      hashOptions = dto.options.map((o) => ({ content: o.content, isCorrect: o.isCorrect }));
+    } else {
+      hashOptions = await this.prisma.questionOption.findMany({
+        where: { questionId: id },
+        select: { content: true, isCorrect: true },
       });
-    });
+    }
+    const contentHash = this.computeContentHash(nextContent, hashOptions);
+    await this.assertUniqueContentHash(contentHash, id);
+
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        if (dto.options) {
+          await tx.questionOption.deleteMany({ where: { questionId: id } });
+          await tx.questionOption.createMany({
+            data: dto.options.map((o, index) => ({
+              questionId: id,
+              label: o.label,
+              content: o.content,
+              isCorrect: o.isCorrect,
+              sortOrder: index,
+            })),
+          });
+        }
+
+        const datePatch =
+          dto.questionDate !== undefined ? this.resolveQuestionDate(dto.questionDate) : null;
+
+        return tx.question.update({
+          where: { id },
+          data: {
+            ...(dto.title ? { title: dto.title.trim() } : {}),
+            ...(dto.content ? { content: dto.content } : {}),
+            ...(dto.explanation !== undefined ? { explanation: dto.explanation } : {}),
+            ...(dto.categoryId ? { categoryId: dto.categoryId } : {}),
+            ...(dto.subcategoryId !== undefined ? { subcategoryId: dto.subcategoryId } : {}),
+            ...(dto.difficulty ? { difficulty: dto.difficulty } : {}),
+            ...(datePatch
+              ? { questionDate: datePatch.questionDate, examYear: datePatch.examYear }
+              : {}),
+            contentHash,
+          },
+          include: { options: { orderBy: { sortOrder: 'asc' } } },
+        });
+      });
+    } catch (err) {
+      this.rethrowDuplicateHash(err);
+      throw err;
+    }
   }
 
   async publish(id: string, actorUserId?: string) {
@@ -497,7 +526,7 @@ export class QuestionsService {
   }
 
   private assertOptionShape(
-    options: Array<{ isCorrect: boolean }>,
+    options: Array<{ isCorrect: boolean; content?: string }>,
     requireExactlyOne: boolean,
   ) {
     if (options.length < 2 || options.length > 6) {
@@ -524,6 +553,46 @@ export class QuestionsService {
         createErrorResponse(
           'INVALID_CORRECT_OPTION',
           'At most one correct option is allowed',
+          newRequestId(),
+        ),
+      );
+    }
+  }
+
+  private computeContentHash(
+    content: string,
+    options: Array<{ content: string; isCorrect: boolean }>,
+  ): string {
+    const correctContent = options.find((o) => o.isCorrect)?.content ?? '';
+    return hashQuestionIdentity(content, correctContent);
+  }
+
+  private async assertUniqueContentHash(contentHash: string, excludeId?: string) {
+    const existing = await this.prisma.question.findFirst({
+      where: {
+        deletedAt: null,
+        contentHash,
+        ...(excludeId ? { NOT: { id: excludeId } } : {}),
+      },
+      select: { id: true, title: true },
+    });
+    if (existing) {
+      throw new ConflictException(
+        createErrorResponse(
+          'QUESTION_DUPLICATE',
+          `A question with the same text and correct answer already exists ("${existing.title.slice(0, 80)}")`,
+          newRequestId(),
+        ),
+      );
+    }
+  }
+
+  private rethrowDuplicateHash(err: unknown): void {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+      throw new ConflictException(
+        createErrorResponse(
+          'QUESTION_DUPLICATE',
+          'A question with the same text and correct answer already exists',
           newRequestId(),
         ),
       );

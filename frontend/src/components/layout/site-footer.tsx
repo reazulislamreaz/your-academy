@@ -4,9 +4,11 @@ import { FooterDeveloperCredit } from './footer-developer-credit';
 
 const FOOTER_LINKS = [
   { href: '/', label: 'Home' },
-  { href: '/#how-it-works', label: 'How it works' },
-  { href: '/#contact', label: 'Contact' },
-  { href: '/register', label: 'Create account' },
+  { href: '/preli-question-bank', label: 'Preli bank' },
+  { href: '/written-question-bank', label: 'Written bank' },
+  { href: '/news', label: 'Newspaper columns' },
+  { href: '/#faq', label: 'FAQ' },
+  { href: '/register', label: 'Free trial' },
   { href: '/login', label: 'Sign in' },
 ] as const;
 
@@ -29,7 +31,11 @@ export function SiteFooter() {
           <div className="space-y-2 text-center sm:text-left">
             <BrandMark inverse className="justify-center sm:justify-start" />
             <p className="text-sm font-medium tracking-wide text-white/70">
-              Learn - Practice - Get Success
+              BCS · Bank · NTRCA · Government Jobs
+            </p>
+            <p className="max-w-sm text-xs leading-relaxed text-white/55">
+              Practice published MCQs, read newspaper columns, and start a 7-day free trial for
+              answers and timed practice.
             </p>
           </div>
 
@@ -57,7 +63,7 @@ export function SiteFooter() {
               href="/register"
               className="rounded-full bg-[var(--highlight)] px-4 py-2 text-sm font-semibold text-white hover:brightness-105"
             >
-              Create account
+              Start free trial
             </Link>
           </div>
         </div>

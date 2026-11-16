@@ -145,39 +145,45 @@ export const homepagePayloadSchema = z.object({
 
 export type HomepagePayload = z.infer<typeof homepagePayloadSchema>;
 
-/** Default payload mirrors the current hardcoded marketing homepage. */
+/** Default payload mirrors the marketing homepage (honest copy; live stats override hero.stats). */
 export function createDefaultHomepagePayload(): HomepagePayload {
   return homepagePayloadSchema.parse({
     hero: {
       visible: true,
-      eyebrow: "Bangladesh's Premier Job Exam Preparation Platform",
+      eyebrow: 'BCS · Bank · NTRCA · Primary · Government Jobs',
       titleBefore: 'Your Academy',
       titleHighlight: '',
-      titleAfter: 'An Online Learning Platform',
-      description: 'Boost Your Knowledge',
-      primaryCta: { label: 'Start Practicing', href: '/register', visible: true },
+      titleAfter: '',
+      description:
+        'Your Complete Preparation Partner for BCS, Bank & Government Jobs.',
+      primaryCta: {
+        label: 'Start Your 7-Day Free Trial',
+        href: '/register',
+        visible: true,
+      },
       secondaryCta: {
         label: 'Explore Question Bank',
         href: '/preli-question-bank',
         visible: true,
       },
+      // Placeholders only — public homepage replaces these with GET /public/stats.
       stats: [
-        { iconKey: 'users', value: '1M+', label: 'Students' },
-        { iconKey: 'book', value: '50+', label: 'Job Exams' },
-        { iconKey: 'trophy', value: '100%', label: 'Focused on Your Success' },
+        { iconKey: 'book', value: '—', label: 'Published MCQs' },
+        { iconKey: 'grad', value: '—', label: 'Exam categories' },
+        { iconKey: 'trophy', value: '7 days', label: 'Free trial on signup' },
       ],
       backgroundToken: 'inverse',
     },
     categories: {
       visible: true,
-      heading: 'Our Question Bank Categories',
-      subtitle: 'Choose your target exam and start your preparation',
-      cta: { label: 'View All Exams', href: '/question-bank-categories', visible: true },
+      heading: 'Target exam categories',
+      subtitle: 'Browse the Preli bank by the exams you are preparing for',
+      cta: { label: 'View all categories', href: '/question-bank-categories', visible: true },
       tiles: [
         {
           id: 'bcs',
           displayTitle: 'BCS',
-          subtitle: '(Preliminary + Written)',
+          subtitle: 'Preliminary focus',
           iconKey: 'bcs',
           categoryId: null,
           fallbackHref: '/preli-question-bank?q=BCS',
@@ -186,7 +192,7 @@ export function createDefaultHomepagePayload(): HomepagePayload {
         {
           id: 'bank',
           displayTitle: 'Bank',
-          subtitle: '(Officer & SO)',
+          subtitle: 'Officer & SO',
           iconKey: 'bank',
           categoryId: null,
           fallbackHref: '/preli-question-bank?q=Bank',
@@ -223,8 +229,8 @@ export function createDefaultHomepagePayload(): HomepagePayload {
     },
     topics: {
       visible: true,
-      heading: 'Topic Based Question Analysis',
-      cta: { label: 'View All Topics', href: '/topic-categories', visible: true },
+      heading: 'Topic-based practice',
+      cta: { label: 'View all topics', href: '/topic-categories', visible: true },
       tiles: [
         {
           id: 'bangla',
@@ -275,45 +281,41 @@ export function createDefaultHomepagePayload(): HomepagePayload {
     },
     why: {
       visible: true,
-      heading: 'Why Choose Your Academy?',
+      heading: 'Why Your Academy?',
       points: [
-        'Weekly Update Question Bank',
-        'Chapter-wise MCQ Practice',
-        'প্রতিদিন পত্রিকার গুরুত্বপূর্ণ কলাম',
-        'Unlimited Exam Practice',
-        'Regular Update',
-        'Performance Update',
+        'Published Preli MCQs you can browse without logging in',
+        '7-day free trial with answers and explanations after signup',
+        'Topic and category filters for focused practice',
+        'পত্রিকার গুরুত্বপূর্ণ কলাম — published PDF columns',
+        'Timed practice sets and mock-style exams when signed in',
+        'Bookmarks, activity, and performance on your dashboard',
       ],
     },
+    // Fabricated learner metrics must never ship on the public homepage.
     progress: {
-      visible: true,
-      heading: 'Track Your Progress',
-      metrics: [
-        { value: '750', label: 'Total Attempted', iconKey: 'check', tone: 'info' },
-        { value: '620', label: 'Correct', iconKey: 'check', tone: 'success' },
-        { value: '130', label: 'Wrong', iconKey: 'xcircle', tone: 'danger' },
-        { value: '82.7%', label: 'Accuracy', iconKey: 'percent', tone: 'insight' },
-      ],
-      trendCaption: 'Your Performance is improving!',
+      visible: false,
+      heading: 'Track your progress',
+      metrics: [],
+      trendCaption: 'Sign in to see your real attempt history and accuracy.',
     },
     ctaBanner: {
       visible: true,
-      heading: 'Ace Your Next Job Exam!',
-      body: 'Join thousands of successful candidates with Your Academy.',
-      cta: { label: 'Start Now', href: '/register', visible: true },
+      heading: 'Start your 7-day free trial',
+      body: 'Create an account to unlock answers, explanations, bookmarks, and timed practice. Browse the public Preli bank anytime.',
+      cta: { label: 'Create free account', href: '/register', visible: true },
     },
     latest: {
       visible: true,
-      heading: 'Latest Collections',
-      subtitle: 'Newest admin uploads appear first.',
-      cta: { label: 'Preli Question Bank', href: '/preli-question-bank', visible: true },
+      heading: 'Latest question collections',
+      subtitle: 'Newest published uploads from the Preli bank.',
+      cta: { label: 'Open Preli Question Bank', href: '/preli-question-bank', visible: true },
       limit: 6,
     },
     newsletter: {
       visible: true,
-      title: 'Stay updated',
-      body: "Create a free account to practice with Your Academy. Email newsletters aren't live yet.",
-      cta: { label: 'Create account', href: '/register', visible: true },
+      title: 'Ready to practice?',
+      body: 'Register for a 7-day free trial. Email newsletters are not live yet — your account is the best way to stay on track.',
+      cta: { label: 'Start free trial', href: '/register', visible: true },
     },
   });
 }

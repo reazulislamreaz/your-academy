@@ -20,8 +20,14 @@ export function stripSimpleHtml(input: string): string {
 function collapseComparableText(input: string): string {
   return stripSimpleHtml(input)
     .normalize('NFC')
-    .replace(/\u00a0/g, ' ')
-    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    // Unicode spaces / BOM / zero-width → regular space or drop
+    .replace(/[\u00a0\u1680\u2000-\u200A\u202F\u205F\u3000]/g, ' ')
+    .replace(/[\u200B-\u200D\uFEFF\u2060]/g, '')
+    // Normalize common dash/quote variants so formatting noise does not bypass duplicates
+    .replace(/[\u2010-\u2015\u2212]/g, '-')
+    .replace(/[\u2018\u2019\u201A\u201B]/g, "'")
+    .replace(/[\u201C\u201D\u201E\u201F]/g, '"')
+    .replace(/\r\n|\r|\n/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
     .replace(/[A-Za-z]+/g, (m) => m.toLowerCase());

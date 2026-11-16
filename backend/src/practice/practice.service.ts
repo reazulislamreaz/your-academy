@@ -15,11 +15,14 @@ import { AccessControlService } from '../subscriptions/access-control.service';
 import type {
   CreatePracticeSetDto,
   SaveProgressDto,
+  StartAttemptDto,
   SubmitAttemptDto,
   UpdatePracticeSetDto,
 } from './dto/submit-attempt.dto';
+import { TIMER_PRESETS } from './dto/submit-attempt.dto';
 
 const KIND_VALUES = new Set<string>(Object.values(PracticeSetKind));
+const TIMER_PRESET_SET = new Set<number>(TIMER_PRESETS);
 
 type OptionSnapshot = {
   id: string;
@@ -142,7 +145,7 @@ export class PracticeService {
     };
   }
 
-  async startAttempt(user: RequestUser, idOrSlug: string) {
+  async startAttempt(user: RequestUser, idOrSlug: string, dto: StartAttemptDto = {}) {
     const set = await this.findPublishedSet(idOrSlug);
     await this.autoFinalizeIfExpired(user.userId, set.id);
 
@@ -162,12 +165,15 @@ export class PracticeService {
       );
     }
 
+    const timerSeconds = this.resolveStartTimerSeconds(set.durationSeconds, dto);
+
     const attempt = await this.prisma.practiceAttempt.create({
       data: {
         userId: user.userId,
         practiceSetId: set.id,
         status: PracticeAttemptStatus.IN_PROGRESS,
         maxScore: itemCount * set.marksPerCorrect,
+        timerSeconds,
       },
       select: {
         id: true,
@@ -175,6 +181,7 @@ export class PracticeService {
         status: true,
         startedAt: true,
         maxScore: true,
+        timerSeconds: true,
       },
     });
 
@@ -187,14 +194,21 @@ export class PracticeService {
       practiceAttemptId: attempt.id,
     });
 
-    return this.mapActiveAttempt(attempt, set.durationSeconds, []);
+    return this.mapActiveAttempt(attempt, []);
   }
 
   /** Persist in-progress answers so refresh / disconnect does not lose work. */
   async saveProgress(user: RequestUser, attemptId: string, dto: SaveProgressDto) {
     const attempt = await this.prisma.practiceAttempt.findUnique({
       where: { id: attemptId },
-      include: { practiceSet: { select: { id: true, durationSeconds: true } } },
+      select: {
+        id: true,
+        userId: true,
+        practiceSetId: true,
+        status: true,
+        startedAt: true,
+        timerSeconds: true,
+      },
     });
     if (!attempt || attempt.userId !== user.userId) {
       throw new NotFoundException(
@@ -207,7 +221,7 @@ export class PracticeService {
       );
     }
 
-    if (this.isTimedOut(attempt.startedAt, attempt.practiceSet.durationSeconds)) {
+    if (this.isTimedOut(attempt.startedAt, attempt.timerSeconds)) {
       // Deadline passed — finalize with whatever we have + incoming payload.
       return this.submitAttempt(user, attemptId, { answers: dto.answers });
     }
@@ -223,6 +237,7 @@ export class PracticeService {
       for (const row of dto.answers) {
         if (!allowed.has(row.questionId)) continue;
         const selectedOptionId = row.selectedOptionId ?? null;
+        const markedForReview = row.markedForReview === true;
         if (selectedOptionId) {
           const ok = await tx.questionOption.findFirst({
             where: { id: selectedOptionId, questionId: row.questionId },
@@ -238,6 +253,24 @@ export class PracticeService {
             );
           }
         }
+        // Skip empty rows that neither answer nor mark.
+        if (!selectedOptionId && !markedForReview) {
+          const existing = await tx.practiceAttemptAnswer.findUnique({
+            where: { attemptId_questionId: { attemptId, questionId: row.questionId } },
+            select: { id: true },
+          });
+          if (existing) {
+            await tx.practiceAttemptAnswer.update({
+              where: { id: existing.id },
+              data: {
+                selectedOptionId: null,
+                markedForReview: false,
+                answeredAt: now,
+              },
+            });
+          }
+          continue;
+        }
         await tx.practiceAttemptAnswer.upsert({
           where: {
             attemptId_questionId: { attemptId, questionId: row.questionId },
@@ -246,11 +279,13 @@ export class PracticeService {
             attemptId,
             questionId: row.questionId,
             selectedOptionId,
+            markedForReview,
             isCorrect: null,
             answeredAt: now,
           },
           update: {
             selectedOptionId,
+            markedForReview,
             answeredAt: now,
           },
         });
@@ -258,19 +293,24 @@ export class PracticeService {
     });
 
     const saved = await this.prisma.practiceAttemptAnswer.findMany({
-      where: { attemptId, selectedOptionId: { not: null } },
-      select: { questionId: true, selectedOptionId: true },
+      where: {
+        attemptId,
+        OR: [{ selectedOptionId: { not: null } }, { markedForReview: true }],
+      },
+      select: { questionId: true, selectedOptionId: true, markedForReview: true },
     });
 
     return {
       attemptId,
       status: attempt.status,
-      savedCount: saved.length,
+      savedCount: saved.filter((a) => a.selectedOptionId).length,
       answers: saved.map((a) => ({
         questionId: a.questionId,
         selectedOptionId: a.selectedOptionId,
+        markedForReview: a.markedForReview,
       })),
-      expiresAt: this.expiresAtIso(attempt.startedAt, attempt.practiceSet.durationSeconds),
+      expiresAt: this.expiresAtIso(attempt.startedAt, attempt.timerSeconds),
+      timerSeconds: attempt.timerSeconds,
       serverNow: new Date().toISOString(),
     };
   }
@@ -294,21 +334,29 @@ export class PracticeService {
     }
 
     const set = attempt.practiceSet;
-    const timedOut = this.isTimedOut(attempt.startedAt, set.durationSeconds);
+    const timerSeconds = attempt.timerSeconds;
+    const timedOut = this.isTimedOut(attempt.startedAt, timerSeconds);
     const submittedAt = new Date();
     const elapsedSeconds = this.computeElapsedSeconds(
       attempt.startedAt,
       submittedAt,
-      set.durationSeconds,
+      timerSeconds,
     );
 
     // Merge client payload over saved progress (client wins for overlapping keys).
     const answerByQuestion = new Map<string, string | null>();
+    const markedByQuestion = new Map<string, boolean>();
     for (const saved of attempt.answers) {
       answerByQuestion.set(saved.questionId, saved.selectedOptionId);
+      markedByQuestion.set(saved.questionId, saved.markedForReview);
     }
     for (const a of dto.answers) {
-      answerByQuestion.set(a.questionId, a.selectedOptionId ?? null);
+      if (a.selectedOptionId !== undefined) {
+        answerByQuestion.set(a.questionId, a.selectedOptionId ?? null);
+      }
+      if (a.markedForReview !== undefined) {
+        markedByQuestion.set(a.questionId, a.markedForReview === true);
+      }
     }
 
     const items = await this.prisma.practiceSetItem.findMany({
@@ -338,6 +386,7 @@ export class PracticeService {
     const answerRows: Array<{
       questionId: string;
       selectedOptionId: string | null;
+      markedForReview: boolean;
       isCorrect: boolean | null;
       questionTitleSnapshot: string;
       questionContentSnapshot: string;
@@ -347,6 +396,7 @@ export class PracticeService {
 
     for (const item of items) {
       const selectedOptionId = answerByQuestion.get(item.questionId) ?? null;
+      const markedForReview = markedByQuestion.get(item.questionId) === true;
       const optionsSnapshot: OptionSnapshot[] = item.question.options.map((o) => ({
         id: o.id,
         label: o.label,
@@ -356,6 +406,7 @@ export class PracticeService {
       }));
       const base = {
         questionId: item.questionId,
+        markedForReview,
         questionTitleSnapshot: item.question.title.slice(0, 200),
         questionContentSnapshot: item.question.content,
         explanationSnapshot: item.question.explanation ?? null,
@@ -426,6 +477,7 @@ export class PracticeService {
           attemptId,
           questionId: row.questionId,
           selectedOptionId: row.selectedOptionId,
+          markedForReview: row.markedForReview,
           isCorrect: row.isCorrect,
           answeredAt: submittedAt,
           questionTitleSnapshot: row.questionTitleSnapshot,
@@ -515,7 +567,7 @@ export class PracticeService {
         ? this.computeElapsedSeconds(
             attempt.startedAt,
             attempt.submittedAt,
-            attempt.practiceSet.durationSeconds,
+            attempt.timerSeconds,
           )
         : null);
 
@@ -1129,16 +1181,18 @@ export class PracticeService {
         practiceSetId,
         status: PracticeAttemptStatus.IN_PROGRESS,
       },
-      include: {
-        practiceSet: { select: { durationSeconds: true } },
+      select: {
+        id: true,
+        startedAt: true,
+        timerSeconds: true,
         answers: {
-          select: { questionId: true, selectedOptionId: true },
+          select: { questionId: true, selectedOptionId: true, markedForReview: true },
         },
       },
       orderBy: { startedAt: 'desc' },
     });
     if (!active) return;
-    if (!this.isTimedOut(active.startedAt, active.practiceSet.durationSeconds)) return;
+    if (!this.isTimedOut(active.startedAt, active.timerSeconds)) return;
 
     // Server-side auto-submit with saved progress only (no client answers).
     await this.submitAttempt(
@@ -1148,6 +1202,7 @@ export class PracticeService {
         answers: active.answers.map((a) => ({
           questionId: a.questionId,
           selectedOptionId: a.selectedOptionId,
+          markedForReview: a.markedForReview,
         })),
       },
     );
@@ -1190,19 +1245,17 @@ export class PracticeService {
         status: true,
         startedAt: true,
         maxScore: true,
+        timerSeconds: true,
         answers: {
-          where: { selectedOptionId: { not: null } },
-          select: { questionId: true, selectedOptionId: true },
+          where: {
+            OR: [{ selectedOptionId: { not: null } }, { markedForReview: true }],
+          },
+          select: { questionId: true, selectedOptionId: true, markedForReview: true },
         },
       },
     });
     if (!attempt) return null;
-
-    const set = await this.prisma.practiceSet.findUnique({
-      where: { id: practiceSetId },
-      select: { durationSeconds: true },
-    });
-    return this.mapActiveAttempt(attempt, set?.durationSeconds ?? null, attempt.answers);
+    return this.mapActiveAttempt(attempt, attempt.answers);
   }
 
   private mapActiveAttempt(
@@ -1212,9 +1265,13 @@ export class PracticeService {
       status: PracticeAttemptStatus;
       startedAt: Date;
       maxScore: number | null;
+      timerSeconds: number | null;
     },
-    durationSeconds: number | null | undefined,
-    answers: Array<{ questionId: string; selectedOptionId: string | null }>,
+    answers: Array<{
+      questionId: string;
+      selectedOptionId: string | null;
+      markedForReview?: boolean;
+    }>,
   ) {
     return {
       id: attempt.id,
@@ -1222,16 +1279,44 @@ export class PracticeService {
       status: attempt.status,
       startedAt: attempt.startedAt.toISOString(),
       maxScore: attempt.maxScore,
-      durationSeconds: durationSeconds ?? null,
-      expiresAt: this.expiresAtIso(attempt.startedAt, durationSeconds),
-      savedAnswers: answers
-        .filter((a) => a.selectedOptionId)
-        .map((a) => ({
-          questionId: a.questionId,
-          selectedOptionId: a.selectedOptionId!,
-        })),
+      timerSeconds: attempt.timerSeconds,
+      durationSeconds: attempt.timerSeconds,
+      expiresAt: this.expiresAtIso(attempt.startedAt, attempt.timerSeconds),
+      savedAnswers: answers.map((a) => ({
+        questionId: a.questionId,
+        selectedOptionId: a.selectedOptionId,
+        markedForReview: a.markedForReview === true,
+      })),
       serverNow: new Date().toISOString(),
     };
+  }
+
+  /** Resolve attempt timer from learner start options + set admin duration. */
+  private resolveStartTimerSeconds(
+    setDurationSeconds: number | null,
+    dto: StartAttemptDto,
+  ): number | null {
+    if (dto.timed === false) return null;
+
+    if (dto.timed === true) {
+      if (setDurationSeconds != null && setDurationSeconds > 0) {
+        return setDurationSeconds;
+      }
+      const preset = dto.durationSeconds;
+      if (preset != null && TIMER_PRESET_SET.has(preset)) {
+        return preset;
+      }
+      throw new BadRequestException(
+        createErrorResponse(
+          'TIMER_DURATION_REQUIRED',
+          'Choose a timer duration (15, 30, 45, or 60 minutes) or start untimed',
+          newRequestId(),
+        ),
+      );
+    }
+
+    // Legacy / omitted body: follow admin set duration (null = untimed).
+    return setDurationSeconds != null && setDurationSeconds > 0 ? setDurationSeconds : null;
   }
 
   private mapAttemptSummary(a: {
