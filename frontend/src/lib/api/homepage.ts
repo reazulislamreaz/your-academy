@@ -55,3 +55,27 @@ export async function restoreHomepage() {
     body: JSON.stringify({}),
   });
 }
+
+export type HomepageRevisionSummary = {
+  id: string;
+  note: string | null;
+  createdAt: string;
+  createdById: string | null;
+  heroImageAssetId: string | null;
+};
+
+export async function listHomepageRevisions(limit = 20) {
+  return apiFetch<HomepageRevisionSummary[]>(
+    `/admin/homepage/revisions?limit=${encodeURIComponent(String(limit))}`,
+  );
+}
+
+export async function restoreHomepageRevision(id: string) {
+  return apiFetch<HomepageAdminBundle['draft']>(
+    `/admin/homepage/revisions/${encodeURIComponent(id)}/restore`,
+    {
+      method: 'POST',
+      body: JSON.stringify({}),
+    },
+  );
+}

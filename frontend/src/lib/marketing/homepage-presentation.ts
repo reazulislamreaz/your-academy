@@ -1,5 +1,6 @@
 import {
   createDefaultHomepagePayload,
+  normalizeHomepagePayload,
   type HomepagePayload,
 } from '@your-academy/shared';
 import type { PublicPlatformStats } from '@/lib/api/public-stats';
@@ -98,8 +99,19 @@ export function presentHomepagePayload(
       ? { ...payload.topics, heading: defaults.topics.heading, cta: { ...payload.topics.cta, label: defaults.topics.cta.label } }
       : payload.topics;
 
-  return {
+  return normalizeHomepagePayload({
+    ...defaults,
     ...payload,
+    layout: payload.layout ?? defaults.layout,
+    trialStrip: payload.trialStrip ?? defaults.trialStrip,
+    liveStats: payload.liveStats ?? defaults.liveStats,
+    sampleMcq: payload.sampleMcq ?? defaults.sampleMcq,
+    productFeatures: payload.productFeatures ?? defaults.productFeatures,
+    howItWorks: payload.howItWorks ?? defaults.howItWorks,
+    dashboardPreview: payload.dashboardPreview ?? defaults.dashboardPreview,
+    newsStrip: payload.newsStrip ?? defaults.newsStrip,
+    accessFaq: payload.accessFaq ?? defaults.accessFaq,
+    customSections: payload.customSections ?? defaults.customSections,
     hero: {
       ...heroBase,
       // Live counts live in HomepageLiveStats (below the fold); keep hero brand-first.
@@ -112,7 +124,7 @@ export function presentHomepagePayload(
     ctaBanner,
     latest,
     newsletter,
-  };
+  });
 }
 
 export const HOMEPAGE_SUPPORTING_COPY =

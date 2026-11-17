@@ -1,4 +1,15 @@
-import { Body, Controller, Get, Header, Post, Put, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Header,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { createSuccessResponse } from '@your-academy/shared';
 import type { RequestUser } from '../auth/auth.types';
@@ -29,6 +40,17 @@ export class HomepageController {
     return createSuccessResponse(await this.homepage.getAdmin(), newRequestId());
   }
 
+  @Get('admin/homepage/revisions')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async listRevisions(@Query('limit') limit?: string) {
+    const n = limit ? Number(limit) : 20;
+    return createSuccessResponse(
+      await this.homepage.listRevisions(Number.isFinite(n) ? n : 20),
+      newRequestId(),
+    );
+  }
+
   @Put('admin/homepage/draft')
   @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
   @Roles(UserRole.ADMIN)
@@ -54,5 +76,18 @@ export class HomepageController {
   @Roles(UserRole.ADMIN)
   async restore(@CurrentUser() user: RequestUser) {
     return createSuccessResponse(await this.homepage.restore(user), newRequestId());
+  }
+
+  @Post('admin/homepage/revisions/:id/restore')
+  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
+  @Roles(UserRole.ADMIN)
+  async restoreRevision(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return createSuccessResponse(
+      await this.homepage.restoreRevision(user, id),
+      newRequestId(),
+    );
   }
 }

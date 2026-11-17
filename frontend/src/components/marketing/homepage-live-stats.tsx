@@ -1,10 +1,12 @@
 import Link from 'next/link';
 import { BookOpen, FolderTree, Layers, Newspaper } from 'lucide-react';
+import type { HomepagePayload } from '@your-academy/shared';
 import type { PublicPlatformStats } from '@/lib/api/public-stats';
 import { Reveal } from '@/components/motion/reveal';
 
 type Props = {
   stats: PublicPlatformStats | null;
+  content?: HomepagePayload['liveStats'];
 };
 
 function formatCount(n: number): string {
@@ -39,7 +41,8 @@ const ITEMS = [
 ];
 
 /** Verified platform counts from the API — never fabricated. */
-export function HomepageLiveStats({ stats }: Props) {
+export function HomepageLiveStats({ stats, content }: Props) {
+  const heading = content?.heading?.trim() || 'Live platform library';
   return (
     <section
       id="platform-stats"
@@ -53,7 +56,7 @@ export function HomepageLiveStats({ stats }: Props) {
             id="stats-heading"
             className="font-display text-2xl font-bold tracking-tight text-[var(--ink)] sm:text-[2rem]"
           >
-            Live platform library
+            {heading}
           </h2>
           <p className="text-sm text-[var(--muted-strong)] sm:text-base">
             Counts refresh from published content in the database — not marketing estimates.

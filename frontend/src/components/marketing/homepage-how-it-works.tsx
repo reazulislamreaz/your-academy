@@ -1,27 +1,15 @@
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
+import { createDefaultExtendedSections, type HomepagePayload } from '@your-academy/shared';
 import { Button } from '@/components/ui/button';
 import { Reveal } from '@/components/motion/reveal';
 
-const STEPS = [
-  {
-    step: '01',
-    title: 'Browse freely',
-    body: 'Open the Preli Question Bank and newspaper columns without an account.',
-  },
-  {
-    step: '02',
-    title: 'Start your trial',
-    body: 'Register with name, WhatsApp, and password. Your 7-day trial begins immediately.',
-  },
-  {
-    step: '03',
-    title: 'Practice & track',
-    body: 'Unlock answers and explanations, take timed sets, bookmark questions, and follow progress on your dashboard.',
-  },
-] as const;
+type Props = {
+  content?: HomepagePayload['howItWorks'];
+};
 
-export function HomepageHowItWorks() {
+export function HomepageHowItWorks({ content }: Props) {
+  const data = content ?? createDefaultExtendedSections().howItWorks;
   return (
     <section
       id="how-it-works"
@@ -36,24 +24,26 @@ export function HomepageHowItWorks() {
               id="how-heading"
               className="font-display text-2xl font-bold tracking-tight text-[var(--ink)] sm:text-[2rem]"
             >
-              How Your Academy works
+              {data.heading}
             </h2>
-            <p className="text-sm text-[var(--muted-strong)] sm:text-base">
-              A clear path from first visit to daily practice.
-            </p>
+            {data.subtitle ? (
+              <p className="text-sm text-[var(--muted-strong)] sm:text-base">{data.subtitle}</p>
+            ) : null}
           </div>
-          <Link href="/register">
-            <Button className="rounded-full px-6">
-              Create account
-              <ArrowRight className="h-4 w-4" aria-hidden />
-            </Button>
-          </Link>
+          {data.cta.visible ? (
+            <Link href={data.cta.href}>
+              <Button className="rounded-full px-6">
+                {data.cta.label}
+                <ArrowRight className="h-4 w-4" aria-hidden />
+              </Button>
+            </Link>
+          ) : null}
         </div>
 
         <ol className="grid gap-4 md:grid-cols-3">
-          {STEPS.map((item) => (
+          {data.steps.map((item) => (
             <li
-              key={item.step}
+              key={`${item.step}-${item.title}`}
               className="relative overflow-hidden rounded-[var(--radius-xl)] border border-[var(--line)] bg-[var(--bg-desk)] p-5 sm:p-6"
             >
               <span className="font-display text-3xl font-extrabold tracking-tight text-[var(--highlight)]/25">

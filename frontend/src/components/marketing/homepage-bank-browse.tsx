@@ -26,157 +26,169 @@ import {
   topicTileHref,
 } from '@/lib/homepage-tile-links';
 
-type Props = {
-  categories: HomepagePayload['categories'];
-  topics: HomepagePayload['topics'];
-};
+type CategoriesProps = { categories: HomepagePayload['categories'] };
+type TopicsProps = { topics: HomepagePayload['topics'] };
 
-export function HomepageBankBrowse({ categories, topics }: Props) {
+export function HomepageBankBrowseCategories({ categories }: CategoriesProps) {
+  const categorySplit = splitHomepageSectionTiles(categories.tiles);
+  const previewCategories = categorySplit.top
+    .filter((t) => t.visible && !isHomepageOthersTile(t))
+    .slice(0, HOMEPAGE_EDITABLE_PREVIEW_SLOTS);
+  const categoriesOthers =
+    categorySplit.others ??
+    createDefaultOthersCategoryTile(categories.cta.href || QUESTION_BANK_CATEGORIES_PATH);
+  const categoriesCtaHref = categories.cta.href || QUESTION_BANK_CATEGORIES_PATH;
+  const categoriesOthersHref =
+    categoriesOthers.fallbackHref || QUESTION_BANK_CATEGORIES_PATH;
+
+  if (!categories.visible) return null;
+
+  return (
+    <section className="section-pad">
+      <Reveal className="marketing-container grid items-center gap-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,2.2fr)] lg:gap-10">
+        <div className="space-y-4">
+          <span
+            className="mb-1 block h-[3px] w-7 rounded-full bg-[var(--highlight)]"
+            aria-hidden
+          />
+          <h2 className="font-display text-2xl font-bold tracking-tight text-[var(--ink)] sm:text-[2rem]">
+            {categories.heading}
+          </h2>
+          <p className="text-[var(--muted-strong)]">{categories.subtitle}</p>
+          {categories.cta.visible ? (
+            <Link href={categoriesCtaHref} className="inline-flex pt-1">
+              <Button className="rounded-full px-6 shadow-sm">
+                {categories.cta.label}
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          ) : null}
+        </div>
+        <ul className="motion-stagger grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 lg:gap-4">
+          {previewCategories.map((tile) => (
+            <li key={tile.id}>
+              <HomepageTileCard
+                href={categoryTileHref(tile)}
+                title={tile.displayTitle}
+                subtitle={tile.subtitle}
+                iconKey={tile.iconKey}
+                logoUrl={tile.logoUrl}
+              />
+            </li>
+          ))}
+          <li>
+            <HomepageOthersTile
+              href={categoriesOthersHref}
+              title={categoriesOthers.displayTitle}
+              logoUrl={categoriesOthers.logoUrl}
+              iconKey={categoriesOthers.iconKey}
+            />
+          </li>
+        </ul>
+      </Reveal>
+    </section>
+  );
+}
+
+export function HomepageBankBrowseTopics({ topics }: TopicsProps) {
   const categoryTree = useQuery({
     queryKey: ['categories', 'public'],
     queryFn: () => apiFetch<CategoryNode[]>('/categories', { skipRefresh: true }),
     staleTime: 60_000,
   });
-
   const roots = categoryTree.data ?? [];
-
-  const categorySplit = splitHomepageSectionTiles(categories.tiles);
   const topicSplit = splitHomepageSectionTiles(topics.tiles);
-
-  const previewCategories = categorySplit.top
-    .filter((t) => t.visible && !isHomepageOthersTile(t))
-    .slice(0, HOMEPAGE_EDITABLE_PREVIEW_SLOTS);
   const previewTopics = topicSplit.top
     .filter((t) => t.visible && !isHomepageOthersTile(t))
     .slice(0, HOMEPAGE_EDITABLE_PREVIEW_SLOTS);
-
-  const categoriesOthers =
-    categorySplit.others ??
-    createDefaultOthersCategoryTile(categories.cta.href || QUESTION_BANK_CATEGORIES_PATH);
   const topicsOthers =
     topicSplit.others ??
     createDefaultOthersTopicTile(topics.cta.href || ALL_TOPICS_PATH);
-
-  const categoriesCtaHref = categories.cta.href || QUESTION_BANK_CATEGORIES_PATH;
   const topicsCtaHref = topics.cta.href || ALL_TOPICS_PATH;
-  const categoriesOthersHref =
-    categoriesOthers.fallbackHref || QUESTION_BANK_CATEGORIES_PATH;
   const topicsOthersHref = topicsOthers.fallbackHref || ALL_TOPICS_PATH;
 
+  if (!topics.visible) return null;
+
   return (
-    <>
-      {categories.visible ? (
-        <section className="section-pad">
-          <Reveal className="marketing-container grid items-center gap-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,2.2fr)] lg:gap-10">
+    <section className="pb-[var(--space-section)]">
+      <Reveal className="marketing-container">
+        <div className="rounded-[var(--radius-xl)] border border-[var(--line)] bg-[var(--info-soft)] px-5 py-7 shadow-[var(--shadow-sm)] sm:px-8 sm:py-8">
+          <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,2.2fr)] lg:gap-10">
             <div className="space-y-4">
               <span
                 className="mb-1 block h-[3px] w-7 rounded-full bg-[var(--highlight)]"
                 aria-hidden
               />
-              <h2 className="font-display text-2xl font-bold tracking-tight text-[var(--ink)] sm:text-[2rem]">
-                {categories.heading}
+              <h2 className="font-display text-3xl font-bold tracking-tight text-[var(--ink)] sm:text-[2rem]">
+                {topics.heading}
               </h2>
-              <p className="text-[var(--muted-strong)]">{categories.subtitle}</p>
-              {categories.cta.visible ? (
-                <Link href={categoriesCtaHref} className="inline-flex pt-1">
+              {topics.cta.visible ? (
+                <Link href={topicsCtaHref} className="inline-flex pt-1">
                   <Button className="rounded-full px-6 shadow-sm">
-                    {categories.cta.label}
+                    {topics.cta.label}
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
               ) : null}
             </div>
-            <ul className="motion-stagger grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 lg:gap-4">
-              {previewCategories.map((tile) => (
-                <li key={tile.id}>
-                  <HomepageTileCard
-                    href={categoryTileHref(tile)}
-                    title={tile.displayTitle}
-                    subtitle={tile.subtitle}
-                    iconKey={tile.iconKey}
-                    logoUrl={tile.logoUrl}
+            {previewTopics.length === 0 ? (
+              <div className="space-y-3">
+                <p className="rounded-[var(--radius-lg)] border border-dashed border-[var(--line)] bg-[var(--bg-elevated)] px-5 py-6 text-center text-sm text-[var(--muted-strong)]">
+                  No topics published yet. Admins add topics in Topic Based Question Analysis —
+                  general categories are not listed here automatically.
+                </p>
+                <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                  <li>
+                    <HomepageOthersTile
+                      href={topicsOthersHref}
+                      title={topicsOthers.displayTitle}
+                      logoUrl={topicsOthers.logoUrl}
+                      iconKey={topicsOthers.iconKey}
+                    />
+                  </li>
+                </ul>
+              </div>
+            ) : (
+              <ul className="motion-stagger grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 lg:gap-4">
+                {previewTopics.map((tile) => (
+                  <li key={tile.id}>
+                    <HomepageTileCard
+                      href={topicTileHref(tile, roots)}
+                      title={tile.displayTitle}
+                      iconKey={tile.iconKey}
+                      logoUrl={tile.logoUrl}
+                    />
+                  </li>
+                ))}
+                <li>
+                  <HomepageOthersTile
+                    href={topicsOthersHref}
+                    title={topicsOthers.displayTitle}
+                    logoUrl={topicsOthers.logoUrl}
+                    iconKey={topicsOthers.iconKey}
                   />
                 </li>
-              ))}
-              <li>
-                <HomepageOthersTile
-                  href={categoriesOthersHref}
-                  title={categoriesOthers.displayTitle}
-                  logoUrl={categoriesOthers.logoUrl}
-                  iconKey={categoriesOthers.iconKey}
-                />
-              </li>
-            </ul>
-          </Reveal>
-        </section>
-      ) : null}
+              </ul>
+            )}
+          </div>
+        </div>
+      </Reveal>
+    </section>
+  );
+}
 
-      {topics.visible ? (
-        <section className="pb-[var(--space-section)]">
-          <Reveal className="marketing-container">
-            <div className="rounded-[var(--radius-xl)] border border-[var(--line)] bg-[var(--info-soft)] px-5 py-7 shadow-[var(--shadow-sm)] sm:px-8 sm:py-8">
-              <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,2.2fr)] lg:gap-10">
-                <div className="space-y-4">
-                  <span
-                    className="mb-1 block h-[3px] w-7 rounded-full bg-[var(--highlight)]"
-                    aria-hidden
-                  />
-                  <h2 className="font-display text-3xl font-bold tracking-tight text-[var(--ink)] sm:text-[2rem]">
-                    {topics.heading}
-                  </h2>
-                  {topics.cta.visible ? (
-                    <Link href={topicsCtaHref} className="inline-flex pt-1">
-                      <Button className="rounded-full px-6 shadow-sm">
-                        {topics.cta.label}
-                        <ArrowRight className="h-4 w-4" />
-                      </Button>
-                    </Link>
-                  ) : null}
-                </div>
-                {previewTopics.length === 0 ? (
-                  <div className="space-y-3">
-                    <p className="rounded-[var(--radius-lg)] border border-dashed border-[var(--line)] bg-[var(--bg-elevated)] px-5 py-6 text-center text-sm text-[var(--muted-strong)]">
-                      No topics published yet. Admins add topics in Topic Based Question Analysis —
-                      general categories are not listed here automatically.
-                    </p>
-                    <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-                      <li>
-                        <HomepageOthersTile
-                          href={topicsOthersHref}
-                          title={topicsOthers.displayTitle}
-                          logoUrl={topicsOthers.logoUrl}
-                          iconKey={topicsOthers.iconKey}
-                        />
-                      </li>
-                    </ul>
-                  </div>
-                ) : (
-                  <ul className="motion-stagger grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 lg:gap-4">
-                    {previewTopics.map((tile) => (
-                      <li key={tile.id}>
-                        <HomepageTileCard
-                          href={topicTileHref(tile, roots)}
-                          title={tile.displayTitle}
-                          iconKey={tile.iconKey}
-                          logoUrl={tile.logoUrl}
-                        />
-                      </li>
-                    ))}
-                    <li>
-                      <HomepageOthersTile
-                        href={topicsOthersHref}
-                        title={topicsOthers.displayTitle}
-                        logoUrl={topicsOthers.logoUrl}
-                        iconKey={topicsOthers.iconKey}
-                      />
-                    </li>
-                  </ul>
-                )}
-              </div>
-            </div>
-          </Reveal>
-        </section>
-      ) : null}
+/** Combined categories + topics (admin preview / legacy). */
+export function HomepageBankBrowse({
+  categories,
+  topics,
+}: {
+  categories: HomepagePayload['categories'];
+  topics: HomepagePayload['topics'];
+}) {
+  return (
+    <>
+      <HomepageBankBrowseCategories categories={categories} />
+      <HomepageBankBrowseTopics topics={topics} />
     </>
   );
 }

@@ -1,12 +1,18 @@
 import Link from 'next/link';
 import { ArrowRight, Bookmark, ChartColumn, CheckCircle2, Timer } from 'lucide-react';
+import { createDefaultExtendedSections, type HomepagePayload } from '@your-academy/shared';
 import { Button } from '@/components/ui/button';
 import { Reveal } from '@/components/motion/reveal';
+
+type Props = {
+  content?: HomepagePayload['dashboardPreview'];
+};
 
 /**
  * Static chrome preview of the learner desk — labels only, no fabricated metrics.
  */
-export function HomepageDashboardPreview() {
+export function HomepageDashboardPreview({ content }: Props) {
+  const data = content ?? createDefaultExtendedSections().dashboardPreview;
   return (
     <section
       id="dashboard-preview"
@@ -20,24 +26,27 @@ export function HomepageDashboardPreview() {
             id="dashboard-preview-heading"
             className="font-display text-2xl font-bold tracking-tight text-[var(--ink)] sm:text-[2rem]"
           >
-            Your study desk, after you sign in
+            {data.heading}
           </h2>
           <p className="text-sm leading-relaxed text-[var(--muted-strong)] sm:text-base">
-            Bookmarks, attempt history, timed practice, and accuracy come from your real activity —
-            we never show placeholder scores on this page.
+            {data.body}
           </p>
           <div className="flex flex-wrap gap-3 pt-1">
-            <Link href="/register">
-              <Button className="rounded-full px-6">
-                Start free trial
-                <ArrowRight className="h-4 w-4" aria-hidden />
-              </Button>
-            </Link>
-            <Link href="/login">
-              <Button variant="outline" className="rounded-full px-6">
-                Sign in
-              </Button>
-            </Link>
+            {data.primaryCta.visible ? (
+              <Link href={data.primaryCta.href}>
+                <Button className="rounded-full px-6">
+                  {data.primaryCta.label}
+                  <ArrowRight className="h-4 w-4" aria-hidden />
+                </Button>
+              </Link>
+            ) : null}
+            {data.secondaryCta.visible ? (
+              <Link href={data.secondaryCta.href}>
+                <Button variant="outline" className="rounded-full px-6">
+                  {data.secondaryCta.label}
+                </Button>
+              </Link>
+            ) : null}
           </div>
         </div>
 

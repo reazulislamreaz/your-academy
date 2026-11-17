@@ -1,32 +1,15 @@
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
+import { createDefaultExtendedSections, type HomepagePayload } from '@your-academy/shared';
 import { Button } from '@/components/ui/button';
 import { Reveal } from '@/components/motion/reveal';
 
-const FAQS = [
-  {
-    q: 'What is included in the 7-day free trial?',
-    a: 'After registration, you get seven days of entitled access to correct answers, explanations, bookmarks, and timed practice. The trial is calculated from your signup timestamp on the server.',
-  },
-  {
-    q: 'Can I browse questions without paying?',
-    a: 'Yes. The public Preli Question Bank and published newspaper PDF columns are available without login. Learner practice routes and answer privacy still follow entitlement rules.',
-  },
-  {
-    q: 'What happens when the trial ends?',
-    a: 'You can still sign in, browse, search, and save bookmarks. Correct answers and explanations are omitted from learner APIs until a future paid plan entitles you again.',
-  },
-  {
-    q: 'Is there a paid subscription price today?',
-    a: 'Paid checkout is not live in v1. Subscription tables are ready for a future release — we will not invent prices on this page.',
-  },
-  {
-    q: 'How do I create an account?',
-    a: 'Use name, WhatsApp number, and password. Email is optional at registration and required only if you need password reset by email.',
-  },
-] as const;
+type Props = {
+  content?: HomepagePayload['accessFaq'];
+};
 
-export function HomepageAccessFaq() {
+export function HomepageAccessFaq({ content }: Props) {
+  const data = content ?? createDefaultExtendedSections().accessFaq;
   return (
     <section
       id="access"
@@ -40,46 +23,52 @@ export function HomepageAccessFaq() {
             id="access-heading"
             className="font-display text-2xl font-bold tracking-tight text-[var(--ink)] sm:text-[2rem]"
           >
-            Access & pricing
+            {data.heading}
           </h2>
           <p className="text-sm leading-relaxed text-[var(--muted-strong)] sm:text-base">
-            Honest entitlements only. No invented student counts, success rates, or subscription
-            prices.
+            {data.body}
           </p>
           <ul className="space-y-3 text-sm text-[var(--ink-soft)]">
-            <li className="rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] px-4 py-3">
-              <strong className="text-[var(--ink)]">Free to browse</strong> — Preli bank & published
-              PDFs
-            </li>
-            <li className="rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] px-4 py-3">
-              <strong className="text-[var(--ink)]">7-day trial</strong> — answers & explanations after
-              signup
-            </li>
-            <li className="rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] px-4 py-3">
-              <strong className="text-[var(--ink)]">Paid plans</strong> — coming in a later release
-            </li>
+            {data.highlights.map((item) => (
+              <li
+                key={item}
+                className="rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] px-4 py-3"
+              >
+                {item.includes(' — ') ? (
+                  <>
+                    <strong className="text-[var(--ink)]">{item.split(' — ')[0]}</strong>
+                    {' — '}
+                    {item.split(' — ').slice(1).join(' — ')}
+                  </>
+                ) : (
+                  <span className="text-[var(--ink)]">{item}</span>
+                )}
+              </li>
+            ))}
           </ul>
-          <Link href="/register" className="inline-flex">
-            <Button className="rounded-full px-6">
-              Start Your 7-Day Free Trial
-              <ArrowRight className="h-4 w-4" aria-hidden />
-            </Button>
-          </Link>
+          {data.cta.visible ? (
+            <Link href={data.cta.href} className="inline-flex">
+              <Button className="rounded-full px-6">
+                {data.cta.label}
+                <ArrowRight className="h-4 w-4" aria-hidden />
+              </Button>
+            </Link>
+          ) : null}
         </div>
 
         <div id="faq" className="scroll-mt-24 space-y-3">
           <h3 className="font-display text-xl font-bold tracking-tight text-[var(--ink)]">
-            Frequently asked questions
+            {data.faqHeading}
           </h3>
           <div className="space-y-2">
-            {FAQS.map((item) => (
+            {data.faqs.map((item) => (
               <details
-                key={item.q}
+                key={item.id}
                 className="group rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] px-4 py-3 open:shadow-[var(--shadow-sm)]"
               >
                 <summary className="cursor-pointer list-none font-display text-sm font-semibold text-[var(--ink)] marker:content-none [&::-webkit-details-marker]:hidden">
                   <span className="flex items-start justify-between gap-3">
-                    {item.q}
+                    {item.question}
                     <span
                       aria-hidden
                       className="mt-0.5 text-[var(--muted)] transition-transform group-open:rotate-45"
@@ -88,7 +77,9 @@ export function HomepageAccessFaq() {
                     </span>
                   </span>
                 </summary>
-                <p className="mt-2 text-sm leading-relaxed text-[var(--muted-strong)]">{item.a}</p>
+                <p className="mt-2 text-sm leading-relaxed text-[var(--muted-strong)]">
+                  {item.answer}
+                </p>
               </details>
             ))}
           </div>

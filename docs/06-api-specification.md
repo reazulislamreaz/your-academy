@@ -140,9 +140,11 @@ Profile picture: separate upload after auth or multipart field if approved.
 | GET | `/public/question-sets/:id/questions` | MCQs in a set in original upload `rowNumber` order (`sourceSerial`, `sectionTitle`; no category badge under stem) | Public | — |
 | GET | `/public/homepage` | Published homepage CMS payload + hero image URL (DEC-038; Cache-Control max-age=60) | Public | — |
 | GET | `/admin/homepage` | Draft + published homepage CMS documents | User | ADMIN |
-| PUT | `/admin/homepage/draft` | Replace draft payload (+ optional `heroImageAssetId`) | User | ADMIN |
-| POST | `/admin/homepage/publish` | Copy draft → published; invalidate public cache | User | ADMIN |
-| POST | `/admin/homepage/restore` | Copy published → draft | User | ADMIN |
+| PUT | `/admin/homepage/draft` | Replace draft payload (+ optional `heroImageAssetId`); normalizes `layout.sections` + tiles | User | ADMIN |
+| POST | `/admin/homepage/publish` | Copy draft → published; snapshot `HomepageRevision`; invalidate public cache | User | ADMIN |
+| POST | `/admin/homepage/restore` | Copy published → draft (discard unpublished draft edits) | User | ADMIN |
+| GET | `/admin/homepage/revisions` | List recent homepage revision summaries (`?limit=`) | User | ADMIN |
+| POST | `/admin/homepage/revisions/:id/restore` | Load revision payload into draft | User | ADMIN |
 | GET | `/admin/categories` | Admin tree including inactive + usage counts | User | ADMIN |
 | POST | `/admin/categories` | Create category or subcategory (`parentId`); slug optional (auto) | User | ADMIN |
 | PATCH | `/admin/categories/:id` | Update name/description/status/parent | User | ADMIN |

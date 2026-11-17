@@ -198,6 +198,7 @@ model User {
   supportInternalNotes         SupportInternalNote[]
   linkedSupportGuestSessions   SupportGuestSession[] @relation("SupportGuestLinkedUser")
   homepageContentUpdates       HomepageContent[]     @relation("HomepageContentUpdater")
+  homepageRevisions            HomepageRevision[]    @relation("HomepageRevisionCreator")
 
   @@index([status])
   @@index([trialEndsAt])
@@ -466,6 +467,21 @@ model HomepageContent {
 
   @@index([heroImageAssetId])
   @@map("homepage_content")
+}
+
+/// Snapshot of published homepage payload for restore (DEC-038).
+model HomepageRevision {
+  id               String   @id @default(uuid()) @db.Uuid
+  payload          Json
+  heroImageAssetId String?  @map("hero_image_asset_id") @db.Uuid
+  note             String?  @db.VarChar(200)
+  createdById      String?  @map("created_by_id") @db.Uuid
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  createdBy User? @relation("HomepageRevisionCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([createdAt(sort: Desc)])
+  @@map("homepage_revisions")
 }
 
 /// Learner-owned MCQ save folder (Facebook-style collection). Private per user.

@@ -8,61 +8,25 @@ import {
   Newspaper,
   PenLine,
 } from 'lucide-react';
+import { createDefaultExtendedSections, type HomepagePayload } from '@your-academy/shared';
 import { Button } from '@/components/ui/button';
 import { Reveal } from '@/components/motion/reveal';
 
-const FEATURES = [
-  {
-    title: 'MCQ Question Bank',
-    body: 'Browse published Preli MCQs with filters for topic, year, and exam tags — no login required to read questions.',
-    href: '/preli-question-bank',
-    cta: 'Browse Preli bank',
-    icon: BookOpen,
-    available: true,
-  },
-  {
-    title: 'Written Question Bank',
-    body: 'Dedicated written bank route for long-form practice materials as admins publish them.',
-    href: '/written-question-bank',
-    cta: 'Open written bank',
-    icon: PenLine,
-    available: true,
-  },
-  {
-    title: 'Topic-based practice',
-    body: 'Jump into Bangla, English, Math, GK, ICT, and more from curated topic tiles.',
-    href: '/topic-categories',
-    cta: 'View topics',
-    icon: ClipboardList,
-    available: true,
-  },
-  {
-    title: 'Mock tests & timed exams',
-    body: 'Signed-in learners can take PracticeSet exams with timers, mark-for-review, and scored results.',
-    href: '/register',
-    cta: 'Create account to practice',
-    icon: FileText,
-    available: true,
-  },
-  {
-    title: 'Performance tracking',
-    body: 'Your dashboard shows real attempts, accuracy, and subject performance after you practice — never placeholder scores.',
-    href: '/login',
-    cta: 'Sign in to dashboard',
-    icon: LineChart,
-    available: true,
-  },
-  {
-    title: 'Newspaper columns',
-    body: 'Admin-published PDF columns for current-affairs reading — open freely from the news library.',
-    href: '/news',
-    cta: 'Read columns',
-    icon: Newspaper,
-    available: true,
-  },
-] as const;
+const ICON_MAP = {
+  book: BookOpen,
+  pen: PenLine,
+  clipboard: ClipboardList,
+  file: FileText,
+  chart: LineChart,
+  newspaper: Newspaper,
+} as const;
 
-export function HomepageProductFeatures() {
+type Props = {
+  content?: HomepagePayload['productFeatures'];
+};
+
+export function HomepageProductFeatures({ content }: Props) {
+  const data = content ?? createDefaultExtendedSections().productFeatures;
   return (
     <section
       id="features"
@@ -76,19 +40,24 @@ export function HomepageProductFeatures() {
             id="features-heading"
             className="font-display text-2xl font-bold tracking-tight text-[var(--ink)] sm:text-[2rem]"
           >
-            What you can do on Your Academy
+            {data.heading}
           </h2>
-          <p className="text-sm text-[var(--muted-strong)] sm:text-base">
-            Every item below maps to a live route in this platform.
-          </p>
+          {data.subtitle ? (
+            <p className="text-sm text-[var(--muted-strong)] sm:text-base">{data.subtitle}</p>
+          ) : (
+            <p className="text-sm text-[var(--muted-strong)] sm:text-base">
+              Every item below maps to a live route in this platform.
+            </p>
+          )}
         </div>
 
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {FEATURES.map((feature) => {
-            const Icon = feature.icon;
+          {data.items.map((feature) => {
+            const Icon =
+              ICON_MAP[feature.iconKey as keyof typeof ICON_MAP] ?? BookOpen;
             return (
               <li
-                key={feature.title}
+                key={feature.id}
                 className="ya-panel flex flex-col rounded-[var(--radius-xl)] border border-[var(--line)] bg-[var(--bg-elevated)] p-5 shadow-[var(--shadow-sm)] sm:p-6"
               >
                 <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--brand-wash)] text-[var(--accent)]">

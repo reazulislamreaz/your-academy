@@ -14,10 +14,15 @@ import type { ApiResult } from '@/lib/api/client';
 
 type Props = {
   initial?: ApiResult<PublicDocumentListItem[]> | null;
+  content?: {
+    heading?: string;
+    subtitle?: string;
+    cta?: { label: string; href: string; visible: boolean };
+  };
 };
 
 /** Latest published newspaper PDF columns. */
-export function HomepageNewsStrip({ initial = null }: Props) {
+export function HomepageNewsStrip({ initial = null, content }: Props) {
   const list = useQuery({
     queryKey: ['homepage-news-docs', 4],
     queryFn: () => listPublicDocuments({ limit: 4 }),
@@ -42,18 +47,20 @@ export function HomepageNewsStrip({ initial = null }: Props) {
               id="newspaper-heading"
               className="font-display text-2xl font-bold tracking-tight text-[var(--ink)] sm:text-[2rem]"
             >
-              পত্রিকার গুরুত্বপূর্ণ কলাম
+              {content?.heading || 'পত্রিকার গুরুত্বপূর্ণ কলাম'}
             </h2>
             <p className="text-sm text-[var(--muted-strong)] sm:text-base">
-              Admin-published PDF columns — browse without login.
+              {content?.subtitle || 'Admin-published PDF columns — browse without login.'}
             </p>
           </div>
-          <Link href="/news">
-            <Button className="rounded-full px-6">
-              All columns
-              <ArrowRight className="h-4 w-4" aria-hidden />
-            </Button>
-          </Link>
+          {content?.cta?.visible === false ? null : (
+            <Link href={content?.cta?.href || '/news'}>
+              <Button className="rounded-full px-6">
+                {content?.cta?.label || 'All columns'}
+                <ArrowRight className="h-4 w-4" aria-hidden />
+              </Button>
+            </Link>
+          )}
         </div>
 
         {showSkeleton ? <ListCardSkeleton /> : null}

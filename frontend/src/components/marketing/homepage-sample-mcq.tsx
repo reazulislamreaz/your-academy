@@ -55,10 +55,15 @@ function McqPreviewCard({ question }: { question: PublicQuestionCard }) {
 type Props = {
   /** SSR seed — avoids a client waterfall after homepage paint. */
   initial?: ApiResult<PublicQuestionCard[]> | null;
+  content?: {
+    eyebrow?: string;
+    ctaLabel?: string;
+    ctaHref?: string;
+  };
 };
 
 /** Interactive preview using a real published public question. */
-export function HomepageSampleMcq({ initial = null }: Props) {
+export function HomepageSampleMcq({ initial = null, content }: Props) {
   const list = useQuery({
     queryKey: ['homepage-sample-mcq'],
     queryFn: () => listPublicQuestions({ limit: 1 }),
@@ -86,12 +91,13 @@ export function HomepageSampleMcq({ initial = null }: Props) {
               Try a real MCQ
             </h2>
             <p className="text-sm text-[var(--muted-strong)] sm:text-base">
-              Loaded from published questions in the database — not a demo stub.
+              {content?.eyebrow ||
+                'Loaded from published questions in the database — not a demo stub.'}
             </p>
           </div>
-          <Link href="/preli-question-bank">
+          <Link href={content?.ctaHref || '/preli-question-bank'}>
             <Button className="rounded-full px-6">
-              Explore Question Bank
+              {content?.ctaLabel || 'Explore Question Bank'}
               <ArrowRight className="h-4 w-4" aria-hidden />
             </Button>
           </Link>

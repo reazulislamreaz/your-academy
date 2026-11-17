@@ -9,7 +9,7 @@ import {
   createDefaultHomepagePayload,
   createErrorResponse,
   homepagePayloadSchema,
-  normalizeHomepagePayloadTiles,
+  normalizeHomepagePayload,
   type HomepagePayload,
 } from '@your-academy/shared';
 import type { RequestUser } from '../auth/auth.types';
@@ -130,8 +130,22 @@ export class HomepageService {
     const draft = await this.prisma.homepageContent.findUniqueOrThrow({
       where: { status: HomepageContentStatus.DRAFT },
     });
+    const previous = await this.prisma.homepageContent.findUniqueOrThrow({
+      where: { status: HomepageContentStatus.PUBLISHED },
+    });
     const payload = this.parsePayloadForPersist(draft.payload);
     const now = new Date();
+
+    // Snapshot the previously published homepage before overwriting.
+    await this.prisma.homepageRevision.create({
+      data: {
+        payload: previous.payload as Prisma.InputJsonValue,
+        heroImageAssetId: previous.heroImageAssetId,
+        note: 'Auto-saved before publish',
+        createdById: user.userId,
+      },
+    });
+    await this.pruneRevisions();
 
     const published = await this.prisma.homepageContent.update({
       where: { status: HomepageContentStatus.PUBLISHED },
@@ -151,6 +165,67 @@ export class HomepageService {
       heroImageAssetId: published.heroImageAssetId,
       ...(await this.toView(published)),
     };
+  }
+
+  async listRevisions(limit = 20) {
+    const take = Math.min(Math.max(limit, 1), 50);
+    const rows = await this.prisma.homepageRevision.findMany({
+      orderBy: { createdAt: 'desc' },
+      take,
+      select: {
+        id: true,
+        note: true,
+        createdAt: true,
+        createdById: true,
+        heroImageAssetId: true,
+      },
+    });
+    return rows.map((r) => ({
+      id: r.id,
+      note: r.note,
+      createdAt: r.createdAt.toISOString(),
+      createdById: r.createdById,
+      heroImageAssetId: r.heroImageAssetId,
+    }));
+  }
+
+  /** Copy a revision into the draft (does not publish). */
+  async restoreRevision(user: RequestUser, revisionId: string) {
+    const revision = await this.prisma.homepageRevision.findUnique({
+      where: { id: revisionId },
+    });
+    if (!revision) {
+      throw new NotFoundException(
+        createErrorResponse('REVISION_NOT_FOUND', 'Homepage revision not found', newRequestId()),
+      );
+    }
+    const payload = this.parsePayloadForPersist(revision.payload);
+    const draft = await this.prisma.homepageContent.update({
+      where: { status: HomepageContentStatus.DRAFT },
+      data: {
+        payload: payload as unknown as Prisma.InputJsonValue,
+        heroImageAssetId: revision.heroImageAssetId,
+        updatedById: user.userId,
+      },
+      include: { heroImage: true },
+    });
+    return {
+      id: draft.id,
+      heroImageAssetId: draft.heroImageAssetId,
+      ...(await this.toView(draft)),
+    };
+  }
+
+  private async pruneRevisions(keep = 20) {
+    const old = await this.prisma.homepageRevision.findMany({
+      orderBy: { createdAt: 'desc' },
+      skip: keep,
+      select: { id: true },
+    });
+    if (old.length === 0) return;
+    await this.prisma.homepageRevision.deleteMany({
+      where: { id: { in: old.map((r) => r.id) } },
+    });
   }
 
   async restore(user: RequestUser) {
@@ -197,7 +272,7 @@ export class HomepageService {
 
   /** Persist without resolved delivery URLs (those are read-only enrichments). */
   private parsePayloadForPersist(raw: unknown): HomepagePayload {
-    const payload = normalizeHomepagePayloadTiles(this.parsePayload(raw));
+    const payload = normalizeHomepagePayload(this.parsePayload(raw));
     return {
       ...payload,
       categories: {
@@ -250,7 +325,7 @@ export class HomepageService {
     heroImage: { publicId: string; resourceType: string; deliveryType: string } | null;
   }): Promise<HomepagePublicView> {
     const payload = await this.enrichTileLogos(
-      normalizeHomepagePayloadTiles(this.parsePayload(row.payload)),
+      normalizeHomepagePayload(this.parsePayload(row.payload)),
     );
     return {
       payload,

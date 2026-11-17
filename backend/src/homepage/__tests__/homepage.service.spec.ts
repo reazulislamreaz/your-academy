@@ -24,6 +24,12 @@ describe('HomepageService', () => {
       create: jest.Mock;
       update: jest.Mock;
     };
+    homepageRevision: {
+      create: jest.Mock;
+      findMany: jest.Mock;
+      findUnique: jest.Mock;
+      deleteMany: jest.Mock;
+    };
     mediaAsset: { findFirst: jest.Mock; findMany: jest.Mock };
     $transaction: jest.Mock;
   };
@@ -36,6 +42,12 @@ describe('HomepageService', () => {
       findMany: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+    },
+    homepageRevision: {
+      create: jest.fn(),
+      findMany: jest.fn(),
+      findUnique: jest.fn(),
+      deleteMany: jest.fn(),
     },
     mediaAsset: { findFirst: jest.fn(), findMany: jest.fn() },
     $transaction: jest.fn(),
@@ -54,11 +66,19 @@ describe('HomepageService', () => {
   });
 
   it('publish copies draft payload onto published and invalidates cache', async () => {
-    prisma.homepageContent.findUniqueOrThrow.mockResolvedValue({
-      status: HomepageContentStatus.DRAFT,
-      payload: draftPayload,
-      heroImageAssetId: null,
-    });
+    prisma.homepageContent.findUniqueOrThrow
+      .mockResolvedValueOnce({
+        status: HomepageContentStatus.DRAFT,
+        payload: draftPayload,
+        heroImageAssetId: null,
+      })
+      .mockResolvedValueOnce({
+        status: HomepageContentStatus.PUBLISHED,
+        payload: publishedPayload,
+        heroImageAssetId: null,
+      });
+    prisma.homepageRevision.create.mockResolvedValue({ id: 'rev-1' });
+    prisma.homepageRevision.findMany.mockResolvedValue([]);
     prisma.homepageContent.update.mockResolvedValue({
       id: 'pub-1',
       status: HomepageContentStatus.PUBLISHED,
@@ -71,6 +91,7 @@ describe('HomepageService', () => {
 
     const result = await service.publish(user as never);
     expect(result.payload.hero.titleHighlight).toBe('');
+    expect(prisma.homepageRevision.create).toHaveBeenCalled();
     expect(prisma.homepageContent.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { status: HomepageContentStatus.PUBLISHED },

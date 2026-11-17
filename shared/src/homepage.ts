@@ -1,4 +1,26 @@
 import { z } from 'zod';
+import {
+  createDefaultExtendedSections,
+  createDefaultHomepageLayout,
+  homepageExtendedSectionsSchema,
+  homepageLayoutSchema,
+  normalizeHomepageLayout,
+  type HomepageBuiltinSectionId,
+} from './homepage-layout';
+
+export {
+  HOMEPAGE_BUILTIN_SECTION_IDS,
+  HOMEPAGE_SECTION_LABELS,
+  createDefaultExtendedSections,
+  createDefaultHomepageLayout,
+  customSectionIdFromLayoutId,
+  isCustomLayoutSectionId,
+  normalizeHomepageLayout,
+  toCustomLayoutId,
+  type HomepageBuiltinSectionId,
+  type HomepageExtendedSections,
+  type HomepageLayout,
+} from './homepage-layout';
 
 /** Whitelisted icon keys for homepage tiles / stats (maps to local components). */
 export const HOMEPAGE_ICON_KEYS = [
@@ -329,7 +351,8 @@ const progressMetricSchema = z.object({
   tone: z.enum(['info', 'success', 'danger', 'insight']).default('info'),
 });
 
-export const homepagePayloadSchema = z.object({
+const coreHomepagePayloadSchema = z.object({
+  layout: homepageLayoutSchema.default(createDefaultHomepageLayout()),
   hero: z.object({
     visible: z.boolean().default(true),
     eyebrow: mediumText,
@@ -387,11 +410,65 @@ export const homepagePayloadSchema = z.object({
   }),
 });
 
+export const homepagePayloadSchema = coreHomepagePayloadSchema.merge(
+  homepageExtendedSectionsSchema,
+);
+
 export type HomepagePayload = z.infer<typeof homepagePayloadSchema>;
+
+/** Full normalize: Others tiles + layout order + section visibility sync. */
+export function normalizeHomepagePayload(payload: HomepagePayload): HomepagePayload {
+  const withTiles = normalizeHomepagePayloadTiles(payload);
+  const visibilityHints: Partial<Record<HomepageBuiltinSectionId, boolean>> = {
+    hero: withTiles.hero.visible,
+    categories: withTiles.categories.visible,
+    topics: withTiles.topics.visible,
+    why: withTiles.why.visible,
+    ctaBanner: withTiles.ctaBanner.visible,
+    latest: withTiles.latest.visible,
+    newsletter: withTiles.newsletter.visible,
+    trialStrip: withTiles.trialStrip.visible,
+    liveStats: withTiles.liveStats.visible,
+    sampleMcq: withTiles.sampleMcq.visible,
+    productFeatures: withTiles.productFeatures.visible,
+    howItWorks: withTiles.howItWorks.visible,
+    dashboardPreview: withTiles.dashboardPreview.visible,
+    newsStrip: withTiles.newsStrip.visible,
+    accessFaq: withTiles.accessFaq.visible,
+  };
+  const layout = normalizeHomepageLayout(withTiles.layout, visibilityHints);
+
+  // Mirror layout visibility back onto section objects for editors that bind to `.visible`.
+  const vis = (id: HomepageBuiltinSectionId) =>
+    layout.sections.find((s) => s.id === id)?.visible ?? true;
+
+  return {
+    ...withTiles,
+    layout,
+    hero: { ...withTiles.hero, visible: vis('hero') },
+    categories: { ...withTiles.categories, visible: vis('categories') },
+    topics: { ...withTiles.topics, visible: vis('topics') },
+    why: { ...withTiles.why, visible: vis('why') },
+    ctaBanner: { ...withTiles.ctaBanner, visible: vis('ctaBanner') },
+    latest: { ...withTiles.latest, visible: vis('latest') },
+    newsletter: { ...withTiles.newsletter, visible: vis('newsletter') },
+    trialStrip: { ...withTiles.trialStrip, visible: vis('trialStrip') },
+    liveStats: { ...withTiles.liveStats, visible: vis('liveStats') },
+    sampleMcq: { ...withTiles.sampleMcq, visible: vis('sampleMcq') },
+    productFeatures: { ...withTiles.productFeatures, visible: vis('productFeatures') },
+    howItWorks: { ...withTiles.howItWorks, visible: vis('howItWorks') },
+    dashboardPreview: { ...withTiles.dashboardPreview, visible: vis('dashboardPreview') },
+    newsStrip: { ...withTiles.newsStrip, visible: vis('newsStrip') },
+    accessFaq: { ...withTiles.accessFaq, visible: vis('accessFaq') },
+  };
+}
 
 /** Default payload mirrors the marketing homepage (honest copy; live stats override hero.stats). */
 export function createDefaultHomepagePayload(): HomepagePayload {
+  const extended = createDefaultExtendedSections();
   return homepagePayloadSchema.parse({
+    layout: createDefaultHomepageLayout(),
+    ...extended,
     hero: {
       visible: true,
       eyebrow: 'BCS · Bank · NTRCA · Primary · Government Jobs',
