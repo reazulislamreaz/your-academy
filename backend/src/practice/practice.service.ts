@@ -19,10 +19,22 @@ import type {
   SubmitAttemptDto,
   UpdatePracticeSetDto,
 } from './dto/submit-attempt.dto';
-import { TIMER_PRESETS } from './dto/submit-attempt.dto';
+import {
+  TIMER_CUSTOM_MAX_SECONDS,
+  TIMER_CUSTOM_MIN_SECONDS,
+  TIMER_PRESETS,
+} from './dto/submit-attempt.dto';
 
 const KIND_VALUES = new Set<string>(Object.values(PracticeSetKind));
 const TIMER_PRESET_SET = new Set<number>(TIMER_PRESETS);
+
+function isAllowedLearnerTimerSeconds(seconds: number): boolean {
+  if (!Number.isInteger(seconds)) return false;
+  if (seconds < TIMER_CUSTOM_MIN_SECONDS || seconds > TIMER_CUSTOM_MAX_SECONDS) return false;
+  // Whole minutes only.
+  if (seconds % 60 !== 0) return false;
+  return true;
+}
 
 type OptionSnapshot = {
   id: string;
@@ -1291,32 +1303,46 @@ export class PracticeService {
     };
   }
 
-  /** Resolve attempt timer from learner start options + set admin duration. */
+  /**
+   * Resolve attempt timer from learner start options + set admin duration.
+   * Timed attempts may use a custom/preset duration; never exceed admin max when set.
+   */
   private resolveStartTimerSeconds(
     setDurationSeconds: number | null,
     dto: StartAttemptDto,
   ): number | null {
     if (dto.timed === false) return null;
 
+    const setMax =
+      setDurationSeconds != null && setDurationSeconds > 0 ? setDurationSeconds : null;
+
     if (dto.timed === true) {
-      if (setDurationSeconds != null && setDurationSeconds > 0) {
-        return setDurationSeconds;
+      const requested = dto.durationSeconds;
+      if (requested != null) {
+        if (!isAllowedLearnerTimerSeconds(requested) && !TIMER_PRESET_SET.has(requested)) {
+          throw new BadRequestException(
+            createErrorResponse(
+              'TIMER_DURATION_INVALID',
+              'Choose a whole-minute duration between 5 and 180 minutes',
+              newRequestId(),
+            ),
+          );
+        }
+        // Cap at admin-configured max when the set defines one.
+        return setMax != null ? Math.min(requested, setMax) : requested;
       }
-      const preset = dto.durationSeconds;
-      if (preset != null && TIMER_PRESET_SET.has(preset)) {
-        return preset;
-      }
+      if (setMax != null) return setMax;
       throw new BadRequestException(
         createErrorResponse(
           'TIMER_DURATION_REQUIRED',
-          'Choose a timer duration (15, 30, 45, or 60 minutes) or start untimed',
+          'Choose a timer duration or start untimed',
           newRequestId(),
         ),
       );
     }
 
     // Legacy / omitted body: follow admin set duration (null = untimed).
-    return setDurationSeconds != null && setDurationSeconds > 0 ? setDurationSeconds : null;
+    return setMax;
   }
 
   private mapAttemptSummary(a: {

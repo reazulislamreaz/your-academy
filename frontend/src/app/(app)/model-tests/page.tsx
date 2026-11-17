@@ -2,6 +2,7 @@
 
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { LearnerPage } from '@/components/layout/learner-page';
 import { PageHeader } from '@/components/layout/page-header';
 import { PracticeSetList } from '@/components/practice/practice-set-list';
 import { examLabel } from '@/lib/exam-tags';
@@ -11,7 +12,7 @@ function ModelTestsContent() {
   const examTag = useSearchParams().get('examTag') ?? undefined;
 
   return (
-    <div className="space-y-8">
+    <LearnerPage dense>
       <PageHeader
         eyebrow="Mock exams"
         title={examTag ? `${examLabel(examTag)} model tests` : 'Model tests'}
@@ -23,15 +24,13 @@ function ModelTestsContent() {
         emptyTitle="No model tests yet"
         emptyDescription="Published model tests will appear here."
       />
-    </div>
+    </LearnerPage>
   );
 }
 
 export default function ModelTestsPage() {
   return (
-    <Suspense
-      fallback={<PracticeBrowsePageSkeleton />}
-    >
+    <Suspense fallback={<PracticeBrowsePageSkeleton />}>
       <ModelTestsContent />
     </Suspense>
   );

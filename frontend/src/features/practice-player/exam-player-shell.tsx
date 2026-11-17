@@ -1,9 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import { Alert } from '@/components/ui/alert';
 import type { PracticeSetDetail } from '@/lib/api/types';
 import { ExamHeader } from './exam-header';
 import { ExamNavControls } from './exam-nav-controls';
+import { ExamNavigatorSheet } from './exam-navigator-sheet';
 import { ExamProgressCard } from './exam-progress-card';
 import { ExamQuestionNavigator } from './exam-question-navigator';
 import { ExamQuestionPanel } from './exam-question-panel';
@@ -19,6 +21,7 @@ export function ExamPlayerShell({ set, attempt }: Props) {
   const q = attempt.currentQuestion;
   const questionIds = set.questions.map((item) => item.id);
   const busy = attempt.locked || attempt.submit.isPending;
+  const [navOpen, setNavOpen] = useState(false);
 
   const jumpFirstUnanswered = () => {
     const idx = set.questions.findIndex((item) => !attempt.answers[item.id]);
@@ -29,12 +32,14 @@ export function ExamPlayerShell({ set, attempt }: Props) {
   };
 
   return (
-    <div className="space-y-4 pb-24 lg:pb-6">
+    <div className="learner-page-pad-sticky space-y-3 px-3 pt-3 sm:space-y-4 sm:px-5 sm:pt-4 lg:px-6 lg:pb-6">
       <ExamHeader
         set={set}
         remaining={attempt.remaining}
         timerSeconds={attempt.timerSeconds}
         saveState={attempt.saveState}
+        questionIndex={attempt.index}
+        totalQuestions={attempt.totalQuestions}
         onEndExam={attempt.requestSubmit}
         endDisabled={busy}
       />
@@ -64,8 +69,8 @@ export function ExamPlayerShell({ set, attempt }: Props) {
         </Alert>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(240px,280px)] lg:items-start">
-        <div className="space-y-3">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,18rem)] lg:items-start">
+        <div className="min-w-0 space-y-3">
           {q ? (
             <ExamQuestionPanel
               key={q.id}
@@ -73,13 +78,15 @@ export function ExamPlayerShell({ set, attempt }: Props) {
               index={attempt.index}
               total={attempt.totalQuestions}
               selectedOptionId={attempt.answers[q.id]}
+              marked={Boolean(attempt.marked[q.id])}
               disabled={busy}
               onSelect={(optionId) => attempt.selectAnswer(q.id, optionId)}
               onClear={() => attempt.clearAnswer(q.id)}
+              onToggleMark={() => attempt.toggleMark(q.id)}
             />
           ) : null}
 
-          <div className="hidden lg:block">
+          <div className="hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] p-3 shadow-[var(--shadow-sm)] lg:block">
             <ExamNavControls
               index={attempt.index}
               total={attempt.totalQuestions}
@@ -91,10 +98,17 @@ export function ExamPlayerShell({ set, attempt }: Props) {
               onFinish={attempt.requestSubmit}
             />
           </div>
+        </div>
 
-          <div className="lg:hidden">
+        <aside className="hidden space-y-3 lg:sticky lg:top-[calc(var(--header-h,3.75rem)+0.75rem)] lg:block">
+          <ExamProgressCard
+            total={attempt.totalQuestions}
+            answered={attempt.answeredCount}
+            unanswered={attempt.unansweredCount}
+            marked={attempt.markedCount}
+          />
+          <div className="rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] p-4 shadow-[var(--shadow-sm)]">
             <ExamQuestionNavigator
-              compact
               total={attempt.totalQuestions}
               currentIndex={attempt.index}
               answers={attempt.answers}
@@ -103,37 +117,10 @@ export function ExamPlayerShell({ set, attempt }: Props) {
               onJump={attempt.goTo}
             />
           </div>
-        </div>
-
-        <aside className="hidden space-y-3 lg:sticky lg:top-4 lg:block">
-          <ExamProgressCard
-            total={attempt.totalQuestions}
-            answered={attempt.answeredCount}
-            unanswered={attempt.unansweredCount}
-            marked={attempt.markedCount}
-          />
-          <ExamQuestionNavigator
-            total={attempt.totalQuestions}
-            currentIndex={attempt.index}
-            answers={attempt.answers}
-            marked={attempt.marked}
-            questionIds={questionIds}
-            onJump={attempt.goTo}
-          />
         </aside>
-
-        <div className="lg:hidden">
-          <ExamProgressCard
-            total={attempt.totalQuestions}
-            answered={attempt.answeredCount}
-            unanswered={attempt.unansweredCount}
-            marked={attempt.markedCount}
-          />
-        </div>
       </div>
 
-      {/* Sticky mobile nav */}
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-[var(--line)] bg-[var(--bg-elevated)]/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[var(--shadow)] backdrop-blur lg:hidden">
+      <div className="learner-sticky-chrome p-2.5 sm:p-3 lg:hidden">
         <ExamNavControls
           index={attempt.index}
           total={attempt.totalQuestions}
@@ -143,8 +130,23 @@ export function ExamPlayerShell({ set, attempt }: Props) {
           onNext={() => attempt.goTo(attempt.index + 1)}
           onToggleMark={() => q && attempt.toggleMark(q.id)}
           onFinish={attempt.requestSubmit}
+          onOpenNavigator={() => setNavOpen(true)}
         />
       </div>
+
+      <ExamNavigatorSheet
+        open={navOpen}
+        onClose={() => setNavOpen(false)}
+        total={attempt.totalQuestions}
+        currentIndex={attempt.index}
+        answers={attempt.answers}
+        marked={attempt.marked}
+        questionIds={questionIds}
+        answered={attempt.answeredCount}
+        unanswered={attempt.unansweredCount}
+        markedCount={attempt.markedCount}
+        onJump={attempt.goTo}
+      />
 
       {attempt.submit.isError ? (
         <Alert variant="danger">Submit failed. Try again.</Alert>

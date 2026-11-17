@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { LearnerPage } from '@/components/layout/learner-page';
 import { PageHeader } from '@/components/layout/page-header';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -29,7 +30,7 @@ export default function ResultsPage() {
     list.error instanceof ApiError && (list.error.status === 401 || list.error.status === 403);
 
   return (
-    <div className="space-y-8">
+    <LearnerPage dense>
       <PageHeader
         eyebrow="Analytics"
         title="My results"
@@ -70,59 +71,48 @@ export default function ResultsPage() {
       ) : null}
 
       {!list.isLoading && !list.isError && list.items.length > 0 ? (
-        <ContentIn className="space-y-3">
+        <ContentIn className="space-y-2.5">
           {list.items.map((attempt) => (
-            <Surface key={attempt.id} elevated interactive className="p-4">
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div>
-                  <div className="mb-1 flex flex-wrap gap-1.5">
+            <Surface key={attempt.id} elevated interactive className="p-3.5 sm:p-4">
+              <Link href={`/results/${attempt.id}`} className="flex items-start gap-3">
+                <div className="min-w-0 flex-1 space-y-1.5">
+                  <div className="flex flex-wrap gap-1.5">
                     <Badge variant="highlight">
                       {practiceKindLabel(attempt.practiceSet.kind)}
                     </Badge>
                     {attempt.practiceSet.examTag ? (
                       <Badge variant="outline">{examLabel(attempt.practiceSet.examTag)}</Badge>
                     ) : null}
-                    <Badge variant="outline">{attempt.status}</Badge>
+                    {attempt.passed != null ? (
+                      <Badge variant={attempt.passed ? 'success' : 'danger'}>
+                        {attempt.passed ? 'Passed' : 'Failed'}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline">{attempt.status}</Badge>
+                    )}
                   </div>
-                  <h3 className="font-display text-base font-semibold">
-                    <Link
-                      href={`/results/${attempt.id}`}
-                      className="hover:text-[var(--highlight)]"
-                    >
-                      {attempt.practiceSet.title}
-                    </Link>
+                  <h3 className="font-display text-[0.95rem] font-semibold tracking-tight text-[var(--ink)] sm:text-base">
+                    {attempt.practiceSet.title}
                   </h3>
-                  <p className="mt-1 text-xs text-[var(--muted-strong)]">
+                  <p className="text-xs text-[var(--muted)]">
                     {attempt.practiceSet.category?.name
                       ? `${attempt.practiceSet.category.name} · `
                       : ''}
                     {attempt.submittedAt
                       ? new Date(attempt.submittedAt).toLocaleString()
                       : 'Not submitted'}
-                    {attempt.elapsedSeconds != null
-                      ? ` · ${Math.floor(attempt.elapsedSeconds / 60)}m ${attempt.elapsedSeconds % 60}s`
-                      : ''}
-                  </p>
-                  <p className="mt-1 text-xs text-[var(--muted-strong)]">
-                    ✓ {attempt.correctCount ?? 0} · ✗ {attempt.wrongCount ?? 0} · —{' '}
-                    {attempt.skippedCount ?? 0}
-                    {attempt.passed != null
-                      ? attempt.passed
-                        ? ' · Passed'
-                        : ' · Failed'
-                      : ''}
                   </p>
                 </div>
-                <div className="text-right">
-                  <p className="font-display text-xl font-bold tabular-nums">
+                <div className="shrink-0 text-right">
+                  <p className="font-display text-lg font-bold tabular-nums text-[var(--ink)] sm:text-xl">
                     {attempt.percentScore != null ? `${attempt.percentScore}%` : '—'}
                   </p>
-                  <p className="text-xs tabular-nums text-[var(--muted-strong)]">
+                  <p className="text-xs tabular-nums text-[var(--muted)]">
                     {attempt.score ?? '—'}
                     {attempt.maxScore != null ? `/${attempt.maxScore}` : ''}
                   </p>
                 </div>
-              </div>
+              </Link>
             </Surface>
           ))}
           <LoadMoreButton
@@ -132,6 +122,6 @@ export default function ResultsPage() {
           />
         </ContentIn>
       ) : null}
-    </div>
+    </LearnerPage>
   );
 }

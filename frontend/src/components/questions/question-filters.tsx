@@ -159,7 +159,7 @@ export function QuestionFilters({ categories }: Props) {
   };
 
   return (
-    <div className="ya-glass z-10 grid min-w-0 gap-3 rounded-[var(--radius-lg)] border border-[var(--glass-border)] bg-[var(--glass-bg)] p-3 shadow-[var(--shadow-sm)] sm:p-4 xl:sticky xl:top-[var(--header-h,4rem)] [&>*]:min-w-0">
+    <div className="ya-glass z-10 grid min-w-0 gap-3 rounded-[var(--radius-lg)] border border-[var(--glass-border)] bg-[var(--glass-bg)] p-3 shadow-[var(--shadow-sm)] sm:p-4 lg:sticky lg:top-[calc(var(--header-h,3.75rem)+0.75rem)] [&>*]:min-w-0">
       <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
         <Field>
           <Label htmlFor="q-search">Search</Label>

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
+import { LearnerPage } from '@/components/layout/learner-page';
 import { PageHeader } from '@/components/layout/page-header';
 import { Alert } from '@/components/ui/alert';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -28,7 +29,7 @@ export default function DocumentsPage() {
     list.error instanceof ApiError && (list.error.status === 401 || list.error.status === 403);
 
   return (
-    <div className="space-y-8">
+    <LearnerPage dense>
       <PageHeader
         eyebrow="Study materials"
         title="PDF library"
@@ -85,6 +86,6 @@ export default function DocumentsPage() {
           />
         </ContentIn>
       ) : null}
-    </div>
+    </LearnerPage>
   );
 }

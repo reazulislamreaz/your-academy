@@ -64,6 +64,8 @@ type Props = {
   section: SectionKind;
   title: string;
   description: string;
+  /** Skip outer AdminPage when nested in a tabbed host. */
+  embedded?: boolean;
 };
 
 const PAGE_SIZES: PageSize[] = [10, 20, 50, 100];
@@ -144,7 +146,12 @@ function syncCategoryTilesFromTaxonomy(
   return { tiles: next, added };
 }
 
-export function HomepageSectionManager({ section, title, description }: Props) {
+export function HomepageSectionManager({
+  section,
+  title,
+  description,
+  embedded = false,
+}: Props) {
   const qc = useQueryClient();
   const noun = section === 'categories' ? 'category' : 'topic';
   const nounPlural = section === 'categories' ? 'categories' : 'topics';
@@ -448,63 +455,73 @@ export function HomepageSectionManager({ section, title, description }: Props) {
     return Array.from({ length: maxButtons }, (_, i) => start + i);
   }, [safePage, totalPages]);
 
+  const headerActions = (
+    <div className="flex flex-wrap items-center gap-2">
+      {section === 'categories' ? (
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          disabled={categoriesQ.isLoading || missingFromDb === 0}
+          onClick={syncFromDb}
+        >
+          <RefreshCw className="h-4 w-4" />
+          Sync{missingFromDb > 0 ? ` (${missingFromDb})` : ''}
+        </Button>
+      ) : null}
+      <Button type="button" size="sm" variant="ghost" onClick={openCreate}>
+        <Plus className="h-4 w-4" />
+        New
+      </Button>
+      <Button
+        type="button"
+        size="sm"
+        variant="secondary"
+        disabled={!dirty || saveMut.isPending}
+        onClick={() => saveMut.mutate(false)}
+      >
+        <Save className="h-4 w-4" />
+        Draft
+      </Button>
+      <Button
+        type="button"
+        size="sm"
+        disabled={saveMut.isPending}
+        onClick={() => saveMut.mutate(true)}
+      >
+        <Upload className="h-4 w-4" />
+        Publish
+      </Button>
+    </div>
+  );
+
   if (adminQ.isLoading) {
-    return (
-      <AdminPage dense>
-        <PageHeader title={title} description={description} />
+    const loadingBody = (
+      <>
+        {!embedded ? <PageHeader title={title} description={description} /> : null}
         <div className="space-y-3" role="status" aria-busy="true" aria-label="Loading">
           <div className="h-16 animate-pulse rounded-lg bg-[var(--bg-muted)]" />
           <div className="h-40 animate-pulse rounded-lg bg-[var(--bg-muted)]" />
         </div>
-      </AdminPage>
+      </>
+    );
+    return embedded ? (
+      <div className="space-y-4">{loadingBody}</div>
+    ) : (
+      <AdminPage dense>{loadingBody}</AdminPage>
     );
   }
 
-  return (
-    <AdminPage dense>
-      <PageHeader
-        title={title}
-        description={description}
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            {section === 'categories' ? (
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                disabled={categoriesQ.isLoading || missingFromDb === 0}
-                onClick={syncFromDb}
-              >
-                <RefreshCw className="h-4 w-4" />
-                Sync{missingFromDb > 0 ? ` (${missingFromDb})` : ''}
-              </Button>
-            ) : null}
-            <Button type="button" size="sm" variant="ghost" onClick={openCreate}>
-              <Plus className="h-4 w-4" />
-              New
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              disabled={!dirty || saveMut.isPending}
-              onClick={() => saveMut.mutate(false)}
-            >
-              <Save className="h-4 w-4" />
-              Draft
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              disabled={saveMut.isPending}
-              onClick={() => saveMut.mutate(true)}
-            >
-              <Upload className="h-4 w-4" />
-              Publish
-            </Button>
-          </div>
-        }
-      />
+  const body = (
+    <>
+      {embedded ? (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm text-[var(--muted)]">{description}</p>
+          {headerActions}
+        </div>
+      ) : (
+        <PageHeader title={title} description={description} actions={headerActions} />
+      )}
 
       {message ? (
         <Alert variant={message.tone === 'success' ? 'success' : 'danger'}>{message.text}</Alert>
@@ -1084,6 +1101,12 @@ export function HomepageSectionManager({ section, title, description }: Props) {
         onConfirm={() => deleteId && removeTile(deleteId)}
         onCancel={() => setDeleteId(null)}
       />
-    </AdminPage>
+    </>
   );
+
+  if (embedded) {
+    return <div className="space-y-4">{body}</div>;
+  }
+
+  return <AdminPage dense>{body}</AdminPage>;
 }

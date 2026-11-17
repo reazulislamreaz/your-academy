@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BookMarked, Clock3, FileText } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { MetricTile } from '@/components/dashboard/metric-tile';
+import { LearnerPage } from '@/components/layout/learner-page';
 import { PageHeader } from '@/components/layout/page-header';
 import { UserAvatar } from '@/components/layout/user-avatar';
 import { Alert } from '@/components/ui/alert';
@@ -148,21 +149,22 @@ export default function ProfilePage() {
   const user = me.data;
 
   return (
-    <div className="space-y-6 pb-10 sm:space-y-8">
+    <LearnerPage>
       <PageHeader
         eyebrow="Account"
         title="Profile & settings"
         description="Membership, study summary, and account controls."
         actions={
-          <div className="flex flex-wrap gap-2">
-            <Link href="/home">
-              <Button variant="soft" size="sm">
+          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
+            <Link href="/home" className="min-w-0">
+              <Button variant="soft" size="sm" className="w-full sm:w-auto">
                 Dashboard
               </Button>
             </Link>
             <Button
               variant="outline"
               size="sm"
+              className="w-full sm:w-auto"
               disabled={logout.isPending}
               onClick={() => logout.mutate()}
             >
@@ -427,6 +429,6 @@ export default function ProfilePage() {
           </Button>
         </form>
       </Surface>
-    </div>
+    </LearnerPage>
   );
 }

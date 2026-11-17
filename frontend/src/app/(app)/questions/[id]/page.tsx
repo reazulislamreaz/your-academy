@@ -107,22 +107,33 @@ function QuestionDetailContent() {
   }
 
   return (
-    <article className="mx-auto max-w-3xl space-y-7 pb-40 sm:pb-32">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex min-w-0 flex-wrap items-center gap-2 text-sm text-[var(--muted-strong)]">
-          <Link href={`/questions${filterQs ? `?${filterQs}` : ''}`} className="hover:text-[var(--highlight)]">
-            Question bank
-          </Link>
-          <span aria-hidden>/</span>
-          <span className="truncate">{data.category.name}</span>
-          {data.subcategory ? (
-            <>
-              <span aria-hidden>/</span>
-              <span className="truncate">{data.subcategory.name}</span>
-            </>
-          ) : null}
-          <Badge variant="info">{data.difficulty}</Badge>
-          {data.bookmarked ? <Badge variant="bookmark">Saved</Badge> : null}
+    <article className="learner-page-pad-sticky mx-auto max-w-3xl space-y-5 sm:space-y-7">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 space-y-1.5">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-[var(--muted)] sm:text-sm">
+            <Link
+              href={`/questions${filterQs ? `?${filterQs}` : ''}`}
+              className="font-medium text-[var(--muted-strong)] hover:text-[var(--highlight)]"
+            >
+              Bank
+            </Link>
+            <span aria-hidden className="text-[var(--line-strong)]">
+              /
+            </span>
+            <span className="truncate">{data.category.name}</span>
+            {data.subcategory ? (
+              <>
+                <span aria-hidden className="text-[var(--line-strong)]">
+                  /
+                </span>
+                <span className="truncate">{data.subcategory.name}</span>
+              </>
+            ) : null}
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            <Badge variant="info">{data.difficulty}</Badge>
+            {data.bookmarked ? <Badge variant="bookmark">Saved</Badge> : null}
+          </div>
         </div>
         <Button
           variant="outline"
@@ -133,17 +144,14 @@ function QuestionDetailContent() {
               : 'min-h-10 shrink-0 gap-1.5'
           }
           onClick={() => setSaveOpen(true)}
+          aria-label={data.bookmarked ? 'Manage saved MCQ' : 'Save MCQ'}
         >
           <Bookmark
             className="size-4"
             aria-hidden
             fill={data.bookmarked ? 'currentColor' : 'none'}
           />
-          {data.bookmarked
-            ? data.collection?.name
-              ? `Saved · ${data.collection.name}`
-              : 'Saved'
-            : 'Save MCQ'}
+          <span className="hidden sm:inline">{data.bookmarked ? 'Saved' : 'Save'}</span>
         </Button>
       </div>
 
@@ -207,27 +215,21 @@ function QuestionDetailContent() {
         </Surface>
       ) : null}
 
-      <div
-        className="fixed inset-x-0 bottom-0 z-20 border-t border-[var(--line)] bg-[var(--bg-elevated)]/95 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur-md lg:left-[var(--app-sidebar-current-width,var(--app-sidebar-width))]"
-        role="navigation"
-        aria-label="Practice navigation"
-      >
-        <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-2 px-4 py-3 sm:gap-3 sm:px-6">
-          <div className="flex shrink-0 gap-1 sm:gap-2">
-            {nav?.prevId ? (
-              <Link href={navHref(nav.prevId)}>
-                <Button variant="ghost" size="md" className="min-h-11 px-2.5 sm:px-4">
-                  <ChevronLeft className="h-4 w-4" aria-hidden />
-                  <span className="hidden sm:inline">Previous</span>
-                </Button>
-              </Link>
-            ) : (
-              <Button variant="ghost" size="md" className="min-h-11 px-2.5 sm:px-4" disabled>
+      <div className="learner-sticky-chrome" role="navigation" aria-label="Practice navigation">
+        <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-2 px-3 py-2.5 sm:gap-3 sm:px-6 sm:py-3">
+          {nav?.prevId ? (
+            <Link href={navHref(nav.prevId)}>
+              <Button variant="ghost" size="md" className="min-h-11 px-2.5 sm:px-4" aria-label="Previous">
                 <ChevronLeft className="h-4 w-4" aria-hidden />
                 <span className="hidden sm:inline">Previous</span>
               </Button>
-            )}
-          </div>
+            </Link>
+          ) : (
+            <Button variant="ghost" size="md" className="min-h-11 px-2.5 sm:px-4" disabled aria-label="Previous">
+              <ChevronLeft className="h-4 w-4" aria-hidden />
+              <span className="hidden sm:inline">Previous</span>
+            </Button>
+          )}
 
           <Button
             size="md"
@@ -240,7 +242,6 @@ function QuestionDetailContent() {
                 lastQuestionId: data.id,
                 lastQuestionFilterQs: filterQs || null,
               });
-              // Persist attempt for personal performance analytics (server computes correctness).
               void apiFetch(`/questions/${data.id}/attempts`, {
                 method: 'POST',
                 body: JSON.stringify({ selectedOptionId: selectedId }),
@@ -249,7 +250,7 @@ function QuestionDetailContent() {
                   void qc.invalidateQueries({ queryKey: ['stats'] });
                 })
                 .catch(() => {
-                  // Non-blocking: practice UI still works if analytics write fails.
+                  /* Non-blocking analytics write */
                 });
             }}
           >
@@ -257,21 +258,19 @@ function QuestionDetailContent() {
             <span className="truncate">{checked ? 'Checked' : 'Check answer'}</span>
           </Button>
 
-          <div className="flex shrink-0 gap-1 sm:gap-2">
-            {nav?.nextId ? (
-              <Link href={navHref(nav.nextId)}>
-                <Button variant="outline" size="md" className="min-h-11 px-2.5 sm:px-4">
-                  <span className="hidden sm:inline">Next</span>
-                  <ChevronRight className="h-4 w-4" aria-hidden />
-                </Button>
-              </Link>
-            ) : (
-              <Button variant="outline" size="md" className="min-h-11 px-2.5 sm:px-4" disabled>
+          {nav?.nextId ? (
+            <Link href={navHref(nav.nextId)}>
+              <Button variant="outline" size="md" className="min-h-11 px-2.5 sm:px-4" aria-label="Next">
                 <span className="hidden sm:inline">Next</span>
                 <ChevronRight className="h-4 w-4" aria-hidden />
               </Button>
-            )}
-          </div>
+            </Link>
+          ) : (
+            <Button variant="outline" size="md" className="min-h-11 px-2.5 sm:px-4" disabled aria-label="Next">
+              <span className="hidden sm:inline">Next</span>
+              <ChevronRight className="h-4 w-4" aria-hidden />
+            </Button>
+          )}
         </div>
       </div>
     </article>

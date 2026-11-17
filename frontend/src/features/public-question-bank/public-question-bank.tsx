@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ListCardSkeleton, LoadError } from '@/components/loading';
+import { GoForExamCta } from '@/components/marketing/go-for-exam-cta';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { SearchField } from '@/components/ui/search-field';
@@ -235,6 +236,8 @@ export function PublicQuestionBank({ className }: Props) {
 
   return (
     <div className={cn('space-y-5', className)}>
+      <GoForExamCta />
+
       <div className="rounded-[1.25rem] border border-[var(--line)] bg-white p-3 shadow-[var(--shadow-sm)] sm:p-4">
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center">

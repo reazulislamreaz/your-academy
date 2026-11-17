@@ -103,7 +103,8 @@
   --app-content-max: 72rem;
   /* Marketing header / footer / navbar pages share this content rail */
   --marketing-content-max: 80rem; /* 1280px */
-  --header-h: 4.5rem;
+  --header-h: 3.75rem;
+  --learner-sticky-chrome-h: 4.5rem;
   --accent-blue: #3b82f6;
 
   /* Motion */
@@ -823,6 +824,39 @@ input:disabled {
     gap: 0.75rem;
     padding-bottom: 1rem;
   }
+
+  .learner-theme .learner-sticky-chrome {
+    padding-left: max(0.75rem, env(safe-area-inset-left, 0px));
+    padding-right: max(0.75rem, env(safe-area-inset-right, 0px));
+  }
+}
+
+@media (min-width: 640px) {
+  :root {
+    --header-h: 4.25rem;
+  }
+}
+
+/* Fixed practice / exam chrome — clears safe area + sidebar on desktop */
+.learner-sticky-chrome {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 20;
+  border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg-elevated) 94%, transparent);
+  backdrop-filter: blur(10px);
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 1024px) {
+  .learner-sticky-chrome {
+    left: var(--app-sidebar-current-width, var(--app-sidebar-width, 16.25rem));
+  }
+}
+
+.learner-page-pad-sticky {
+  padding-bottom: calc(var(--learner-sticky-chrome-h, 4.5rem) + 1.5rem + env(safe-area-inset-bottom, 0px));
 }
 
 ::selection {
@@ -1730,7 +1764,59 @@ input:disabled {
   }
 }
 
+/* Preli bank → exams CTA */
+@keyframes ya-exam-cta-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 0 color-mix(in srgb, var(--highlight) 28%, transparent),
+      var(--shadow-sm);
+  }
+  55% {
+    box-shadow:
+      0 0 0 10px color-mix(in srgb, var(--highlight) 0%, transparent),
+      var(--shadow);
+  }
+}
+
+@keyframes ya-exam-cta-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes ya-exam-cta-glow {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
+  .ya-exam-cta-btn {
+    animation: ya-exam-cta-pulse 2.8s var(--ease-out) infinite;
+  }
+
+  .ya-exam-cta-btn:hover,
+  .ya-exam-cta-btn:focus-visible {
+    animation-play-state: paused;
+  }
+
+  .ya-exam-cta-icon {
+    animation: ya-exam-cta-bob 3.2s ease-in-out infinite;
+  }
+
+  .ya-exam-cta-glow {
+    animation: ya-exam-cta-glow 4.5s ease-in-out infinite;
+  }
+
   .motion-fade-in {
     animation: ya-fade-in var(--duration-slow) var(--ease-out) both;
   }
@@ -1908,7 +1994,10 @@ input:disabled {
   .motion-stagger > *,
   .ya-panel-shine::after,
   .learner-nav-link,
-  .learner-nav-link::before {
+  .learner-nav-link::before,
+  .ya-exam-cta-btn,
+  .ya-exam-cta-icon,
+  .ya-exam-cta-glow {
     animation: none !important;
     transition: none !important;
     transform: none !important;

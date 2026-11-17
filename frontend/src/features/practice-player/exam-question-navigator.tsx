@@ -1,6 +1,5 @@
 'use client';
 
-import { Surface } from '@/components/ui/surface';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -11,6 +10,7 @@ type Props = {
   questionIds: string[];
   onJump: (index: number) => void;
   compact?: boolean;
+  className?: string;
 };
 
 export function ExamQuestionNavigator({
@@ -21,23 +21,36 @@ export function ExamQuestionNavigator({
   questionIds,
   onJump,
   compact,
+  className,
 }: Props) {
   return (
-    <Surface elevated className={cn('space-y-3 p-4', compact && 'p-3')}>
-      <div className="flex items-center justify-between gap-2">
+    <div className={cn('space-y-3', className)}>
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="font-display text-sm font-semibold tracking-tight text-[var(--ink)]">
-          Question Navigator
+          Navigator
         </h3>
-        <div className="hidden flex-wrap gap-2 text-[0.65rem] text-[var(--muted-strong)] sm:flex">
+        <div className="flex flex-wrap gap-x-3 gap-y-1 text-[0.65rem] text-[var(--muted)]">
           <span className="inline-flex items-center gap-1">
-            <span className="size-2 rounded-sm bg-[var(--highlight)]" /> Answered
+            <span className="size-2 rounded-sm bg-[var(--success)]" /> Answered
           </span>
           <span className="inline-flex items-center gap-1">
             <span className="size-2 rounded-sm bg-[var(--warning)]" /> Review
           </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="size-2 rounded-sm bg-[var(--bg-muted)] ring-1 ring-[var(--line)]" />{' '}
+            Open
+          </span>
         </div>
       </div>
-      <div className={cn('grid gap-2', compact ? 'grid-cols-8 sm:grid-cols-10' : 'grid-cols-5')}>
+
+      <div
+        className={cn(
+          'grid gap-1.5 overflow-y-auto overscroll-contain pr-0.5',
+          compact
+            ? 'max-h-[9.5rem] grid-cols-8 sm:grid-cols-10'
+            : 'max-h-[min(28rem,52vh)] grid-cols-5 sm:grid-cols-6',
+        )}
+      >
         {Array.from({ length: total }, (_, i) => {
           const id = questionIds[i]!;
           const isCurrent = i === currentIndex;
@@ -51,20 +64,20 @@ export function ExamQuestionNavigator({
               aria-label={`Question ${i + 1}${isAnswered ? ', answered' : ''}${isMarked ? ', marked for review' : ''}${isCurrent ? ', current' : ''}`}
               aria-current={isCurrent ? 'true' : undefined}
               className={cn(
-                'flex size-9 cursor-pointer items-center justify-center rounded-[var(--radius-sm)] text-xs font-semibold transition-[border-color,background-color,transform] duration-150',
+                'flex size-8 cursor-pointer items-center justify-center rounded-[var(--radius-sm)] text-[0.7rem] font-semibold tabular-nums transition-[border-color,background-color,transform] duration-150 sm:size-9 sm:text-xs',
                 isCurrent &&
-                  'border-2 border-[var(--highlight)] bg-[color-mix(in_srgb,var(--highlight)_14%,transparent)] text-[var(--ink)]',
+                  'border-2 border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)] shadow-[var(--shadow-sm)]',
                 !isCurrent &&
                   isMarked &&
-                  'border border-[var(--warning)]/60 bg-[var(--warning-soft)] text-[var(--warning-fg)]',
+                  'border border-[var(--warning)]/55 bg-[var(--warning-soft)] text-[var(--warning-fg)]',
                 !isCurrent &&
                   !isMarked &&
                   isAnswered &&
-                  'border border-[var(--highlight)]/40 bg-[color-mix(in_srgb,var(--highlight)_10%,transparent)] text-[var(--ink)]',
+                  'border border-[var(--success)]/45 bg-[var(--success-soft)] text-[var(--success-fg)]',
                 !isCurrent &&
                   !isMarked &&
                   !isAnswered &&
-                  'border border-transparent bg-[var(--bg-muted)] text-[var(--muted-strong)] hover:bg-[var(--bg-muted)]/80',
+                  'border border-transparent bg-[var(--bg-muted)] text-[var(--muted)] hover:bg-[var(--bg-soft)]',
               )}
             >
               {i + 1}
@@ -72,6 +85,6 @@ export function ExamQuestionNavigator({
           );
         })}
       </div>
-    </Surface>
+    </div>
   );
 }

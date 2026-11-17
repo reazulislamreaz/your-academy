@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
+import { LearnerPage } from '@/components/layout/learner-page';
 import { PageHeader } from '@/components/layout/page-header';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -32,9 +33,9 @@ function Stat({
   tone?: string;
 }) {
   return (
-    <div>
-      <p className="text-xs text-[var(--muted-strong)]">{label}</p>
-      <p className={cn('font-display text-2xl font-bold tabular-nums', tone)}>{value}</p>
+    <div className="min-w-0">
+      <p className="truncate text-[0.6875rem] text-[var(--muted)] sm:text-xs">{label}</p>
+      <p className={cn('font-display text-lg font-bold tabular-nums sm:text-2xl', tone)}>{value}</p>
     </div>
   );
 }
@@ -78,22 +79,22 @@ export default function ResultDetailPage() {
   const percent = data.percentScore ?? 0;
 
   return (
-    <div className="space-y-8">
+    <LearnerPage dense>
       <PageHeader
         eyebrow={practiceKindLabel(data.practiceSet.kind)}
         title={data.practiceSet.title}
-        description="Detailed score summary and answer-by-answer analysis."
+        description="Score summary and answer-by-answer analysis."
       />
 
-      <Surface elevated className="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-4">
+      <Surface elevated className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-4 sm:gap-4 sm:p-5">
         <Stat
-          label="Marks obtained"
+          label="Marks"
           value={`${data.score ?? 0}/${data.maxScore ?? 0}`}
         />
-        <Stat label="Percentage" value={`${percent}%`} tone="text-[var(--highlight)]" />
-        <Stat label="Time taken" value={formatDuration(data.elapsedSeconds)} />
+        <Stat label="Score" value={`${percent}%`} tone="text-[var(--highlight)]" />
+        <Stat label="Time" value={formatDuration(data.elapsedSeconds)} />
         <div>
-          <p className="text-xs text-[var(--muted-strong)]">Result</p>
+          <p className="text-xs text-[var(--muted)]">Result</p>
           {data.passed == null ? (
             <Badge variant="outline" className="mt-2">
               {data.status === 'EXPIRED' ? 'Time expired' : 'Completed'}
@@ -109,12 +110,12 @@ export default function ResultDetailPage() {
         </div>
       </Surface>
 
-      <Surface elevated className="grid gap-4 p-5 sm:grid-cols-3 lg:grid-cols-6">
-        <Stat label="Total questions" value={total} />
+      <Surface elevated className="grid grid-cols-3 gap-3 p-4 sm:grid-cols-6 sm:gap-4 sm:p-5">
+        <Stat label="Questions" value={total} />
         <Stat label="Attempted" value={attempted} />
-        <Stat label="Unanswered" value={unanswered} />
+        <Stat label="Skipped" value={unanswered} />
         <Stat label="Correct" value={data.correctCount ?? 0} tone="text-[var(--success)]" />
-        <Stat label="Incorrect" value={data.wrongCount ?? 0} tone="text-[var(--danger)]" />
+        <Stat label="Wrong" value={data.wrongCount ?? 0} tone="text-[var(--danger)]" />
         <Stat
           label="Accuracy"
           value={
@@ -125,7 +126,7 @@ export default function ResultDetailPage() {
         />
       </Surface>
 
-      <div className="flex flex-wrap gap-2 text-xs text-[var(--muted-strong)]">
+      <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--muted)]">
         <Badge variant="outline">{data.status}</Badge>
         {data.practiceSet.category ? (
           <Badge variant="outline">{data.practiceSet.category.name}</Badge>
@@ -134,7 +135,7 @@ export default function ResultDetailPage() {
           <Badge variant="outline">{examLabel(data.practiceSet.examTag)}</Badge>
         ) : null}
         {data.submittedAt ? (
-          <span>Submitted {new Date(data.submittedAt).toLocaleString()}</span>
+          <span className="w-full sm:w-auto">Submitted {new Date(data.submittedAt).toLocaleString()}</span>
         ) : null}
       </div>
 
@@ -240,7 +241,7 @@ export default function ResultDetailPage() {
         })}
       </div>
 
-      <div className="flex flex-wrap gap-4">
+      <div className="flex flex-wrap gap-4 pb-2">
         <Link href="/results" className="text-sm font-semibold text-[var(--highlight)]">
           ← All results
         </Link>
@@ -248,6 +249,6 @@ export default function ResultDetailPage() {
           Performance dashboard
         </Link>
       </div>
-    </div>
+    </LearnerPage>
   );
 }

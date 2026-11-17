@@ -7,6 +7,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { LearnerThemeToggle } from '@/components/theme/learner-theme-toggle';
+import { useSupportChat } from '@/features/support/support-chat-provider';
 import { MobileDrawerBackdrop, MobileDrawerPanel } from './mobile-drawer';
 import { UserMenu } from './user-menu';
 import { learnerLinkActive, learnerNavGroups } from './learner-nav';
@@ -20,6 +21,7 @@ export function LearnerMobileNav() {
   const panelId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const support = useSupportChat();
 
   useEffect(() => {
     setMounted(true);
@@ -84,11 +86,11 @@ export function LearnerMobileNav() {
               panelRef={panelRef}
               className="lg:hidden"
             >
-              <div className="mb-4 flex flex-wrap items-center gap-2 rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-muted)] p-3">
-                <LearnerThemeToggle showLabel className="bg-[var(--bg-elevated)]" />
+              <div className="mb-4 grid grid-cols-2 gap-2 rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-muted)] p-3 sm:flex sm:flex-wrap">
+                <LearnerThemeToggle showLabel className="col-span-2 bg-[var(--bg-elevated)] sm:col-auto" />
                 <Link
                   href="/bookmarks"
-                  className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-[12px] border border-[var(--line)] bg-[var(--bg-elevated)] px-3 text-sm font-semibold text-[var(--ink)]"
+                  className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] px-3 text-sm font-semibold text-[var(--ink)]"
                   onClick={() => setOpen(false)}
                 >
                   <Bookmark className="size-4" aria-hidden />
@@ -96,20 +98,24 @@ export function LearnerMobileNav() {
                 </Link>
                 <Link
                   href="/news"
-                  className="inline-flex size-11 items-center justify-center rounded-[12px] border border-[var(--line)] bg-[var(--bg-elevated)] text-[var(--ink-soft)]"
-                  aria-label="Updates"
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] px-3 text-sm font-semibold text-[var(--ink-soft)]"
                   onClick={() => setOpen(false)}
                 >
                   <Bell className="size-4" aria-hidden />
+                  News
                 </Link>
-                <Link
-                  href="/profile"
-                  className="inline-flex size-11 items-center justify-center rounded-[12px] border border-[var(--line)] bg-[var(--bg-elevated)] text-[var(--ink-soft)]"
-                  aria-label="Messages / profile"
-                  onClick={() => setOpen(false)}
+                <button
+                  type="button"
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] px-3 text-sm font-semibold text-[var(--ink-soft)]"
+                  aria-label="Open messages"
+                  onClick={() => {
+                    setOpen(false);
+                    support.setOpen(true);
+                  }}
                 >
                   <MessageCircle className="size-4" aria-hidden />
-                </Link>
+                  Messages
+                </button>
               </div>
 
               <nav className="flex flex-col gap-5" aria-label="Mobile study">
@@ -167,7 +173,7 @@ export function LearnerMobileNav() {
         type="button"
         variant="ghost"
         size="icon"
-        className="size-11"
+        className="size-10"
         aria-expanded={open}
         aria-controls={panelId}
         aria-label={open ? 'Close menu' : 'Open menu'}

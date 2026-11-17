@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { ChevronRight } from 'lucide-react';
 import { Suspense } from 'react';
+import { LearnerPage } from '@/components/layout/learner-page';
 import { PageHeader } from '@/components/layout/page-header';
 import { FilterChips } from '@/components/questions/filter-chips';
 import { QuestionFilters } from '@/components/questions/question-filters';
@@ -63,7 +64,7 @@ function QuestionsContent() {
   const showListSkeleton = list.isLoading && !list.isPlaceholderData;
 
   return (
-    <div className="space-y-8">
+    <LearnerPage dense>
       <PageHeader
         eyebrow="Practice"
         title="MCQ practice"
@@ -190,7 +191,7 @@ function QuestionsContent() {
           ) : null}
         </>
       ) : null}
-    </div>
+    </LearnerPage>
   );
 }
 

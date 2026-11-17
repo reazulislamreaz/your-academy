@@ -1,4 +1,13 @@
-const TIMER_PRESETS = [15 * 60, 30 * 60, 45 * 60, 60 * 60] as const;
+const TIMER_PRESETS = [15 * 60, 30 * 60, 45 * 60, 60 * 60, 90 * 60, 120 * 60] as const;
+const TIMER_CUSTOM_MIN_SECONDS = 5 * 60;
+const TIMER_CUSTOM_MAX_SECONDS = 180 * 60;
+
+function isAllowedLearnerTimerSeconds(seconds: number): boolean {
+  if (!Number.isInteger(seconds)) return false;
+  if (seconds < TIMER_CUSTOM_MIN_SECONDS || seconds > TIMER_CUSTOM_MAX_SECONDS) return false;
+  if (seconds % 60 !== 0) return false;
+  return true;
+}
 
 /**
  * Mirrors PracticeService.resolveStartTimerSeconds rules for regression safety.
@@ -9,18 +18,23 @@ function resolveStartTimerSeconds(
 ): number | null {
   if (dto.timed === false) return null;
 
+  const setMax =
+    setDurationSeconds != null && setDurationSeconds > 0 ? setDurationSeconds : null;
+
   if (dto.timed === true) {
-    if (setDurationSeconds != null && setDurationSeconds > 0) {
-      return setDurationSeconds;
+    const requested = dto.durationSeconds;
+    if (requested != null) {
+      const ok =
+        isAllowedLearnerTimerSeconds(requested) ||
+        (TIMER_PRESETS as readonly number[]).includes(requested);
+      if (!ok) throw new Error('TIMER_DURATION_INVALID');
+      return setMax != null ? Math.min(requested, setMax) : requested;
     }
-    const preset = dto.durationSeconds;
-    if (preset != null && (TIMER_PRESETS as readonly number[]).includes(preset)) {
-      return preset;
-    }
+    if (setMax != null) return setMax;
     throw new Error('TIMER_DURATION_REQUIRED');
   }
 
-  return setDurationSeconds != null && setDurationSeconds > 0 ? setDurationSeconds : null;
+  return setMax;
 }
 
 describe('practice attempt timer start rules', () => {
@@ -28,18 +42,34 @@ describe('practice attempt timer start rules', () => {
     expect(resolveStartTimerSeconds(1800, { timed: false })).toBeNull();
   });
 
-  it('uses set duration when timed=true', () => {
+  it('uses set duration when timed=true and no custom duration', () => {
     expect(resolveStartTimerSeconds(2700, { timed: true })).toBe(2700);
   });
 
-  it('uses allowlisted preset when set is untimed and timed=true', () => {
+  it('allows custom duration when set is untimed', () => {
+    expect(resolveStartTimerSeconds(null, { timed: true, durationSeconds: 25 * 60 })).toBe(
+      25 * 60,
+    );
+  });
+
+  it('uses allowlisted preset when set is untimed', () => {
     expect(resolveStartTimerSeconds(null, { timed: true, durationSeconds: 15 * 60 })).toBe(900);
   });
 
-  it('rejects non-preset duration when set is untimed', () => {
+  it('caps custom duration at admin set max', () => {
+    expect(resolveStartTimerSeconds(1800, { timed: true, durationSeconds: 60 * 60 })).toBe(1800);
+  });
+
+  it('rejects invalid custom duration when set is untimed', () => {
     expect(() =>
-      resolveStartTimerSeconds(null, { timed: true, durationSeconds: 10 * 60 }),
-    ).toThrow('TIMER_DURATION_REQUIRED');
+      resolveStartTimerSeconds(null, { timed: true, durationSeconds: 90 }),
+    ).toThrow('TIMER_DURATION_INVALID');
+  });
+
+  it('requires a duration when timed and set is untimed', () => {
+    expect(() => resolveStartTimerSeconds(null, { timed: true })).toThrow(
+      'TIMER_DURATION_REQUIRED',
+    );
   });
 
   it('legacy omitted body follows set duration', () => {

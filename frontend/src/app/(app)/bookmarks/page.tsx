@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useMutation, useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FileText, Folder, FolderOpen, FolderPlus, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { LearnerPage } from '@/components/layout/learner-page';
 import { PageHeader } from '@/components/layout/page-header';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -155,7 +156,7 @@ export default function BookmarksPage() {
         : (folderOptions.find((c) => c.id === folder)?.name ?? 'Folder');
 
   return (
-    <div className="space-y-7">
+    <LearnerPage dense>
       <PageHeader
         eyebrow="Library"
         title="Questions & PDFs"
@@ -163,7 +164,7 @@ export default function BookmarksPage() {
       />
 
       <div
-        className="inline-flex rounded-full border border-[var(--line)] bg-[var(--bg-elevated)] p-1 shadow-[var(--shadow-sm)]"
+        className="inline-flex w-full max-w-sm rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-muted)] p-1 sm:w-auto"
         role="tablist"
         aria-label="Saved item types"
       >
@@ -183,10 +184,10 @@ export default function BookmarksPage() {
             tabIndex={tab === item.id ? 0 : -1}
             onClick={() => setTab(item.id)}
             className={cn(
-              'cursor-pointer rounded-full px-5 py-2 text-sm font-semibold transition-all duration-[var(--duration-fast)]',
+              'min-h-10 flex-1 cursor-pointer rounded-[calc(var(--radius)-2px)] px-4 text-sm font-semibold transition-colors sm:flex-none sm:px-5',
               tab === item.id
-                ? 'bg-[var(--accent)] text-[var(--accent-fg,#fff)] shadow-sm'
-                : 'text-[var(--muted-strong)] hover:text-[var(--ink)]',
+                ? 'bg-[var(--bg-elevated)] text-[var(--ink)] shadow-[var(--shadow-sm)]'
+                : 'text-[var(--muted)] hover:text-[var(--ink)]',
             )}
           >
             {item.label}
@@ -237,7 +238,7 @@ export default function BookmarksPage() {
                   <button
                     type="button"
                     aria-label={`Delete folder ${c.name}`}
-                    className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-[var(--muted)] opacity-0 transition-all hover:bg-[var(--danger-soft)] hover:text-[var(--danger)] group-hover:opacity-100 focus-visible:opacity-100"
+                    className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-[var(--muted)] transition-colors hover:bg-[var(--danger-soft)] hover:text-[var(--danger)] focus-visible:bg-[var(--danger-soft)] focus-visible:text-[var(--danger)]"
                     disabled={deleteFolder.isPending}
                     onClick={() => setDeleteTarget({ id: c.id, name: c.name })}
                   >
@@ -475,7 +476,7 @@ export default function BookmarksPage() {
           if (deleteTarget) deleteFolder.mutate(deleteTarget.id);
         }}
       />
-    </div>
+    </LearnerPage>
   );
 }
 

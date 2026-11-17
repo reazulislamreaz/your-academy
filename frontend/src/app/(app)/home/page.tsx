@@ -176,10 +176,9 @@ export default function StudyHomePage() {
         : 'Start a check to unlock progress here.';
 
   return (
-    <div className="flex w-full flex-col gap-7 pb-10 sm:gap-8">
-      {/* Orbit title block */}
-      <Reveal className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0 space-y-1.5">
+    <div className="flex w-full min-w-0 flex-col gap-5 pb-8 sm:gap-6 md:gap-7">
+      <Reveal className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+        <div className="min-w-0 space-y-1">
           <div className="flex items-center gap-2">
             <span
               className="inline-block h-[3px] w-6 shrink-0 rounded-full bg-[linear-gradient(90deg,var(--highlight),var(--accent))]"
@@ -189,22 +188,20 @@ export default function StudyHomePage() {
               Study desk
             </p>
           </div>
-          <h1 className="font-display text-[clamp(1.75rem,4vw,2.35rem)] font-bold tracking-[-0.02em] text-[var(--ink)]">
-            Dashboard
+          <h1 className="font-display text-[clamp(1.5rem,4.5vw,2.15rem)] font-bold tracking-[-0.02em] text-[var(--ink)]">
+            Hi, {displayName.split(' ')[0] || displayName}
           </h1>
-          <p className="max-w-xl text-sm leading-relaxed text-[var(--muted-strong)] sm:text-[0.9375rem]">
-            Welcome back, {displayName}. {progressLine}
-          </p>
+          <p className="max-w-xl text-sm leading-relaxed text-[var(--muted)]">{progressLine}</p>
         </div>
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-          <Link href={resumeHref} className="w-full sm:w-auto">
-            <Button className="motion-press w-full px-5 sm:w-auto">
-              {last ? 'Resume practice' : 'Start practice'}
+        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center">
+          <Link href={resumeHref} className="min-w-0">
+            <Button className="motion-press w-full px-3 sm:w-auto sm:px-5">
+              {last ? 'Resume' : 'Practice'}
               <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>
-          <Link href="/profile" className="w-full sm:w-auto">
-            <Button variant="outline" className="motion-press w-full px-5 sm:w-auto">
+          <Link href="/profile" className="min-w-0">
+            <Button variant="outline" className="motion-press w-full px-3 sm:w-auto sm:px-5">
               Account
             </Button>
           </Link>

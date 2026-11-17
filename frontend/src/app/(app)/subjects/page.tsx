@@ -2,8 +2,10 @@
 
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
+import { LearnerPage } from '@/components/layout/learner-page';
 import { PageHeader } from '@/components/layout/page-header';
 import { Alert } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Surface } from '@/components/ui/surface';
 import { apiFetch } from '@/lib/api/client';
@@ -18,7 +20,7 @@ export default function SubjectsPage() {
   });
 
   return (
-    <div className="space-y-8">
+    <LearnerPage>
       <PageHeader
         eyebrow="Prepare"
         title="Subject-wise practice"
@@ -36,42 +38,36 @@ export default function SubjectsPage() {
       ) : null}
 
       {!categories.isLoading && !categories.isError && (categories.data?.length ?? 0) > 0 ? (
-      <ContentIn className="motion-stagger grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {(categories.data ?? []).map((subject) => (
-          <Surface key={subject.id} elevated interactive className="p-4 sm:p-5">
-            <h2 className="font-display text-lg font-semibold tracking-tight text-[var(--ink)]">
-              <Link
-                href={`/subjects/${subject.slug}`}
-                className="hover:text-[var(--highlight)]"
-              >
-                {subject.name}
+        <ContentIn className="motion-stagger grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {(categories.data ?? []).map((subject) => (
+            <Surface key={subject.id} elevated interactive className="flex flex-col p-4 sm:p-5">
+              <Link href={`/subjects/${subject.slug}`} className="min-w-0 flex-1">
+                <h2 className="font-display text-lg font-semibold tracking-tight text-[var(--ink)] hover:text-[var(--highlight)]">
+                  {subject.name}
+                </h2>
+                {subject.description ? (
+                  <p className="mt-1 line-clamp-2 text-sm text-[var(--muted)]">{subject.description}</p>
+                ) : null}
+                <p className="mt-3 text-xs text-[var(--muted)]">
+                  {subject.children.length} topic{subject.children.length === 1 ? '' : 's'}
+                </p>
               </Link>
-            </h2>
-            {subject.description ? (
-              <p className="mt-1 line-clamp-2 text-sm text-[var(--muted-strong)]">{subject.description}</p>
-            ) : null}
-            <p className="mt-3 text-xs text-[var(--muted-strong)]">
-              {subject.children.length} topic{subject.children.length === 1 ? '' : 's'}
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Link
-                href={`/questions?categoryId=${subject.id}`}
-                className="text-sm font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
-              >
-                MCQs
-              </Link>
-              <span className="text-[var(--line)]">·</span>
-              <Link
-                href={`/quizzes?categoryId=${subject.id}`}
-                className="text-sm font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
-              >
-                Quizzes
-              </Link>
-            </div>
-          </Surface>
-        ))}
-      </ContentIn>
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <Link href={`/questions?categoryId=${subject.id}`}>
+                  <Button variant="secondary" size="sm" className="w-full">
+                    MCQs
+                  </Button>
+                </Link>
+                <Link href={`/quizzes?categoryId=${subject.id}`}>
+                  <Button variant="outline" size="sm" className="w-full">
+                    Quizzes
+                  </Button>
+                </Link>
+              </div>
+            </Surface>
+          ))}
+        </ContentIn>
       ) : null}
-    </div>
+    </LearnerPage>
   );
 }

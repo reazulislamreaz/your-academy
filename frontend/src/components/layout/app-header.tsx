@@ -98,48 +98,41 @@ function AppHeaderInner() {
 
   return (
     <header
-      className="ya-glass sticky top-0 z-30 flex h-[var(--header-h,4.5rem)] shrink-0 items-center gap-2 border-b border-[var(--glass-border)] bg-[var(--glass-bg)] px-3 pt-[env(safe-area-inset-top,0px)] sm:gap-4 sm:px-5 lg:px-6"
+      className="ya-glass sticky top-0 z-30 flex min-h-[var(--header-h,3.75rem)] shrink-0 items-center gap-2 border-b border-[var(--glass-border)] bg-[var(--glass-bg)] px-3 pt-[env(safe-area-inset-top,0px)] sm:min-h-[var(--header-h,4.25rem)] sm:gap-3 sm:px-5 lg:px-6"
       style={{ boxShadow: 'var(--shadow-header)' } as CSSProperties}
     >
-      <div className="flex min-w-0 shrink-0 items-center gap-2.5 sm:gap-4">
+      <div className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
         <BrandMark
-          href="/"
+          href="/home"
           markOnly
           inverse={inverseLogo}
           className="lg:hidden [&_img]:h-8"
         />
-        <BrandMark
-          href="/"
-          inverse={inverseLogo}
-          className="hidden lg:inline-flex [&_img]:h-10"
-        />
-        <TrialStatusChip className="hidden min-[480px]:inline-flex" />
+        {/* Desktop brand lives in the sidebar — keep header lean */}
+        <TrialStatusChip className="hidden min-[420px]:inline-flex" />
       </div>
 
-      <div className="ml-auto flex min-w-0 flex-1 items-center justify-end gap-1.5 sm:gap-2.5 md:gap-3">
+      <div className="ml-auto flex min-w-0 flex-1 items-center justify-end gap-1 sm:gap-2 md:gap-2.5">
         <Link
           href="/bookmarks"
-          className="hidden h-10 items-center gap-2 rounded-full border border-[var(--line-strong)] bg-[var(--bg-muted)] px-3.5 text-sm font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--bg-soft)] md:inline-flex"
+          aria-label="Saved MCQs"
+          className="hidden size-10 items-center justify-center rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-muted)] text-[var(--ink-soft)] transition-colors hover:bg-[var(--bg-soft)] hover:text-[var(--ink)] md:inline-flex lg:h-10 lg:w-auto lg:gap-2 lg:px-3.5"
         >
-          <Bookmark
-            className="size-4 shrink-0 text-[var(--ink-soft)]"
-            aria-hidden
-            strokeWidth={2}
-          />
-          <span className="hidden lg:inline">Saved MCQ</span>
+          <Bookmark className="size-4 shrink-0" aria-hidden strokeWidth={2} />
+          <span className="hidden text-sm font-semibold lg:inline">Saved</span>
         </Link>
 
         <Link
           href="/questions"
           aria-label="Search questions"
-          className="flex size-11 items-center justify-center rounded-[12px] border border-[var(--line)] bg-[var(--bg-muted)] text-[var(--ink-soft)] transition-colors hover:bg-[var(--bg-soft)] hover:text-[var(--ink)] sm:hidden"
+          className="flex size-10 items-center justify-center rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-muted)] text-[var(--ink-soft)] transition-colors hover:bg-[var(--bg-soft)] hover:text-[var(--ink)] sm:hidden"
         >
           <Search className="size-[18px]" aria-hidden strokeWidth={1.75} />
         </Link>
 
         <div
           role="search"
-          className="hidden min-w-0 sm:block sm:w-[11.5rem] md:w-[13.5rem] lg:w-[15rem]"
+          className="hidden min-w-0 sm:block sm:max-w-[12rem] sm:flex-1 md:max-w-[14rem] lg:max-w-[16rem]"
         >
           <label htmlFor="app-header-search" className="sr-only">
             Search questions
@@ -149,7 +142,7 @@ function AppHeaderInner() {
             inputRef={searchRef}
             value={query}
             onChange={setQuery}
-            placeholder="Search questions…"
+            placeholder="Search…"
             aria-label="Search questions"
             variant="header"
           />
@@ -162,7 +155,7 @@ function AppHeaderInner() {
           <MessagesMenu />
         </div>
         <div className="hidden sm:block">
-          <LearnerThemeToggle className="rounded-[12px] border-[var(--line)] bg-[var(--bg-muted)] shadow-none" />
+          <LearnerThemeToggle className="rounded-[var(--radius)] border-[var(--line)] bg-[var(--bg-muted)] shadow-none" />
         </div>
         <div className="hidden sm:block">
           <UserMenu variant="header" />
@@ -178,10 +171,10 @@ export function AppHeader() {
     <Suspense
       fallback={
         <header
-          className="ya-glass sticky top-0 z-30 flex h-[var(--header-h,4.5rem)] shrink-0 items-center border-b border-[var(--glass-border)] bg-[var(--glass-bg)] px-3"
+          className="ya-glass sticky top-0 z-30 flex min-h-[var(--header-h,3.75rem)] shrink-0 items-center border-b border-[var(--glass-border)] bg-[var(--glass-bg)] px-3 pt-[env(safe-area-inset-top,0px)]"
           style={{ boxShadow: 'var(--shadow-header)' } as CSSProperties}
         >
-          <BrandMark href="/" markOnly className="[&_img]:h-8" />
+          <BrandMark href="/home" markOnly className="[&_img]:h-8" />
         </header>
       }
     >

@@ -78,12 +78,14 @@ export function CategoryFormDialog({
           ? 'Subcategories belong to one parent category.'
           : mode === 'create-root'
             ? 'Categories group questions and collections.'
-            : 'Update the display name, description, or status.'
+            : isChild
+              ? 'Update name, parent category, description, or status.'
+              : 'Update the display name, description, or status.'
       }
       confirmLabel={mode === 'edit' ? 'Save changes' : 'Create'}
       pending={pending}
       error={error}
-      disableSubmit={!name.trim() || (mode === 'create-child' && !parentId)}
+      disableSubmit={!name.trim() || (isChild && !parentId)}
       onClose={onClose}
       onSubmit={() =>
         onSubmit({
@@ -94,23 +96,24 @@ export function CategoryFormDialog({
         })
       }
     >
-      {mode === 'create-child' || (mode === 'edit' && initial?.parentId) ? (
+      {isChild ? (
         <Field>
           <Label htmlFor="cat-parent">Parent category</Label>
           <Select
             id="cat-parent"
             value={parentId}
             onChange={(e) => setParentId(e.target.value)}
-            disabled={mode === 'edit'}
             required
           >
             <option value="">Select category…</option>
-            {roots.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.name}
-                {!r.isActive ? ' (inactive)' : ''}
-              </option>
-            ))}
+            {roots
+              .filter((r) => r.id !== initial?.id)
+              .map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name}
+                  {!r.isActive ? ' (inactive)' : ''}
+                </option>
+              ))}
           </Select>
         </Field>
       ) : null}

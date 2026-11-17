@@ -94,6 +94,8 @@ export function useExamAttempt(set: PracticeSetDetail, slug: string) {
         method: 'POST',
         body: JSON.stringify({
           timed: opts.timed,
+          // Always send chosen duration for timed attempts so the backend can
+          // persist/enforce it (capped by admin max when configured).
           ...(opts.timed && opts.durationSeconds != null
             ? { durationSeconds: opts.durationSeconds }
             : {}),

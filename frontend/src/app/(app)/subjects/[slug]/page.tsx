@@ -3,9 +3,11 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
+import { LearnerPage, LearnerSection } from '@/components/layout/learner-page';
 import { PageHeader } from '@/components/layout/page-header';
 import { PracticeSetList } from '@/components/practice/practice-set-list';
 import { Alert } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Surface } from '@/components/ui/surface';
 import { apiFetch } from '@/lib/api/client';
@@ -46,70 +48,68 @@ export default function SubjectDetailPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <LearnerPage dense>
       <PageHeader
         eyebrow="Subject"
         title={subject.name}
         description={subject.description ?? 'Topic-wise MCQs and subject quizzes.'}
+        actions={
+          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
+            <Link href={`/questions?categoryId=${subject.id}`} className="min-w-0">
+              <Button variant="secondary" size="sm" className="w-full sm:w-auto">
+                All MCQs
+              </Button>
+            </Link>
+            <Link href={`/quizzes?categoryId=${subject.id}`} className="min-w-0">
+              <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                Quizzes
+              </Button>
+            </Link>
+          </div>
+        }
       />
 
-      <section className="space-y-3">
-        <h2 className="font-display text-base font-bold text-[var(--ink)]">Topics</h2>
+      <LearnerSection title="Topics">
         {subject.children.length === 0 ? (
           <EmptyState
             title="No topics yet"
             description="Topic-level practice appears once subcategories are published for this subject."
-            action={
-              <div className="flex flex-wrap gap-3 text-sm">
-                <Link
-                  href={`/questions?categoryId=${subject.id}`}
-                  className="font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
-                >
-                  Practice subject MCQs
-                </Link>
-                <Link
-                  href={`/quizzes?categoryId=${subject.id}`}
-                  className="font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
-                >
-                  Subject quizzes
-                </Link>
-              </div>
-            }
           />
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
             {subject.children.map((topic) => (
-              <Surface key={topic.id} elevated interactive className="p-4">
+              <Surface key={topic.id} elevated className="flex flex-col gap-3 p-4">
                 <h3 className="font-medium text-[var(--ink)]">{topic.name}</h3>
-                <div className="mt-3 flex flex-wrap gap-3 text-sm">
+                <div className="mt-auto grid grid-cols-2 gap-2">
                   <Link
                     href={`/questions?categoryId=${subject.id}&subcategoryId=${topic.id}`}
-                    className="font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
                   >
-                    Practice MCQs
+                    <Button variant="secondary" size="sm" className="w-full">
+                      MCQs
+                    </Button>
                   </Link>
                   <Link
                     href={`/quizzes?categoryId=${subject.id}&subcategoryId=${topic.id}`}
-                    className="font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
                   >
-                    Topic quizzes
+                    <Button variant="outline" size="sm" className="w-full">
+                      Quizzes
+                    </Button>
                   </Link>
                 </div>
               </Surface>
             ))}
           </div>
         )}
-      </section>
+      </LearnerSection>
 
-      <section className="space-y-3">
-        <h2 className="font-display text-base font-bold text-[var(--ink)]">Subject quizzes</h2>
+      <LearnerSection title="Subject quizzes">
         <PracticeSetList
           kind="SUBJECT_QUIZ"
           categoryId={subject.id}
           emptyTitle="No subject quizzes"
           emptyDescription="Admin-published subject quizzes for this subject will show here."
         />
-      </section>
-    </div>
+      </LearnerSection>
+    </LearnerPage>
   );
 }

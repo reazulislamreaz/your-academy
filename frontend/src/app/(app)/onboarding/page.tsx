@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { LearnerPage } from '@/components/layout/learner-page';
 import { PageHeader } from '@/components/layout/page-header';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -84,7 +85,7 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8">
+    <LearnerPage className="mx-auto max-w-2xl">
       <PageHeader
         eyebrow="Getting started"
         title={step === 1 ? 'What do you want to practice?' : 'How answers work'}
@@ -205,6 +206,6 @@ export default function OnboardingPage() {
           </div>
         </Surface>
       )}
-    </div>
+    </LearnerPage>
   );
 }

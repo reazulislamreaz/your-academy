@@ -5,6 +5,7 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
 import { ListCardSkeleton, LoadError } from '@/components/loading';
+import { GoForExamCta } from '@/components/marketing/go-for-exam-cta';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { SearchField } from '@/components/ui/search-field';
@@ -61,6 +62,8 @@ export function PublicQuestionSetView({ setId, className }: Props) {
           All question sets
         </Link>
       </div>
+
+      <GoForExamCta compact />
 
       {setQry.isLoading ? (
         <div className="space-y-3 rounded-[1rem] border border-[var(--line)] bg-[var(--bg-elevated)] px-5 py-5 shadow-[var(--shadow-sm)]">

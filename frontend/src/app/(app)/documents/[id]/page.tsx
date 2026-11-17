@@ -82,38 +82,40 @@ export default function DocumentDetailPage() {
   }
 
   return (
-    <div className="flex h-[calc(100dvh-var(--header-h,4.5rem)-1.5rem)] min-h-0 flex-col overflow-hidden bg-[var(--bg)] sm:h-[calc(100dvh-var(--header-h,4.5rem)-3.5rem)]">
-      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-[var(--line)] bg-[var(--bg-elevated)] px-3 py-2 sm:gap-3 sm:px-4 lg:rounded-t-[var(--radius-lg)]">
+    <div className="flex h-[calc(100dvh-var(--header-h,3.75rem))] min-h-0 w-full flex-col overflow-hidden bg-[var(--bg)]">
+      <div className="flex shrink-0 items-center gap-2 border-b border-[var(--line)] bg-[var(--bg-elevated)] px-3 py-2 sm:gap-3 sm:px-4">
         <Link
           href="/documents"
-          className="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-[var(--radius)] px-2 text-sm font-medium text-[var(--muted-strong)] hover:bg-[var(--bg-muted)] hover:text-[var(--highlight)]"
+          className="inline-flex size-10 shrink-0 items-center justify-center rounded-[var(--radius)] text-[var(--muted-strong)] hover:bg-[var(--bg-muted)] hover:text-[var(--ink)]"
+          aria-label="Back to library"
         >
           <ArrowLeft className="size-4" aria-hidden />
-          Library
         </Link>
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="truncate font-display text-sm font-semibold tracking-tight sm:text-base">
-              {data.title}
-            </h1>
+          <h1 className="truncate font-display text-sm font-semibold tracking-tight sm:text-base">
+            {data.title}
+          </h1>
+          <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
             <Badge variant="outline">{data.visibility}</Badge>
             {data.category ? <Badge>{data.category.name}</Badge> : null}
             {data.bookmarked ? <Badge variant="bookmark">Saved</Badge> : null}
           </div>
         </div>
-        <SaveDocumentButton documentId={data.id} bookmarked={data.bookmarked} />
-        {isPublic ? (
-          <Link
-            href={`/news/d/${data.id}`}
-            className="hidden text-xs font-semibold text-[var(--muted-strong)] hover:text-[var(--highlight)] sm:inline"
-          >
-            Open on কলাম
-          </Link>
-        ) : null}
+        <div className="flex shrink-0 items-center gap-2">
+          <SaveDocumentButton documentId={data.id} bookmarked={data.bookmarked} />
+          {isPublic ? (
+            <Link
+              href={`/news/d/${data.id}`}
+              className="hidden text-xs font-semibold text-[var(--muted-strong)] hover:text-[var(--highlight)] sm:inline"
+            >
+              Open on কলাম
+            </Link>
+          ) : null}
+        </div>
       </div>
 
       <PdfViewer
-        className="min-h-0 flex-1 rounded-none border-0 shadow-none lg:rounded-b-[var(--radius-lg)] lg:border lg:border-t-0 lg:shadow-[var(--shadow-sm)]"
+        className="min-h-0 flex-1 rounded-none border-0 shadow-none"
         fileUrl={fileUrl}
         title={data.title}
       />

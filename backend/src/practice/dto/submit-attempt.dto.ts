@@ -41,20 +41,28 @@ export class SaveProgressDto {
   answers!: AttemptAnswerDto[];
 }
 
-const TIMER_PRESETS = [15 * 60, 30 * 60, 45 * 60, 60 * 60] as const;
+/** Quick-pick durations shown in the learner prestart UI. */
+const TIMER_PRESETS = [15 * 60, 30 * 60, 45 * 60, 60 * 60, 90 * 60, 120 * 60] as const;
 
-/** Learner start options — timed uses set duration or allowlisted presets when set is untimed. */
+/** Absolute bounds for custom learner timers (5–180 minutes, whole minutes). */
+export const TIMER_CUSTOM_MIN_SECONDS = 5 * 60;
+export const TIMER_CUSTOM_MAX_SECONDS = 180 * 60;
+
+/** Learner start options — timed uses default set duration or a custom/preset duration. */
 export class StartAttemptDto {
   @IsOptional()
   @IsBoolean()
   timed?: boolean;
 
-  /** Seconds; only used when timed and the practice set has no admin duration. */
+  /**
+   * Whole-minute duration in seconds.
+   * When provided with timed=true, overrides the default (capped by admin set duration when set).
+   */
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
-  @Min(60)
-  @Max(60 * 60)
+  @Min(TIMER_CUSTOM_MIN_SECONDS)
+  @Max(TIMER_CUSTOM_MAX_SECONDS)
   durationSeconds?: number;
 }
 
