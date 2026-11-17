@@ -16,12 +16,12 @@ export function HomepageAccessFaq({ content }: Props) {
       aria-labelledby="access-heading"
       className="scroll-mt-24 bg-[var(--bg-desk)] py-[var(--space-section)]"
     >
-      <Reveal className="marketing-container grid gap-10 lg:grid-cols-2 lg:gap-14">
-        <div className="space-y-5">
+      <Reveal className="marketing-container grid gap-8 sm:gap-10 lg:grid-cols-2 lg:gap-14">
+        <div className="space-y-4 sm:space-y-5">
           <span className="mb-1 block h-[3px] w-7 rounded-full bg-[var(--highlight)]" aria-hidden />
           <h2
             id="access-heading"
-            className="font-display text-2xl font-bold tracking-tight text-[var(--ink)] sm:text-[2rem]"
+            className="font-display text-[1.375rem] font-bold tracking-tight text-[var(--ink)] sm:text-2xl md:text-[2rem]"
           >
             {data.heading}
           </h2>
@@ -47,8 +47,8 @@ export function HomepageAccessFaq({ content }: Props) {
             ))}
           </ul>
           {data.cta.visible ? (
-            <Link href={data.cta.href} className="inline-flex">
-              <Button className="rounded-full px-6">
+            <Link href={data.cta.href} className="inline-flex w-full sm:w-auto">
+              <Button className="min-h-11 w-full rounded-full px-6 sm:w-auto">
                 {data.cta.label}
                 <ArrowRight className="h-4 w-4" aria-hidden />
               </Button>
@@ -57,17 +57,17 @@ export function HomepageAccessFaq({ content }: Props) {
         </div>
 
         <div id="faq" className="scroll-mt-24 space-y-3">
-          <h3 className="font-display text-xl font-bold tracking-tight text-[var(--ink)]">
+          <h3 className="font-display text-lg font-bold tracking-tight text-[var(--ink)] sm:text-xl">
             {data.faqHeading}
           </h3>
           <div className="space-y-2">
             {data.faqs.map((item) => (
               <details
                 key={item.id}
-                className="group rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] px-4 py-3 open:shadow-[var(--shadow-sm)]"
+                className="group rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] px-3.5 py-3 open:shadow-[var(--shadow-sm)] sm:px-4"
               >
-                <summary className="cursor-pointer list-none font-display text-sm font-semibold text-[var(--ink)] marker:content-none [&::-webkit-details-marker]:hidden">
-                  <span className="flex items-start justify-between gap-3">
+                <summary className="min-h-11 cursor-pointer list-none touch-manipulation font-display text-sm font-semibold text-[var(--ink)] marker:content-none [&::-webkit-details-marker]:hidden">
+                  <span className="flex items-start justify-between gap-3 py-1">
                     {item.question}
                     <span
                       aria-hidden

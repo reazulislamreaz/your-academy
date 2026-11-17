@@ -175,20 +175,21 @@ function MarketingHeaderInner() {
           {me.data ? <UserMenu variant="header" /> : <UserMenu loginOnly />}
         </div>
 
-        <div className="ml-auto flex shrink-0 items-center gap-1.5 md:hidden">
+        <div className="ml-auto flex shrink-0 items-center gap-1 md:hidden">
           {me.data ? (
             <UserMenu variant="header" />
           ) : (
-            <Link href="/login">
-              <Button size="sm" className="cursor-pointer rounded-full px-3.5">
+            <Link href="/login" className="shrink-0">
+              <Button size="sm" variant="ghost" className="cursor-pointer rounded-full px-2.5 sm:px-3.5">
                 <LogIn className="size-4" aria-hidden />
-                Login
+                <span className="hidden min-[380px]:inline">Login</span>
               </Button>
             </Link>
           )}
           <MobileNav
             className="shrink-0"
             breakpointClassName=""
+            title="Menu"
             items={marketingNavItems.map((item) => ({
               id: item.id,
               href: item.href,
@@ -212,13 +213,28 @@ function MarketingHeaderInner() {
               </div>
             }
             trailing={
-              !me.data ? (
-                <Link href="/preli-question-bank">
-                  <Button variant="outline" className="w-full rounded-full">
-                    Browse question bank
-                  </Button>
-                </Link>
-              ) : null
+              me.data ? (
+                dashboardHref ? (
+                  <DashboardNavButton href={dashboardHref} fullWidth />
+                ) : null
+              ) : (
+                <>
+                  <Link href="/login" className="block w-full">
+                    <Button variant="outline" className="w-full rounded-full">
+                      <LogIn className="size-4" aria-hidden />
+                      Sign in
+                    </Button>
+                  </Link>
+                  <Link href="/register" className="block w-full">
+                    <Button className="w-full rounded-full">Start free trial</Button>
+                  </Link>
+                  <Link href="/preli-question-bank" className="block w-full">
+                    <Button variant="ghost" className="w-full rounded-full">
+                      Browse question bank
+                    </Button>
+                  </Link>
+                </>
+              )
             }
           />
         </div>
@@ -226,6 +242,7 @@ function MarketingHeaderInner() {
         <MobileNav
           className="hidden shrink-0 md:block xl:hidden"
           breakpointClassName=""
+          title="Menu"
           items={marketingNavItems.map((item) => ({
             id: item.id,
             href: item.href,
@@ -247,6 +264,22 @@ function MarketingHeaderInner() {
                 variant="header"
               />
             </div>
+          }
+          trailing={
+            me.data && dashboardHref ? (
+              <DashboardNavButton href={dashboardHref} fullWidth />
+            ) : !me.data ? (
+              <>
+                <Link href="/login" className="block w-full">
+                  <Button variant="outline" className="w-full rounded-full">
+                    Sign in
+                  </Button>
+                </Link>
+                <Link href="/register" className="block w-full">
+                  <Button className="w-full rounded-full">Start free trial</Button>
+                </Link>
+              </>
+            ) : null
           }
         />
       </div>

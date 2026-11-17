@@ -2,13 +2,18 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bell, Bookmark, Menu, MessageCircle, X } from 'lucide-react';
+import { Bell, Bookmark, MessageCircle } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { LearnerThemeToggle } from '@/components/theme/learner-theme-toggle';
 import { useSupportChat } from '@/features/support/support-chat-provider';
-import { MobileDrawerBackdrop, MobileDrawerPanel } from './mobile-drawer';
+import { useBodyScrollLock } from '@/lib/hooks/use-body-scroll-lock';
+import {
+  HamburgerIcon,
+  MobileDrawerBackdrop,
+  MobileDrawerPanel,
+} from './mobile-drawer';
 import { UserMenu } from './user-menu';
 import { learnerLinkActive, learnerNavGroups } from './learner-nav';
 import { cn } from '@/lib/utils';
@@ -30,6 +35,8 @@ export function LearnerMobileNav() {
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
+
+  useBodyScrollLock(open);
 
   useEffect(() => {
     if (!open) return;
@@ -60,17 +67,9 @@ export function LearnerMobileNav() {
       }
     };
 
-    const header = document.querySelector('header');
-    const height = header?.getBoundingClientRect().height;
-    if (height) {
-      document.documentElement.style.setProperty('--header-h', `${Math.round(height)}px`);
-    }
     document.addEventListener('keydown', onKey);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
     return () => {
       document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prevOverflow;
       triggerRef.current?.focus();
     };
   }, [open]);
@@ -79,15 +78,18 @@ export function LearnerMobileNav() {
     open && mounted
       ? createPortal(
           <>
-            <MobileDrawerBackdrop onClose={() => setOpen(false)} />
+            <MobileDrawerBackdrop onClose={() => setOpen(false)} className="lg:hidden" />
             <MobileDrawerPanel
               id={panelId}
               label="Study navigation"
               panelRef={panelRef}
+              title="Study desk"
+              side="left"
+              onClose={() => setOpen(false)}
               className="lg:hidden"
             >
-              <div className="mb-4 grid grid-cols-2 gap-2 rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-muted)] p-3 sm:flex sm:flex-wrap">
-                <LearnerThemeToggle showLabel className="col-span-2 bg-[var(--bg-elevated)] sm:col-auto" />
+              <div className="mb-4 grid grid-cols-2 gap-2 rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-muted)] p-3">
+                <LearnerThemeToggle showLabel className="col-span-2 bg-[var(--bg-elevated)]" />
                 <Link
                   href="/bookmarks"
                   className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] px-3 text-sm font-semibold text-[var(--ink)]"
@@ -106,7 +108,7 @@ export function LearnerMobileNav() {
                 </Link>
                 <button
                   type="button"
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] px-3 text-sm font-semibold text-[var(--ink-soft)]"
+                  className="col-span-2 inline-flex h-11 items-center justify-center gap-2 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] px-3 text-sm font-semibold text-[var(--ink-soft)]"
                   aria-label="Open messages"
                   onClick={() => {
                     setOpen(false);
@@ -134,8 +136,9 @@ export function LearnerMobileNav() {
                             href={item.href}
                             aria-current={active ? 'page' : undefined}
                             data-active={active ? 'true' : 'false'}
+                            onClick={() => setOpen(false)}
                             className={cn(
-                              'learner-nav-link flex min-h-11 items-center gap-2.5 rounded-[var(--radius)] px-3 py-2.5 text-base font-medium',
+                              'learner-nav-link flex min-h-12 items-center gap-2.5 rounded-[var(--radius)] px-3 py-2.5 text-base font-medium',
                               active
                                 ? 'bg-[var(--bg-muted)] font-semibold text-[var(--ink)]'
                                 : 'text-[var(--muted)] hover:bg-[var(--brand-wash)] hover:text-[var(--ink-soft)]',
@@ -173,13 +176,13 @@ export function LearnerMobileNav() {
         type="button"
         variant="ghost"
         size="icon"
-        className="size-10"
+        className={cn('size-11 rounded-full', open && 'bg-[var(--bg-muted)]')}
         aria-expanded={open}
         aria-controls={panelId}
         aria-label={open ? 'Close menu' : 'Open menu'}
         onClick={() => setOpen((v) => !v)}
       >
-        {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        <HamburgerIcon open={open} />
       </Button>
       {panel}
     </div>

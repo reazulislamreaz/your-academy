@@ -94,8 +94,8 @@
   --radius-xl: 24px;
 
   /* Spacing rhythm */
-  --space-section: clamp(3rem, 6vw, 5.5rem);
-  --space-page: clamp(1.25rem, 3vw, 2rem);
+  --space-section: clamp(2.25rem, 5.5vw, 5.5rem);
+  --space-page: clamp(1rem, 3vw, 2rem);
 
   /* Shell geometry */
   --app-sidebar-width: 16.25rem;
@@ -198,7 +198,8 @@ body {
   width: 100%;
   max-width: var(--marketing-content-max);
   margin-inline: auto;
-  padding-inline: 1rem;
+  padding-inline: max(0.875rem, env(safe-area-inset-left, 0px))
+    max(0.875rem, env(safe-area-inset-right, 0px));
   min-width: 0;
 }
 
@@ -1721,6 +1722,28 @@ input:disabled {
   }
 }
 
+@keyframes ya-drawer-slide-in {
+  from {
+    opacity: 0.85;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes ya-drawer-slide-in-left {
+  from {
+    opacity: 0.85;
+    transform: translateX(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 @keyframes ya-scale-in {
   from {
     opacity: 0;
@@ -1841,6 +1864,18 @@ input:disabled {
 
   .motion-drawer-in {
     animation: ya-drawer-in var(--duration) var(--ease-out) both;
+  }
+
+  .motion-drawer-slide-in {
+    animation: ya-drawer-slide-in 240ms var(--ease-out) both;
+  }
+
+  .motion-drawer-slide-in-left {
+    animation: ya-drawer-slide-in-left 240ms var(--ease-out) both;
+  }
+
+  .motion-fade-in {
+    animation: ya-fade-in 180ms var(--ease-out) both;
   }
 
   .motion-scale-in {
@@ -1983,6 +2018,8 @@ input:disabled {
   .motion-page,
   .motion-pop,
   .motion-drawer-in,
+  .motion-drawer-slide-in,
+  .motion-drawer-slide-in-left,
   .motion-scale-in,
   .motion-content-in,
   .motion-press,

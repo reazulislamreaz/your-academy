@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Surface } from '@/components/ui/surface';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -9,6 +10,73 @@ import {
   SkStatus,
   StatCardSkeletonExact,
 } from '@/components/skeletons/primitives';
+import { cn } from '@/lib/utils';
+
+/**
+ * Full admin chrome while `AdminGate` resolves session/role.
+ * Mirrors sidebar + main so the first paint matches the real console
+ * instead of a tiny floating skeleton on a blank page.
+ */
+export function AdminChromeSkeleton({
+  label = 'Opening admin console…',
+  children,
+  className,
+}: {
+  label?: string;
+  children?: ReactNode;
+  className?: string;
+}) {
+  return (
+    <SkStatus
+      label={label}
+      className={cn('flex min-h-screen w-full min-w-0 flex-1 overflow-x-clip', className)}
+    >
+      <aside
+        className="admin-sidebar hidden h-screen w-[var(--app-sidebar-width,16.25rem)] shrink-0 flex-col lg:flex"
+        aria-hidden
+      >
+        <div className="flex h-[var(--header-h,4.5rem)] shrink-0 items-center gap-3 border-b border-white/10 px-4">
+          <Skeleton className="size-9 rounded-lg bg-white/15" />
+          <div className="min-w-0 flex-1 space-y-2">
+            <Skeleton className="h-3 w-28 bg-white/20" />
+            <Skeleton className="h-2.5 w-16 bg-white/10" />
+          </div>
+        </div>
+        <div className="flex-1 space-y-6 overflow-hidden px-3 py-5">
+          {Array.from({ length: 3 }).map((_, group) => (
+            <div key={group} className="space-y-2">
+              <Skeleton className="mx-2 h-2.5 w-16 bg-white/15" />
+              {Array.from({ length: group === 0 ? 5 : 3 }).map((_, i) => (
+                <Skeleton
+                  key={i}
+                  className="h-9 w-full rounded-[var(--radius-sm)] bg-white/10"
+                />
+              ))}
+            </div>
+          ))}
+        </div>
+        <div className="space-y-2 border-t border-white/10 p-3">
+          <Skeleton className="h-10 w-full rounded-[var(--radius)] bg-white/10" />
+          <Skeleton className="h-9 w-full rounded-[var(--radius)] bg-white/10" />
+        </div>
+      </aside>
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div
+          className="flex h-14 items-center gap-3 border-b border-[var(--line)] px-3 lg:hidden"
+          aria-hidden
+        >
+          <Skeleton className="size-9 rounded-md" />
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="ml-auto size-9 rounded-full" />
+        </div>
+        <div className="mx-auto w-full max-w-7xl flex-1 px-3 py-4 sm:px-6 sm:py-8 lg:px-8">
+          {children ?? <AdminDashboardPageSkeleton />}
+        </div>
+      </div>
+    </SkStatus>
+  );
+}
 
 /** `/admin/dashboard` */
 export function AdminDashboardPageSkeleton() {

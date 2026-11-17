@@ -2,21 +2,16 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, type ReactNode } from 'react';
-import { PageHeaderSkeleton, SkStatus } from '@/components/skeletons/primitives';
-import { Surface } from '@/components/ui/surface';
-import { Skeleton } from '@/components/ui/skeleton';
+import { HomePageSkeleton } from '@/components/skeletons';
 import { isUnauthorized, useMe } from '@/features/auth/use-auth';
 
-function LearnerGateSkeleton() {
+/** Learner desk-shaped shell while access is resolved. */
+function LearnerGateSkeleton({ label }: { label: string }) {
   return (
-    <SkStatus label="Checking access…" className="space-y-6 p-6">
-      <PageHeaderSkeleton />
-      <Surface className="space-y-3 p-5">
-        <Skeleton className="h-4 w-48" />
-        <Skeleton className="h-4 w-full max-w-xl" />
-        <Skeleton className="h-4 w-2/3 max-w-md" />
-      </Surface>
-    </SkStatus>
+    <div className="mx-auto w-full max-w-7xl flex-1 px-3 py-4 sm:px-6 sm:py-8">
+      <HomePageSkeleton />
+      <span className="sr-only">{label}</span>
+    </div>
   );
 }
 
@@ -40,8 +35,16 @@ export function LearnerGate({ children }: { children: ReactNode }) {
     }
   }, [me.isLoading, me.error, me.data, router]);
 
-  if (me.isLoading || isUnauthorized(me.error) || !me.data || me.data.role === 'ADMIN') {
-    return <LearnerGateSkeleton />;
+  if (me.isLoading) {
+    return <LearnerGateSkeleton label="Opening your study desk…" />;
+  }
+
+  if (isUnauthorized(me.error) || !me.data) {
+    return <LearnerGateSkeleton label="Redirecting to sign in…" />;
+  }
+
+  if (me.data.role === 'ADMIN') {
+    return <LearnerGateSkeleton label="Redirecting to admin…" />;
   }
 
   return <>{children}</>;

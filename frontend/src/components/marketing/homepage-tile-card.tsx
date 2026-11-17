@@ -24,7 +24,7 @@ export function HomepageTileCard({
     <Link
       href={href}
       className={cn(
-        'motion-hover-lift ya-panel-shine relative group flex h-full min-h-[8.5rem] flex-col items-center justify-center gap-2.5 overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] px-2 py-5 text-center shadow-[var(--shadow-sm)] transition-[border-color,box-shadow,transform] duration-[var(--duration-fast)] hover:border-[var(--highlight)]/50',
+        'motion-hover-lift ya-panel-shine relative group flex h-full min-h-[7.25rem] touch-manipulation flex-col items-center justify-center gap-2 overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] px-1.5 py-4 text-center shadow-[var(--shadow-sm)] transition-[border-color,box-shadow,transform] duration-[var(--duration-fast)] hover:border-[var(--highlight)]/50 sm:min-h-[8.5rem] sm:gap-2.5 sm:px-2 sm:py-5',
         className,
       )}
     >
@@ -66,7 +66,7 @@ export function HomepageOthersTile({
     <Link
       href={href}
       className={cn(
-        'motion-hover-lift ya-panel-shine relative group flex h-full min-h-[8.5rem] flex-col items-center justify-center gap-2.5 overflow-hidden rounded-[var(--radius-lg)] border border-dashed border-[var(--highlight)]/45 bg-[var(--highlight-soft)]/40 px-2 py-5 text-center shadow-[var(--shadow-sm)] transition-[border-color,box-shadow,transform,background-color] duration-[var(--duration-fast)] hover:border-[var(--highlight)] hover:bg-[var(--highlight-soft)]/70',
+        'motion-hover-lift ya-panel-shine relative group flex h-full min-h-[7.25rem] touch-manipulation flex-col items-center justify-center gap-2 overflow-hidden rounded-[var(--radius-lg)] border border-dashed border-[var(--highlight)]/45 bg-[var(--highlight-soft)]/40 px-1.5 py-4 text-center shadow-[var(--shadow-sm)] transition-[border-color,box-shadow,transform,background-color] duration-[var(--duration-fast)] hover:border-[var(--highlight)] hover:bg-[var(--highlight-soft)]/70 sm:min-h-[8.5rem] sm:gap-2.5 sm:px-2 sm:py-5',
         className,
       )}
     >

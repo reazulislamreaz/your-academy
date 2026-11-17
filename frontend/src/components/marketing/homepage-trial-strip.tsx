@@ -36,7 +36,7 @@ export function HomepageTrialStrip({ content }: Props) {
         </div>
         {data.cta.visible ? (
           <Link href={data.cta.href} className="w-full shrink-0 sm:w-auto">
-            <Button className="w-full rounded-full px-6 sm:w-auto">
+            <Button className="min-h-11 w-full rounded-full px-6 sm:w-auto">
               {data.cta.label}
               <ArrowRight className="h-4 w-4" aria-hidden />
             </Button>

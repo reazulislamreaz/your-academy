@@ -23,7 +23,7 @@ export function MarketingShell({ children }: { children: ReactNode }) {
   return (
     <div
       className={cn(
-        'flex min-h-dvh flex-col',
+        'flex min-h-dvh flex-col overflow-x-clip',
         reader && 'h-dvh max-h-dvh overflow-hidden',
       )}
     >

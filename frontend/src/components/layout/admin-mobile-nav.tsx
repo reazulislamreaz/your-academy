@@ -2,14 +2,18 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X } from 'lucide-react';
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useBodyScrollLock } from '@/lib/hooks/use-body-scroll-lock';
 import { adminNavGroups, adminNavItems, isAdminNavActive } from './admin-nav';
 import { BrandMark } from './brand-mark';
-import { MobileDrawerBackdrop, MobileDrawerPanel } from './mobile-drawer';
+import {
+  HamburgerIcon,
+  MobileDrawerBackdrop,
+  MobileDrawerPanel,
+} from './mobile-drawer';
 import { UserMenu } from './user-menu';
 
 /** Compact mobile admin chrome: logo + title + drawer. */
@@ -31,6 +35,8 @@ export function AdminMobileNav({ themeToggle }: { themeToggle?: ReactNode }) {
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
+
+  useBodyScrollLock(open);
 
   useEffect(() => {
     if (!open) return;
@@ -60,13 +66,9 @@ export function AdminMobileNav({ themeToggle }: { themeToggle?: ReactNode }) {
       }
     };
 
-    document.documentElement.style.setProperty('--header-h', '56px');
     document.addEventListener('keydown', onKey);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
     return () => {
       document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prevOverflow;
       triggerRef.current?.focus();
     };
   }, [open]);
@@ -75,12 +77,14 @@ export function AdminMobileNav({ themeToggle }: { themeToggle?: ReactNode }) {
     open && mounted
       ? createPortal(
           <>
-            <MobileDrawerBackdrop onClose={() => setOpen(false)} />
+            <MobileDrawerBackdrop onClose={() => setOpen(false)} className="lg:hidden" />
             <MobileDrawerPanel
               id={panelId}
               label="Admin navigation"
               panelRef={panelRef}
-              topVar="var(--header-h, 56px)"
+              title="Admin"
+              side="left"
+              onClose={() => setOpen(false)}
               className="lg:hidden"
             >
               <nav className="flex flex-col gap-5" aria-label="Admin sections">
@@ -98,8 +102,9 @@ export function AdminMobileNav({ themeToggle }: { themeToggle?: ReactNode }) {
                             key={item.href}
                             href={item.href}
                             aria-current={active ? 'page' : undefined}
+                            onClick={() => setOpen(false)}
                             className={cn(
-                              'flex min-h-11 items-center gap-2.5 rounded-[var(--radius)] px-3 py-2.5 text-base font-medium',
+                              'flex min-h-12 items-center gap-2.5 rounded-[var(--radius)] px-3 py-2.5 text-base font-medium',
                               active
                                 ? 'bg-[var(--highlight-soft)] font-semibold text-[var(--highlight)]'
                                 : 'text-[var(--ink-soft)] hover:bg-[var(--brand-wash)] hover:text-[var(--ink)]',
@@ -149,13 +154,13 @@ export function AdminMobileNav({ themeToggle }: { themeToggle?: ReactNode }) {
           type="button"
           variant="ghost"
           size="icon"
-          className="size-11 shrink-0"
+          className={cn('size-11 shrink-0 rounded-full', open && 'bg-[var(--bg-muted)]')}
           aria-expanded={open}
           aria-controls={panelId}
           aria-label={open ? 'Close menu' : 'Open menu'}
           onClick={() => setOpen((v) => !v)}
         >
-          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          <HamburgerIcon open={open} />
         </Button>
       </div>
       {panel}

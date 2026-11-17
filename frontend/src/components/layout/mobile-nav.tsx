@@ -2,18 +2,39 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X } from 'lucide-react';
+import {
+  BookOpen,
+  Briefcase,
+  Home,
+  Newspaper,
+  PenLine,
+  type LucideIcon,
+} from 'lucide-react';
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { MobileDrawerBackdrop, MobileDrawerPanel } from './mobile-drawer';
+import { useBodyScrollLock } from '@/lib/hooks/use-body-scroll-lock';
+import {
+  HamburgerIcon,
+  MobileDrawerBackdrop,
+  MobileDrawerPanel,
+} from './mobile-drawer';
 
 export type NavItem = {
   href: string;
   label: string;
   match?: 'exact' | 'prefix';
   id?: string;
+  icon?: LucideIcon;
+};
+
+const FALLBACK_ICONS: Record<string, LucideIcon> = {
+  home: Home,
+  preli: BookOpen,
+  written: PenLine,
+  news: Newspaper,
+  jobs: Briefcase,
 };
 
 function isActive(pathname: string, item: NavItem) {
@@ -21,6 +42,12 @@ function isActive(pathname: string, item: NavItem) {
   if (item.match === 'exact') return pathname === href;
   if (href === '/') return pathname === '/';
   return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function resolveIcon(item: NavItem): LucideIcon {
+  if (item.icon) return item.icon;
+  if (item.id && FALLBACK_ICONS[item.id]) return FALLBACK_ICONS[item.id]!;
+  return BookOpen;
 }
 
 export function MobileNav({
@@ -31,6 +58,7 @@ export function MobileNav({
   /** Tailwind breakpoint class when the hamburger is shown (default: below xl for marketing). */
   breakpointClassName = 'xl:hidden',
   className,
+  title = 'Browse',
 }: {
   items: NavItem[];
   trailing?: ReactNode;
@@ -40,6 +68,7 @@ export function MobileNav({
   activeId?: string | null;
   breakpointClassName?: string;
   className?: string;
+  title?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -55,6 +84,8 @@ export function MobileNav({
   useEffect(() => {
     setOpen(false);
   }, [pathname, activeId]);
+
+  useBodyScrollLock(open);
 
   useEffect(() => {
     if (!open) return;
@@ -83,19 +114,9 @@ export function MobileNav({
         first.focus();
       }
     };
-    // Portaled panel can't inherit --header-h from <header> (backdrop-filter
-    // also traps position:fixed), so sync measured header height to :root.
-    const header = document.querySelector('header');
-    const height = header?.getBoundingClientRect().height;
-    if (height) {
-      document.documentElement.style.setProperty('--header-h', `${Math.round(height)}px`);
-    }
     document.addEventListener('keydown', onKey);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
     return () => {
       document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prevOverflow;
       triggerRef.current?.focus();
     };
   }, [open]);
@@ -104,16 +125,25 @@ export function MobileNav({
     open && mounted
       ? createPortal(
           <>
-            <MobileDrawerBackdrop onClose={() => setOpen(false)} className="xl:hidden" />
+            <MobileDrawerBackdrop
+              onClose={() => setOpen(false)}
+              className={breakpointClassName || undefined}
+            />
             <MobileDrawerPanel
               id={panelId}
               label="Navigation menu"
               panelRef={panelRef}
-              className="xl:hidden"
+              title={title}
+              onClose={() => setOpen(false)}
+              headerExtra={leading}
+              className={breakpointClassName || undefined}
             >
-              {leading ? <div className="mb-4">{leading}</div> : null}
               <nav className="flex flex-col gap-1" aria-label="Mobile">
+                <p className="px-3 pb-2 text-[0.6875rem] font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
+                  Pages
+                </p>
                 {items.map((item) => {
+                  const Icon = resolveIcon(item);
                   const active =
                     activeId != null
                       ? item.id === activeId
@@ -125,20 +155,40 @@ export function MobileNav({
                       key={item.id ?? item.label}
                       href={item.href}
                       aria-current={active ? 'page' : undefined}
+                      onClick={() => setOpen(false)}
                       className={cn(
-                        'min-h-11 rounded-[var(--radius)] px-3 py-3 text-base font-semibold transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out)]',
+                        'flex min-h-12 items-center gap-3 rounded-[var(--radius-lg)] px-3 py-2.5 text-[0.9375rem] font-semibold transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out)]',
                         active
                           ? 'bg-[var(--accent-soft)] text-[var(--accent)] ring-1 ring-[var(--accent)]/20'
                           : 'text-[var(--ink-soft)] hover:bg-[var(--brand-wash)] hover:text-[var(--ink)]',
                       )}
                     >
-                      {item.label}
+                      <span
+                        className={cn(
+                          'flex size-9 shrink-0 items-center justify-center rounded-[var(--radius)]',
+                          active
+                            ? 'bg-[var(--accent)]/12 text-[var(--accent)]'
+                            : 'bg-[var(--bg-muted)] text-[var(--muted-strong)]',
+                        )}
+                      >
+                        <Icon className="size-4" aria-hidden strokeWidth={2.1} />
+                      </span>
+                      <span className="min-w-0 flex-1 text-pretty">{item.label}</span>
+                      {active ? (
+                        <span
+                          className="size-1.5 shrink-0 rounded-full bg-[var(--highlight)]"
+                          aria-hidden
+                        />
+                      ) : null}
                     </Link>
                   );
                 })}
               </nav>
               {trailing ? (
-                <div className="mt-6 flex flex-col gap-2 [&_a]:min-h-11 [&_button]:min-h-11">
+                <div className="mt-5 space-y-2 border-t border-[var(--line)] pt-4 [&_a]:min-h-11 [&_button]:min-h-11">
+                  <p className="px-1 pb-1 text-[0.6875rem] font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
+                    Account
+                  </p>
                   {trailing}
                 </div>
               ) : null}
@@ -155,13 +205,16 @@ export function MobileNav({
         type="button"
         variant="ghost"
         size="icon"
-        className="size-11"
+        className={cn(
+          'size-11 rounded-full border border-transparent',
+          open && 'border-[var(--line)] bg-[var(--bg-muted)]',
+        )}
         aria-expanded={open}
         aria-controls={panelId}
         aria-label={open ? 'Close menu' : 'Open menu'}
         onClick={() => setOpen((v) => !v)}
       >
-        {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        <HamburgerIcon open={open} />
       </Button>
       {panel}
     </div>

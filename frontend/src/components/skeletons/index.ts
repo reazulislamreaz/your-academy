@@ -45,12 +45,15 @@ export {
 } from '@/components/skeletons/route/learner';
 
 export {
+  AdminActivityPageSkeleton,
+  AdminAuditTableSkeleton,
   AdminBulkPreviewTableSkeleton,
   AdminBulkUploadDetailPageSkeleton,
   AdminBulkUploadNewPageSkeleton,
   AdminBulkUploadPageSkeleton,
   AdminBulkUploadTableSkeleton,
   AdminCategoriesPageSkeleton,
+  AdminChromeSkeleton,
   AdminDashboardPageSkeleton,
   AdminDocumentsPageSkeleton,
   AdminNewsEditPageSkeleton,
@@ -58,11 +61,9 @@ export {
   AdminPracticeSetsPageSkeleton,
   AdminQuestionFormPageSkeleton,
   AdminQuestionsPageSkeleton,
+  AdminUsersDetailPageSkeleton,
   AdminUsersPageSkeleton,
   AdminUsersTableSkeleton,
-  AdminAuditTableSkeleton,
-  AdminUsersDetailPageSkeleton,
-  AdminActivityPageSkeleton,
 } from '@/components/skeletons/route/admin';
 
 export {
