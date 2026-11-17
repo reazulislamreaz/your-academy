@@ -49,7 +49,19 @@ export function HomepageTileCard({
   );
 }
 
-export function HomepageOthersTile({ href, className }: { href: string; className?: string }) {
+export function HomepageOthersTile({
+  href,
+  title = 'Others',
+  logoUrl,
+  iconKey = 'gear',
+  className,
+}: {
+  href: string;
+  title?: string;
+  logoUrl?: string | null;
+  iconKey?: HomepageIconKey;
+  className?: string;
+}) {
   return (
     <Link
       href={href}
@@ -58,14 +70,22 @@ export function HomepageOthersTile({ href, className }: { href: string; classNam
         className,
       )}
     >
-      <span
-        className="relative z-[1] flex h-12 w-12 items-center justify-center rounded-full bg-[var(--bg-elevated)] text-lg font-bold text-[var(--highlight)] shadow-[var(--shadow-sm)]"
-        aria-hidden
-      >
-        ···
+      <span className="relative z-[1] flex h-12 w-12 items-center justify-center">
+        {logoUrl ? (
+          <img src={logoUrl} alt="" className="h-12 w-12 object-contain" />
+        ) : iconKey !== 'gear' ? (
+          <HomepageIcon iconKey={iconKey} className="h-12 w-12" />
+        ) : (
+          <span
+            className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--bg-elevated)] text-lg font-bold text-[var(--highlight)] shadow-[var(--shadow-sm)]"
+            aria-hidden
+          >
+            ···
+          </span>
+        )}
       </span>
       <span className="relative z-[1] font-display text-sm font-bold tracking-tight text-[var(--ink)] sm:text-[15px]">
-        Others
+        {title}
       </span>
     </Link>
   );

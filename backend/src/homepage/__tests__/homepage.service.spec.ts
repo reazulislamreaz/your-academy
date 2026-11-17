@@ -1,5 +1,11 @@
 import { HomepageContentStatus } from '@prisma/client';
-import { createDefaultHomepagePayload } from '@your-academy/shared';
+import {
+  HOMEPAGE_EDITABLE_PREVIEW_SLOTS,
+  HOMEPAGE_OTHERS_TILE_ID,
+  HOMEPAGE_SECTION_PREVIEW_LIMIT,
+  createDefaultHomepagePayload,
+  isHomepageOthersTile,
+} from '@your-academy/shared';
 import { HomepageService } from '../homepage.service';
 
 describe('HomepageService', () => {
@@ -140,5 +146,47 @@ describe('HomepageService', () => {
     expect(result.payload.categories.tiles[0]?.logoUrl).toContain(
       'res.cloudinary.com/demo-cloud/image/upload/c_fit,w_256,h_256',
     );
+  });
+
+  it('forces Others to fixed position 5 and rejects client reordering on draft save', async () => {
+    const payload = createDefaultHomepagePayload();
+    const others = payload.categories.tiles.find((t) => isHomepageOthersTile(t))!;
+    const regular = payload.categories.tiles.filter((t) => !isHomepageOthersTile(t));
+    // Malicious client: put Others first and duplicate it.
+    payload.categories.tiles = [
+      { ...others, id: 'others-dup', displayTitle: 'Others' },
+      others,
+      ...regular,
+    ];
+
+    prisma.mediaAsset.findMany.mockResolvedValue([]);
+    prisma.homepageContent.update.mockResolvedValue({
+      id: 'draft-1',
+      status: HomepageContentStatus.DRAFT,
+      payload,
+      heroImageAssetId: null,
+      publishedAt: null,
+      updatedAt: new Date(),
+      heroImage: null,
+    });
+
+    await service.updateDraft(user as never, { payload });
+
+    const savedPayload = prisma.homepageContent.update.mock.calls[0]![0].data.payload as {
+      categories: { tiles: Array<{ id: string; displayTitle: string; visible: boolean }> };
+      topics: { tiles: Array<{ id: string; displayTitle: string; visible: boolean }> };
+    };
+
+    const catTiles = savedPayload.categories.tiles;
+    const othersIndex = catTiles.findIndex((t) => t.id === HOMEPAGE_OTHERS_TILE_ID);
+    expect(othersIndex).toBe(HOMEPAGE_EDITABLE_PREVIEW_SLOTS);
+    expect(othersIndex).toBe(HOMEPAGE_SECTION_PREVIEW_LIMIT - 1);
+    expect(catTiles.filter((t) => t.id === HOMEPAGE_OTHERS_TILE_ID)).toHaveLength(1);
+    expect(catTiles[othersIndex]?.visible).toBe(true);
+
+    const topicOthersIndex = savedPayload.topics.tiles.findIndex(
+      (t) => t.id === HOMEPAGE_OTHERS_TILE_ID,
+    );
+    expect(topicOthersIndex).toBe(HOMEPAGE_EDITABLE_PREVIEW_SLOTS);
   });
 });

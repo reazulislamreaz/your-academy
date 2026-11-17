@@ -4,7 +4,11 @@ import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight } from 'lucide-react';
 import {
-  HOMEPAGE_SECTION_PREVIEW_LIMIT,
+  HOMEPAGE_EDITABLE_PREVIEW_SLOTS,
+  createDefaultOthersCategoryTile,
+  createDefaultOthersTopicTile,
+  isHomepageOthersTile,
+  splitHomepageSectionTiles,
   type HomepagePayload,
 } from '@your-academy/shared';
 import { Button } from '@/components/ui/button';
@@ -35,17 +39,29 @@ export function HomepageBankBrowse({ categories, topics }: Props) {
   });
 
   const roots = categoryTree.data ?? [];
-  const visibleCategories = categories.tiles.filter(
-    (t) => t.visible && t.displayTitle.trim().toLowerCase() !== 'others',
-  );
-  const visibleTopics = topics.tiles.filter(
-    (t) => t.visible && t.displayTitle.trim().toLowerCase() !== 'others',
-  );
-  const previewCategories = visibleCategories.slice(0, HOMEPAGE_SECTION_PREVIEW_LIMIT);
-  const previewTopics = visibleTopics.slice(0, HOMEPAGE_SECTION_PREVIEW_LIMIT);
-  // CTA may point at the question bank; Others always opens the full directory pages.
+
+  const categorySplit = splitHomepageSectionTiles(categories.tiles);
+  const topicSplit = splitHomepageSectionTiles(topics.tiles);
+
+  const previewCategories = categorySplit.top
+    .filter((t) => t.visible && !isHomepageOthersTile(t))
+    .slice(0, HOMEPAGE_EDITABLE_PREVIEW_SLOTS);
+  const previewTopics = topicSplit.top
+    .filter((t) => t.visible && !isHomepageOthersTile(t))
+    .slice(0, HOMEPAGE_EDITABLE_PREVIEW_SLOTS);
+
+  const categoriesOthers =
+    categorySplit.others ??
+    createDefaultOthersCategoryTile(categories.cta.href || QUESTION_BANK_CATEGORIES_PATH);
+  const topicsOthers =
+    topicSplit.others ??
+    createDefaultOthersTopicTile(topics.cta.href || ALL_TOPICS_PATH);
+
   const categoriesCtaHref = categories.cta.href || QUESTION_BANK_CATEGORIES_PATH;
   const topicsCtaHref = topics.cta.href || ALL_TOPICS_PATH;
+  const categoriesOthersHref =
+    categoriesOthers.fallbackHref || QUESTION_BANK_CATEGORIES_PATH;
+  const topicsOthersHref = topicsOthers.fallbackHref || ALL_TOPICS_PATH;
 
   return (
     <>
@@ -83,7 +99,12 @@ export function HomepageBankBrowse({ categories, topics }: Props) {
                 </li>
               ))}
               <li>
-                <HomepageOthersTile href={QUESTION_BANK_CATEGORIES_PATH} />
+                <HomepageOthersTile
+                  href={categoriesOthersHref}
+                  title={categoriesOthers.displayTitle}
+                  logoUrl={categoriesOthers.logoUrl}
+                  iconKey={categoriesOthers.iconKey}
+                />
               </li>
             </ul>
           </Reveal>
@@ -113,10 +134,22 @@ export function HomepageBankBrowse({ categories, topics }: Props) {
                   ) : null}
                 </div>
                 {previewTopics.length === 0 ? (
-                  <p className="rounded-[var(--radius-lg)] border border-dashed border-[var(--line)] bg-[var(--bg-elevated)] px-5 py-8 text-center text-sm text-[var(--muted-strong)]">
-                    No topics published yet. Admins add topics in Topic Based Question Analysis —
-                    general categories are not listed here automatically.
-                  </p>
+                  <div className="space-y-3">
+                    <p className="rounded-[var(--radius-lg)] border border-dashed border-[var(--line)] bg-[var(--bg-elevated)] px-5 py-6 text-center text-sm text-[var(--muted-strong)]">
+                      No topics published yet. Admins add topics in Topic Based Question Analysis —
+                      general categories are not listed here automatically.
+                    </p>
+                    <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                      <li>
+                        <HomepageOthersTile
+                          href={topicsOthersHref}
+                          title={topicsOthers.displayTitle}
+                          logoUrl={topicsOthers.logoUrl}
+                          iconKey={topicsOthers.iconKey}
+                        />
+                      </li>
+                    </ul>
+                  </div>
                 ) : (
                   <ul className="motion-stagger grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 lg:gap-4">
                     {previewTopics.map((tile) => (
@@ -130,7 +163,12 @@ export function HomepageBankBrowse({ categories, topics }: Props) {
                       </li>
                     ))}
                     <li>
-                      <HomepageOthersTile href={ALL_TOPICS_PATH} />
+                      <HomepageOthersTile
+                        href={topicsOthersHref}
+                        title={topicsOthers.displayTitle}
+                        logoUrl={topicsOthers.logoUrl}
+                        iconKey={topicsOthers.iconKey}
+                      />
                     </li>
                   </ul>
                 )}

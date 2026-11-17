@@ -79,13 +79,248 @@ const topicTileSchema = z.object({
 });
 
 /**
- * How many visible tiles to show on the homepage before the Others card.
- * Admin managers list/reorder the full tile array — this limit is homepage-only.
+ * Total homepage preview slots including the fixed Others tile at position 5.
+ * Positions 1–4 are admin-managed; position 5 is always Others (DEC-038).
  */
 export const HOMEPAGE_SECTION_PREVIEW_LIMIT = 5;
 
+/** How many admin-managed tiles appear before the fixed Others slot. */
+export const HOMEPAGE_EDITABLE_PREVIEW_SLOTS = HOMEPAGE_SECTION_PREVIEW_LIMIT - 1;
+
+/** Stable CMS id for the fixed Others tile (categories + topics sections). */
+export const HOMEPAGE_OTHERS_TILE_ID = 'others';
+
+/** Default display title for the fixed Others tile. */
+export const HOMEPAGE_OTHERS_DISPLAY_TITLE = 'Others';
+
 /** Recommended square logo size for homepage category/topic tiles (px). */
 export const HOMEPAGE_TILE_LOGO_SIZE = 256;
+
+type HomepageTileLike = {
+  id: string;
+  displayTitle: string;
+  visible: boolean;
+};
+
+/** True when the tile is the reserved Others slot (by id or legacy title). */
+export function isHomepageOthersTile(tile: Pick<HomepageTileLike, 'id' | 'displayTitle'>): boolean {
+  if (tile.id === HOMEPAGE_OTHERS_TILE_ID) return true;
+  return tile.displayTitle.trim().toLowerCase() === HOMEPAGE_OTHERS_DISPLAY_TITLE.toLowerCase();
+}
+
+export function createDefaultOthersCategoryTile(
+  fallbackHref = '/question-bank-categories',
+): z.infer<typeof categoryTileSchema> {
+  return {
+    id: HOMEPAGE_OTHERS_TILE_ID,
+    displayTitle: HOMEPAGE_OTHERS_DISPLAY_TITLE,
+    subtitle: '',
+    iconKey: 'gear',
+    categoryId: null,
+    subcategoryId: null,
+    fallbackHref,
+    visible: true,
+    logoAssetId: null,
+    logoUrl: null,
+  };
+}
+
+export function createDefaultOthersTopicTile(
+  fallbackHref = '/topic-categories',
+): z.infer<typeof topicTileSchema> {
+  return {
+    id: HOMEPAGE_OTHERS_TILE_ID,
+    displayTitle: HOMEPAGE_OTHERS_DISPLAY_TITLE,
+    iconKey: 'gear',
+    categoryId: null,
+    subcategoryId: null,
+    fallbackHref,
+    visible: true,
+    logoAssetId: null,
+    logoUrl: null,
+  };
+}
+
+/**
+ * Enforce: exactly one Others tile, always visible, always at position 5
+ * (immediately after the first 4 non-Others tiles). Remaining tiles follow.
+ * Deduplicates Others and strips accidental duplicate ids among regular tiles.
+ */
+export function normalizeHomepageSectionTiles<T extends HomepageTileLike>(
+  tiles: T[],
+  createOthers: () => T,
+): T[] {
+  const othersSources: T[] = [];
+  const regular: T[] = [];
+  const seenRegularIds = new Set<string>();
+
+  for (const tile of tiles) {
+    if (isHomepageOthersTile(tile)) {
+      othersSources.push(tile);
+      continue;
+    }
+    if (seenRegularIds.has(tile.id)) continue;
+    seenRegularIds.add(tile.id);
+    regular.push(tile);
+  }
+
+  const source = othersSources[0];
+  const defaults = createOthers();
+  const others: T = {
+    ...defaults,
+    ...source,
+    id: HOMEPAGE_OTHERS_TILE_ID,
+    visible: true,
+    // Preserve admin-edited title when present; otherwise keep default label.
+    displayTitle:
+      source?.displayTitle?.trim() ||
+      defaults.displayTitle ||
+      HOMEPAGE_OTHERS_DISPLAY_TITLE,
+  };
+
+  const top = regular.slice(0, HOMEPAGE_EDITABLE_PREVIEW_SLOTS);
+  const rest = regular.slice(HOMEPAGE_EDITABLE_PREVIEW_SLOTS);
+  return [...top, others, ...rest];
+}
+
+/** Split normalized tiles into top-4, fixed Others, and remaining. */
+export function splitHomepageSectionTiles<T extends HomepageTileLike>(tiles: T[]): {
+  top: T[];
+  others: T | null;
+  rest: T[];
+} {
+  const normalizedHint = tiles;
+  const othersIndex = normalizedHint.findIndex((t) => isHomepageOthersTile(t));
+  if (othersIndex < 0) {
+    return {
+      top: normalizedHint.slice(0, HOMEPAGE_EDITABLE_PREVIEW_SLOTS),
+      others: null,
+      rest: normalizedHint.slice(HOMEPAGE_EDITABLE_PREVIEW_SLOTS),
+    };
+  }
+  const others = normalizedHint[othersIndex]!;
+  const withoutOthers = [
+    ...normalizedHint.slice(0, othersIndex),
+    ...normalizedHint.slice(othersIndex + 1),
+  ];
+  return {
+    top: withoutOthers.slice(0, HOMEPAGE_EDITABLE_PREVIEW_SLOTS),
+    others,
+    rest: withoutOthers.slice(HOMEPAGE_EDITABLE_PREVIEW_SLOTS),
+  };
+}
+
+/** Promote a regular tile into the Top 4 (never displaces Others). */
+export function promoteTileIntoHomepageTop<T extends HomepageTileLike>(
+  tiles: T[],
+  tileId: string,
+  createOthers: () => T,
+): T[] {
+  const normalized = normalizeHomepageSectionTiles(tiles, createOthers);
+  const { top, others, rest } = splitHomepageSectionTiles(normalized);
+  if (!others || isHomepageOthersTile({ id: tileId, displayTitle: '' })) {
+    return normalized;
+  }
+
+  const inTop = top.findIndex((t) => t.id === tileId);
+  if (inTop >= 0) {
+    // Already in top — move to end of top (slot 4) so it stays among 1–4.
+    const nextTop = [...top];
+    const [item] = nextTop.splice(inTop, 1);
+    nextTop.push(item!);
+    return normalizeHomepageSectionTiles(
+      [...nextTop, others, ...rest],
+      createOthers,
+    );
+  }
+
+  const fromRest = rest.findIndex((t) => t.id === tileId);
+  if (fromRest < 0) return normalized;
+
+  const nextRest = [...rest];
+  const [item] = nextRest.splice(fromRest, 1);
+  const ensured = { ...item!, visible: true };
+  let nextTop = [...top, ensured];
+  if (nextTop.length > HOMEPAGE_EDITABLE_PREVIEW_SLOTS) {
+    const overflow = nextTop.slice(HOMEPAGE_EDITABLE_PREVIEW_SLOTS);
+    nextTop = nextTop.slice(0, HOMEPAGE_EDITABLE_PREVIEW_SLOTS);
+    nextRest.unshift(...overflow);
+  }
+  return normalizeHomepageSectionTiles(
+    [...nextTop, others, ...nextRest],
+    createOthers,
+  );
+}
+
+/** Remove a regular tile from Top 4 into the remaining list (Others stays #5). */
+export function demoteTileFromHomepageTop<T extends HomepageTileLike>(
+  tiles: T[],
+  tileId: string,
+  createOthers: () => T,
+): T[] {
+  const normalized = normalizeHomepageSectionTiles(tiles, createOthers);
+  const { top, others, rest } = splitHomepageSectionTiles(normalized);
+  if (!others || isHomepageOthersTile({ id: tileId, displayTitle: '' })) {
+    return normalized;
+  }
+  const idx = top.findIndex((t) => t.id === tileId);
+  if (idx < 0) return normalized;
+  const nextTop = [...top];
+  const [item] = nextTop.splice(idx, 1);
+  return normalizeHomepageSectionTiles(
+    [...nextTop, others, item!, ...rest],
+    createOthers,
+  );
+}
+
+/** Reorder only within the Top 4 slots (Others stays fixed at #5). */
+export function reorderHomepageTopTiles<T extends HomepageTileLike>(
+  tiles: T[],
+  fromTopIndex: number,
+  toTopIndex: number,
+  createOthers: () => T,
+): T[] {
+  const normalized = normalizeHomepageSectionTiles(tiles, createOthers);
+  const { top, others, rest } = splitHomepageSectionTiles(normalized);
+  if (!others) return normalized;
+  if (
+    fromTopIndex < 0 ||
+    toTopIndex < 0 ||
+    fromTopIndex >= top.length ||
+    toTopIndex >= top.length ||
+    fromTopIndex === toTopIndex
+  ) {
+    return normalized;
+  }
+  const nextTop = [...top];
+  const [item] = nextTop.splice(fromTopIndex, 1);
+  nextTop.splice(toTopIndex, 0, item!);
+  return normalizeHomepageSectionTiles(
+    [...nextTop, others, ...rest],
+    createOthers,
+  );
+}
+
+/** Apply Others normalization to both homepage sections. */
+export function normalizeHomepagePayloadTiles(payload: HomepagePayload): HomepagePayload {
+  return {
+    ...payload,
+    categories: {
+      ...payload.categories,
+      tiles: normalizeHomepageSectionTiles(
+        payload.categories.tiles,
+        () => createDefaultOthersCategoryTile(payload.categories.cta.href || '/question-bank-categories'),
+      ),
+    },
+    topics: {
+      ...payload.topics,
+      tiles: normalizeHomepageSectionTiles(
+        payload.topics.tiles,
+        () => createDefaultOthersTopicTile(payload.topics.cta.href || '/topic-categories'),
+      ),
+    },
+  };
+}
 
 const progressMetricSchema = z.object({
   value: shortText,
@@ -226,12 +461,12 @@ export function createDefaultHomepagePayload(): HomepagePayload {
           visible: true,
         },
         {
-          id: 'other-gov',
-          displayTitle: 'Other Govt. Jobs',
+          id: HOMEPAGE_OTHERS_TILE_ID,
+          displayTitle: HOMEPAGE_OTHERS_DISPLAY_TITLE,
           subtitle: '',
           iconKey: 'gear',
           categoryId: null,
-          fallbackHref: '/preli-question-bank',
+          fallbackHref: '/question-bank-categories',
           visible: true,
         },
       ],
@@ -275,6 +510,15 @@ export function createDefaultHomepagePayload(): HomepagePayload {
           categoryId: null,
           subcategoryId: null,
           fallbackHref: '/preli-question-bank?q=GK',
+          visible: true,
+        },
+        {
+          id: HOMEPAGE_OTHERS_TILE_ID,
+          displayTitle: HOMEPAGE_OTHERS_DISPLAY_TITLE,
+          iconKey: 'gear',
+          categoryId: null,
+          subcategoryId: null,
+          fallbackHref: '/topic-categories',
           visible: true,
         },
         {

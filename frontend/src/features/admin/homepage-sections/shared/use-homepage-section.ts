@@ -1,0 +1,292 @@
+'use client';
+
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  createDefaultHomepagePayload,
+  createDefaultOthersCategoryTile,
+  createDefaultOthersTopicTile,
+  demoteTileFromHomepageTop,
+  isHomepageOthersTile,
+  normalizeHomepageSectionTiles,
+  promoteTileIntoHomepageTop,
+  reorderHomepageTopTiles,
+  splitHomepageSectionTiles,
+  HOMEPAGE_OTHERS_TILE_ID,
+  type HomepagePayload,
+} from '@your-academy/shared';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  getAdminHomepage,
+  publishHomepage,
+  saveHomepageDraft,
+} from '@/lib/api/homepage';
+import {
+  assertHomepageTileLogoFile,
+  getStorageStatus,
+  sanitizeSvgFileIfNeeded,
+  uploadViaSignedRequest,
+} from '@/lib/cloudinary-upload';
+import type { BannerMessage, HomepageSectionKind, HomepageSectionTile } from './types';
+
+function createOthers(section: HomepageSectionKind, payload: HomepagePayload) {
+  if (section === 'categories') {
+    return () =>
+      createDefaultOthersCategoryTile(
+        payload.categories.cta.href || '/question-bank-categories',
+      );
+  }
+  return () =>
+    createDefaultOthersTopicTile(payload.topics.cta.href || '/topic-categories');
+}
+
+function readTiles(section: HomepageSectionKind, payload: HomepagePayload): HomepageSectionTile[] {
+  return section === 'categories' ? payload.categories.tiles : payload.topics.tiles;
+}
+
+function writeTiles(
+  section: HomepageSectionKind,
+  payload: HomepagePayload,
+  tiles: HomepageSectionTile[],
+): HomepagePayload {
+  if (section === 'categories') {
+    return {
+      ...payload,
+      categories: {
+        ...payload.categories,
+        tiles: tiles as HomepagePayload['categories']['tiles'],
+      },
+    };
+  }
+  return {
+    ...payload,
+    topics: {
+      ...payload.topics,
+      tiles: tiles as HomepagePayload['topics']['tiles'],
+    },
+  };
+}
+
+/** Shared draft/publish/normalize/top-4 logic for both homepage section pages. */
+export function useHomepageSection(section: HomepageSectionKind) {
+  const qc = useQueryClient();
+  const [payload, setPayload] = useState<HomepagePayload>(createDefaultHomepagePayload);
+  const [dirty, setDirty] = useState(false);
+  const [message, setMessage] = useState<BannerMessage>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draftTile, setDraftTile] = useState<HomepageSectionTile | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<string | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+
+  const adminQ = useQuery({
+    queryKey: ['admin-homepage'],
+    queryFn: getAdminHomepage,
+  });
+
+  const storageQ = useQuery({
+    queryKey: ['storage-status'],
+    queryFn: getStorageStatus,
+    staleTime: 60_000,
+  });
+
+  useEffect(() => {
+    if (!adminQ.data) return;
+    const next = adminQ.data.draft.payload;
+    const tiles = normalizeHomepageSectionTiles(
+      readTiles(section, next),
+      createOthers(section, next),
+    );
+    setPayload(writeTiles(section, next, tiles));
+    setDirty(false);
+  }, [adminQ.data, section]);
+
+  const tiles = readTiles(section, payload);
+  const sectionMeta = section === 'categories' ? payload.categories : payload.topics;
+  const othersFactory = createOthers(section, payload);
+
+  const { top: topTiles, others: othersTile, rest: restTiles } = useMemo(
+    () => splitHomepageSectionTiles(tiles),
+    [tiles],
+  );
+
+  const patchTiles = (nextTiles: HomepageSectionTile[]) => {
+    const normalized = normalizeHomepageSectionTiles(nextTiles, othersFactory);
+    setPayload((prev) => writeTiles(section, prev, normalized));
+    setDirty(true);
+  };
+
+  const patchSectionMeta = (patch: { heading?: string; visible?: boolean; subtitle?: string }) => {
+    setPayload((prev) => {
+      if (section === 'categories') {
+        return {
+          ...prev,
+          categories: {
+            ...prev.categories,
+            ...(patch.heading !== undefined ? { heading: patch.heading } : {}),
+            ...(patch.visible !== undefined ? { visible: patch.visible } : {}),
+            ...(patch.subtitle !== undefined ? { subtitle: patch.subtitle } : {}),
+          },
+        };
+      }
+      return {
+        ...prev,
+        topics: {
+          ...prev.topics,
+          ...(patch.heading !== undefined ? { heading: patch.heading } : {}),
+          ...(patch.visible !== undefined ? { visible: patch.visible } : {}),
+        },
+      };
+    });
+    setDirty(true);
+  };
+
+  const saveMut = useMutation({
+    mutationFn: async (alsoPublish: boolean) => {
+      const normalized = normalizeHomepageSectionTiles(tiles, othersFactory);
+      const nextPayload = writeTiles(section, payload, normalized);
+      await saveHomepageDraft({
+        payload: nextPayload,
+        heroImageAssetId: adminQ.data?.draft.heroImageAssetId ?? null,
+      });
+      if (alsoPublish) await publishHomepage();
+    },
+    onSuccess: async (_d, alsoPublish) => {
+      setDirty(false);
+      setMessage({
+        tone: 'success',
+        text: alsoPublish ? 'Saved and published to the live homepage.' : 'Draft saved.',
+      });
+      await qc.invalidateQueries({ queryKey: ['admin-homepage'] });
+    },
+    onError: (err) => {
+      setMessage({
+        tone: 'danger',
+        text: err instanceof Error ? err.message : 'Save failed',
+      });
+    },
+  });
+
+  const promote = (tileId: string) => {
+    if (isHomepageOthersTile({ id: tileId, displayTitle: '' })) return;
+    patchTiles(promoteTileIntoHomepageTop(tiles, tileId, othersFactory));
+  };
+
+  const demote = (tileId: string) => {
+    if (isHomepageOthersTile({ id: tileId, displayTitle: '' })) {
+      setMessage({
+        tone: 'danger',
+        text: 'Others is fixed at position 5 and cannot be removed.',
+      });
+      return;
+    }
+    patchTiles(demoteTileFromHomepageTop(tiles, tileId, othersFactory));
+  };
+
+  const reorderTop = (from: number, to: number) => {
+    patchTiles(reorderHomepageTopTiles(tiles, from, to, othersFactory));
+  };
+
+  const moveTop = (topIndex: number, dir: -1 | 1) => {
+    const target = topIndex + dir;
+    if (target < 0 || target >= topTiles.length) return;
+    reorderTop(topIndex, target);
+  };
+
+  const openEdit = (tile: HomepageSectionTile) => {
+    setDraftTile({ ...tile });
+    setEditingId(tile.id);
+    setLogoPreview(tile.logoUrl ?? null);
+  };
+
+  const cancelEdit = () => {
+    setDraftTile(null);
+    setEditingId(null);
+    setLogoPreview(null);
+  };
+
+  const commitDraft = () => {
+    if (!draftTile) return;
+    if (!draftTile.displayTitle.trim()) {
+      setMessage({ tone: 'danger', text: 'Title is required' });
+      return;
+    }
+    const editingOthers = isHomepageOthersTile(draftTile);
+    const nextTile: HomepageSectionTile = editingOthers
+      ? { ...draftTile, id: HOMEPAGE_OTHERS_TILE_ID, visible: true }
+      : draftTile;
+    const exists = tiles.some((t) => t.id === nextTile.id);
+    const next = exists
+      ? tiles.map((t) => (t.id === nextTile.id ? nextTile : t))
+      : [...tiles, nextTile];
+    patchTiles(next);
+    cancelEdit();
+    setMessage({ tone: 'success', text: 'Updated in draft.' });
+  };
+
+  const onLogoPick = async (file: File | null) => {
+    if (!file || !draftTile) return;
+    try {
+      assertHomepageTileLogoFile(file);
+      const safe = await sanitizeSvgFileIfNeeded(file);
+      setUploadProgress('Uploading & optimizing…');
+      const localUrl = URL.createObjectURL(safe);
+      setLogoPreview(localUrl);
+      const asset = await uploadViaSignedRequest('homepage-tile-logo', safe);
+      setDraftTile({
+        ...draftTile,
+        logoAssetId: asset.id,
+        logoUrl: localUrl,
+      });
+      setUploadProgress('Logo uploaded.');
+      setTimeout(() => setUploadProgress(null), 2000);
+    } catch (err) {
+      setUploadProgress(null);
+      setMessage({
+        tone: 'danger',
+        text: err instanceof Error ? err.message : 'Logo upload failed',
+      });
+    }
+  };
+
+  const clearLogo = () => {
+    if (!draftTile) return;
+    setDraftTile({
+      ...draftTile,
+      logoAssetId: null,
+      logoUrl: null,
+      logoWidth: null,
+      logoHeight: null,
+    });
+    setLogoPreview(null);
+  };
+
+  return {
+    adminQ,
+    storageQ,
+    payload,
+    tiles,
+    sectionMeta,
+    topTiles,
+    othersTile,
+    restTiles,
+    dirty,
+    message,
+    setMessage,
+    editingId,
+    draftTile,
+    setDraftTile,
+    uploadProgress,
+    logoPreview,
+    saveMut,
+    patchTiles,
+    patchSectionMeta,
+    promote,
+    demote,
+    reorderTop,
+    moveTop,
+    openEdit,
+    cancelEdit,
+    commitDraft,
+    onLogoPick,
+    clearLogo,
+  };
+}

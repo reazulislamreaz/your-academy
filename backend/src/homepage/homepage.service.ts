@@ -9,6 +9,7 @@ import {
   createDefaultHomepagePayload,
   createErrorResponse,
   homepagePayloadSchema,
+  normalizeHomepagePayloadTiles,
   type HomepagePayload,
 } from '@your-academy/shared';
 import type { RequestUser } from '../auth/auth.types';
@@ -196,7 +197,7 @@ export class HomepageService {
 
   /** Persist without resolved delivery URLs (those are read-only enrichments). */
   private parsePayloadForPersist(raw: unknown): HomepagePayload {
-    const payload = this.parsePayload(raw);
+    const payload = normalizeHomepagePayloadTiles(this.parsePayload(raw));
     return {
       ...payload,
       categories: {
@@ -248,7 +249,9 @@ export class HomepageService {
     updatedAt: Date;
     heroImage: { publicId: string; resourceType: string; deliveryType: string } | null;
   }): Promise<HomepagePublicView> {
-    const payload = await this.enrichTileLogos(this.parsePayload(row.payload));
+    const payload = await this.enrichTileLogos(
+      normalizeHomepagePayloadTiles(this.parsePayload(row.payload)),
+    );
     return {
       payload,
       heroImageUrl: this.resolveHeroUrl(row.heroImage),

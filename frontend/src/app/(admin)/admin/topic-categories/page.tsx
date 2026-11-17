@@ -1,11 +1,14 @@
-import { HomepageSectionManager } from '@/features/admin/homepage-sections/section-manager';
+'use client';
+
+import { HomepageSectionWorkspace } from '@/features/admin/homepage-sections/homepage-section-workspace';
 
 export default function AdminTopicCategoriesPage() {
   return (
-    <HomepageSectionManager
+    <HomepageSectionWorkspace
       section="topics"
+      eyebrow="Homepage"
       title="Topic Based Question Analysis"
-      description="Add only the topics you want shown. Nothing is imported from general categories."
+      description="Manage homepage topics: reorder positions 1–4, keep Others fixed at #5, then save draft or publish."
     />
   );
 }
