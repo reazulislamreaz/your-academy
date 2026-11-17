@@ -5,7 +5,7 @@ export default function AdminTopicCategoriesPage() {
     <HomepageSectionManager
       section="topics"
       title="Topic Based Question Analysis"
-      description="Manage homepage topic tiles: logos, visibility, order, and subcategory links. Publish to update the live site."
+      description="Manage topic tiles, homepage Top 5, and publish when ready."
     />
   );
 }

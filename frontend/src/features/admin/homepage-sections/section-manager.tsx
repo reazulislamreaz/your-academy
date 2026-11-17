@@ -4,6 +4,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowDown,
   ArrowUp,
+  ChevronLeft,
+  ChevronRight,
   Eye,
   EyeOff,
   GripVertical,
@@ -11,6 +13,7 @@ import {
   Plus,
   RefreshCw,
   Save,
+  Star,
   Trash2,
   Upload,
 } from 'lucide-react';
@@ -22,17 +25,16 @@ import {
   createDefaultHomepagePayload,
   type HomepagePayload,
 } from '@your-academy/shared';
-import { AdminPage } from '@/components/admin/admin-page';
+import { AdminFormPanel, AdminPage } from '@/components/admin/admin-page';
 import { PageHeader } from '@/components/layout/page-header';
 import { Alert } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SearchField } from '@/components/ui/search-field';
 import { Select } from '@/components/ui/select';
-import { Surface } from '@/components/ui/surface';
 import type { AdminCategoryNode } from '@/features/admin/categories/types';
 import { apiFetch } from '@/lib/api/client';
 import {
@@ -55,11 +57,16 @@ type CategoryTile = HomepagePayload['categories']['tiles'][number];
 type TopicTile = HomepagePayload['topics']['tiles'][number];
 type AnyTile = CategoryTile | TopicTile;
 
+type ListFilter = 'all' | 'homepage' | 'remaining' | 'visible' | 'hidden';
+type PageSize = 10 | 20 | 50 | 100;
+
 type Props = {
   section: SectionKind;
   title: string;
   description: string;
 };
+
+const PAGE_SIZES: PageSize[] = [10, 20, 50, 100];
 
 function moveItem<T>(list: T[], index: number, dir: -1 | 1): T[] {
   const next = [...list];
@@ -135,10 +142,6 @@ function buildTopicTileFromChild(
   };
 }
 
-/**
- * Merge active DB taxonomy into the CMS tile list.
- * Never deletes or overwrites existing tiles — only appends missing links.
- */
 function syncTilesFromTaxonomy(
   section: SectionKind,
   existing: AnyTile[],
@@ -146,9 +149,7 @@ function syncTilesFromTaxonomy(
 ): { tiles: AnyTile[]; added: number } {
   if (section === 'categories') {
     const linked = new Set(
-      existing
-        .map((t) => t.categoryId)
-        .filter((id): id is string => Boolean(id)),
+      existing.map((t) => t.categoryId).filter((id): id is string => Boolean(id)),
     );
     const next = [...existing];
     let added = 0;
@@ -197,13 +198,15 @@ export function HomepageSectionManager({ section, title, description }: Props) {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [logoDims, setLogoDims] = useState<{ w: number; h: number } | null>(null);
   const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<ListFilter>('all');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<PageSize>(20);
 
   const adminQ = useQuery({
     queryKey: ['admin-homepage'],
     queryFn: getAdminHomepage,
   });
 
-  /** Full admin tree — includes every root/child so managers are not capped to homepage defaults. */
   const categoriesQ = useQuery({
     queryKey: ['admin-categories'],
     queryFn: () => apiFetch<AdminCategoryNode[]>('/admin/categories'),
@@ -222,11 +225,15 @@ export function HomepageSectionManager({ section, title, description }: Props) {
     setDirty(false);
   }, [adminQ.data]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [search, filter, pageSize, section]);
+
   const tiles: AnyTile[] =
     section === 'categories' ? payload.categories.tiles : payload.topics.tiles;
   const sectionMeta = section === 'categories' ? payload.categories : payload.topics;
-
   const roots = categoriesQ.data ?? [];
+
   const flatChildren = useMemo(
     () =>
       roots.flatMap((r) =>
@@ -239,45 +246,70 @@ export function HomepageSectionManager({ section, title, description }: Props) {
     [roots],
   );
 
+  const categoryNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const r of roots) {
+      map.set(r.id, r.name);
+      for (const c of r.children) map.set(c.id, `${r.name} › ${c.name}`);
+    }
+    return map;
+  }, [roots]);
+
   const missingFromDb = useMemo(() => {
     if (section === 'categories') {
       const linked = new Set(tiles.map((t) => t.categoryId).filter(Boolean));
       return roots.filter((r) => !linked.has(r.id)).length;
     }
     const linked = new Set(
-      tiles
-        .map((t) => ('subcategoryId' in t ? t.subcategoryId : null))
-        .filter(Boolean),
+      tiles.map((t) => ('subcategoryId' in t ? t.subcategoryId : null)).filter(Boolean),
     );
-    return roots.reduce(
-      (n, r) => n + r.children.filter((c) => !linked.has(c.id)).length,
-      0,
-    );
+    return roots.reduce((n, r) => n + r.children.filter((c) => !linked.has(c.id)).length, 0);
   }, [roots, section, tiles]);
 
-  const filteredIndexes = useMemo(() => {
-    const needle = search.trim().toLocaleLowerCase('bn');
-    if (!needle) return tiles.map((_, i) => i);
-    return tiles
-      .map((tile, index) => ({ tile, index }))
-      .filter(({ tile }) => {
-        const hay = [
-          tile.displayTitle,
-          'subtitle' in tile ? (tile.subtitle ?? '') : '',
-          tile.fallbackHref,
-        ]
-          .join(' ')
-          .toLocaleLowerCase('bn');
-        return hay.includes(needle);
-      })
-      .map(({ index }) => index);
-  }, [search, tiles]);
+  const enriched = useMemo(() => {
+    return tiles.map((tile, index) => {
+      const rank = visibleHomepageRank(tiles, tile.id);
+      const onHomepage = rank != null && rank <= HOMEPAGE_SECTION_PREVIEW_LIMIT;
+      const inOthers =
+        tile.visible && !isOthersTitle(tile.displayTitle) && rank != null && !onHomepage;
+      return { tile, index, rank, onHomepage, inOthers };
+    });
+  }, [tiles]);
 
-  const homepageVisibleCount = useMemo(
-    () =>
-      tiles.filter((t) => t.visible && !isOthersTitle(t.displayTitle)).length,
-    [tiles],
+  const homepageTiles = useMemo(
+    () => enriched.filter((e) => e.onHomepage).sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0)),
+    [enriched],
   );
+
+  const filtered = useMemo(() => {
+    const needle = search.trim().toLocaleLowerCase('bn');
+    return enriched.filter(({ tile, onHomepage, inOthers }) => {
+      if (filter === 'homepage' && !onHomepage) return false;
+      if (filter === 'remaining' && !inOthers) return false;
+      if (filter === 'visible' && !tile.visible) return false;
+      if (filter === 'hidden' && tile.visible) return false;
+      if (!needle) return true;
+      const linked =
+        section === 'topics' && 'subcategoryId' in tile && tile.subcategoryId
+          ? (categoryNameById.get(tile.subcategoryId) ?? '')
+          : tile.categoryId
+            ? (categoryNameById.get(tile.categoryId) ?? '')
+            : '';
+      const hay = [tile.displayTitle, 'subtitle' in tile ? (tile.subtitle ?? '') : '', linked, tile.fallbackHref]
+        .join(' ')
+        .toLocaleLowerCase('bn');
+      return hay.includes(needle);
+    });
+  }, [categoryNameById, enriched, filter, search, section]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const pageStart = (safePage - 1) * pageSize;
+  const pageItems = filtered.slice(pageStart, pageStart + pageSize);
+
+  const visibleCount = tiles.filter((t) => t.visible && !isOthersTitle(t.displayTitle)).length;
+  const hiddenCount = tiles.filter((t) => !t.visible).length;
+  const remainingCount = Math.max(0, visibleCount - homepageTiles.length);
 
   const patchSection = (nextTiles: AnyTile[]) => {
     setPayload((prev) => {
@@ -336,12 +368,10 @@ export function HomepageSectionManager({ section, title, description }: Props) {
   };
 
   const promoteToHomepage = (index: number) => {
-    // Place at the end of the homepage band (position PREVIEW_LIMIT).
     patchSection(reorderToPosition(tiles, index, HOMEPAGE_SECTION_PREVIEW_LIMIT));
   };
 
   const demoteFromHomepage = (index: number) => {
-    // Move just below the homepage band.
     patchSection(reorderToPosition(tiles, index, HOMEPAGE_SECTION_PREVIEW_LIMIT + 1));
   };
 
@@ -357,9 +387,7 @@ export function HomepageSectionManager({ section, title, description }: Props) {
       categoryId: null,
     };
     const tile: AnyTile =
-      section === 'categories'
-        ? { ...base, subtitle: '' }
-        : { ...base, subcategoryId: null };
+      section === 'categories' ? { ...base, subtitle: '' } : { ...base, subcategoryId: null };
     setDraftTile(tile);
     setEditingId(tile.id);
     setLogoPreview(null);
@@ -448,67 +476,104 @@ export function HomepageSectionManager({ section, title, description }: Props) {
     setLogoDims(null);
   };
 
+  const canDragList = !search.trim() && filter === 'all';
+
+  const pageNumbers = useMemo(() => {
+    const maxButtons = 5;
+    if (totalPages <= maxButtons) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    const start = Math.max(1, Math.min(safePage - 2, totalPages - maxButtons + 1));
+    return Array.from({ length: maxButtons }, (_, i) => start + i);
+  }, [safePage, totalPages]);
+
+  if (adminQ.isLoading) {
+    return (
+      <AdminPage dense>
+        <PageHeader title={title} description={description} />
+        <div className="space-y-3" role="status" aria-busy="true" aria-label="Loading">
+          <div className="h-16 animate-pulse rounded-lg bg-[var(--bg-muted)]" />
+          <div className="h-40 animate-pulse rounded-lg bg-[var(--bg-muted)]" />
+        </div>
+      </AdminPage>
+    );
+  }
+
   return (
-    <AdminPage>
+    <AdminPage dense>
       <PageHeader
         title={title}
         description={description}
         actions={
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               type="button"
-              variant="secondary"
+              size="sm"
+              variant="ghost"
               disabled={categoriesQ.isLoading || missingFromDb === 0}
               onClick={syncFromDb}
             >
               <RefreshCw className="h-4 w-4" />
-              Sync from database
-              {missingFromDb > 0 ? ` (${missingFromDb})` : ''}
+              Sync{missingFromDb > 0 ? ` (${missingFromDb})` : ''}
             </Button>
-            <Button type="button" variant="secondary" onClick={openCreate}>
+            <Button type="button" size="sm" variant="ghost" onClick={openCreate}>
               <Plus className="h-4 w-4" />
-              Create {noun}
+              New
             </Button>
             <Button
               type="button"
+              size="sm"
               variant="secondary"
               disabled={!dirty || saveMut.isPending}
               onClick={() => saveMut.mutate(false)}
             >
               <Save className="h-4 w-4" />
-              Save draft
+              Draft
             </Button>
             <Button
               type="button"
+              size="sm"
               disabled={saveMut.isPending}
               onClick={() => saveMut.mutate(true)}
             >
               <Upload className="h-4 w-4" />
-              Save & publish
+              Publish
             </Button>
           </div>
         }
       />
 
       {message ? (
-        <Alert variant={message.tone === 'success' ? 'success' : 'danger'} className="mb-4">
-          {message.text}
-        </Alert>
+        <Alert variant={message.tone === 'success' ? 'success' : 'danger'}>{message.text}</Alert>
       ) : null}
-      {dirty ? (
-        <Alert variant="warning" className="mb-4">
-          You have unpublished draft changes for this section.
-        </Alert>
-      ) : null}
+      {dirty ? <Alert variant="warning">Unpublished draft changes.</Alert> : null}
       {storageQ.data && !storageQ.data.configured ? (
-        <Alert variant="warning" className="mb-4">
-          Cloudinary is not configured — logo uploads are disabled until storage credentials are set.
-        </Alert>
+        <Alert variant="warning">Logo uploads need Cloudinary credentials.</Alert>
       ) : null}
 
-      <div className="mb-4 grid gap-3 rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] p-4 sm:grid-cols-2">
-        <div>
-          <Label htmlFor="section-heading">Section heading</Label>
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-[var(--muted)]">
+        <span>
+          <span className="tabular-nums text-[var(--ink)]">{tiles.length}</span> total
+        </span>
+        <span>
+          <span className="tabular-nums text-[var(--ink)]">
+            {homepageTiles.length}/{HOMEPAGE_SECTION_PREVIEW_LIMIT}
+          </span>{' '}
+          homepage
+        </span>
+        <span>
+          <span className="tabular-nums text-[var(--ink)]">{remainingCount}</span> others
+        </span>
+        <span>
+          <span className="tabular-nums text-[var(--ink)]">{hiddenCount}</span> hidden
+        </span>
+      </div>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <div className="min-w-0 flex-1 sm:max-w-sm">
+          <Label htmlFor="section-heading" className="text-xs text-[var(--muted)]">
+            Section heading
+          </Label>
           <Input
             id="section-heading"
             value={sectionMeta.heading}
@@ -523,81 +588,161 @@ export function HomepageSectionManager({ section, title, description }: Props) {
             }}
           />
         </div>
-        <div className="flex items-end gap-3">
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={sectionMeta.visible}
-              onChange={(e) => {
-                const visible = e.target.checked;
-                setPayload((prev) =>
-                  section === 'categories'
-                    ? { ...prev, categories: { ...prev.categories, visible } }
-                    : { ...prev, topics: { ...prev.topics, visible } },
-                );
-                setDirty(true);
-              }}
-            />
-            Section visible on homepage
-          </label>
-        </div>
+        <label className="flex items-center gap-2 pb-2 text-sm text-[var(--ink)]">
+          <input
+            type="checkbox"
+            checked={sectionMeta.visible}
+            onChange={(e) => {
+              const visible = e.target.checked;
+              setPayload((prev) =>
+                section === 'categories'
+                  ? { ...prev, categories: { ...prev.categories, visible } }
+                  : { ...prev, topics: { ...prev.topics, visible } },
+              );
+              setDirty(true);
+            }}
+          />
+          Visible on homepage
+        </label>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
-        <Surface className="overflow-hidden p-0">
-          <div className="space-y-3 border-b border-[var(--line)] px-4 py-3">
-            <div>
-              <h2 className="font-display text-lg font-semibold">
-                All {nounPlural} ({tiles.length})
-              </h2>
-              <p className="text-sm text-[var(--muted)]">
-                Manage the full list here. The live homepage shows the first{' '}
-                {HOMEPAGE_SECTION_PREVIEW_LIMIT} <strong>visible</strong> items, then Others.
-                Currently {Math.min(homepageVisibleCount, HOMEPAGE_SECTION_PREVIEW_LIMIT)} of{' '}
-                {homepageVisibleCount} visible {nounPlural} appear on the homepage preview.
-              </p>
+      <section className="space-y-3">
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="text-sm font-medium text-[var(--ink)]">
+            Homepage top {HOMEPAGE_SECTION_PREVIEW_LIMIT}
+          </h2>
+          <p className="text-xs text-[var(--muted)]">Drag to reorder</p>
+        </div>
+        {homepageTiles.length === 0 ? (
+          <p className="text-sm text-[var(--muted)]">
+            No homepage tiles yet. Promote items from the list below.
+          </p>
+        ) : (
+          <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+            {homepageTiles.map(({ tile, index, rank }) => (
+              <li
+                key={tile.id}
+                draggable
+                onDragStart={() => setDragIndex(index)}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={() => {
+                  if (dragIndex === null || dragIndex === index) return;
+                  const next = [...tiles];
+                  const [item] = next.splice(dragIndex, 1);
+                  next.splice(index, 0, item!);
+                  patchSection(next);
+                  setDragIndex(null);
+                }}
+                className="group flex items-center gap-3 rounded-lg border border-[var(--line)] bg-[var(--bg-elevated)] px-3 py-2.5"
+              >
+                <GripVertical
+                  className="h-3.5 w-3.5 shrink-0 cursor-grab text-[var(--muted)] opacity-50 group-hover:opacity-100"
+                  aria-hidden
+                />
+                <span className="w-4 shrink-0 text-xs tabular-nums text-[var(--muted)]">{rank}</span>
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-md bg-[var(--bg-muted)]">
+                  {tile.logoUrl ? (
+                    <img src={tile.logoUrl} alt="" className="h-full w-full object-contain p-0.5" />
+                  ) : (
+                    <HomepageIcon iconKey={tile.iconKey} className="h-4 w-4" />
+                  )}
+                </div>
+                <p className="min-w-0 flex-1 truncate text-sm text-[var(--ink)]">{tile.displayTitle}</p>
+                <button
+                  type="button"
+                  className="shrink-0 text-xs text-[var(--muted)] hover:text-[var(--ink)]"
+                  onClick={() => demoteFromHomepage(index)}
+                >
+                  Remove
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_minmax(17rem,22rem)]">
+        <div className="space-y-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="min-w-0 flex-1">
+              <SearchField
+                id="tile-search"
+                value={search}
+                onChange={setSearch}
+                placeholder={`Search ${nounPlural}…`}
+                aria-label={`Search ${nounPlural}`}
+              />
             </div>
-            <SearchField
-              value={search}
-              onChange={setSearch}
-              placeholder={`Search ${nounPlural}…`}
-              aria-label={`Search ${nounPlural}`}
-            />
+            <div className="flex gap-2">
+              <Select
+                aria-label="Filter list"
+                value={filter}
+                onChange={(e) => setFilter(e.target.value as ListFilter)}
+                className="min-w-[8.5rem]"
+              >
+                <option value="all">All</option>
+                <option value="homepage">Homepage</option>
+                <option value="remaining">Others</option>
+                <option value="visible">Visible</option>
+                <option value="hidden">Hidden</option>
+              </Select>
+              <Select
+                aria-label="Page size"
+                value={String(pageSize)}
+                onChange={(e) => setPageSize(Number(e.target.value) as PageSize)}
+                className="min-w-[5.5rem]"
+              >
+                {PAGE_SIZES.map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </Select>
+            </div>
           </div>
 
+          <p className="text-xs text-[var(--muted)]">
+            {filtered.length} match{filtered.length === 1 ? '' : 'es'}
+            {!canDragList ? ' · clear filters to drag-reorder' : ''}
+          </p>
+
           {tiles.length === 0 ? (
-            <div className="space-y-3 p-8 text-center text-sm text-[var(--muted)]">
-              <p>No {nounPlural} in the homepage draft yet.</p>
-              <Button type="button" variant="secondary" onClick={syncFromDb}>
-                <RefreshCw className="h-4 w-4" />
-                Import from database
-              </Button>
-            </div>
-          ) : filteredIndexes.length === 0 ? (
-            <div className="p-8 text-center text-sm text-[var(--muted)]">
-              No {nounPlural} match “{search.trim()}”.
-            </div>
+            <EmptyState
+              title={`No ${nounPlural} yet`}
+              description="Sync from the database or create a new tile."
+              action={
+                <Button type="button" size="sm" variant="secondary" onClick={syncFromDb}>
+                  <RefreshCw className="h-4 w-4" />
+                  Sync
+                </Button>
+              }
+            />
+          ) : filtered.length === 0 ? (
+            <EmptyState title="No matches" description="Try a different search or filter." />
           ) : (
-            <ul className="divide-y divide-[var(--line)]">
-              {filteredIndexes.map((index) => {
-                const tile = tiles[index]!;
-                const rank = visibleHomepageRank(tiles, tile.id);
-                const onHomepage =
-                  rank != null && rank <= HOMEPAGE_SECTION_PREVIEW_LIMIT;
-                const inOthers =
-                  tile.visible &&
-                  !isOthersTitle(tile.displayTitle) &&
-                  rank != null &&
-                  rank > HOMEPAGE_SECTION_PREVIEW_LIMIT;
+            <ul className="divide-y divide-[var(--line)] border-y border-[var(--line)]">
+              {pageItems.map(({ tile, index, rank, onHomepage }) => {
+                const linkedLabel =
+                  section === 'topics' && 'subcategoryId' in tile && tile.subcategoryId
+                    ? categoryNameById.get(tile.subcategoryId)
+                    : tile.categoryId
+                      ? categoryNameById.get(tile.categoryId)
+                      : null;
 
                 return (
                   <li
                     key={tile.id}
-                    draggable={!search.trim()}
-                    onDragStart={() => setDragIndex(index)}
-                    onDragOver={(e) => e.preventDefault()}
+                    draggable={canDragList}
+                    onDragStart={() => {
+                      if (!canDragList) return;
+                      setDragIndex(index);
+                    }}
+                    onDragOver={(e) => {
+                      if (!canDragList) return;
+                      e.preventDefault();
+                    }}
                     onDrop={() => {
-                      if (dragIndex === null || dragIndex === index) return;
+                      if (!canDragList || dragIndex === null || dragIndex === index) return;
                       const next = [...tiles];
                       const [item] = next.splice(dragIndex, 1);
                       next.splice(index, 0, item!);
@@ -605,49 +750,49 @@ export function HomepageSectionManager({ section, title, description }: Props) {
                       setDragIndex(null);
                     }}
                     className={cn(
-                      'flex flex-wrap items-center gap-3 px-4 py-3 transition-colors',
-                      editingId === tile.id && 'bg-[var(--info-soft)]',
-                      onHomepage && 'bg-[color-mix(in_srgb,var(--success-soft)_55%,transparent)]',
+                      'flex items-center gap-2 py-2.5 sm:gap-3',
+                      editingId === tile.id && 'bg-[var(--bg-muted)]/60',
                     )}
                   >
                     <button
                       type="button"
-                      className="cursor-grab text-[var(--muted)] disabled:cursor-not-allowed disabled:opacity-40"
+                      className="cursor-grab text-[var(--muted)] opacity-40 hover:opacity-100 disabled:cursor-not-allowed"
                       aria-label="Drag to reorder"
-                      disabled={Boolean(search.trim())}
-                      title={
-                        search.trim()
-                          ? 'Clear search to drag-and-drop'
-                          : 'Drag to reorder'
-                      }
+                      disabled={!canDragList}
                     >
                       <GripVertical className="h-4 w-4" />
                     </button>
-                    <span className="w-8 text-center text-xs font-semibold text-[var(--muted)]">
-                      {index + 1}
-                    </span>
-                    <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg)]">
+                    <Input
+                      className="h-8 w-12 px-1 text-center text-xs"
+                      type="number"
+                      min={1}
+                      max={tiles.length}
+                      value={index + 1}
+                      aria-label="Position"
+                      onChange={(e) => {
+                        const pos = Number(e.target.value);
+                        if (!Number.isFinite(pos)) return;
+                        patchSection(reorderToPosition(tiles, index, pos));
+                      }}
+                    />
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-md bg-[var(--bg-muted)]">
                       {tile.logoUrl ? (
                         <img src={tile.logoUrl} alt="" className="h-full w-full object-contain" />
                       ) : (
-                        <HomepageIcon iconKey={tile.iconKey} className="h-8 w-8" />
+                        <HomepageIcon iconKey={tile.iconKey} className="h-4 w-4" />
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium text-[var(--ink)]">{tile.displayTitle}</p>
-                      <p className="truncate text-xs text-[var(--muted)]">{tile.fallbackHref}</p>
+                      <p className="truncate text-sm text-[var(--ink)]">{tile.displayTitle}</p>
+                      <p className="truncate text-xs text-[var(--muted)]">
+                        {onHomepage
+                          ? `Homepage #${rank}`
+                          : !tile.visible
+                            ? 'Hidden'
+                            : linkedLabel || 'Others'}
+                      </p>
                     </div>
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {onHomepage ? (
-                        <Badge variant="success">Homepage #{rank}</Badge>
-                      ) : null}
-                      {inOthers ? <Badge variant="default">Others list</Badge> : null}
-                      {!tile.visible ? <Badge variant="default">Hidden</Badge> : null}
-                      {tile.visible && !onHomepage && !inOthers ? (
-                        <Badge variant="success">Visible</Badge>
-                      ) : null}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-1">
+                    <div className="flex shrink-0 items-center gap-0.5">
                       <Button
                         type="button"
                         size="sm"
@@ -655,7 +800,7 @@ export function HomepageSectionManager({ section, title, description }: Props) {
                         aria-label="Move up"
                         onClick={() => patchSection(moveItem(tiles, index, -1))}
                       >
-                        <ArrowUp className="h-4 w-4" />
+                        <ArrowUp className="h-3.5 w-3.5" />
                       </Button>
                       <Button
                         type="button"
@@ -664,47 +809,30 @@ export function HomepageSectionManager({ section, title, description }: Props) {
                         aria-label="Move down"
                         onClick={() => patchSection(moveItem(tiles, index, 1))}
                       >
-                        <ArrowDown className="h-4 w-4" />
+                        <ArrowDown className="h-3.5 w-3.5" />
                       </Button>
-                      <Input
-                        className="w-16"
-                        type="number"
-                        min={1}
-                        max={tiles.length}
-                        value={index + 1}
-                        aria-label="Position"
-                        onChange={(e) => {
-                          const pos = Number(e.target.value);
-                          if (!Number.isFinite(pos)) return;
-                          patchSection(reorderToPosition(tiles, index, pos));
-                        }}
-                      />
                       {!onHomepage && tile.visible && !isOthersTitle(tile.displayTitle) ? (
                         <Button
                           type="button"
                           size="sm"
-                          variant="secondary"
+                          variant="ghost"
                           onClick={() => promoteToHomepage(index)}
                         >
-                          To top {HOMEPAGE_SECTION_PREVIEW_LIMIT}
+                          <Star className="h-3.5 w-3.5" />
+                          <span className="hidden sm:inline">Top 5</span>
                         </Button>
                       ) : null}
                       {onHomepage ? (
                         <Button
                           type="button"
                           size="sm"
-                          variant="secondary"
+                          variant="ghost"
                           onClick={() => demoteFromHomepage(index)}
                         >
-                          To Others
+                          Remove
                         </Button>
                       ) : null}
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => openEdit(tile)}
-                      >
+                      <Button type="button" size="sm" variant="ghost" onClick={() => openEdit(tile)}>
                         Edit
                       </Button>
                       <Button
@@ -712,16 +840,18 @@ export function HomepageSectionManager({ section, title, description }: Props) {
                         size="sm"
                         variant="ghost"
                         onClick={() => {
-                          const next = tiles.map((t) =>
-                            t.id === tile.id ? { ...t, visible: !t.visible } : t,
+                          patchSection(
+                            tiles.map((t) =>
+                              t.id === tile.id ? { ...t, visible: !t.visible } : t,
+                            ),
                           );
-                          patchSection(next);
                         }}
+                        aria-label={tile.visible ? 'Hide' : 'Show'}
                       >
                         {tile.visible ? (
-                          <Eye className="h-4 w-4" />
+                          <Eye className="h-3.5 w-3.5" />
                         ) : (
-                          <EyeOff className="h-4 w-4" />
+                          <EyeOff className="h-3.5 w-3.5" />
                         )}
                       </Button>
                       <Button
@@ -729,8 +859,9 @@ export function HomepageSectionManager({ section, title, description }: Props) {
                         size="sm"
                         variant="ghost"
                         onClick={() => setDeleteId(tile.id)}
+                        aria-label="Delete"
                       >
-                        <Trash2 className="h-4 w-4 text-[var(--danger)]" />
+                        <Trash2 className="h-3.5 w-3.5 text-[var(--danger)]" />
                       </Button>
                     </div>
                   </li>
@@ -738,14 +869,83 @@ export function HomepageSectionManager({ section, title, description }: Props) {
               })}
             </ul>
           )}
-        </Surface>
 
-        <Surface className="p-4">
+          {filtered.length > 0 && totalPages > 1 ? (
+            <div className="flex items-center justify-between gap-3 pt-1">
+              <p className="text-xs tabular-nums text-[var(--muted)]">
+                {safePage} / {totalPages}
+              </p>
+              <div className="flex items-center gap-1">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  disabled={safePage <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  aria-label="Previous page"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                {pageNumbers.map((n) => (
+                  <Button
+                    key={n}
+                    type="button"
+                    size="sm"
+                    variant={n === safePage ? 'secondary' : 'ghost'}
+                    className="min-w-8 tabular-nums"
+                    onClick={() => setPage(n)}
+                  >
+                    {n}
+                  </Button>
+                ))}
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  disabled={safePage >= totalPages}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  aria-label="Next page"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          ) : null}
+        </div>
+
+        <AdminFormPanel
+          title={
+            draftTile
+              ? tiles.some((t) => t.id === draftTile.id)
+                ? `Edit ${noun}`
+                : `New ${noun}`
+              : 'Details'
+          }
+          description={draftTile ? undefined : `Select a ${noun} to edit.`}
+          footer={
+            draftTile ? (
+              <>
+                <Button type="button" size="sm" onClick={commitDraft}>
+                  Apply
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setDraftTile(null);
+                    setEditingId(null);
+                    setLogoPreview(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+              </>
+            ) : null
+          }
+        >
           {draftTile ? (
-            <div className="space-y-4">
-              <h2 className="font-display text-lg font-semibold">
-                {tiles.some((t) => t.id === draftTile.id) ? `Edit ${noun}` : `Create ${noun}`}
-              </h2>
+            <div className="space-y-3">
               <div>
                 <Label htmlFor="tile-title">Name</Label>
                 <Input
@@ -767,7 +967,7 @@ export function HomepageSectionManager({ section, title, description }: Props) {
                 </div>
               ) : null}
               <div>
-                <Label htmlFor="tile-href">Fallback link</Label>
+                <Label htmlFor="tile-href">Link</Label>
                 <Input
                   id="tile-href"
                   value={draftTile.fallbackHref}
@@ -775,7 +975,7 @@ export function HomepageSectionManager({ section, title, description }: Props) {
                 />
               </div>
               <div>
-                <Label htmlFor="tile-icon">Fallback icon</Label>
+                <Label htmlFor="tile-icon">Icon</Label>
                 <Select
                   id="tile-icon"
                   value={draftTile.iconKey}
@@ -794,7 +994,7 @@ export function HomepageSectionManager({ section, title, description }: Props) {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="tile-cat">Linked category (optional)</Label>
+                <Label htmlFor="tile-cat">Category</Label>
                 <Select
                   id="tile-cat"
                   value={draftTile.categoryId ?? ''}
@@ -805,7 +1005,7 @@ export function HomepageSectionManager({ section, title, description }: Props) {
                     })
                   }
                 >
-                  <option value="">— None —</option>
+                  <option value="">None</option>
                   {roots.map((r) => (
                     <option key={r.id} value={r.id}>
                       {r.name}
@@ -816,7 +1016,7 @@ export function HomepageSectionManager({ section, title, description }: Props) {
               </div>
               {section === 'topics' ? (
                 <div>
-                  <Label htmlFor="tile-sub">Linked subcategory (optional)</Label>
+                  <Label htmlFor="tile-sub">Subcategory</Label>
                   <Select
                     id="tile-sub"
                     value={'subcategoryId' in draftTile ? (draftTile.subcategoryId ?? '') : ''}
@@ -830,7 +1030,7 @@ export function HomepageSectionManager({ section, title, description }: Props) {
                       } as TopicTile);
                     }}
                   >
-                    <option value="">— None —</option>
+                    <option value="">None</option>
                     {flatChildren.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.label}
@@ -842,12 +1042,8 @@ export function HomepageSectionManager({ section, title, description }: Props) {
 
               <div className="space-y-2">
                 <Label>Logo</Label>
-                <p className="text-xs text-[var(--muted)]">
-                  Recommended {HOMEPAGE_TILE_LOGO_SIZE}×{HOMEPAGE_TILE_LOGO_SIZE}px (1:1). PNG, JPG,
-                  WebP, or SVG up to 2MB. Other sizes are auto-fitted on the server.
-                </p>
-                <div className="flex flex-wrap items-start gap-4">
-                  <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-[var(--radius-lg)] border border-dashed border-[var(--line)] bg-[var(--bg)]">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-md bg-[var(--bg-muted)]">
                     {logoPreview || draftTile.logoUrl ? (
                       <img
                         src={logoPreview || draftTile.logoUrl || ''}
@@ -855,21 +1051,17 @@ export function HomepageSectionManager({ section, title, description }: Props) {
                         className="h-full w-full object-contain"
                       />
                     ) : (
-                      <ImagePlus className="h-8 w-8 text-[var(--muted)]" />
+                      <ImagePlus className="h-5 w-5 text-[var(--muted)]" />
                     )}
                   </div>
-                  <div className="space-y-2">
-                    {(logoDims || (draftTile.logoWidth && draftTile.logoHeight)) && (
+                  <div className="min-w-0 flex-1 space-y-2">
+                    {uploadProgress ? (
+                      <p className="text-xs text-[var(--muted)]">{uploadProgress}</p>
+                    ) : (
                       <p className="text-xs text-[var(--muted)]">
-                        Current:{' '}
-                        {logoDims
-                          ? `${logoDims.w}×${logoDims.h}px`
-                          : `${draftTile.logoWidth}×${draftTile.logoHeight}px`}
+                        {HOMEPAGE_TILE_LOGO_SIZE}×{HOMEPAGE_TILE_LOGO_SIZE}px
                       </p>
                     )}
-                    {uploadProgress ? (
-                      <p className="text-xs text-[var(--info)]">{uploadProgress}</p>
-                    ) : null}
                     <Input
                       type="file"
                       accept=".png,.jpg,.jpeg,.webp,.svg,image/png,image/jpeg,image/webp,image/svg+xml"
@@ -877,8 +1069,8 @@ export function HomepageSectionManager({ section, title, description }: Props) {
                       onChange={(e) => void onLogoPick(e.target.files?.[0] ?? null)}
                     />
                     {(draftTile.logoAssetId || logoPreview) && (
-                      <Button type="button" size="sm" variant="secondary" onClick={clearLogo}>
-                        Remove logo
+                      <Button type="button" size="sm" variant="ghost" onClick={clearLogo}>
+                        Remove
                       </Button>
                     )}
                   </div>
@@ -891,53 +1083,22 @@ export function HomepageSectionManager({ section, title, description }: Props) {
                   checked={draftTile.visible}
                   onChange={(e) => setDraftTile({ ...draftTile, visible: e.target.checked })}
                 />
-                Visible on frontend
+                Visible
               </label>
-
-              <div className="flex flex-wrap gap-2 pt-2">
-                <Button type="button" onClick={commitDraft}>
-                  Apply to list
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => {
-                    setDraftTile(null);
-                    setEditingId(null);
-                    setLogoPreview(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-              </div>
             </div>
           ) : (
-            <div className="space-y-3 text-sm text-[var(--muted)]">
-              <h2 className="font-display text-lg font-semibold text-[var(--ink)]">Editor</h2>
-              <p>Select a {noun} to edit, create a new tile, or sync missing items from the database.</p>
-              <ul className="list-disc space-y-1.5 pl-5">
-                <li>
-                  Array order is the display order for all {tiles.length} tiles in this manager.
-                </li>
-                <li>
-                  Homepage shows the first {HOMEPAGE_SECTION_PREVIEW_LIMIT} <em>visible</em> tiles
-                  plus Others — never a hard cap on this admin list.
-                </li>
-                <li>
-                  Promote any item into the top {HOMEPAGE_SECTION_PREVIEW_LIMIT}; the previous #
-                  {HOMEPAGE_SECTION_PREVIEW_LIMIT} moves into the Others directory list.
-                </li>
-                <li>Save & publish to update the live marketing homepage.</li>
-              </ul>
-            </div>
+            <p className="text-sm text-[var(--muted)]">
+              Homepage shows the first {HOMEPAGE_SECTION_PREVIEW_LIMIT} visible tiles. Everything
+              else stays in this list for admin management.
+            </p>
           )}
-        </Surface>
+        </AdminFormPanel>
       </div>
 
       <ConfirmDialog
         open={Boolean(deleteId)}
-        title={`Delete ${noun} tile?`}
-        description={`This removes the tile from the homepage section draft. Linked taxonomy ${nounPlural} in the database are not deleted.`}
+        title={`Delete ${noun}?`}
+        description={`Removes this tile from the homepage draft. Database ${nounPlural} are not deleted.`}
         confirmLabel="Delete"
         destructive
         onConfirm={() => deleteId && removeTile(deleteId)}

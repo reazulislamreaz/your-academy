@@ -5,7 +5,7 @@ export default function AdminQuestionBankCategoriesPage() {
     <HomepageSectionManager
       section="categories"
       title="Question Bank Categories"
-      description="Manage homepage “Our Question Bank Categories”: logos, visibility, order, and links. Publish to update the live site."
+      description="Manage category tiles, homepage Top 5, and publish when ready."
     />
   );
 }
