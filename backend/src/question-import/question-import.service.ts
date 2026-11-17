@@ -35,7 +35,6 @@ import {
 } from './question-date.util';
 import {
   hashFileBuffer,
-  hashQuestionContent,
   hashQuestionIdentity,
   normalizeAnswerText,
   resolveCorrectOptionContent,

@@ -464,7 +464,7 @@ export default function AdminHomepagePage() {
         {tab === 'topics' ? (
           <SectionManagerRedirect
             title="Topic Based Question Analysis"
-            description="Manage the full topic tile list (sync from DB subcategories, reorder, top 5 for homepage + Others)."
+            description="Admin-curated topic tiles only (no auto-import from general categories). Reorder, top 5 for homepage + Others."
             href="/admin/topic-categories"
             section={payload.topics}
             onChange={(topics) => patch((p) => ({ ...p, topics }))}

@@ -5,7 +5,7 @@ export default function AdminTopicCategoriesPage() {
     <HomepageSectionManager
       section="topics"
       title="Topic Based Question Analysis"
-      description="Manage topic tiles, homepage Top 5, and publish when ready."
+      description="Add only the topics you want shown. Nothing is imported from general categories."
     />
   );
 }

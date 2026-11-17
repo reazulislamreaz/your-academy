@@ -41,7 +41,7 @@ export function AllTopicsDirectory({
         <EmptyState
           align="center"
           title="No topics yet"
-          description="When topic tiles are published in the admin, they will appear here with their logos."
+          description="Only topics added by an admin in Topic Based Question Analysis appear here. General categories are never imported automatically."
         />
       ) : (
         <Reveal>

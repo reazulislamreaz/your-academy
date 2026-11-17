@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { createDefaultHomepagePayload } from '@your-academy/shared';
+import type { HomepagePayload } from '@your-academy/shared';
 import { AllTopicsDirectory } from '@/components/marketing/all-topics-directory';
 import { getPublicHomepage } from '@/lib/api/homepage';
 
@@ -10,12 +10,13 @@ export const metadata: Metadata = {
 
 export const revalidate = 60;
 
-async function loadTopics() {
+async function loadTopics(): Promise<HomepagePayload['topics']['tiles']> {
   try {
     const home = await getPublicHomepage();
+    // Published CMS tiles only — never invent topics from taxonomy or defaults on failure.
     return home.payload.topics.tiles;
   } catch {
-    return createDefaultHomepagePayload().topics.tiles;
+    return [];
   }
 }
 

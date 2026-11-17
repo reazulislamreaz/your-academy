@@ -125,57 +125,21 @@ function buildCategoryTileFromRoot(root: AdminCategoryNode): CategoryTile {
   };
 }
 
-function buildTopicTileFromChild(
-  root: AdminCategoryNode,
-  child: AdminCategoryNode['children'][number],
-): TopicTile {
-  return {
-    id: newTileId(),
-    displayTitle: child.name,
-    iconKey: 'book',
-    categoryId: root.id,
-    subcategoryId: child.id,
-    fallbackHref: preliHrefForName(child.name),
-    visible: child.isActive,
-    logoAssetId: null,
-    logoUrl: null,
-  };
-}
-
-function syncTilesFromTaxonomy(
-  section: SectionKind,
+/** Question-bank categories only — never auto-import taxonomy into Topics. */
+function syncCategoryTilesFromTaxonomy(
   existing: AnyTile[],
   roots: AdminCategoryNode[],
 ): { tiles: AnyTile[]; added: number } {
-  if (section === 'categories') {
-    const linked = new Set(
-      existing.map((t) => t.categoryId).filter((id): id is string => Boolean(id)),
-    );
-    const next = [...existing];
-    let added = 0;
-    for (const root of roots) {
-      if (linked.has(root.id)) continue;
-      next.push(buildCategoryTileFromRoot(root));
-      linked.add(root.id);
-      added += 1;
-    }
-    return { tiles: next, added };
-  }
-
   const linked = new Set(
-    existing
-      .map((t) => ('subcategoryId' in t ? t.subcategoryId : null))
-      .filter((id): id is string => Boolean(id)),
+    existing.map((t) => t.categoryId).filter((id): id is string => Boolean(id)),
   );
   const next = [...existing];
   let added = 0;
   for (const root of roots) {
-    for (const child of root.children) {
-      if (linked.has(child.id)) continue;
-      next.push(buildTopicTileFromChild(root, child));
-      linked.add(child.id);
-      added += 1;
-    }
+    if (linked.has(root.id)) continue;
+    next.push(buildCategoryTileFromRoot(root));
+    linked.add(root.id);
+    added += 1;
   }
   return { tiles: next, added };
 }
@@ -255,15 +219,11 @@ export function HomepageSectionManager({ section, title, description }: Props) {
     return map;
   }, [roots]);
 
+  /** Missing root categories not yet linked as tiles (categories section only). */
   const missingFromDb = useMemo(() => {
-    if (section === 'categories') {
-      const linked = new Set(tiles.map((t) => t.categoryId).filter(Boolean));
-      return roots.filter((r) => !linked.has(r.id)).length;
-    }
-    const linked = new Set(
-      tiles.map((t) => ('subcategoryId' in t ? t.subcategoryId : null)).filter(Boolean),
-    );
-    return roots.reduce((n, r) => n + r.children.filter((c) => !linked.has(c.id)).length, 0);
+    if (section !== 'categories') return 0;
+    const linked = new Set(tiles.map((t) => t.categoryId).filter(Boolean));
+    return roots.filter((r) => !linked.has(r.id)).length;
   }, [roots, section, tiles]);
 
   const enriched = useMemo(() => {
@@ -352,18 +312,19 @@ export function HomepageSectionManager({ section, title, description }: Props) {
   });
 
   const syncFromDb = () => {
-    const { tiles: next, added } = syncTilesFromTaxonomy(section, tiles, roots);
+    if (section !== 'categories') return;
+    const { tiles: next, added } = syncCategoryTilesFromTaxonomy(tiles, roots);
     if (added === 0) {
       setMessage({
         tone: 'success',
-        text: `All database ${nounPlural} are already in this list.`,
+        text: 'All database categories are already in this list.',
       });
       return;
     }
     patchSection(next);
     setMessage({
       tone: 'success',
-      text: `Added ${added} ${noun}${added === 1 ? '' : 's'} from the database. Reorder, then save & publish.`,
+      text: `Added ${added} categor${added === 1 ? 'y' : 'ies'} from the database. Reorder, then save & publish.`,
     });
   };
 
@@ -506,16 +467,18 @@ export function HomepageSectionManager({ section, title, description }: Props) {
         description={description}
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              disabled={categoriesQ.isLoading || missingFromDb === 0}
-              onClick={syncFromDb}
-            >
-              <RefreshCw className="h-4 w-4" />
-              Sync{missingFromDb > 0 ? ` (${missingFromDb})` : ''}
-            </Button>
+            {section === 'categories' ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                disabled={categoriesQ.isLoading || missingFromDb === 0}
+                onClick={syncFromDb}
+              >
+                <RefreshCw className="h-4 w-4" />
+                Sync{missingFromDb > 0 ? ` (${missingFromDb})` : ''}
+              </Button>
+            ) : null}
             <Button type="button" size="sm" variant="ghost" onClick={openCreate}>
               <Plus className="h-4 w-4" />
               New
@@ -709,12 +672,23 @@ export function HomepageSectionManager({ section, title, description }: Props) {
           {tiles.length === 0 ? (
             <EmptyState
               title={`No ${nounPlural} yet`}
-              description="Sync from the database or create a new tile."
+              description={
+                section === 'topics'
+                  ? 'Add topics here manually. Nothing is imported from general categories.'
+                  : 'Sync from the database or create a new tile.'
+              }
               action={
-                <Button type="button" size="sm" variant="secondary" onClick={syncFromDb}>
-                  <RefreshCw className="h-4 w-4" />
-                  Sync
-                </Button>
+                section === 'categories' ? (
+                  <Button type="button" size="sm" variant="secondary" onClick={syncFromDb}>
+                    <RefreshCw className="h-4 w-4" />
+                    Sync
+                  </Button>
+                ) : (
+                  <Button type="button" size="sm" variant="secondary" onClick={openCreate}>
+                    <Plus className="h-4 w-4" />
+                    Add topic
+                  </Button>
+                )
               }
             />
           ) : filtered.length === 0 ? (
@@ -994,7 +968,9 @@ export function HomepageSectionManager({ section, title, description }: Props) {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="tile-cat">Category</Label>
+                <Label htmlFor="tile-cat">
+                  {section === 'topics' ? 'Link to bank category (optional)' : 'Linked category'}
+                </Label>
                 <Select
                   id="tile-cat"
                   value={draftTile.categoryId ?? ''}
@@ -1016,7 +992,10 @@ export function HomepageSectionManager({ section, title, description }: Props) {
               </div>
               {section === 'topics' ? (
                 <div>
-                  <Label htmlFor="tile-sub">Subcategory</Label>
+                  <Label htmlFor="tile-sub">Link to bank subcategory (optional)</Label>
+                  <p className="mb-1 text-xs text-[var(--muted)]">
+                    Optional navigation only — does not import or list taxonomy topics.
+                  </p>
                   <Select
                     id="tile-sub"
                     value={'subcategoryId' in draftTile ? (draftTile.subcategoryId ?? '') : ''}
@@ -1088,8 +1067,9 @@ export function HomepageSectionManager({ section, title, description }: Props) {
             </div>
           ) : (
             <p className="text-sm text-[var(--muted)]">
-              Homepage shows the first {HOMEPAGE_SECTION_PREVIEW_LIMIT} visible tiles. Everything
-              else stays in this list for admin management.
+              {section === 'topics'
+                ? `Only topics you add here appear on the site. General categories are never imported. Homepage shows the first ${HOMEPAGE_SECTION_PREVIEW_LIMIT} visible tiles.`
+                : `Homepage shows the first ${HOMEPAGE_SECTION_PREVIEW_LIMIT} visible tiles. Everything else stays in this list for admin management.`}
             </p>
           )}
         </AdminFormPanel>

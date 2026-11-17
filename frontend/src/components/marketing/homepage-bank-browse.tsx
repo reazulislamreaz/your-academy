@@ -112,21 +112,28 @@ export function HomepageBankBrowse({ categories, topics }: Props) {
                     </Link>
                   ) : null}
                 </div>
-                <ul className="motion-stagger grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 lg:gap-4">
-                  {previewTopics.map((tile) => (
-                    <li key={tile.id}>
-                      <HomepageTileCard
-                        href={topicTileHref(tile, roots)}
-                        title={tile.displayTitle}
-                        iconKey={tile.iconKey}
-                        logoUrl={tile.logoUrl}
-                      />
+                {previewTopics.length === 0 ? (
+                  <p className="rounded-[var(--radius-lg)] border border-dashed border-[var(--line)] bg-[var(--bg-elevated)] px-5 py-8 text-center text-sm text-[var(--muted-strong)]">
+                    No topics published yet. Admins add topics in Topic Based Question Analysis —
+                    general categories are not listed here automatically.
+                  </p>
+                ) : (
+                  <ul className="motion-stagger grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 lg:gap-4">
+                    {previewTopics.map((tile) => (
+                      <li key={tile.id}>
+                        <HomepageTileCard
+                          href={topicTileHref(tile, roots)}
+                          title={tile.displayTitle}
+                          iconKey={tile.iconKey}
+                          logoUrl={tile.logoUrl}
+                        />
+                      </li>
+                    ))}
+                    <li>
+                      <HomepageOthersTile href={ALL_TOPICS_PATH} />
                     </li>
-                  ))}
-                  <li>
-                    <HomepageOthersTile href={ALL_TOPICS_PATH} />
-                  </li>
-                </ul>
+                  </ul>
+                )}
               </div>
             </div>
           </Reveal>
