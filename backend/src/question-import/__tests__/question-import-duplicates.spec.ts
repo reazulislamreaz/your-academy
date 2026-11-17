@@ -1,7 +1,6 @@
 import { mkdtempSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
 import * as path from 'path';
-import { Prisma } from '@prisma/client';
 import { parseQuestionWorkbook } from '../excel-parser';
 import { QuestionImportService } from '../question-import.service';
 
@@ -12,7 +11,7 @@ jest.mock('../excel-parser', () => {
 
 const mockedParse = parseQuestionWorkbook as jest.Mock;
 
-describe('QuestionImportService — duplicate uploads', () => {
+describe('QuestionImportService — duplicates & blank stems allowed', () => {
   const user = { userId: 'admin-1', role: 'ADMIN' as const, sessionId: 's1' };
   let importDir: string;
   const oldImportDir = process.env.QUESTION_IMPORT_DIR;
@@ -64,26 +63,44 @@ describe('QuestionImportService — duplicate uploads', () => {
     return { prisma, tx };
   }
 
-  it('re-uploading an identical completed file no longer throws DUPLICATE_FILE', async () => {
-    const { prisma, tx } = makePrisma();
-    const existingBatch = {
-      id: 'old-batch-id',
-      batchCode: 'OLD',
-      displayName: 'Old file',
-      status: 'COMPLETED',
+  function baseRow(overrides: Record<string, unknown> = {}) {
+    return {
+      rowNumber: 2,
+      serial: '1',
+      question: 'What is 2 + 2?',
+      optionA: '3',
+      optionB: '4',
+      optionC: '5',
+      optionD: '6',
+      correctAnswer: 'B',
+      explanation: '',
+      subject: 'Bangla',
+      topic: '',
+      difficulty: 'Medium',
+      examCategory: '',
+      examYear: '',
+      questionDate: '2024-01-15',
+      source: '',
+      sectionTitle: '',
+      ...overrides,
     };
-    prisma.questionUploadBatch.findFirst.mockResolvedValue(existingBatch);
-    // Batch code is free; getBatch returns the new batch linked to the old one.
-    prisma.questionUploadBatch.findUnique.mockImplementation(
-      async (args: { where?: { batchCode?: string; id?: string } }) => {
-      if (args?.where?.batchCode) return null;
-      if (args?.where?.id === 'old-batch-id') return existingBatch;
+  }
+
+  it('marks in-file duplicates and DB-matching rows as VALID (not DUPLICATE)', async () => {
+    const { prisma, tx } = makePrisma();
+    prisma.questionUploadBatch.findFirst.mockResolvedValue(null);
+    prisma.questionUploadBatch.findUnique.mockImplementation(async (args: unknown) => {
+      const where = (args as { where?: { batchCode?: string; id?: string } } | undefined)?.where;
+      if (where?.batchCode) return null;
       return {
-        id: args.where.id,
+        id: where?.id ?? 'new-batch',
         batchCode: 'BATCH_X',
         displayName: 'Test upload',
         status: 'VALIDATED',
-        duplicateFileBatchId: 'old-batch-id',
+        duplicateFileBatchId: null,
+        validCount: 3,
+        invalidCount: 0,
+        duplicateCount: 0,
         uploadedBy: { id: 'admin-1', name: 'Admin' },
         placements: [],
       };
@@ -95,25 +112,9 @@ describe('QuestionImportService — duplicate uploads', () => {
     mockedParse.mockResolvedValue({
       preamble: '',
       rows: [
-        {
-          rowNumber: 2,
-          serial: '1',
-          question: 'What is 2 + 2?',
-          optionA: '3',
-          optionB: '4',
-          optionC: '5',
-          optionD: '6',
-          correctAnswer: 'B',
-          explanation: '',
-          subject: 'Bangla',
-          topic: '',
-          difficulty: 'Medium',
-          examCategory: '',
-          examYear: '',
-          questionDate: '2024-01-15',
-          source: '',
-          sectionTitle: '',
-        },
+        baseRow({ rowNumber: 2 }),
+        baseRow({ rowNumber: 3 }), // identical within file
+        baseRow({ rowNumber: 4, question: '' }), // blank stem
       ],
     });
 
@@ -129,19 +130,24 @@ describe('QuestionImportService — duplicate uploads', () => {
     const batch = await service.upload(user, file, { subjectHint: 'Bangla' });
 
     expect(batch.status).toBe('VALIDATED');
-    expect(batch.duplicateFileBatch).toEqual(
-      expect.objectContaining({ id: 'old-batch-id', batchCode: 'OLD' }),
-    );
-    expect(tx.questionImportRow.createMany).toHaveBeenCalledWith(
+    const createManyArg = tx.questionImportRow.createMany.mock.calls[0]![0] as {
+      data: Array<{ status: string; questionText: string; rowNumber: number }>;
+    };
+    expect(createManyArg.data).toHaveLength(3);
+    expect(createManyArg.data.every((r) => r.status === 'VALID')).toBe(true);
+    expect(createManyArg.data.find((r) => r.rowNumber === 4)?.questionText).toBe('');
+    expect(tx.questionUploadBatch.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.arrayContaining([
-          expect.objectContaining({ status: 'VALID' }),
-        ]),
+        data: expect.objectContaining({
+          validCount: 3,
+          invalidCount: 0,
+          duplicateCount: 0,
+        }),
       }),
     );
   });
 
-  it('a confirm-time contentHash collision is skipped, not failed', async () => {
+  it('confirm imports VALID rows including blank stems; does not skip duplicates', async () => {
     const { prisma, tx } = makePrisma();
     const batch = {
       id: 'batch-1',
@@ -171,7 +177,7 @@ describe('QuestionImportService — duplicate uploads', () => {
         rowNumber: 2,
         contentHash: 'abc123',
         serial: '1',
-        questionText: 'What is 2 + 2?',
+        questionText: '',
         optionA: '3',
         optionB: '4',
         optionC: '5',
@@ -188,41 +194,29 @@ describe('QuestionImportService — duplicate uploads', () => {
         sectionTitle: null,
       },
     ]);
-    prisma.questionImportRow.updateMany.mockResolvedValue({ count: 0 });
-    prisma.questionImportRow.count.mockImplementation(
-      async (args: { where?: { status?: string } }) =>
-        args?.where?.status === 'SKIPPED' ? 1 : 0,
-    );
+    prisma.questionImportRow.count.mockResolvedValue(0);
     prisma.question.findFirst.mockResolvedValue(null);
-    const p2002 = new Prisma.PrismaClientKnownRequestError(
-      'Unique constraint failed on the fields: (`content_hash`)',
-      { code: 'P2002', clientVersion: '6.5.0' },
-    );
-    tx.question.create.mockRejectedValue(p2002);
+    tx.question.create.mockResolvedValue({ id: 'new-q-1' });
 
     const service = new QuestionImportService(prisma as never);
-    const result = await service.confirmImport(user, 'batch-1', {});
+    await service.confirmImport(user, 'batch-1', { skipDuplicates: true });
 
+    expect(tx.question.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          title: '(blank)',
+          content: '',
+          contentHash: 'abc123',
+        }),
+      }),
+    );
     expect(tx.questionImportRow.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'row-1' },
-        data: expect.objectContaining({
-          status: 'SKIPPED',
-          errorMessage: expect.stringContaining('Duplicate question'),
-        }),
+        data: expect.objectContaining({ status: 'IMPORTED' }),
       }),
     );
-    expect(prisma.questionUploadBatch.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: 'batch-1' },
-        data: expect.objectContaining({
-          status: 'COMPLETED',
-          importedCount: 0,
-          failedCount: 0,
-          skippedCount: 1,
-        }),
-      }),
-    );
-    expect(result.status).toBe('VALIDATED');
+    // Even if client asks to skip duplicates, we must not mark DUPLICATE rows skipped.
+    expect(prisma.questionImportRow.updateMany).not.toHaveBeenCalled();
   });
 });

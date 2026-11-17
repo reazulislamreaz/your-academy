@@ -187,7 +187,7 @@ export class QuestionImportController {
   ) {
     return createSuccessResponse(
       await this.imports.confirmImport(user, id, {
-        skipDuplicates: dto.skipDuplicates ?? true,
+        skipDuplicates: dto.skipDuplicates ?? false,
       }),
       newRequestId(),
     );

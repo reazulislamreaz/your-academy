@@ -192,7 +192,7 @@ export default function QuestionImportsHubPage() {
       <PageHeader
         eyebrow="Content"
         title="Bulk question upload"
-        description="Import MCQs from the Google Sheets template (.xlsx/.csv), validate rows, skip duplicates, and publish into the question bank."
+        description="Import MCQs from the Google Sheets template (.xlsx/.csv), validate rows, allow duplicates and blank stems, and publish into the question bank."
         actions={
           <div className="flex flex-wrap gap-2">
             <a href={adminDownloadUrl('/admin/question-imports/template')}>

@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  ConflictException,
   Injectable,
   NotFoundException,
   UnprocessableEntityException,
@@ -50,37 +49,31 @@ export class QuestionsService {
     this.assertOptionShape(dto.options, false);
     const { questionDate, examYear } = this.resolveQuestionDate(dto.questionDate);
     const contentHash = this.computeContentHash(dto.content, dto.options);
-    await this.assertUniqueContentHash(contentHash);
 
-    try {
-      return await this.prisma.question.create({
-        data: {
-          title: dto.title.trim(),
-          content: dto.content,
-          explanation: dto.explanation,
-          categoryId: dto.categoryId,
-          subcategoryId: dto.subcategoryId,
-          difficulty: dto.difficulty ?? Difficulty.MEDIUM,
-          status: QuestionStatus.DRAFT,
-          questionDate,
-          examYear,
-          contentHash,
-          createdById: user.userId,
-          options: {
-            create: dto.options.map((o, index) => ({
-              label: o.label,
-              content: o.content,
-              isCorrect: o.isCorrect,
-              sortOrder: index,
-            })),
-          },
+    return await this.prisma.question.create({
+      data: {
+        title: dto.title.trim() || '(blank)',
+        content: dto.content,
+        explanation: dto.explanation,
+        categoryId: dto.categoryId,
+        subcategoryId: dto.subcategoryId,
+        difficulty: dto.difficulty ?? Difficulty.MEDIUM,
+        status: QuestionStatus.DRAFT,
+        questionDate,
+        examYear,
+        contentHash,
+        createdById: user.userId,
+        options: {
+          create: dto.options.map((o, index) => ({
+            label: o.label,
+            content: o.content,
+            isCorrect: o.isCorrect,
+            sortOrder: index,
+          })),
         },
-        include: { options: { orderBy: { sortOrder: 'asc' } } },
-      });
-    } catch (err) {
-      this.rethrowDuplicateHash(err);
-      throw err;
-    }
+      },
+      include: { options: { orderBy: { sortOrder: 'asc' } } },
+    });
   }
 
   async update(id: string, dto: UpdateQuestionDto) {
@@ -110,47 +103,41 @@ export class QuestionsService {
       });
     }
     const contentHash = this.computeContentHash(nextContent, hashOptions);
-    await this.assertUniqueContentHash(contentHash, id);
 
-    try {
-      return await this.prisma.$transaction(async (tx) => {
-        if (dto.options) {
-          await tx.questionOption.deleteMany({ where: { questionId: id } });
-          await tx.questionOption.createMany({
-            data: dto.options.map((o, index) => ({
-              questionId: id,
-              label: o.label,
-              content: o.content,
-              isCorrect: o.isCorrect,
-              sortOrder: index,
-            })),
-          });
-        }
-
-        const datePatch =
-          dto.questionDate !== undefined ? this.resolveQuestionDate(dto.questionDate) : null;
-
-        return tx.question.update({
-          where: { id },
-          data: {
-            ...(dto.title ? { title: dto.title.trim() } : {}),
-            ...(dto.content ? { content: dto.content } : {}),
-            ...(dto.explanation !== undefined ? { explanation: dto.explanation } : {}),
-            ...(dto.categoryId ? { categoryId: dto.categoryId } : {}),
-            ...(dto.subcategoryId !== undefined ? { subcategoryId: dto.subcategoryId } : {}),
-            ...(dto.difficulty ? { difficulty: dto.difficulty } : {}),
-            ...(datePatch
-              ? { questionDate: datePatch.questionDate, examYear: datePatch.examYear }
-              : {}),
-            contentHash,
-          },
-          include: { options: { orderBy: { sortOrder: 'asc' } } },
+    return await this.prisma.$transaction(async (tx) => {
+      if (dto.options) {
+        await tx.questionOption.deleteMany({ where: { questionId: id } });
+        await tx.questionOption.createMany({
+          data: dto.options.map((o, index) => ({
+            questionId: id,
+            label: o.label,
+            content: o.content,
+            isCorrect: o.isCorrect,
+            sortOrder: index,
+          })),
         });
+      }
+
+      const datePatch =
+        dto.questionDate !== undefined ? this.resolveQuestionDate(dto.questionDate) : null;
+
+      return tx.question.update({
+        where: { id },
+        data: {
+          ...(dto.title !== undefined ? { title: dto.title.trim() || '(blank)' } : {}),
+          ...(dto.content !== undefined ? { content: dto.content } : {}),
+          ...(dto.explanation !== undefined ? { explanation: dto.explanation } : {}),
+          ...(dto.categoryId ? { categoryId: dto.categoryId } : {}),
+          ...(dto.subcategoryId !== undefined ? { subcategoryId: dto.subcategoryId } : {}),
+          ...(dto.difficulty ? { difficulty: dto.difficulty } : {}),
+          ...(datePatch
+            ? { questionDate: datePatch.questionDate, examYear: datePatch.examYear }
+            : {}),
+          contentHash,
+        },
+        include: { options: { orderBy: { sortOrder: 'asc' } } },
       });
-    } catch (err) {
-      this.rethrowDuplicateHash(err);
-      throw err;
-    }
+    });
   }
 
   async publish(id: string, actorUserId?: string) {
@@ -565,38 +552,6 @@ export class QuestionsService {
   ): string {
     const correctContent = options.find((o) => o.isCorrect)?.content ?? '';
     return hashQuestionIdentity(content, correctContent);
-  }
-
-  private async assertUniqueContentHash(contentHash: string, excludeId?: string) {
-    const existing = await this.prisma.question.findFirst({
-      where: {
-        deletedAt: null,
-        contentHash,
-        ...(excludeId ? { NOT: { id: excludeId } } : {}),
-      },
-      select: { id: true, title: true },
-    });
-    if (existing) {
-      throw new ConflictException(
-        createErrorResponse(
-          'QUESTION_DUPLICATE',
-          `A question with the same text and correct answer already exists ("${existing.title.slice(0, 80)}")`,
-          newRequestId(),
-        ),
-      );
-    }
-  }
-
-  private rethrowDuplicateHash(err: unknown): void {
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-      throw new ConflictException(
-        createErrorResponse(
-          'QUESTION_DUPLICATE',
-          'A question with the same text and correct answer already exists',
-          newRequestId(),
-        ),
-      );
-    }
   }
 
   private async assertCategoryPair(categoryId: string, subcategoryId?: string) {

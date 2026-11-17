@@ -34,7 +34,6 @@ import {
   toIsoDateString,
 } from './question-date.util';
 import {
-  answerSnippet,
   hashFileBuffer,
   hashQuestionContent,
   hashQuestionIdentity,
@@ -459,23 +458,6 @@ export class QuestionImportService {
     await pipeline(Readable.from(file.buffer), createWriteStream(storagePath));
 
     const categoryIndex = await this.buildCategoryIndex();
-    const identityHashes: string[] = [];
-    const legacyTextHashes: string[] = [];
-    for (const row of parsed) {
-      if (!row.question) continue;
-      legacyTextHashes.push(hashQuestionContent(row.question));
-      const correct = normalizeCorrectAnswer(row.correctAnswer);
-      const correctContent = resolveCorrectOptionContent(correct, {
-        A: row.optionA,
-        B: row.optionB,
-        C: row.optionC,
-        D: row.optionD,
-      });
-      // Always hash identity (empty answer content when missing) so unanswered
-      // duplicates and answered duplicates are both caught against the DB.
-      identityHashes.push(hashQuestionIdentity(row.question, correctContent));
-    }
-    const existingDuplicates = await this.loadExistingDuplicates(identityHashes, legacyTextHashes);
 
     const collectionSubject = input.subjectHint?.trim() || '';
     const collectionTopic = input.topicHint?.trim() || '';
@@ -579,9 +561,8 @@ export class QuestionImportService {
     const rowCreates: Prisma.QuestionImportRowCreateManyInput[] = [];
     let validCount = 0;
     let invalidCount = 0;
-    let duplicateCount = 0;
-    /** identityHash → first row number + answer snippet in this file */
-    const seenInFile = new Map<string, { rowNumber: number; answer: string }>();
+    /** Duplicates are allowed — always 0 for new uploads (legacy batches may still show historical counts). */
+    const duplicateCount = 0;
 
     for (const row of parsed) {
       const subjectName = row.subject || collectionSubject;
@@ -590,7 +571,7 @@ export class QuestionImportService {
 
       const errors: string[] = [];
 
-      if (!row.question) errors.push('Column "প্রশ্ন": question text is required');
+      // Blank question text is allowed (DEC-024 2026-11-17). Options remain required.
       if (!row.optionA) errors.push('Column "ক": option is required');
       if (!row.optionB) errors.push('Column "খ": option is required');
       if (!row.optionC) errors.push('Column "গ": option is required');
@@ -611,11 +592,8 @@ export class QuestionImportService {
         C: row.optionC,
         D: row.optionD,
       });
-      /** Identity = normalized stem + correct-option text (empty when unanswered). */
-      const hash = row.question
-        ? hashQuestionIdentity(row.question, correctContent)
-        : null;
-      const legacyTextHash = row.question ? hashQuestionContent(row.question) : null;
+      /** Informational identity hash — duplicates are allowed and still import as VALID. */
+      const hash = hashQuestionIdentity(row.question ?? '', correctContent);
 
       const difficulty = parseDifficulty(row.difficulty);
       if (!difficulty) {
@@ -677,6 +655,7 @@ export class QuestionImportService {
 
       const serial = row.serial?.trim().slice(0, 32) || null;
       const sectionTitle = row.sectionTitle?.trim().slice(0, 500) || null;
+      const questionText = row.question ?? '';
 
       if (errors.length) {
         invalidCount += 1;
@@ -687,7 +666,7 @@ export class QuestionImportService {
           status: QuestionImportRowStatus.INVALID,
           contentHash: hash,
           serial,
-          questionText: row.question || '(empty)',
+          questionText,
           optionA: row.optionA || null,
           optionB: row.optionB || null,
           optionC: row.optionC || null,
@@ -707,77 +686,6 @@ export class QuestionImportService {
         continue;
       }
 
-      const answerLabel = answerSnippet(correctContent);
-      const priorInFile = hash ? seenInFile.get(hash) : undefined;
-      if (hash && priorInFile) {
-        duplicateCount += 1;
-        rowCreates.push({
-          id: randomUUID(),
-          batchId,
-          rowNumber: row.rowNumber,
-          status: QuestionImportRowStatus.DUPLICATE,
-          contentHash: hash,
-          serial,
-          questionText: row.question,
-          optionA: row.optionA,
-          optionB: row.optionB,
-          optionC: row.optionC,
-          optionD: row.optionD,
-          correctAnswer: correct,
-          explanation: row.explanation || null,
-          subjectName,
-          topicName,
-          difficulty: difficulty!,
-          examCategory: examCategory || null,
-          examYear: rowExamYear,
-          questionDate: rowQuestionDate,
-          source: row.source || null,
-          sectionTitle,
-          errorMessage:
-            `Row ${row.rowNumber}: Duplicate of row ${priorInFile.rowNumber} in this file ` +
-            `(same question text and correct answer "${priorInFile.answer}")`,
-        });
-        continue;
-      }
-
-      const existing =
-        hash || legacyTextHash
-          ? existingDuplicates.findMatch(hash, legacyTextHash, correctContent)
-          : undefined;
-      if (existing) {
-        duplicateCount += 1;
-        rowCreates.push({
-          id: randomUUID(),
-          batchId,
-          rowNumber: row.rowNumber,
-          status: QuestionImportRowStatus.DUPLICATE,
-          contentHash: hash,
-          serial,
-          questionText: row.question,
-          optionA: row.optionA,
-          optionB: row.optionB,
-          optionC: row.optionC,
-          optionD: row.optionD,
-          correctAnswer: correct,
-          explanation: row.explanation || null,
-          subjectName,
-          topicName,
-          difficulty: difficulty!,
-          examCategory: examCategory || null,
-          examYear: rowExamYear,
-          questionDate: rowQuestionDate,
-          source: row.source || null,
-          sectionTitle,
-          existingQuestionId: existing.id,
-          errorMessage:
-            `Row ${row.rowNumber}: Duplicate of existing question ` +
-            `("${existing.title.slice(0, 80)}") — same question text and correct answer ` +
-            `"${answerSnippet(existing.correctAnswer || correctContent)}"`,
-        });
-        continue;
-      }
-
-      if (hash) seenInFile.set(hash, { rowNumber: row.rowNumber, answer: answerLabel });
       validCount += 1;
       rowCreates.push({
         id: randomUUID(),
@@ -786,7 +694,7 @@ export class QuestionImportService {
         status: QuestionImportRowStatus.VALID,
         contentHash: hash,
         serial,
-        questionText: row.question,
+        questionText,
         optionA: row.optionA,
         optionB: row.optionB,
         optionC: row.optionC,
@@ -874,7 +782,9 @@ export class QuestionImportService {
     });
 
     try {
-      const result = await this.runImport(user, batchId, opts.skipDuplicates !== false);
+      // Duplicates are always imported. skipDuplicates is ignored (kept for API compat).
+      void opts.skipDuplicates;
+      const result = await this.runImport(user, batchId);
       return result;
     } catch (err) {
       await this.prisma.questionUploadBatch.update({
@@ -888,31 +798,22 @@ export class QuestionImportService {
     }
   }
 
-  private async runImport(user: RequestUser, batchId: string, skipDuplicates: boolean) {
+  private async runImport(user: RequestUser, batchId: string) {
     const batch = await this.prisma.questionUploadBatch.findUniqueOrThrow({
       where: { id: batchId },
       select: { id: true, examYear: true, examCategoryHint: true, questionDate: true },
     });
     const categoryIndex = await this.buildCategoryIndex();
+    // Import VALID rows and any legacy DUPLICATE rows from older uploads.
     const rows = await this.prisma.questionImportRow.findMany({
       where: {
         batchId,
         status: {
-          in: skipDuplicates
-            ? [QuestionImportRowStatus.VALID]
-            : [QuestionImportRowStatus.VALID, QuestionImportRowStatus.DUPLICATE],
+          in: [QuestionImportRowStatus.VALID, QuestionImportRowStatus.DUPLICATE],
         },
       },
       orderBy: { rowNumber: 'asc' },
     });
-
-    // Mark duplicates as skipped when skipping
-    if (skipDuplicates) {
-      await this.prisma.questionImportRow.updateMany({
-        where: { batchId, status: QuestionImportRowStatus.DUPLICATE },
-        data: { status: QuestionImportRowStatus.SKIPPED },
-      });
-    }
 
     let importedCount = 0;
     let failedCount = 0;
@@ -922,7 +823,6 @@ export class QuestionImportService {
       const chunk = rows.slice(i, i + chunkSize);
       await this.prisma.$transaction(async (tx) => {
         for (const row of chunk) {
-          if (row.status === QuestionImportRowStatus.DUPLICATE && skipDuplicates) continue;
           try {
             if (!row.contentHash) throw new Error('Missing content hash');
             const subject = categoryIndex.rootsByName.get(this.nameKey(row.subjectName ?? ''));
@@ -989,7 +889,7 @@ export class QuestionImportService {
             // until an admin sets a correct option and publishes.
             const publishNow = hasCorrect;
 
-            const title = row.questionText.slice(0, 200);
+            const title = (row.questionText.trim() || '(blank)').slice(0, 200);
             const created = await tx.question.create({
               data: {
                 title,
@@ -1031,25 +931,14 @@ export class QuestionImportService {
             });
             importedCount += 1;
           } catch (err) {
-            // A row that slipped past the upload-time check — created elsewhere
-            // after the upload, or by a concurrent import — hits the partial
-            // unique index on contentHash. That is a duplicate to skip, not a
-            // failed row: mark it SKIPPED so the batch counts it with the
-            // other duplicates instead of failing the import.
-            const isDuplicate =
-              err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002';
-            const message = isDuplicate
-              ? 'Duplicate question — same question text and correct answer already exist'
-              : err instanceof Error
-                ? err.message.slice(0, 500)
-                : 'Import failed';
-            if (!isDuplicate) failedCount += 1;
+            // Genuine insert failures only — duplicates are allowed and must not be skipped.
+            failedCount += 1;
+            const message =
+              err instanceof Error ? err.message.slice(0, 500) : 'Import failed';
             await tx.questionImportRow.update({
               where: { id: row.id },
               data: {
-                status: isDuplicate
-                  ? QuestionImportRowStatus.SKIPPED
-                  : QuestionImportRowStatus.INVALID,
+                status: QuestionImportRowStatus.INVALID,
                 errorMessage: message,
               },
             });

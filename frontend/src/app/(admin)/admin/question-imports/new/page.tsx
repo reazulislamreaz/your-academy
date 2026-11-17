@@ -407,7 +407,7 @@ export default function NewQuestionImportPage() {
           <div>
             <h2 className="font-display text-lg font-bold">Validate & preview</h2>
             <p className="text-sm leading-relaxed text-[var(--muted-strong)]">
-              We will parse the file, flag duplicates only when question text and correct answer both match, and open the preview for import.
+              We will parse the file, accept duplicate stems and blank question text, skip only genuinely invalid rows, and open the preview for import.
             </p>
           </div>
 

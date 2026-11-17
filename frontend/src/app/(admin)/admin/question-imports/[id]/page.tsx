@@ -43,7 +43,7 @@ function QuestionImportDetailContent() {
   const searchParams = useSearchParams();
   const qc = useQueryClient();
   const [rowStatus, setRowStatus] = useState('');
-  const [skipDuplicates, setSkipDuplicates] = useState(true);
+  const [skipDuplicates] = useState(false);
   const [editing, setEditing] = useState(false);
   const [displayName, setDisplayName] = useState('');
   const [subjectHint, setSubjectHint] = useState('');
@@ -155,12 +155,11 @@ function QuestionImportDetailContent() {
     const data = batch.data;
     if (!data) return [];
     return [
-      { label: 'Total rows', value: data.totalRows },
-      { label: 'Valid', value: data.validCount, tone: 'text-[var(--success-fg)]' },
-      { label: 'Duplicates', value: data.duplicateCount, tone: 'text-[var(--warning-fg)]' },
-      { label: 'Invalid', value: data.invalidCount, tone: 'text-[var(--danger-fg)]' },
-      { label: 'Imported', value: data.importedCount },
-      { label: 'Skipped', value: data.skippedCount ?? 0 },
+      { label: 'Total processed', value: data.totalRows },
+      { label: 'Valid (ready)', value: data.validCount, tone: 'text-[var(--success-fg)]' },
+      { label: 'Invalid (skipped)', value: data.invalidCount, tone: 'text-[var(--danger-fg)]' },
+      { label: 'Successfully imported', value: data.importedCount, tone: 'text-[var(--success-fg)]' },
+      { label: 'Other skipped', value: data.skippedCount ?? 0 },
     ];
   }, [batch.data]);
 
@@ -225,7 +224,7 @@ function QuestionImportDetailContent() {
       {data.status === 'IMPORTING' ? (
         <Alert variant="info">
           Import in progress. Counts update as chunks commit — refresh if the status stalls.
-          Download the report after completion for a full VALID/DUPLICATE/INVALID summary.
+          Download the report after completion for a full processed / imported / skipped summary.
         </Alert>
       ) : null}
 
@@ -424,18 +423,10 @@ function QuestionImportDetailContent() {
               Import questions
             </h3>
             <p className="mt-1 text-sm leading-relaxed text-[var(--ink-soft)]">
-              Import {data.validCount} valid question{data.validCount === 1 ? '' : 's'}. Duplicates
-              and invalid rows are never inserted as new questions.
+              Import {data.validCount} valid question{data.validCount === 1 ? '' : 's'}. Duplicate
+              stems and blank question text are allowed. Only genuinely invalid rows are skipped —
+              they never stop the rest of the batch.
             </p>
-            <label className="mt-3 flex cursor-pointer items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                className="size-4 cursor-pointer accent-[var(--highlight)]"
-                checked={skipDuplicates}
-                onChange={(e) => setSkipDuplicates(e.target.checked)}
-              />
-              Skip duplicate rows (recommended)
-            </label>
             {importProgress != null ? (
               <div className="mt-3">
                 <div className="mb-1 flex justify-between text-sm font-medium text-[var(--ink-soft)]">
