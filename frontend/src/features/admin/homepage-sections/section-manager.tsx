@@ -9,6 +9,7 @@ import {
   GripVertical,
   ImagePlus,
   Plus,
+  RefreshCw,
   Save,
   Trash2,
   Upload,
@@ -16,6 +17,7 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import {
   HOMEPAGE_ICON_KEYS,
+  HOMEPAGE_SECTION_PREVIEW_LIMIT,
   HOMEPAGE_TILE_LOGO_SIZE,
   createDefaultHomepagePayload,
   type HomepagePayload,
@@ -28,15 +30,16 @@ import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { SearchField } from '@/components/ui/search-field';
 import { Select } from '@/components/ui/select';
 import { Surface } from '@/components/ui/surface';
+import type { AdminCategoryNode } from '@/features/admin/categories/types';
 import { apiFetch } from '@/lib/api/client';
 import {
   getAdminHomepage,
   publishHomepage,
   saveHomepageDraft,
 } from '@/lib/api/homepage';
-import type { CategoryNode } from '@/lib/api/types';
 import {
   assertHomepageTileLogoFile,
   getStorageStatus,
@@ -82,8 +85,105 @@ function newTileId(): string {
   return `tile-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
+function isOthersTitle(title: string): boolean {
+  return title.trim().toLowerCase() === 'others';
+}
+
+/** Rank among visible non-Others tiles (1..N). Null when hidden / Others. */
+function visibleHomepageRank(tiles: AnyTile[], tileId: string): number | null {
+  let rank = 0;
+  for (const tile of tiles) {
+    if (!tile.visible || isOthersTitle(tile.displayTitle)) continue;
+    rank += 1;
+    if (tile.id === tileId) return rank;
+  }
+  return null;
+}
+
+function preliHrefForName(name: string): string {
+  return `/preli-question-bank?q=${encodeURIComponent(name)}`;
+}
+
+function buildCategoryTileFromRoot(root: AdminCategoryNode): CategoryTile {
+  return {
+    id: newTileId(),
+    displayTitle: root.name,
+    subtitle: '',
+    iconKey: 'gov',
+    categoryId: root.id,
+    fallbackHref: preliHrefForName(root.name),
+    visible: root.isActive,
+    logoAssetId: null,
+    logoUrl: null,
+  };
+}
+
+function buildTopicTileFromChild(
+  root: AdminCategoryNode,
+  child: AdminCategoryNode['children'][number],
+): TopicTile {
+  return {
+    id: newTileId(),
+    displayTitle: child.name,
+    iconKey: 'book',
+    categoryId: root.id,
+    subcategoryId: child.id,
+    fallbackHref: preliHrefForName(child.name),
+    visible: child.isActive,
+    logoAssetId: null,
+    logoUrl: null,
+  };
+}
+
+/**
+ * Merge active DB taxonomy into the CMS tile list.
+ * Never deletes or overwrites existing tiles — only appends missing links.
+ */
+function syncTilesFromTaxonomy(
+  section: SectionKind,
+  existing: AnyTile[],
+  roots: AdminCategoryNode[],
+): { tiles: AnyTile[]; added: number } {
+  if (section === 'categories') {
+    const linked = new Set(
+      existing
+        .map((t) => t.categoryId)
+        .filter((id): id is string => Boolean(id)),
+    );
+    const next = [...existing];
+    let added = 0;
+    for (const root of roots) {
+      if (linked.has(root.id)) continue;
+      next.push(buildCategoryTileFromRoot(root));
+      linked.add(root.id);
+      added += 1;
+    }
+    return { tiles: next, added };
+  }
+
+  const linked = new Set(
+    existing
+      .map((t) => ('subcategoryId' in t ? t.subcategoryId : null))
+      .filter((id): id is string => Boolean(id)),
+  );
+  const next = [...existing];
+  let added = 0;
+  for (const root of roots) {
+    for (const child of root.children) {
+      if (linked.has(child.id)) continue;
+      next.push(buildTopicTileFromChild(root, child));
+      linked.add(child.id);
+      added += 1;
+    }
+  }
+  return { tiles: next, added };
+}
+
 export function HomepageSectionManager({ section, title, description }: Props) {
   const qc = useQueryClient();
+  const noun = section === 'categories' ? 'category' : 'topic';
+  const nounPlural = section === 'categories' ? 'categories' : 'topics';
+
   const [payload, setPayload] = useState<HomepagePayload>(createDefaultHomepagePayload);
   const [dirty, setDirty] = useState(false);
   const [message, setMessage] = useState<{ tone: 'success' | 'danger'; text: string } | null>(
@@ -96,15 +196,17 @@ export function HomepageSectionManager({ section, title, description }: Props) {
   const [uploadProgress, setUploadProgress] = useState<string | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [logoDims, setLogoDims] = useState<{ w: number; h: number } | null>(null);
+  const [search, setSearch] = useState('');
 
   const adminQ = useQuery({
     queryKey: ['admin-homepage'],
     queryFn: getAdminHomepage,
   });
 
+  /** Full admin tree — includes every root/child so managers are not capped to homepage defaults. */
   const categoriesQ = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => apiFetch<CategoryNode[]>('/categories'),
+    queryKey: ['admin-categories'],
+    queryFn: () => apiFetch<AdminCategoryNode[]>('/admin/categories'),
     staleTime: 60_000,
   });
 
@@ -135,6 +237,46 @@ export function HomepageSectionManager({ section, title, description }: Props) {
         })),
       ),
     [roots],
+  );
+
+  const missingFromDb = useMemo(() => {
+    if (section === 'categories') {
+      const linked = new Set(tiles.map((t) => t.categoryId).filter(Boolean));
+      return roots.filter((r) => !linked.has(r.id)).length;
+    }
+    const linked = new Set(
+      tiles
+        .map((t) => ('subcategoryId' in t ? t.subcategoryId : null))
+        .filter(Boolean),
+    );
+    return roots.reduce(
+      (n, r) => n + r.children.filter((c) => !linked.has(c.id)).length,
+      0,
+    );
+  }, [roots, section, tiles]);
+
+  const filteredIndexes = useMemo(() => {
+    const needle = search.trim().toLocaleLowerCase('bn');
+    if (!needle) return tiles.map((_, i) => i);
+    return tiles
+      .map((tile, index) => ({ tile, index }))
+      .filter(({ tile }) => {
+        const hay = [
+          tile.displayTitle,
+          'subtitle' in tile ? (tile.subtitle ?? '') : '',
+          tile.fallbackHref,
+        ]
+          .join(' ')
+          .toLocaleLowerCase('bn');
+        return hay.includes(needle);
+      })
+      .map(({ index }) => index);
+  }, [search, tiles]);
+
+  const homepageVisibleCount = useMemo(
+    () =>
+      tiles.filter((t) => t.visible && !isOthersTitle(t.displayTitle)).length,
+    [tiles],
   );
 
   const patchSection = (nextTiles: AnyTile[]) => {
@@ -176,6 +318,32 @@ export function HomepageSectionManager({ section, title, description }: Props) {
       });
     },
   });
+
+  const syncFromDb = () => {
+    const { tiles: next, added } = syncTilesFromTaxonomy(section, tiles, roots);
+    if (added === 0) {
+      setMessage({
+        tone: 'success',
+        text: `All database ${nounPlural} are already in this list.`,
+      });
+      return;
+    }
+    patchSection(next);
+    setMessage({
+      tone: 'success',
+      text: `Added ${added} ${noun}${added === 1 ? '' : 's'} from the database. Reorder, then save & publish.`,
+    });
+  };
+
+  const promoteToHomepage = (index: number) => {
+    // Place at the end of the homepage band (position PREVIEW_LIMIT).
+    patchSection(reorderToPosition(tiles, index, HOMEPAGE_SECTION_PREVIEW_LIMIT));
+  };
+
+  const demoteFromHomepage = (index: number) => {
+    // Move just below the homepage band.
+    patchSection(reorderToPosition(tiles, index, HOMEPAGE_SECTION_PREVIEW_LIMIT + 1));
+  };
 
   const openCreate = () => {
     const base = {
@@ -221,7 +389,10 @@ export function HomepageSectionManager({ section, title, description }: Props) {
     setDraftTile(null);
     setEditingId(null);
     setLogoPreview(null);
-    setMessage({ tone: 'success', text: exists ? 'Category updated in draft.' : 'Category added to draft.' });
+    setMessage({
+      tone: 'success',
+      text: exists ? `${noun} updated in draft.` : `${noun} added to draft.`,
+    });
   };
 
   const removeTile = (id: string) => {
@@ -284,9 +455,19 @@ export function HomepageSectionManager({ section, title, description }: Props) {
         description={description}
         actions={
           <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={categoriesQ.isLoading || missingFromDb === 0}
+              onClick={syncFromDb}
+            >
+              <RefreshCw className="h-4 w-4" />
+              Sync from database
+              {missingFromDb > 0 ? ` (${missingFromDb})` : ''}
+            </Button>
             <Button type="button" variant="secondary" onClick={openCreate}>
               <Plus className="h-4 w-4" />
-              Create category
+              Create {noun}
             </Button>
             <Button
               type="button"
@@ -362,122 +543,199 @@ export function HomepageSectionManager({ section, title, description }: Props) {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
         <Surface className="overflow-hidden p-0">
-          <div className="border-b border-[var(--line)] px-4 py-3">
-            <h2 className="font-display text-lg font-semibold">Categories ({tiles.length})</h2>
-            <p className="text-sm text-[var(--muted)]">
-              Drag rows or set position. Homepage shows the first 4 visible items, then Others.
-            </p>
+          <div className="space-y-3 border-b border-[var(--line)] px-4 py-3">
+            <div>
+              <h2 className="font-display text-lg font-semibold">
+                All {nounPlural} ({tiles.length})
+              </h2>
+              <p className="text-sm text-[var(--muted)]">
+                Manage the full list here. The live homepage shows the first{' '}
+                {HOMEPAGE_SECTION_PREVIEW_LIMIT} <strong>visible</strong> items, then Others.
+                Currently {Math.min(homepageVisibleCount, HOMEPAGE_SECTION_PREVIEW_LIMIT)} of{' '}
+                {homepageVisibleCount} visible {nounPlural} appear on the homepage preview.
+              </p>
+            </div>
+            <SearchField
+              value={search}
+              onChange={setSearch}
+              placeholder={`Search ${nounPlural}…`}
+              aria-label={`Search ${nounPlural}`}
+            />
           </div>
+
           {tiles.length === 0 ? (
+            <div className="space-y-3 p-8 text-center text-sm text-[var(--muted)]">
+              <p>No {nounPlural} in the homepage draft yet.</p>
+              <Button type="button" variant="secondary" onClick={syncFromDb}>
+                <RefreshCw className="h-4 w-4" />
+                Import from database
+              </Button>
+            </div>
+          ) : filteredIndexes.length === 0 ? (
             <div className="p-8 text-center text-sm text-[var(--muted)]">
-              No categories yet. Create one to get started.
+              No {nounPlural} match “{search.trim()}”.
             </div>
           ) : (
             <ul className="divide-y divide-[var(--line)]">
-              {tiles.map((tile, index) => (
-                <li
-                  key={tile.id}
-                  draggable
-                  onDragStart={() => setDragIndex(index)}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={() => {
-                    if (dragIndex === null || dragIndex === index) return;
-                    const next = [...tiles];
-                    const [item] = next.splice(dragIndex, 1);
-                    next.splice(index, 0, item!);
-                    patchSection(next);
-                    setDragIndex(null);
-                  }}
-                  className={cn(
-                    'flex flex-wrap items-center gap-3 px-4 py-3 transition-colors',
-                    editingId === tile.id && 'bg-[var(--info-soft)]',
-                  )}
-                >
-                  <button
-                    type="button"
-                    className="cursor-grab text-[var(--muted)]"
-                    aria-label="Drag to reorder"
-                  >
-                    <GripVertical className="h-4 w-4" />
-                  </button>
-                  <span className="w-8 text-center text-xs font-semibold text-[var(--muted)]">
-                    {index + 1}
-                  </span>
-                  <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg)]">
-                    {tile.logoUrl ? (
-                      <img src={tile.logoUrl} alt="" className="h-full w-full object-contain" />
-                    ) : (
-                      <HomepageIcon iconKey={tile.iconKey} className="h-8 w-8" />
+              {filteredIndexes.map((index) => {
+                const tile = tiles[index]!;
+                const rank = visibleHomepageRank(tiles, tile.id);
+                const onHomepage =
+                  rank != null && rank <= HOMEPAGE_SECTION_PREVIEW_LIMIT;
+                const inOthers =
+                  tile.visible &&
+                  !isOthersTitle(tile.displayTitle) &&
+                  rank != null &&
+                  rank > HOMEPAGE_SECTION_PREVIEW_LIMIT;
+
+                return (
+                  <li
+                    key={tile.id}
+                    draggable={!search.trim()}
+                    onDragStart={() => setDragIndex(index)}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={() => {
+                      if (dragIndex === null || dragIndex === index) return;
+                      const next = [...tiles];
+                      const [item] = next.splice(dragIndex, 1);
+                      next.splice(index, 0, item!);
+                      patchSection(next);
+                      setDragIndex(null);
+                    }}
+                    className={cn(
+                      'flex flex-wrap items-center gap-3 px-4 py-3 transition-colors',
+                      editingId === tile.id && 'bg-[var(--info-soft)]',
+                      onHomepage && 'bg-[color-mix(in_srgb,var(--success-soft)_55%,transparent)]',
                     )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium text-[var(--ink)]">{tile.displayTitle}</p>
-                    <p className="truncate text-xs text-[var(--muted)]">{tile.fallbackHref}</p>
-                  </div>
-                  <Badge variant={tile.visible ? 'success' : 'default'}>
-                    {tile.visible ? 'Visible' : 'Hidden'}
-                  </Badge>
-                  <div className="flex flex-wrap items-center gap-1">
-                    <Button
+                  >
+                    <button
                       type="button"
-                      size="sm"
-                      variant="ghost"
-                      aria-label="Move up"
-                      onClick={() => patchSection(moveItem(tiles, index, -1))}
+                      className="cursor-grab text-[var(--muted)] disabled:cursor-not-allowed disabled:opacity-40"
+                      aria-label="Drag to reorder"
+                      disabled={Boolean(search.trim())}
+                      title={
+                        search.trim()
+                          ? 'Clear search to drag-and-drop'
+                          : 'Drag to reorder'
+                      }
                     >
-                      <ArrowUp className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      aria-label="Move down"
-                      onClick={() => patchSection(moveItem(tiles, index, 1))}
-                    >
-                      <ArrowDown className="h-4 w-4" />
-                    </Button>
-                    <Input
-                      className="w-16"
-                      type="number"
-                      min={1}
-                      max={tiles.length}
-                      value={index + 1}
-                      aria-label="Position"
-                      onChange={(e) => {
-                        const pos = Number(e.target.value);
-                        if (!Number.isFinite(pos)) return;
-                        patchSection(reorderToPosition(tiles, index, pos));
-                      }}
-                    />
-                    <Button type="button" size="sm" variant="secondary" onClick={() => openEdit(tile)}>
-                      Edit
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        const next = tiles.map((t) =>
-                          t.id === tile.id ? { ...t, visible: !t.visible } : t,
-                        );
-                        patchSection(next);
-                      }}
-                    >
-                      {tile.visible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setDeleteId(tile.id)}
-                    >
-                      <Trash2 className="h-4 w-4 text-[var(--danger)]" />
-                    </Button>
-                  </div>
-                </li>
-              ))}
+                      <GripVertical className="h-4 w-4" />
+                    </button>
+                    <span className="w-8 text-center text-xs font-semibold text-[var(--muted)]">
+                      {index + 1}
+                    </span>
+                    <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg)]">
+                      {tile.logoUrl ? (
+                        <img src={tile.logoUrl} alt="" className="h-full w-full object-contain" />
+                      ) : (
+                        <HomepageIcon iconKey={tile.iconKey} className="h-8 w-8" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium text-[var(--ink)]">{tile.displayTitle}</p>
+                      <p className="truncate text-xs text-[var(--muted)]">{tile.fallbackHref}</p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {onHomepage ? (
+                        <Badge variant="success">Homepage #{rank}</Badge>
+                      ) : null}
+                      {inOthers ? <Badge variant="default">Others list</Badge> : null}
+                      {!tile.visible ? <Badge variant="default">Hidden</Badge> : null}
+                      {tile.visible && !onHomepage && !inOthers ? (
+                        <Badge variant="success">Visible</Badge>
+                      ) : null}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        aria-label="Move up"
+                        onClick={() => patchSection(moveItem(tiles, index, -1))}
+                      >
+                        <ArrowUp className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        aria-label="Move down"
+                        onClick={() => patchSection(moveItem(tiles, index, 1))}
+                      >
+                        <ArrowDown className="h-4 w-4" />
+                      </Button>
+                      <Input
+                        className="w-16"
+                        type="number"
+                        min={1}
+                        max={tiles.length}
+                        value={index + 1}
+                        aria-label="Position"
+                        onChange={(e) => {
+                          const pos = Number(e.target.value);
+                          if (!Number.isFinite(pos)) return;
+                          patchSection(reorderToPosition(tiles, index, pos));
+                        }}
+                      />
+                      {!onHomepage && tile.visible && !isOthersTitle(tile.displayTitle) ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => promoteToHomepage(index)}
+                        >
+                          To top {HOMEPAGE_SECTION_PREVIEW_LIMIT}
+                        </Button>
+                      ) : null}
+                      {onHomepage ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => demoteFromHomepage(index)}
+                        >
+                          To Others
+                        </Button>
+                      ) : null}
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => openEdit(tile)}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          const next = tiles.map((t) =>
+                            t.id === tile.id ? { ...t, visible: !t.visible } : t,
+                          );
+                          patchSection(next);
+                        }}
+                      >
+                        {tile.visible ? (
+                          <Eye className="h-4 w-4" />
+                        ) : (
+                          <EyeOff className="h-4 w-4" />
+                        )}
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setDeleteId(tile.id)}
+                      >
+                        <Trash2 className="h-4 w-4 text-[var(--danger)]" />
+                      </Button>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </Surface>
@@ -486,7 +744,7 @@ export function HomepageSectionManager({ section, title, description }: Props) {
           {draftTile ? (
             <div className="space-y-4">
               <h2 className="font-display text-lg font-semibold">
-                {tiles.some((t) => t.id === draftTile.id) ? 'Edit category' : 'Create category'}
+                {tiles.some((t) => t.id === draftTile.id) ? `Edit ${noun}` : `Create ${noun}`}
               </h2>
               <div>
                 <Label htmlFor="tile-title">Name</Label>
@@ -551,6 +809,7 @@ export function HomepageSectionManager({ section, title, description }: Props) {
                   {roots.map((r) => (
                     <option key={r.id} value={r.id}>
                       {r.name}
+                      {!r.isActive ? ' (inactive)' : ''}
                     </option>
                   ))}
                 </Select>
@@ -655,12 +914,21 @@ export function HomepageSectionManager({ section, title, description }: Props) {
           ) : (
             <div className="space-y-3 text-sm text-[var(--muted)]">
               <h2 className="font-display text-lg font-semibold text-[var(--ink)]">Editor</h2>
-              <p>Select a category to edit, or create a new one.</p>
-              <p>
-                Array order is the display order. Homepage shows the first 4 visible tiles plus
-                Others. Others opens the full directory pages (DB categories/subcategories, or all
-                topic tiles with logos). Publish to update the live site.
-              </p>
+              <p>Select a {noun} to edit, create a new tile, or sync missing items from the database.</p>
+              <ul className="list-disc space-y-1.5 pl-5">
+                <li>
+                  Array order is the display order for all {tiles.length} tiles in this manager.
+                </li>
+                <li>
+                  Homepage shows the first {HOMEPAGE_SECTION_PREVIEW_LIMIT} <em>visible</em> tiles
+                  plus Others — never a hard cap on this admin list.
+                </li>
+                <li>
+                  Promote any item into the top {HOMEPAGE_SECTION_PREVIEW_LIMIT}; the previous #
+                  {HOMEPAGE_SECTION_PREVIEW_LIMIT} moves into the Others directory list.
+                </li>
+                <li>Save & publish to update the live marketing homepage.</li>
+              </ul>
             </div>
           )}
         </Surface>
@@ -668,8 +936,8 @@ export function HomepageSectionManager({ section, title, description }: Props) {
 
       <ConfirmDialog
         open={Boolean(deleteId)}
-        title="Delete category tile?"
-        description="This removes the tile from the homepage section draft. Linked taxonomy categories are not deleted."
+        title={`Delete ${noun} tile?`}
+        description={`This removes the tile from the homepage section draft. Linked taxonomy ${nounPlural} in the database are not deleted.`}
         confirmLabel="Delete"
         destructive
         onConfirm={() => deleteId && removeTile(deleteId)}

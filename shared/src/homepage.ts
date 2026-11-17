@@ -72,8 +72,11 @@ const topicTileSchema = z.object({
   visible: z.boolean().default(true),
 });
 
-/** How many tiles to show on the homepage before the Others card. */
-export const HOMEPAGE_SECTION_PREVIEW_LIMIT = 4;
+/**
+ * How many visible tiles to show on the homepage before the Others card.
+ * Admin managers list/reorder the full tile array — this limit is homepage-only.
+ */
+export const HOMEPAGE_SECTION_PREVIEW_LIMIT = 5;
 
 /** Recommended square logo size for homepage category/topic tiles (px). */
 export const HOMEPAGE_TILE_LOGO_SIZE = 256;
@@ -103,13 +106,13 @@ export const homepagePayloadSchema = z.object({
     heading: mediumText,
     subtitle: mediumText,
     cta: ctaSchema,
-    tiles: z.array(categoryTileSchema).max(20).default([]),
+    tiles: z.array(categoryTileSchema).max(200).default([]),
   }),
   topics: z.object({
     visible: z.boolean().default(true),
     heading: mediumText,
     cta: ctaSchema,
-    tiles: z.array(topicTileSchema).max(20).default([]),
+    tiles: z.array(topicTileSchema).max(200).default([]),
   }),
   why: z.object({
     visible: z.boolean().default(true),

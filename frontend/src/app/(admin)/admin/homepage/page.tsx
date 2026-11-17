@@ -453,7 +453,7 @@ export default function AdminHomepagePage() {
         {tab === 'categories' ? (
           <SectionManagerRedirect
             title="Question Bank Categories"
-            description="Create, reorder, upload logos, and control visibility for “Our Question Bank Categories” on the dedicated manager."
+            description="Manage the full category tile list (sync from DB, reorder, top 5 for homepage + Others). Logos and visibility live on the dedicated manager."
             href="/admin/question-bank-categories"
             section={payload.categories}
             onChange={(categories) => patch((p) => ({ ...p, categories }))}
@@ -464,7 +464,7 @@ export default function AdminHomepagePage() {
         {tab === 'topics' ? (
           <SectionManagerRedirect
             title="Topic Based Question Analysis"
-            description="Manage topic tiles (logos, order, visibility) on the dedicated Topic Categories page."
+            description="Manage the full topic tile list (sync from DB subcategories, reorder, top 5 for homepage + Others)."
             href="/admin/topic-categories"
             section={payload.topics}
             onChange={(topics) => patch((p) => ({ ...p, topics }))}
@@ -914,7 +914,7 @@ function SectionManagerRedirect<
       />
       <p className="text-sm text-[var(--muted)]">
         {section.tiles.filter((t) => t.visible).length} visible / {section.tiles.length}{' '}
-        tiles (order & logos managed on the dedicated page).
+        tiles (full list, top-5 homepage order & logos on the dedicated page).
       </p>
       <Link href={href}>
         <Button type="button">Manage tiles</Button>

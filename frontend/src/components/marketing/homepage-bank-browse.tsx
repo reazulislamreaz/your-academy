@@ -70,7 +70,7 @@ export function HomepageBankBrowse({ categories, topics }: Props) {
                 </Link>
               ) : null}
             </div>
-            <ul className="motion-stagger grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 lg:gap-4">
+            <ul className="motion-stagger grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 lg:gap-4">
               {previewCategories.map((tile) => (
                 <li key={tile.id}>
                   <HomepageTileCard
@@ -112,7 +112,7 @@ export function HomepageBankBrowse({ categories, topics }: Props) {
                     </Link>
                   ) : null}
                 </div>
-                <ul className="motion-stagger grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 lg:gap-4">
+                <ul className="motion-stagger grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 lg:gap-4">
                   {previewTopics.map((tile) => (
                     <li key={tile.id}>
                       <HomepageTileCard
