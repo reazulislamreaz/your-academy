@@ -53,7 +53,13 @@ const categoryTileSchema = z.object({
   /** Optional display dimensions of the stored logo (informational). */
   logoWidth: z.number().int().positive().nullable().optional(),
   logoHeight: z.number().int().positive().nullable().optional(),
+  /** Linked root category (optional navigation target). */
   categoryId: z.string().uuid().nullable().optional(),
+  /**
+   * Linked subcategory — allows promoting any DB subcategory into the
+   * homepage Top 5 without duplicating Category rows (DEC-038).
+   */
+  subcategoryId: z.string().uuid().nullable().optional(),
   fallbackHref: hrefSchema,
   visible: z.boolean().default(true),
 });

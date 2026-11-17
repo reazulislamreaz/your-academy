@@ -8,9 +8,16 @@ type CategoryTile = HomepagePayload['categories']['tiles'][number];
 type TopicTile = HomepagePayload['topics']['tiles'][number];
 
 export function categoryTileHref(tile: CategoryTile): string {
-  return tile.categoryId
-    ? `/preli-question-bank?categoryId=${encodeURIComponent(tile.categoryId)}`
-    : tile.fallbackHref;
+  if (tile.categoryId && tile.subcategoryId) {
+    return `/preli-question-bank?categoryId=${encodeURIComponent(tile.categoryId)}&subcategoryId=${encodeURIComponent(tile.subcategoryId)}`;
+  }
+  if (tile.categoryId) {
+    return `/preli-question-bank?categoryId=${encodeURIComponent(tile.categoryId)}`;
+  }
+  if (tile.subcategoryId) {
+    return `/preli-question-bank?subcategoryId=${encodeURIComponent(tile.subcategoryId)}`;
+  }
+  return tile.fallbackHref;
 }
 
 export function topicTileHref(tile: TopicTile, roots: CategoryNode[]): string {
@@ -63,12 +70,27 @@ export function guessHomepageIconKey(name: string): HomepageIconKey {
 
 export function matchCategoryTile(
   tiles: CategoryTile[],
-  opts: { categoryId?: string | null; name: string },
+  opts: {
+    categoryId?: string | null;
+    subcategoryId?: string | null;
+    name: string;
+  },
 ): CategoryTile | undefined {
-  const byId = opts.categoryId
-    ? tiles.find((t) => t.categoryId === opts.categoryId)
-    : undefined;
-  if (byId) return byId;
+  if (opts.subcategoryId) {
+    const bySub = tiles.find((t) => t.subcategoryId === opts.subcategoryId);
+    if (bySub) return bySub;
+    // Legacy tiles may have pointed categoryId at the child id.
+    const legacyChild = tiles.find(
+      (t) => t.categoryId === opts.subcategoryId && !t.subcategoryId,
+    );
+    if (legacyChild) return legacyChild;
+  }
+  if (opts.categoryId) {
+    const byRoot = tiles.find(
+      (t) => t.categoryId === opts.categoryId && !t.subcategoryId,
+    );
+    if (byRoot) return byRoot;
+  }
   const needle = opts.name.trim().toLowerCase();
   return tiles.find((t) => t.displayTitle.trim().toLowerCase() === needle);
 }

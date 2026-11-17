@@ -98,7 +98,8 @@ export function QuestionBankCategoriesDirectory({ heading, subtitle, tiles }: Pr
                     </li>
                     {children.map((child) => {
                       const tile = matchCategoryTile(visibleTiles, {
-                        categoryId: child.id,
+                        categoryId: root.id,
+                        subcategoryId: child.id,
                         name: child.name,
                       });
                       return (
