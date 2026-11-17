@@ -124,9 +124,18 @@ type HomepageTileLike = {
   visible: boolean;
 };
 
-/** True when the tile is the reserved Others slot (by id or legacy title). */
-export function isHomepageOthersTile(tile: Pick<HomepageTileLike, 'id' | 'displayTitle'>): boolean {
+/**
+ * True when the tile is the reserved Others slot.
+ * Linked taxonomy tiles (categoryId/subcategoryId) named "Others" are never treated as reserved.
+ */
+export function isHomepageOthersTile(
+  tile: Pick<HomepageTileLike, 'id' | 'displayTitle'> & {
+    categoryId?: string | null;
+    subcategoryId?: string | null;
+  },
+): boolean {
   if (tile.id === HOMEPAGE_OTHERS_TILE_ID) return true;
+  if (tile.categoryId || tile.subcategoryId) return false;
   return tile.displayTitle.trim().toLowerCase() === HOMEPAGE_OTHERS_DISPLAY_TITLE.toLowerCase();
 }
 
@@ -164,8 +173,10 @@ export function createDefaultOthersTopicTile(
 }
 
 /**
- * Enforce: exactly one Others tile, always visible, always at position 5
- * (immediately after the first 4 non-Others tiles). Remaining tiles follow.
+ * Enforce: exactly one Others tile, always visible, always immediately after
+ * the Top 4 group (UI position #5). Regular tiles *before* Others are Top 1–4
+ * (0–4 items — demoted slots stay empty). Regular tiles *after* Others are the
+ * remaining library. Does not backfill Top 4 from the remaining list.
  * Deduplicates Others and strips accidental duplicate ids among regular tiles.
  */
 export function normalizeHomepageSectionTiles<T extends HomepageTileLike>(
@@ -173,17 +184,21 @@ export function normalizeHomepageSectionTiles<T extends HomepageTileLike>(
   createOthers: () => T,
 ): T[] {
   const othersSources: T[] = [];
-  const regular: T[] = [];
+  const beforeOthers: T[] = [];
+  const afterOthers: T[] = [];
   const seenRegularIds = new Set<string>();
+  let sawOthers = false;
 
   for (const tile of tiles) {
     if (isHomepageOthersTile(tile)) {
       othersSources.push(tile);
+      sawOthers = true;
       continue;
     }
     if (seenRegularIds.has(tile.id)) continue;
     seenRegularIds.add(tile.id);
-    regular.push(tile);
+    if (sawOthers) afterOthers.push(tile);
+    else beforeOthers.push(tile);
   }
 
   const source = othersSources[0];
@@ -200,78 +215,90 @@ export function normalizeHomepageSectionTiles<T extends HomepageTileLike>(
       HOMEPAGE_OTHERS_DISPLAY_TITLE,
   };
 
-  const top = regular.slice(0, HOMEPAGE_EDITABLE_PREVIEW_SLOTS);
-  const rest = regular.slice(HOMEPAGE_EDITABLE_PREVIEW_SLOTS);
+  // No Others marker in input: first 4 regulars become Top, remainder become rest.
+  // When Others is present: tiles before it are Top (0–4, not backfilled from rest);
+  // tiles after it stay in the remaining list — including a fully demoted Top 4.
+  if (!sawOthers) {
+    const ordered = beforeOthers;
+    const top = ordered.slice(0, HOMEPAGE_EDITABLE_PREVIEW_SLOTS);
+    const rest = ordered.slice(HOMEPAGE_EDITABLE_PREVIEW_SLOTS);
+    return [...top, others, ...rest];
+  }
+
+  const top = beforeOthers.slice(0, HOMEPAGE_EDITABLE_PREVIEW_SLOTS);
+  const overflowFromTop = beforeOthers.slice(HOMEPAGE_EDITABLE_PREVIEW_SLOTS);
+  const rest = [...overflowFromTop, ...afterOthers];
   return [...top, others, ...rest];
 }
 
-/** Split normalized tiles into top-4, fixed Others, and remaining. */
+/** Split normalized tiles into top (≤4), fixed Others, and remaining. */
 export function splitHomepageSectionTiles<T extends HomepageTileLike>(tiles: T[]): {
   top: T[];
   others: T | null;
   rest: T[];
 } {
-  const normalizedHint = tiles;
-  const othersIndex = normalizedHint.findIndex((t) => isHomepageOthersTile(t));
+  const othersIndex = tiles.findIndex((t) => isHomepageOthersTile(t));
   if (othersIndex < 0) {
     return {
-      top: normalizedHint.slice(0, HOMEPAGE_EDITABLE_PREVIEW_SLOTS),
+      top: tiles.slice(0, HOMEPAGE_EDITABLE_PREVIEW_SLOTS),
       others: null,
-      rest: normalizedHint.slice(HOMEPAGE_EDITABLE_PREVIEW_SLOTS),
+      rest: tiles.slice(HOMEPAGE_EDITABLE_PREVIEW_SLOTS),
     };
   }
-  const others = normalizedHint[othersIndex]!;
-  const withoutOthers = [
-    ...normalizedHint.slice(0, othersIndex),
-    ...normalizedHint.slice(othersIndex + 1),
-  ];
-  return {
-    top: withoutOthers.slice(0, HOMEPAGE_EDITABLE_PREVIEW_SLOTS),
-    others,
-    rest: withoutOthers.slice(HOMEPAGE_EDITABLE_PREVIEW_SLOTS),
-  };
+  const others = tiles[othersIndex]!;
+  const top = tiles.slice(0, othersIndex).slice(0, HOMEPAGE_EDITABLE_PREVIEW_SLOTS);
+  const rest = tiles.slice(othersIndex + 1);
+  return { top, others, rest };
 }
 
-/** Promote a regular tile into the Top 4 (never displaces Others). */
+/**
+ * Promote a regular tile into the Top 4 (never displaces Others).
+ * @param insertAt 0-based Top slot (0 = position 1). Defaults to first empty
+ *   slot, or position 1 when Top 4 is already full (shifts others down; old #4
+ *   moves to the remaining list).
+ */
 export function promoteTileIntoHomepageTop<T extends HomepageTileLike>(
   tiles: T[],
   tileId: string,
   createOthers: () => T,
+  insertAt?: number,
 ): T[] {
   const normalized = normalizeHomepageSectionTiles(tiles, createOthers);
   const { top, others, rest } = splitHomepageSectionTiles(normalized);
-  if (!others || isHomepageOthersTile({ id: tileId, displayTitle: '' })) {
+  if (!others || tileId === HOMEPAGE_OTHERS_TILE_ID) {
     return normalized;
   }
 
-  const inTop = top.findIndex((t) => t.id === tileId);
-  if (inTop >= 0) {
-    // Already in top — move to end of top (slot 4) so it stays among 1–4.
-    const nextTop = [...top];
-    const [item] = nextTop.splice(inTop, 1);
-    nextTop.push(item!);
-    return normalizeHomepageSectionTiles(
-      [...nextTop, others, ...rest],
-      createOthers,
-    );
-  }
-
+  const fromTop = top.findIndex((t) => t.id === tileId);
   const fromRest = rest.findIndex((t) => t.id === tileId);
-  if (fromRest < 0) return normalized;
+  if (fromTop < 0 && fromRest < 0) return normalized;
 
-  const nextRest = [...rest];
-  const [item] = nextRest.splice(fromRest, 1);
-  const ensured = { ...item!, visible: true };
-  let nextTop = [...top, ensured];
+  const item =
+    fromTop >= 0 ? { ...top[fromTop]!, visible: true } : { ...rest[fromRest]!, visible: true };
+
+  let nextTop = top.filter((t) => t.id !== tileId);
+  let nextRest = rest.filter((t) => t.id !== tileId);
+
+  // Fill empty slots from the end; when full, default to position 1 (shift down).
+  const defaultIndex =
+    nextTop.length < HOMEPAGE_EDITABLE_PREVIEW_SLOTS ? nextTop.length : 0;
+  const maxIndex =
+    nextTop.length >= HOMEPAGE_EDITABLE_PREVIEW_SLOTS
+      ? HOMEPAGE_EDITABLE_PREVIEW_SLOTS - 1
+      : nextTop.length;
+  const insertIndex = Math.max(
+    0,
+    Math.min(insertAt === undefined ? defaultIndex : insertAt, maxIndex),
+  );
+
+  nextTop.splice(insertIndex, 0, item);
   if (nextTop.length > HOMEPAGE_EDITABLE_PREVIEW_SLOTS) {
     const overflow = nextTop.slice(HOMEPAGE_EDITABLE_PREVIEW_SLOTS);
     nextTop = nextTop.slice(0, HOMEPAGE_EDITABLE_PREVIEW_SLOTS);
-    nextRest.unshift(...overflow);
+    nextRest = [...overflow, ...nextRest];
   }
-  return normalizeHomepageSectionTiles(
-    [...nextTop, others, ...nextRest],
-    createOthers,
-  );
+
+  return normalizeHomepageSectionTiles([...nextTop, others, ...nextRest], createOthers);
 }
 
 /** Remove a regular tile from Top 4 into the remaining list (Others stays #5). */
@@ -282,7 +309,7 @@ export function demoteTileFromHomepageTop<T extends HomepageTileLike>(
 ): T[] {
   const normalized = normalizeHomepageSectionTiles(tiles, createOthers);
   const { top, others, rest } = splitHomepageSectionTiles(normalized);
-  if (!others || isHomepageOthersTile({ id: tileId, displayTitle: '' })) {
+  if (!others || tileId === HOMEPAGE_OTHERS_TILE_ID) {
     return normalized;
   }
   const idx = top.findIndex((t) => t.id === tileId);
@@ -321,6 +348,24 @@ export function reorderHomepageTopTiles<T extends HomepageTileLike>(
     [...nextTop, others, ...rest],
     createOthers,
   );
+}
+
+/**
+ * Move a Top-4 tile to an absolute 1-based position (1–4).
+ * No-op for Others or out-of-range positions.
+ */
+export function moveHomepageTopTileToPosition<T extends HomepageTileLike>(
+  tiles: T[],
+  tileId: string,
+  position1Based: number,
+  createOthers: () => T,
+): T[] {
+  const normalized = normalizeHomepageSectionTiles(tiles, createOthers);
+  const { top } = splitHomepageSectionTiles(normalized);
+  const from = top.findIndex((t) => t.id === tileId);
+  if (from < 0) return normalized;
+  const to = Math.max(0, Math.min(position1Based - 1, top.length - 1));
+  return reorderHomepageTopTiles(tiles, from, to, createOthers);
 }
 
 /** Apply Others normalization to both homepage sections. */

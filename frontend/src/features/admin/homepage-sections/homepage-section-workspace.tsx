@@ -99,6 +99,7 @@ export function HomepageSectionWorkspace({
     demote,
     reorderTop,
     moveTop,
+    moveTopToPosition,
     openEdit,
     cancelEdit,
     commitDraft,
@@ -227,6 +228,7 @@ export function HomepageSectionWorkspace({
   const promoteCategoryItem = (
     root: AdminCategoryNode,
     child?: AdminCategoryChild,
+    insertAt?: number,
   ) => {
     const categoryId = root.id;
     const subcategoryId = child?.id ?? null;
@@ -259,22 +261,32 @@ export function HomepageSectionWorkspace({
             logoAssetId: null,
             logoUrl: null,
           };
-      next.push(created);
+      // New tiles start after Others so promote can pull them into Top without
+      // accidentally treating them as already in Top 4.
+      const othersIdx = next.findIndex((t) => isHomepageOthersTile(t));
+      if (othersIdx >= 0) next.splice(othersIdx + 1, 0, created);
+      else next.push(created);
       linked = created;
     } else if (!linked.visible) {
       next = next.map((t) => (t.id === linked!.id ? { ...t, visible: true } : t));
       linked = next.find((t) => t.id === linked!.id)!;
     }
 
-    next = promoteTileIntoHomepageTop(next, linked.id, () =>
-      section === 'categories'
-        ? createDefaultOthersCategoryTile(QUESTION_BANK_CATEGORIES_PATH)
-        : createDefaultOthersTopicTile(ALL_TOPICS_PATH),
+    next = promoteTileIntoHomepageTop(
+      next,
+      linked.id,
+      () =>
+        section === 'categories'
+          ? createDefaultOthersCategoryTile(QUESTION_BANK_CATEGORIES_PATH)
+          : createDefaultOthersTopicTile(ALL_TOPICS_PATH),
+      insertAt,
     );
     patchTiles(next);
+    const positionLabel =
+      insertAt === undefined ? `Top ${HOMEPAGE_EDITABLE_PREVIEW_SLOTS}` : `position ${insertAt + 1}`;
     setMessage({
       tone: 'success',
-      text: `“${linked.displayTitle}” added to Top ${HOMEPAGE_EDITABLE_PREVIEW_SLOTS}. Others stays at #${HOMEPAGE_SECTION_PREVIEW_LIMIT}.`,
+      text: `“${linked.displayTitle}” promoted to ${positionLabel}. Others stays at #${HOMEPAGE_SECTION_PREVIEW_LIMIT}.`,
     });
   };
 
@@ -451,8 +463,9 @@ export function HomepageSectionWorkspace({
           editingId={editingId}
           onReorder={reorderTop}
           onMove={moveTop}
+          onMoveToPosition={moveTopToPosition}
           onEdit={openEdit}
-          onRemove={demote}
+          onDemote={demote}
         />
       </Reveal>
 
@@ -490,18 +503,30 @@ export function HomepageSectionWorkspace({
             </div>
 
             {section === 'categories' ? (
-              <CategoriesLibrary
-                loading={categoriesQ.isLoading}
-                error={categoriesQ.isError}
-                roots={catalogRoots}
-                search={search}
-                expanded={expanded}
-                setExpanded={setExpanded}
-                tileByLink={tileByLink}
-                onPromote={promoteCategoryItem}
-                onEdit={openEdit}
-                onDemote={demote}
-              />
+              <>
+                {restTiles.length > 0 ? (
+                  <RemainingTilesList
+                    tiles={restTiles}
+                    search={search}
+                    editingId={editingId}
+                    onPromote={promote}
+                    onEdit={openEdit}
+                    onDelete={(id) => setDeleteId(id)}
+                  />
+                ) : null}
+                <CategoriesLibrary
+                  loading={categoriesQ.isLoading}
+                  error={categoriesQ.isError}
+                  roots={catalogRoots}
+                  search={search}
+                  expanded={expanded}
+                  setExpanded={setExpanded}
+                  tileByLink={tileByLink}
+                  onPromote={promoteCategoryItem}
+                  onEdit={openEdit}
+                  onDemote={demote}
+                />
+              </>
             ) : (
               <TopicsLibrary
                 items={topicLibrary}
@@ -552,6 +577,78 @@ export function HomepageSectionWorkspace({
   );
 }
 
+function RemainingTilesList({
+  tiles,
+  search,
+  editingId,
+  onPromote,
+  onEdit,
+  onDelete,
+}: {
+  tiles: HomepageSectionTile[];
+  search: string;
+  editingId: string | null;
+  onPromote: (id: string, insertAt?: number) => void;
+  onEdit: (tile: HomepageSectionTile) => void;
+  onDelete: (id: string) => void;
+}) {
+  const needle = search.trim().toLocaleLowerCase('bn');
+  const items = tiles.filter((t) => {
+    if (isHomepageOthersTile(t)) return false;
+    if (!needle) return true;
+    return (
+      t.displayTitle.toLocaleLowerCase('bn').includes(needle) ||
+      ('subtitle' in t && (t.subtitle ?? '').toLocaleLowerCase('bn').includes(needle))
+    );
+  });
+  if (items.length === 0) return null;
+
+  return (
+    <section className="space-y-2 rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-muted)]/30 p-3">
+      <div>
+        <h3 className="text-sm font-bold text-[var(--ink)]">Remaining (not in Top 4)</h3>
+        <p className="text-xs text-[var(--muted)]">
+          Demoted or extra tiles. Promote any of these into positions 1–
+          {HOMEPAGE_EDITABLE_PREVIEW_SLOTS}.
+        </p>
+      </div>
+      <Stagger stepMs={30} className="space-y-1.5" role="list">
+        {items.map((tile) => (
+          <div
+            key={tile.id}
+            role="listitem"
+            className={cn(
+              'flex flex-wrap items-center gap-2 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] px-3 py-2',
+              editingId === tile.id && 'ring-2 ring-[var(--highlight)]/30',
+            )}
+          >
+            <p className="min-w-0 flex-1 truncate text-sm font-semibold text-[var(--ink)]">
+              {tile.displayTitle}
+            </p>
+            <LibraryActions
+              compact
+              onHomepage={false}
+              onPromote={(insertAt) => onPromote(tile.id, insertAt)}
+            />
+            <Button type="button" size="sm" variant="ghost" onClick={() => onEdit(tile)}>
+              Edit
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="text-[var(--danger)]"
+              onClick={() => onDelete(tile.id)}
+            >
+              Delete
+            </Button>
+          </div>
+        ))}
+      </Stagger>
+    </section>
+  );
+}
+
 function CategoriesLibrary({
   loading,
   error,
@@ -574,7 +671,11 @@ function CategoriesLibrary({
     string,
     { tile: HomepageSectionTile; rank: number | null; onHomepage: boolean }
   >;
-  onPromote: (root: AdminCategoryNode, child?: AdminCategoryChild) => void;
+  onPromote: (
+    root: AdminCategoryNode,
+    child?: AdminCategoryChild,
+    insertAt?: number,
+  ) => void;
   onEdit: (tile: HomepageSectionTile) => void;
   onDemote: (tileId: string) => void;
 }) {
@@ -635,7 +736,7 @@ function CategoriesLibrary({
               </div>
               <LibraryActions
                 onHomepage={Boolean(rootLink?.onHomepage)}
-                onPromote={() => onPromote(root)}
+                onPromote={(insertAt) => onPromote(root, undefined, insertAt)}
                 onEdit={rootLink ? () => onEdit(rootLink.tile) : undefined}
                 onDemote={rootLink ? () => onDemote(rootLink.tile.id) : undefined}
               />
@@ -673,7 +774,7 @@ function CategoriesLibrary({
                           <LibraryActions
                             compact
                             onHomepage={Boolean(link?.onHomepage)}
-                            onPromote={() => onPromote(root, child)}
+                            onPromote={(insertAt) => onPromote(root, child, insertAt)}
                             onEdit={link ? () => onEdit(link.tile) : undefined}
                             onDemote={link ? () => onDemote(link.tile.id) : undefined}
                           />
@@ -707,7 +808,7 @@ function TopicsLibrary({
   search: string;
   editingId: string | null;
   onAdd: () => void;
-  onPromote: (id: string) => void;
+  onPromote: (id: string, insertAt?: number) => void;
   onDemote: (id: string) => void;
   onEdit: (tile: HomepageSectionTile) => void;
   onDelete: (id: string) => void;
@@ -757,20 +858,14 @@ function TopicsLibrary({
             <div className="flex flex-wrap gap-1.5">
               {onHomepage ? (
                 <Button type="button" size="sm" variant="ghost" onClick={() => onDemote(tile.id)}>
-                  Remove from Top {HOMEPAGE_EDITABLE_PREVIEW_SLOTS}
+                  Demote
                 </Button>
               ) : (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="secondary"
-                  className="motion-press"
-                  title={`Promote to homepage Top ${HOMEPAGE_EDITABLE_PREVIEW_SLOTS}`}
-                  onClick={() => onPromote(tile.id)}
-                >
-                  <Star className="size-3.5" />
-                  Promote
-                </Button>
+                <LibraryActions
+                  compact
+                  onHomepage={false}
+                  onPromote={(insertAt) => onPromote(tile.id, insertAt)}
+                />
               )}
               <Button type="button" size="sm" variant="ghost" onClick={() => onEdit(tile)}>
                 Edit
@@ -801,7 +896,7 @@ function LibraryActions({
   compact,
 }: {
   onHomepage: boolean;
-  onPromote: () => void;
+  onPromote: (insertAt?: number) => void;
   onEdit?: () => void;
   onDemote?: () => void;
   compact?: boolean;
@@ -816,23 +911,46 @@ function LibraryActions({
         ) : null}
         {onDemote ? (
           <Button type="button" size="sm" variant="ghost" onClick={onDemote}>
-            Remove
+            Demote
           </Button>
         ) : null}
       </div>
     );
   }
   return (
-    <Button
-      type="button"
-      size="sm"
-      variant="secondary"
-      className="motion-press cursor-pointer"
-      title={`Promote to homepage Top ${HOMEPAGE_EDITABLE_PREVIEW_SLOTS}`}
-      onClick={onPromote}
-    >
-      <Star className="size-3.5" />
-      Promote
-    </Button>
+    <div className="flex flex-wrap items-center gap-1.5">
+      <Button
+        type="button"
+        size="sm"
+        variant="secondary"
+        className="motion-press cursor-pointer"
+        title={`Promote to Top ${HOMEPAGE_EDITABLE_PREVIEW_SLOTS} (fills an empty slot, or inserts at #1 when full)`}
+        onClick={() => onPromote()}
+      >
+        <Star className="size-3.5" />
+        Promote
+      </Button>
+      <select
+        className="h-8 cursor-pointer rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] px-1.5 text-xs text-[var(--ink)]"
+        defaultValue=""
+        aria-label="Promote to a specific Top 4 position"
+        title="Promote to a specific position"
+        onChange={(e) => {
+          const value = e.target.value;
+          e.target.value = '';
+          if (!value) return;
+          onPromote(Number(value));
+        }}
+      >
+        <option value="" disabled>
+          To #
+        </option>
+        {Array.from({ length: HOMEPAGE_EDITABLE_PREVIEW_SLOTS }).map((_, i) => (
+          <option key={i} value={i}>
+            #{i + 1}
+          </option>
+        ))}
+      </select>
+    </div>
   );
 }

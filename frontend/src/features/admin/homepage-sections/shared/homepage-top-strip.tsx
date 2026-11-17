@@ -19,8 +19,9 @@ type Props = {
   editingId: string | null;
   onReorder: (fromTopIndex: number, toTopIndex: number) => void;
   onMove: (topIndex: number, dir: -1 | 1) => void;
+  onMoveToPosition: (tileId: string, position1Based: number) => void;
   onEdit: (tile: HomepageSectionTile) => void;
-  onRemove: (tileId: string) => void;
+  onDemote: (tileId: string) => void;
 };
 
 /** Positions 1–4 (sortable) + fixed Others at #5. */
@@ -30,21 +31,23 @@ export function HomepageTopStrip({
   editingId,
   onReorder,
   onMove,
+  onMoveToPosition,
   onEdit,
-  onRemove,
+  onDemote,
 }: Props) {
   const [dragTopIndex, setDragTopIndex] = useState<number | null>(null);
+  const emptySlots = Math.max(0, HOMEPAGE_EDITABLE_PREVIEW_SLOTS - topTiles.length);
 
   return (
     <section className="space-y-3">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <div>
           <h2 className="font-display text-base font-bold text-[var(--ink)]">
-            Homepage Top {HOMEPAGE_SECTION_PREVIEW_LIMIT}
+            Homepage Top {HOMEPAGE_EDITABLE_PREVIEW_SLOTS}
           </h2>
           <p className="mt-0.5 text-sm text-[var(--muted)]">
-            Drag positions 1–{HOMEPAGE_EDITABLE_PREVIEW_SLOTS} to reorder. Others is locked at #
-            {HOMEPAGE_SECTION_PREVIEW_LIMIT}.
+            Drag to reorder, use arrows or the position menu, or Demote to the library. Others stays
+            locked at #{HOMEPAGE_SECTION_PREVIEW_LIMIT}.
           </p>
         </div>
       </div>
@@ -86,6 +89,21 @@ export function HomepageTopStrip({
               {'subtitle' in tile && tile.subtitle ? (
                 <p className="truncate text-[10px] text-[var(--muted)]">{tile.subtitle}</p>
               ) : null}
+              <label className="mt-1 flex items-center gap-1 text-[10px] text-[var(--muted)]">
+                <span className="sr-only">Move to position</span>
+                <select
+                  className="cursor-pointer rounded border border-[var(--line)] bg-[var(--bg-desk)] px-1 py-0.5 text-[10px] text-[var(--ink)]"
+                  value={topIndex + 1}
+                  aria-label={`Position for ${tile.displayTitle}`}
+                  onChange={(e) => onMoveToPosition(tile.id, Number(e.target.value))}
+                >
+                  {topTiles.map((_, i) => (
+                    <option key={i} value={i + 1}>
+                      Pos {i + 1}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </div>
             <div className="flex shrink-0 flex-col gap-0.5">
               <button
@@ -125,12 +143,25 @@ export function HomepageTopStrip({
                 size="sm"
                 variant="ghost"
                 className="h-auto px-1.5 py-0.5 text-xs text-[var(--danger)]"
-                title="Remove from Top 4 (keeps item in the library)"
-                onClick={() => onRemove(tile.id)}
+                title="Demote to remaining list (does not delete)"
+                onClick={() => onDemote(tile.id)}
               >
-                Remove
+                Demote
               </Button>
             </div>
+          </div>
+        ))}
+
+        {Array.from({ length: emptySlots }).map((_, i) => (
+          <div
+            key={`empty-${i}`}
+            role="listitem"
+            className="flex items-center gap-2.5 rounded-[var(--radius-lg)] border border-dashed border-[var(--line)] bg-[var(--bg-muted)]/40 px-3 py-2.5"
+          >
+            <span className="w-4 shrink-0 text-xs font-semibold tabular-nums text-[var(--muted)]">
+              {topTiles.length + i + 1}
+            </span>
+            <p className="text-xs text-[var(--muted)]">Empty — promote from the library</p>
           </div>
         ))}
 

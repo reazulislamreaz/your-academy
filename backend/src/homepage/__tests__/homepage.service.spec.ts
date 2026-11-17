@@ -4,7 +4,12 @@ import {
   HOMEPAGE_OTHERS_TILE_ID,
   HOMEPAGE_SECTION_PREVIEW_LIMIT,
   createDefaultHomepagePayload,
+  createDefaultOthersCategoryTile,
+  demoteTileFromHomepageTop,
   isHomepageOthersTile,
+  normalizeHomepageSectionTiles,
+  promoteTileIntoHomepageTop,
+  splitHomepageSectionTiles,
 } from '@your-academy/shared';
 import { HomepageService } from '../homepage.service';
 
@@ -169,11 +174,12 @@ describe('HomepageService', () => {
     );
   });
 
-  it('forces Others to fixed position 5 and rejects client reordering on draft save', async () => {
+  it('forces a single visible Others tile and preserves Top/rest split on draft save', async () => {
     const payload = createDefaultHomepagePayload();
     const others = payload.categories.tiles.find((t) => isHomepageOthersTile(t))!;
     const regular = payload.categories.tiles.filter((t) => !isHomepageOthersTile(t));
-    // Malicious client: put Others first and duplicate it.
+    // Malicious client: duplicate Others and place it first (empty Top is allowed;
+    // regulars stay in remaining — promote restores Top without inventing duplicates).
     payload.categories.tiles = [
       { ...others, id: 'others-dup', displayTitle: 'Others' },
       others,
@@ -200,14 +206,74 @@ describe('HomepageService', () => {
 
     const catTiles = savedPayload.categories.tiles;
     const othersIndex = catTiles.findIndex((t) => t.id === HOMEPAGE_OTHERS_TILE_ID);
-    expect(othersIndex).toBe(HOMEPAGE_EDITABLE_PREVIEW_SLOTS);
-    expect(othersIndex).toBe(HOMEPAGE_SECTION_PREVIEW_LIMIT - 1);
     expect(catTiles.filter((t) => t.id === HOMEPAGE_OTHERS_TILE_ID)).toHaveLength(1);
     expect(catTiles[othersIndex]?.visible).toBe(true);
+    expect(othersIndex).toBe(0);
+    expect(catTiles.slice(1).map((t) => t.id)).toEqual(regular.map((t) => t.id));
 
-    const topicOthersIndex = savedPayload.topics.tiles.findIndex(
-      (t) => t.id === HOMEPAGE_OTHERS_TILE_ID,
-    );
-    expect(topicOthersIndex).toBe(HOMEPAGE_EDITABLE_PREVIEW_SLOTS);
+    // Happy path: Top 4 + Others at #5 when payload is well-formed.
+    const wellFormed = createDefaultHomepagePayload();
+    prisma.homepageContent.update.mockClear();
+    prisma.homepageContent.update.mockResolvedValue({
+      id: 'draft-1',
+      status: HomepageContentStatus.DRAFT,
+      payload: wellFormed,
+      heroImageAssetId: null,
+      publishedAt: null,
+      updatedAt: new Date(),
+      heroImage: null,
+    });
+    await service.updateDraft(user as never, { payload: wellFormed });
+    const savedWell = prisma.homepageContent.update.mock.calls[0]![0].data.payload as {
+      categories: { tiles: Array<{ id: string }> };
+      topics: { tiles: Array<{ id: string }> };
+    };
+    expect(
+      savedWell.categories.tiles.findIndex((t) => t.id === HOMEPAGE_OTHERS_TILE_ID),
+    ).toBe(HOMEPAGE_EDITABLE_PREVIEW_SLOTS);
+    expect(
+      savedWell.topics.tiles.findIndex((t) => t.id === HOMEPAGE_OTHERS_TILE_ID),
+    ).toBe(HOMEPAGE_EDITABLE_PREVIEW_SLOTS);
+    expect(HOMEPAGE_SECTION_PREVIEW_LIMIT).toBe(HOMEPAGE_EDITABLE_PREVIEW_SLOTS + 1);
+  });
+});
+
+describe('homepage Top 4 tile helpers', () => {
+  const others = () => createDefaultOthersCategoryTile('/question-bank-categories');
+
+  function baseTiles() {
+    return normalizeHomepageSectionTiles(createDefaultHomepagePayload().categories.tiles, others);
+  }
+
+  it('promotes into a full Top 4 and moves the previous #4 into remaining', () => {
+    const tiles = [
+      ...baseTiles(),
+      {
+        id: 'private-bank',
+        displayTitle: 'Private Bank',
+        subtitle: '',
+        iconKey: 'bank' as const,
+        categoryId: null,
+        subcategoryId: null,
+        fallbackHref: '/x',
+        visible: true,
+        logoAssetId: null,
+        logoUrl: null,
+      },
+    ];
+    const after = promoteTileIntoHomepageTop(tiles, 'private-bank', others, 1);
+    const { top, others: o, rest } = splitHomepageSectionTiles(after);
+    expect(o?.id).toBe(HOMEPAGE_OTHERS_TILE_ID);
+    expect(top.map((t) => t.id)).toEqual(['bcs', 'private-bank', 'bank', 'gov']);
+    expect(rest.map((t) => t.id)).toContain('ntrca');
+    expect(rest.map((t) => t.id)).not.toContain('private-bank');
+    expect(top).toHaveLength(4);
+  });
+
+  it('demotes a Top item into remaining without backfilling', () => {
+    const after = demoteTileFromHomepageTop(baseTiles(), 'bank', others);
+    const { top, rest } = splitHomepageSectionTiles(after);
+    expect(top.map((t) => t.id)).toEqual(['bcs', 'gov', 'ntrca']);
+    expect(rest.map((t) => t.id)).toEqual(['bank']);
   });
 });

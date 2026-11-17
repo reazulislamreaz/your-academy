@@ -9,6 +9,7 @@ import {
   isHomepageOthersTile,
   normalizeHomepageSectionTiles,
   promoteTileIntoHomepageTop,
+  moveHomepageTopTileToPosition,
   reorderHomepageTopTiles,
   splitHomepageSectionTiles,
   HOMEPAGE_OTHERS_TILE_ID,
@@ -165,20 +166,31 @@ export function useHomepageSection(section: HomepageSectionKind) {
     },
   });
 
-  const promote = (tileId: string) => {
-    if (isHomepageOthersTile({ id: tileId, displayTitle: '' })) return;
-    patchTiles(promoteTileIntoHomepageTop(tiles, tileId, othersFactory));
+  const promote = (tileId: string, insertAt?: number) => {
+    if (tileId === HOMEPAGE_OTHERS_TILE_ID) return;
+    patchTiles(promoteTileIntoHomepageTop(tiles, tileId, othersFactory, insertAt));
+    setMessage({
+      tone: 'success',
+      text:
+        insertAt === undefined
+          ? 'Promoted into the Top 4. Save draft or publish when ready.'
+          : `Promoted to position ${insertAt + 1}. Save draft or publish when ready.`,
+    });
   };
 
   const demote = (tileId: string) => {
-    if (isHomepageOthersTile({ id: tileId, displayTitle: '' })) {
+    if (tileId === HOMEPAGE_OTHERS_TILE_ID || isHomepageOthersTile({ id: tileId, displayTitle: '' })) {
       setMessage({
         tone: 'danger',
-        text: 'Others is fixed at position 5 and cannot be removed.',
+        text: 'Others is fixed at position 5 and cannot be demoted.',
       });
       return;
     }
     patchTiles(demoteTileFromHomepageTop(tiles, tileId, othersFactory));
+    setMessage({
+      tone: 'success',
+      text: 'Demoted from Top 4 into the remaining list.',
+    });
   };
 
   const reorderTop = (from: number, to: number) => {
@@ -189,6 +201,11 @@ export function useHomepageSection(section: HomepageSectionKind) {
     const target = topIndex + dir;
     if (target < 0 || target >= topTiles.length) return;
     reorderTop(topIndex, target);
+  };
+
+  const moveTopToPosition = (tileId: string, position1Based: number) => {
+    if (tileId === HOMEPAGE_OTHERS_TILE_ID) return;
+    patchTiles(moveHomepageTopTileToPosition(tiles, tileId, position1Based, othersFactory));
   };
 
   const openEdit = (tile: HomepageSectionTile) => {
@@ -283,6 +300,7 @@ export function useHomepageSection(section: HomepageSectionKind) {
     demote,
     reorderTop,
     moveTop,
+    moveTopToPosition,
     openEdit,
     cancelEdit,
     commitDraft,
