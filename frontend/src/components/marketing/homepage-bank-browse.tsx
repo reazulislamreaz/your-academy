@@ -101,8 +101,8 @@ export function HomepageBankBrowseTopics({ topics }: TopicsProps) {
     .slice(0, HOMEPAGE_EDITABLE_PREVIEW_SLOTS);
   const topicsOthers =
     topicSplit.others ?? createDefaultOthersTopicTile(ALL_TOPICS_PATH);
-  const topicsCtaHref = topics.cta.href || ALL_TOPICS_PATH;
-  // Others always opens the full topics directory (includes Top 4 + library).
+  // View all / Others always open the dedicated full topics page.
+  const topicsCtaHref = ALL_TOPICS_PATH;
   const topicsOthersHref = ALL_TOPICS_PATH;
 
   if (!topics.visible) return null;

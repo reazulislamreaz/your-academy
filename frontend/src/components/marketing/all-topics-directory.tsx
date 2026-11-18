@@ -19,6 +19,7 @@ import { topicTileHref, topicTileTaxonomyLabel } from '@/lib/homepage-tile-links
 type Props = {
   heading?: string;
   subtitle?: string;
+  breadcrumbLabel?: string;
   /** Full published CMS topic catalog (Top 4 + library — not Others-only). */
   tiles: HomepagePayload['topics']['tiles'];
 };
@@ -26,10 +27,12 @@ type Props = {
 /**
  * Full topic catalog — same card chrome as the homepage Topics section,
  * showing every curated topic including the Top 4 homepage preview.
+ * Linked from homepage Others → `/topic-categories`.
  */
 export function AllTopicsDirectory({
   heading = 'All Topics',
   subtitle = 'Browse every topic available for question analysis.',
+  breadcrumbLabel = 'Topic Base Question Analysis',
   tiles,
 }: Props) {
   const [query, setQuery] = useState('');
@@ -64,7 +67,7 @@ export function AllTopicsDirectory({
     <DirectoryPageShell
       heading={heading}
       subtitle={subtitle}
-      breadcrumbLabel="Topic Base Question Analysis"
+      breadcrumbLabel={breadcrumbLabel}
       backLabel="Back to homepage"
     >
       {visibleTiles.length === 0 ? (
