@@ -254,6 +254,7 @@ function MarketingHeaderInner() {
     <header
       className="marketing-nav-bar sticky top-0 z-30 pt-[env(safe-area-inset-top,0px)]"
       style={{ '--header-h': '64px' } as CSSProperties}
+      data-marketing-menubar
     >
       <div className="marketing-nav-shell mx-auto h-14 max-w-[var(--marketing-content-max)] px-3 sm:h-16 sm:px-6">
         <div className="flex shrink-0 items-center gap-2">

@@ -42,7 +42,7 @@ export function AdminSidebar({ footerExtra }: Props) {
   return (
     <aside
       className={cn(
-        'admin-sidebar flex h-full shrink-0 flex-col transition-[width] duration-200 ease-[var(--ease-out)]',
+        'admin-sidebar flex h-full shrink-0 flex-col',
         collapsed
           ? 'w-[var(--app-sidebar-collapsed-width,4.75rem)]'
           : 'w-[var(--app-sidebar-width,16.25rem)]',

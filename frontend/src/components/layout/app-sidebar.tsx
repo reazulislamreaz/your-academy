@@ -66,7 +66,7 @@ function SidebarNav() {
   return (
     <aside
       className={cn(
-        'learner-sidebar flex h-full shrink-0 flex-col transition-[width] duration-200 ease-[var(--ease-out)]',
+        'learner-sidebar flex h-full shrink-0 flex-col',
         collapsed
           ? 'w-[var(--app-sidebar-collapsed-width,4.75rem)]'
           : 'w-[var(--app-sidebar-width,16.25rem)]',
@@ -75,7 +75,7 @@ function SidebarNav() {
     >
       <div
         className={cn(
-          'flex h-[var(--header-h,4.5rem)] shrink-0 items-center gap-2',
+          'flex h-[var(--header-h,4.5rem)] shrink-0 items-center gap-2 border-b border-[var(--line)]/70',
           collapsed ? 'justify-center px-2' : 'justify-between px-4',
         )}
       >
@@ -89,7 +89,7 @@ function SidebarNav() {
             type="button"
             onClick={toggleCollapsed}
             aria-label="Collapse sidebar"
-            className="flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-[var(--muted)] transition-colors hover:bg-[var(--brand-wash)] hover:text-[var(--ink)]"
+            className="flex size-8 items-center justify-center rounded-full text-[var(--muted)] transition-[color,background-color,box-shadow] hover:bg-[var(--brand-wash)] hover:text-[var(--ink)] hover:shadow-[0_0_16px_-6px_color-mix(in_srgb,var(--accent)_40%,transparent)]"
           >
             <PanelLeftClose className="size-4" aria-hidden strokeWidth={1.75} />
           </button>
@@ -97,12 +97,12 @@ function SidebarNav() {
       </div>
 
       {collapsed ? (
-        <div className="flex justify-center pb-2">
+        <div className="flex justify-center border-b border-[var(--line)]/70 py-2">
           <button
             type="button"
             onClick={toggleCollapsed}
             aria-label="Expand sidebar"
-            className="flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-[var(--muted)] transition-colors hover:bg-[var(--brand-wash)] hover:text-[var(--ink)]"
+            className="flex size-8 items-center justify-center rounded-full text-[var(--muted)] transition-[color,background-color,box-shadow] hover:bg-[var(--brand-wash)] hover:text-[var(--ink)] hover:shadow-[0_0_16px_-6px_color-mix(in_srgb,var(--accent)_40%,transparent)]"
           >
             <PanelLeftOpen className="size-4" aria-hidden strokeWidth={1.75} />
           </button>
@@ -139,7 +139,7 @@ function SidebarNav() {
                       'learner-nav-link motion-nav-indicator flex items-center rounded-[var(--radius)] text-sm font-medium',
                       collapsed ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5',
                       active
-                        ? 'bg-[var(--bg-muted)] font-semibold text-[var(--ink)]'
+                        ? 'font-semibold text-[var(--ink)]'
                         : 'text-[var(--muted)] hover:bg-[var(--brand-wash)] hover:text-[var(--ink-soft)]',
                     )}
                   >

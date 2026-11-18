@@ -140,7 +140,7 @@ export function LearnerMobileNav() {
                             className={cn(
                               'learner-nav-link flex min-h-12 items-center gap-2.5 rounded-[var(--radius)] px-3 py-2.5 text-base font-medium',
                               active
-                                ? 'bg-[var(--bg-muted)] font-semibold text-[var(--ink)]'
+                                ? 'font-semibold text-[var(--ink)]'
                                 : 'text-[var(--muted)] hover:bg-[var(--brand-wash)] hover:text-[var(--ink-soft)]',
                             )}
                           >
