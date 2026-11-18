@@ -195,6 +195,24 @@ const BLANK_ANSWER_TOKENS = new Set(
     'empty',
     'tbd',
     'tba',
+    'pending',
+    'unknown',
+    'unset',
+    'missing',
+    'skip',
+    'skipped',
+    // Excel sheets often put annotation text instead of ক/খ/গ/ঘ when unanswered.
+    'note',
+    'notes',
+    'note:',
+    'see note',
+    'see notes',
+    'remark',
+    'remarks',
+    'comment',
+    'comments',
+    'নোট',
+    'মন্তব্য',
     'নাই',
     'নেই',
     'না',
@@ -202,12 +220,17 @@ const BLANK_ANSWER_TOKENS = new Set(
   ].map((t) => t.normalize('NFC').toLowerCase()),
 );
 
-/** True when the cell is empty or a common "no answer" placeholder. */
+/** True when the cell is empty or a common "no answer" placeholder / annotation. */
 export function isBlankAnswerToken(raw: string | null | undefined): boolean {
   if (raw == null) return true;
   const v = raw.normalize('NFC').trim();
   if (!v) return true;
-  return BLANK_ANSWER_TOKENS.has(v.toLowerCase());
+  const lower = v.toLowerCase();
+  if (BLANK_ANSWER_TOKENS.has(lower)) return true;
+  // "Note - …", "Notes:", "নোটঃ …" etc. — treat as unanswered, not invalid.
+  if (/^(notes?|remarks?|comments?)\b/i.test(v)) return true;
+  if (/^(নোট|মন্তব্য)\b/u.test(v)) return true;
+  return false;
 }
 
 /** Normalize উত্তর / Correct Answer → A|B|C|D. Empty / placeholder → null (allowed). */

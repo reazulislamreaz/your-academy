@@ -177,6 +177,8 @@ describe('QuestionImportService — duplicates & blank stems allowed', () => {
         baseRow({ rowNumber: 3, question: 'Unanswered Q?', correctAnswer: '' }),
         baseRow({ rowNumber: 4, question: 'Dash placeholder Q?', correctAnswer: '-' }),
         baseRow({ rowNumber: 5, question: 'N/A placeholder Q?', correctAnswer: 'N/A' }),
+        // Real sheets often put "Note" in উত্তর when the answer is not set yet.
+        baseRow({ rowNumber: 6, question: 'How many member are in FBCCI?', correctAnswer: 'Note' }),
       ],
     });
 
@@ -199,21 +201,69 @@ describe('QuestionImportService — duplicates & blank stems allowed', () => {
         rowNumber: number;
       }>;
     };
-    expect(createManyArg.data).toHaveLength(4);
+    expect(createManyArg.data).toHaveLength(5);
     expect(createManyArg.data.every((r) => r.status === 'VALID')).toBe(true);
     expect(createManyArg.data.every((r) => !r.errorMessage)).toBe(true);
     expect(createManyArg.data.find((r) => r.rowNumber === 2)?.correctAnswer).toBe('B');
     expect(createManyArg.data.find((r) => r.rowNumber === 3)?.correctAnswer).toBeNull();
     expect(createManyArg.data.find((r) => r.rowNumber === 4)?.correctAnswer).toBeNull();
     expect(createManyArg.data.find((r) => r.rowNumber === 5)?.correctAnswer).toBeNull();
+    expect(createManyArg.data.find((r) => r.rowNumber === 6)?.correctAnswer).toBeNull();
     expect(tx.questionUploadBatch.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          validCount: 4,
+          validCount: 5,
           invalidCount: 0,
         }),
       }),
     );
+  });
+
+  it('still marks genuinely invalid answer letters as INVALID', async () => {
+    const { prisma, tx } = makePrisma();
+    prisma.questionUploadBatch.findFirst.mockResolvedValue(null);
+    prisma.questionUploadBatch.findUnique.mockImplementation(async (args: unknown) => {
+      const where = (args as { where?: { batchCode?: string; id?: string } } | undefined)?.where;
+      if (where?.batchCode) return null;
+      return {
+        id: where?.id ?? 'new-batch',
+        batchCode: 'BATCH_BAD',
+        displayName: 'Bad answer',
+        status: 'VALIDATED',
+        duplicateFileBatchId: null,
+        validCount: 0,
+        invalidCount: 1,
+        duplicateCount: 0,
+        uploadedBy: { id: 'admin-1', name: 'Admin' },
+        placements: [],
+      };
+    });
+    prisma.category.findMany.mockResolvedValue([
+      { id: 'cat-1', slug: 'bangla', name: 'Bangla', children: [] },
+    ]);
+    prisma.question.findMany.mockResolvedValue([]);
+    mockedParse.mockResolvedValue({
+      preamble: '',
+      rows: [baseRow({ rowNumber: 2, correctAnswer: 'maybe' })],
+    });
+
+    const service = new QuestionImportService(prisma as never);
+    const file = {
+      buffer: Buffer.from('fake-xlsx'),
+      originalname: 'bad.xlsx',
+      size: 9,
+      mimetype:
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    } as Express.Multer.File;
+
+    await service.upload(user, file, { subjectHint: 'Bangla' });
+
+    const createManyArg = tx.questionImportRow.createMany.mock.calls[0]![0] as {
+      data: Array<{ status: string; errorMessage: string | null }>;
+    };
+    expect(createManyArg.data).toHaveLength(1);
+    expect(createManyArg.data[0]?.status).toBe('INVALID');
+    expect(createManyArg.data[0]?.errorMessage).toMatch(/উত্তর/);
   });
 
   it('confirm imports unanswered rows as DRAFT and answered rows as PUBLISHED', async () => {

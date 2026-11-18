@@ -37,6 +37,37 @@ export function topicTileHref(tile: TopicTile, roots: CategoryNode[]): string {
   return tile.fallbackHref;
 }
 
+/** Resolve Category · Subcategory labels for a CMS topic tile (for homepage cards). */
+export function topicTileTaxonomyLabel(
+  tile: TopicTile,
+  roots: CategoryNode[],
+): string | undefined {
+  let categoryName: string | undefined;
+  let subcategoryName: string | undefined;
+
+  if (tile.categoryId) {
+    const root = roots.find((r) => r.id === tile.categoryId);
+    categoryName = root?.name;
+    if (tile.subcategoryId) {
+      subcategoryName = root?.children?.find((c) => c.id === tile.subcategoryId)?.name;
+    }
+  } else if (tile.subcategoryId) {
+    for (const root of roots) {
+      const child = (root.children ?? []).find((c) => c.id === tile.subcategoryId);
+      if (child) {
+        categoryName = root.name;
+        subcategoryName = child.name;
+        break;
+      }
+    }
+  }
+
+  if (categoryName && subcategoryName) return `${categoryName} · ${subcategoryName}`;
+  if (subcategoryName) return subcategoryName;
+  if (categoryName) return categoryName;
+  return undefined;
+}
+
 export function dbCategoryHref(categoryId: string): string {
   return `/preli-question-bank?categoryId=${encodeURIComponent(categoryId)}`;
 }

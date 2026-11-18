@@ -147,7 +147,7 @@ function MarketingHeaderInner() {
   }, [debouncedQ, onBank, router, searchParams]);
   return (
     <header
-      className="ya-glass sticky top-0 z-30 border-b border-[var(--glass-border)] bg-[var(--glass-bg)] pt-[env(safe-area-inset-top,0px)]"
+      className="ya-glass sticky top-0 z-30 border-b border-[var(--glass-border)] bg-[color-mix(in_srgb,var(--glass-bg)_92%,white)] pt-[env(safe-area-inset-top,0px)] shadow-[0_1px_0_rgba(255,255,255,0.65)_inset,0_8px_24px_-18px_rgba(0,32,80,0.28)]"
       style={{ '--header-h': '64px' } as CSSProperties}
     >
       <div className="mx-auto flex h-14 w-full min-w-0 max-w-[var(--marketing-content-max)] items-center gap-2 px-3 sm:h-16 sm:gap-3 sm:px-6">

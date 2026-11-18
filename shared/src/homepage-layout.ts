@@ -37,7 +37,7 @@ export const HOMEPAGE_SECTION_LABELS: Record<HomepageBuiltinSectionId, string> =
   trialStrip: 'Trial strip',
   liveStats: 'Live stats',
   categories: 'Question bank categories',
-  topics: 'Topic-based practice',
+  topics: 'Topic Base Question Analysis',
   sampleMcq: 'Sample MCQ',
   productFeatures: 'Product features',
   howItWorks: 'How it works',

@@ -1,33 +1,44 @@
 import type { Metadata } from 'next';
-import type { HomepagePayload } from '@your-academy/shared';
+import { createDefaultHomepagePayload } from '@your-academy/shared';
 import { AllTopicsDirectory } from '@/components/marketing/all-topics-directory';
 import { getPublicHomepage } from '@/lib/api/homepage';
 
 export const metadata: Metadata = {
   title: 'All Topics — Your Academy',
-  description: 'Browse all topic-based question analysis categories with logos.',
+  description: 'Browse every topic for question analysis on Your Academy, with logos and icons.',
 };
 
 export const revalidate = 60;
 
-async function loadTopics(): Promise<HomepagePayload['topics']['tiles']> {
+async function loadTopicSection() {
   try {
     const home = await getPublicHomepage();
-    // Published CMS tiles only — never invent topics from taxonomy or defaults on failure.
-    return home.payload.topics.tiles;
+    return {
+      heading: 'All Topics',
+      subtitle:
+        home.payload.topics.subtitle ||
+        'Explore every topic tile published for question analysis.',
+      // Full published CMS catalog — homepage only previews Top 4 + Others.
+      tiles: home.payload.topics.tiles,
+    };
   } catch {
-    return [];
+    const fallback = createDefaultHomepagePayload().topics;
+    return {
+      heading: 'All Topics',
+      subtitle: fallback.subtitle,
+      tiles: fallback.tiles,
+    };
   }
 }
 
 export default async function TopicCategoriesPage() {
-  const tiles = await loadTopics();
+  const section = await loadTopicSection();
 
   return (
     <AllTopicsDirectory
-      heading="All Topics"
-      subtitle="Explore every topic tile published for question analysis."
-      tiles={tiles}
+      heading={section.heading}
+      subtitle={section.subtitle}
+      tiles={section.tiles}
     />
   );
 }

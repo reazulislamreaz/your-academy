@@ -18,27 +18,21 @@ export function HomepageFinalCta({ ctaBanner }: Props) {
       className="scroll-mt-24 pb-[var(--space-section)]"
     >
       <Reveal className="marketing-container">
-        <div className="relative overflow-hidden rounded-[var(--radius-xl)] bg-[var(--bg-inverse)] px-6 py-10 text-center text-white shadow-[var(--shadow)] sm:px-10 sm:py-12">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -left-16 top-0 h-48 w-48 rounded-full bg-[var(--highlight)]/20 blur-3xl"
-          />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -right-10 bottom-0 h-40 w-40 rounded-full bg-[#3b6fd9]/25 blur-3xl"
-          />
-          <div className="relative mx-auto max-w-xl space-y-4">
+        <div className="hp-cta-panel px-6 py-10 text-center text-white sm:px-10 sm:py-12">
+          <div className="relative z-[1] mx-auto max-w-xl space-y-4">
             <h2
               id="final-cta-heading"
-              className="font-display text-2xl font-bold tracking-tight sm:text-3xl"
+              className="font-display text-2xl font-bold tracking-tight text-balance sm:text-3xl"
             >
               {ctaBanner.heading}
             </h2>
-            <p className="text-sm leading-relaxed text-white/75 sm:text-base">{ctaBanner.body}</p>
+            <p className="text-sm leading-relaxed text-pretty text-white/75 sm:text-base">
+              {ctaBanner.body}
+            </p>
             <div className="flex flex-col items-stretch justify-center gap-3 pt-2 sm:flex-row sm:items-center">
               {ctaBanner.cta.visible ? (
                 <Link href={ctaBanner.cta.href}>
-                  <Button className="w-full rounded-full px-8 sm:w-auto">
+                  <Button className="w-full rounded-full px-8 shadow-[0_12px_28px_-10px_rgba(227,30,36,0.55)] transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 sm:w-auto">
                     {ctaBanner.cta.label}
                     <ArrowRight className="h-4 w-4" aria-hidden />
                   </Button>
@@ -47,7 +41,7 @@ export function HomepageFinalCta({ ctaBanner }: Props) {
               <Link href="/preli-question-bank">
                 <Button
                   variant="outline"
-                  className="w-full rounded-full border-white/35 bg-white/5 px-8 text-white hover:bg-white/12 sm:w-auto"
+                  className="w-full rounded-full border-white/40 bg-white/6 px-8 text-white backdrop-blur-sm transition-[transform,background-color,border-color] duration-200 hover:-translate-y-0.5 hover:border-white/70 hover:bg-white/12 sm:w-auto"
                 >
                   Explore Question Bank
                 </Button>

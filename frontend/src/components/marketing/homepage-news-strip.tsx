@@ -6,6 +6,7 @@ import { ArrowRight, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ListCardSkeleton, LoadError } from '@/components/loading';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Reveal } from '@/components/motion/reveal';
 import {
   listPublicDocuments,
   type PublicDocumentListItem,
@@ -37,25 +38,22 @@ export function HomepageNewsStrip({ initial = null, content }: Props) {
     <section
       id="newspaper"
       aria-labelledby="newspaper-heading"
-      className="scroll-mt-24 bg-[var(--bg-elevated)] py-[var(--space-section)]"
+      className="scroll-mt-24 bg-[color-mix(in_srgb,var(--bg-elevated)_90%,transparent)] py-[var(--space-section)]"
     >
-      <div className="marketing-container space-y-6">
+      <Reveal className="marketing-container space-y-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="max-w-2xl space-y-2">
-            <span className="mb-1 block h-[3px] w-7 rounded-full bg-[var(--highlight)]" aria-hidden />
-            <h2
-              id="newspaper-heading"
-              className="font-display text-2xl font-bold tracking-tight text-[var(--ink)] sm:text-[2rem]"
-            >
+            <span className="hp-mark" aria-hidden />
+            <h2 id="newspaper-heading" className="hp-heading text-2xl sm:text-[2rem]">
               {content?.heading || 'পত্রিকার গুরুত্বপূর্ণ কলাম'}
             </h2>
-            <p className="text-sm text-[var(--muted-strong)] sm:text-base">
+            <p className="hp-lede text-sm sm:text-base">
               {content?.subtitle || 'Admin-published PDF columns — browse without login.'}
             </p>
           </div>
           {content?.cta?.visible === false ? null : (
             <Link href={content?.cta?.href || '/news'}>
-              <Button className="rounded-full px-6">
+              <Button className="rounded-full px-6 shadow-[0_10px_24px_-12px_rgba(227,30,36,0.45)] transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5">
                 {content?.cta?.label || 'All columns'}
                 <ArrowRight className="h-4 w-4" aria-hidden />
               </Button>
@@ -75,18 +73,18 @@ export function HomepageNewsStrip({ initial = null, content }: Props) {
         ) : null}
 
         {items.length > 0 ? (
-          <ul className="overflow-hidden rounded-[var(--radius-xl)] border border-[var(--line)] bg-[var(--bg-desk)] shadow-[var(--shadow-sm)]">
+          <ul className="hp-surface overflow-hidden">
             {items.map((item) => (
               <li key={item.id} className="border-b border-[var(--line)] last:border-b-0">
                 <Link
                   href={`/news/d/${item.id}`}
-                  className="group flex items-start gap-3 px-4 py-4 transition-colors hover:bg-[var(--bg-elevated)] sm:px-5"
+                  className="group flex items-start gap-3 px-4 py-4 transition-colors hover:bg-[color-mix(in_srgb,var(--highlight-soft)_35%,white)] sm:px-5"
                 >
-                  <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-wash)] text-[var(--accent)]">
+                  <span className="hp-icon-chip mt-0.5 h-9 w-9 shrink-0">
                     <FileText className="h-4 w-4" aria-hidden />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block font-display text-sm font-semibold text-[var(--ink)] group-hover:text-[var(--highlight)] sm:text-base">
+                    <span className="block font-display text-sm font-semibold text-[var(--ink)] transition-colors group-hover:text-[var(--highlight)] sm:text-base">
                       {item.title}
                     </span>
                     {item.description ? (
@@ -100,7 +98,7 @@ export function HomepageNewsStrip({ initial = null, content }: Props) {
             ))}
           </ul>
         ) : null}
-      </div>
+      </Reveal>
     </section>
   );
 }

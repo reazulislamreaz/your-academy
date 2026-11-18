@@ -94,10 +94,32 @@ export function presentHomepagePayload(
       ? { ...payload.categories, heading: defaults.categories.heading, subtitle: defaults.categories.subtitle, cta: { ...payload.categories.cta, label: defaults.categories.cta.label } }
       : payload.categories;
 
-  const topics =
-    payload.topics.heading === 'Topic Based Question Analysis'
-      ? { ...payload.topics, heading: defaults.topics.heading, cta: { ...payload.topics.cta, label: defaults.topics.cta.label } }
-      : payload.topics;
+  const legacyTopicHeadings = new Set([
+    'Topic Based Question Analysis',
+    'Topics-Based Question Analysis',
+    'Topic-based practice',
+  ]);
+  const topicsBase = legacyTopicHeadings.has(payload.topics.heading.trim())
+    ? {
+        ...payload.topics,
+        heading: defaults.topics.heading,
+        cta: { ...payload.topics.cta, label: defaults.topics.cta.label },
+      }
+    : payload.topics;
+  const legacyTopicSubtitles = new Set([
+    'Master Every Subject, One Topic at a Time',
+    'Explore subject-wise and topic-wise questions to strengthen your knowledge and improve your exam preparation.',
+  ]);
+  const topicSubtitle = topicsBase.subtitle?.trim() ?? '';
+  const topics = {
+    ...topicsBase,
+    // Categories pattern: heading + one description only — never surface a subheading.
+    subheading: '',
+    subtitle:
+      !topicSubtitle || legacyTopicSubtitles.has(topicSubtitle)
+        ? defaults.topics.subtitle
+        : topicSubtitle,
+  };
 
   return normalizeHomepagePayload({
     ...defaults,

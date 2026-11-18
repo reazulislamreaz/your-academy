@@ -26,9 +26,11 @@ export function HomepageHero({ hero, heroImageUrl, supportingText }: Props) {
       {/* Atmosphere — restrained navy/red washes (no purple / neon) */}
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="hero-atmosphere absolute inset-0" />
-        <div className="absolute -top-16 left-[8%] h-48 w-48 rounded-full bg-[color-mix(in_srgb,var(--highlight)_16%,transparent)] blur-3xl sm:h-72 sm:w-72" />
-        <div className="absolute bottom-0 left-0 h-40 w-40 rounded-full bg-[#1a4a8a]/30 blur-3xl sm:h-56 sm:w-56" />
-        <div className="hero-grid absolute inset-0 opacity-[0.06] sm:opacity-[0.07]" />
+        <div className="absolute -top-20 left-[6%] h-52 w-52 rounded-full bg-[color-mix(in_srgb,var(--highlight)_18%,transparent)] blur-3xl sm:h-80 sm:w-80" />
+        <div className="absolute right-[18%] top-[12%] hidden h-32 w-32 rounded-full bg-[#7eb6e8]/15 blur-3xl lg:block" />
+        <div className="absolute bottom-0 left-0 h-44 w-44 rounded-full bg-[#1a4a8a]/35 blur-3xl sm:h-60 sm:w-60" />
+        <div className="hero-grid absolute inset-0 opacity-[0.05] sm:opacity-[0.07]" />
+        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/20 to-transparent lg:hidden" />
       </div>
 
       <div className="relative mx-auto grid w-full min-w-0 max-w-[var(--marketing-content-max)] items-stretch lg:grid-cols-2">
@@ -38,8 +40,8 @@ export function HomepageHero({ hero, heroImageUrl, supportingText }: Props) {
             style={{ ['--stagger-step' as string]: '70ms' }}
           >
             {hero.eyebrow.trim() ? (
-              <p className="hero-eyebrow inline-flex w-full max-w-full items-start gap-2.5 border border-white/15 bg-white/8 px-3 py-2 text-left text-[0.75rem] leading-snug font-medium tracking-[0.01em] text-white/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-md sm:w-auto sm:max-w-full sm:items-center sm:px-3.5 sm:text-[0.8125rem]">
-                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--highlight)]/90 text-white shadow-sm sm:mt-0 sm:h-7 sm:w-7">
+              <p className="hero-eyebrow inline-flex w-full max-w-full items-start gap-2.5 border border-white/18 bg-white/[0.09] px-3 py-2 text-left text-[0.75rem] leading-snug font-medium tracking-[0.01em] text-white/92 shadow-[inset_0_1px_0_rgba(255,255,255,0.16),0_8px_24px_-12px_rgba(0,0,0,0.35)] backdrop-blur-md sm:w-auto sm:max-w-full sm:items-center sm:px-3.5 sm:text-[0.8125rem]">
+                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--highlight)] text-white shadow-[0_4px_12px_-2px_rgba(227,30,36,0.55)] sm:mt-0 sm:h-7 sm:w-7">
                   <GraduationCap className="h-3.5 w-3.5" aria-hidden />
                 </span>
                 <span className="min-w-0 flex-1 text-pretty break-words">{hero.eyebrow.trim()}</span>

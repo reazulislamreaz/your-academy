@@ -762,7 +762,20 @@ function SectionEditor({
               }
             />
           </Field>
-        ) : null}
+        ) : (
+          <Field label="Subtitle">
+            <Textarea
+              rows={3}
+              value={payload.topics.subtitle ?? ''}
+              onChange={(e) =>
+                onPatch((p) => ({
+                  ...p,
+                  topics: { ...p.topics, subtitle: e.target.value, subheading: '' },
+                }))
+              }
+            />
+          </Field>
+        )}
         <CtaFields
           label="Section CTA"
           cta={block.cta}

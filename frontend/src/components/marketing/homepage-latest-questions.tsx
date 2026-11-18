@@ -6,6 +6,7 @@ import { ArrowRight } from 'lucide-react';
 import type { HomepagePayload } from '@your-academy/shared';
 import { ListCardSkeleton, LoadError } from '@/components/loading';
 import { Button } from '@/components/ui/button';
+import { Reveal } from '@/components/motion/reveal';
 import { listPublicQuestionSets } from '@/lib/api/public-questions';
 
 function formatUploadDate(iso: string) {
@@ -35,22 +36,19 @@ export function HomepageLatestQuestions({ latest }: Props) {
   const items = list.data?.data ?? [];
 
   return (
-    <section className="section-pad bg-[var(--bg-desk)]">
-      <div className="marketing-container space-y-6">
+    <section className="section-pad">
+      <Reveal className="marketing-container space-y-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="space-y-2">
-            <span
-              className="mb-1 block h-[3px] w-7 rounded-full bg-[var(--highlight)]"
-              aria-hidden
-            />
-            <h2 className="font-display text-2xl font-bold tracking-tight text-[var(--ink)] sm:text-[2rem]">
+            <span className="hp-mark" aria-hidden />
+            <h2 className="hp-heading text-2xl sm:text-[2rem]">
               {latest.heading}
             </h2>
-            <p className="text-sm text-[var(--muted-strong)] sm:text-base">{latest.subtitle}</p>
+            <p className="hp-lede text-sm sm:text-base">{latest.subtitle}</p>
           </div>
           {latest.cta.visible ? (
             <Link href={latest.cta.href}>
-              <Button type="button" className="cursor-pointer rounded-full px-6">
+              <Button type="button" className="cursor-pointer rounded-full px-6 shadow-[0_10px_24px_-12px_rgba(227,30,36,0.45)] transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5">
                 {latest.cta.label}
                 <ArrowRight className="size-4" />
               </Button>
@@ -73,12 +71,12 @@ export function HomepageLatestQuestions({ latest }: Props) {
           </div>
         ) : null}
 
-        <ul className="space-y-3">
+        <ul className="motion-stagger space-y-3">
           {items.map((set) => (
             <li key={set.id}>
               <Link
                 href={`/preli-question-bank/${set.id}`}
-                className="block rounded-[1rem] border border-[var(--line)] bg-white px-5 py-4 shadow-[var(--shadow-sm)] transition-all hover:-translate-y-0.5 hover:border-[var(--highlight)] hover:shadow-[var(--shadow)]"
+                className="hp-list-link block px-5 py-4"
               >
                 <h3 className="font-display text-lg font-bold tracking-tight text-[var(--ink)]">
                   {set.title}
@@ -90,7 +88,7 @@ export function HomepageLatestQuestions({ latest }: Props) {
             </li>
           ))}
         </ul>
-      </div>
+      </Reveal>
     </section>
   );
 }

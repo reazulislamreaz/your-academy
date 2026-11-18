@@ -1643,6 +1643,315 @@ input:disabled {
   background: var(--highlight);
 }
 
+/*
+  Homepage visual system — premium exam-desk polish.
+  Navy + brand red identity; cool paper atmosphere; no purple / neon kits.
+*/
+.homepage-shell {
+  --hp-ink-glow: color-mix(in srgb, var(--bg-inverse) 7%, transparent);
+  --hp-red-glow: color-mix(in srgb, var(--highlight) 7%, transparent);
+  --hp-panel-border: color-mix(in srgb, var(--line) 88%, var(--bg-inverse));
+  --hp-shadow: 0 1px 2px rgba(0, 32, 80, 0.04), 0 12px 32px -16px rgba(0, 32, 80, 0.14);
+  --hp-shadow-hover: 0 2px 4px rgba(0, 32, 80, 0.05), 0 18px 40px -14px rgba(0, 32, 80, 0.18);
+  position: relative;
+  isolation: isolate;
+  background-color: var(--bg-desk);
+  background-image:
+    radial-gradient(ellipse 85% 42% at 50% -8%, var(--hp-red-glow), transparent 58%),
+    radial-gradient(ellipse 55% 36% at 100% 18%, var(--hp-ink-glow), transparent 55%),
+    radial-gradient(ellipse 48% 30% at 0% 55%, color-mix(in srgb, #3b6fd9 5%, transparent), transparent 60%),
+    linear-gradient(180deg, #f8fafc 0%, var(--bg-desk) 14%, var(--bg-desk) 100%);
+}
+
+.homepage-shell::before {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.035;
+  background-image:
+    linear-gradient(to right, var(--bg-inverse) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--bg-inverse) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: linear-gradient(180deg, #000 0%, transparent 28%, transparent 72%, #000 100%);
+}
+
+.homepage-shell > * {
+  position: relative;
+  z-index: 1;
+}
+
+.hp-mark {
+  display: block;
+  width: 1.75rem;
+  height: 3px;
+  margin-bottom: 0.35rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--highlight), color-mix(in srgb, var(--highlight) 35%, #fda4a4));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--highlight) 12%, transparent);
+}
+
+.hp-heading {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+.hp-lede {
+  color: var(--muted-strong);
+  line-height: 1.65;
+  text-wrap: pretty;
+}
+
+.hp-surface {
+  border: 1px solid var(--hp-panel-border);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.98)),
+    var(--bg-elevated);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--hp-shadow);
+}
+
+.hp-band {
+  border: 1px solid color-mix(in srgb, var(--info) 14%, var(--line));
+  background:
+    radial-gradient(ellipse 70% 80% at 100% 0%, color-mix(in srgb, var(--info) 10%, transparent), transparent 55%),
+    linear-gradient(165deg, color-mix(in srgb, var(--info-soft) 88%, white), var(--info-soft));
+  border-radius: var(--radius-xl);
+  box-shadow: var(--hp-shadow);
+}
+
+.hp-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--hp-panel-border);
+  background: var(--bg-elevated);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--hp-shadow);
+  transition:
+    transform 280ms var(--ease-out),
+    box-shadow 280ms var(--ease-out),
+    border-color 280ms var(--ease-out);
+}
+
+.hp-card::before {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  inset: 0 0 auto;
+  height: 42%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), transparent);
+  opacity: 0.9;
+}
+
+.hp-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.hp-card-interactive:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--highlight) 28%, var(--line));
+  box-shadow: var(--hp-shadow-hover);
+}
+
+.hp-card-interactive:active {
+  transform: translateY(-1px);
+}
+
+.hp-icon-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--brand-wash) 88%, white);
+  color: var(--accent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  transition:
+    transform 260ms var(--ease-out),
+    background-color 260ms var(--ease-out),
+    color 260ms var(--ease-out);
+}
+
+.group:hover .hp-icon-chip,
+.hp-card-interactive:hover .hp-icon-chip {
+  transform: translateY(-1px) scale(1.04);
+  background: color-mix(in srgb, var(--highlight-soft) 70%, white);
+  color: var(--highlight);
+}
+
+.hp-list-link {
+  display: block;
+  border: 1px solid var(--hp-panel-border);
+  background: var(--bg-elevated);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--hp-shadow);
+  transition:
+    transform 240ms var(--ease-out),
+    border-color 240ms var(--ease-out),
+    box-shadow 240ms var(--ease-out);
+}
+
+.hp-list-link:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--highlight) 32%, var(--line));
+  box-shadow: var(--hp-shadow-hover);
+}
+
+.hp-faq-item {
+  border: 1px solid var(--hp-panel-border);
+  background: var(--bg-elevated);
+  border-radius: var(--radius-lg);
+  transition:
+    border-color var(--duration) var(--ease-out),
+    box-shadow var(--duration) var(--ease-out),
+    background-color var(--duration) var(--ease-out);
+}
+
+.hp-faq-item[open] {
+  border-color: color-mix(in srgb, var(--highlight) 22%, var(--line));
+  box-shadow: var(--hp-shadow);
+  background: color-mix(in srgb, var(--bg-elevated) 92%, var(--highlight-soft));
+}
+
+.hp-trial {
+  position: relative;
+  overflow: hidden;
+  border-block: 1px solid color-mix(in srgb, var(--highlight) 18%, var(--line));
+  background:
+    radial-gradient(ellipse 55% 120% at 0% 50%, color-mix(in srgb, var(--highlight) 12%, transparent), transparent 60%),
+    linear-gradient(90deg, color-mix(in srgb, var(--highlight-soft) 92%, white), var(--highlight-soft));
+}
+
+.hp-trial::after {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  inset: auto 0 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--highlight), transparent);
+  opacity: 0.55;
+}
+
+.hp-cta-panel {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+  background:
+    radial-gradient(ellipse 50% 80% at 12% 20%, color-mix(in srgb, var(--highlight) 22%, transparent), transparent 55%),
+    radial-gradient(ellipse 45% 70% at 90% 85%, color-mix(in srgb, #3b6fd9 28%, transparent), transparent 58%),
+    linear-gradient(145deg, #001538 0%, var(--bg-inverse) 48%, #001a44 100%);
+  box-shadow: var(--hp-shadow-hover), 0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+}
+
+.hp-cta-panel::before {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  opacity: 0.07;
+  background-image:
+    linear-gradient(to right, #fff 1px, transparent 1px),
+    linear-gradient(to bottom, #fff 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, #000 10%, transparent 75%);
+}
+
+.hp-step {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--hp-panel-border);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.7), transparent 40%),
+    var(--bg-desk);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--hp-shadow);
+  transition:
+    transform 260ms var(--ease-out),
+    border-color 260ms var(--ease-out),
+    box-shadow 260ms var(--ease-out);
+}
+
+.hp-step:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--highlight) 24%, var(--line));
+  box-shadow: var(--hp-shadow-hover);
+}
+
+.hp-tile {
+  border-color: var(--hp-panel-border) !important;
+  box-shadow: var(--hp-shadow) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.95), var(--bg-elevated)) !important;
+}
+
+.hp-tile:hover {
+  border-color: color-mix(in srgb, var(--highlight) 40%, var(--line)) !important;
+}
+
+.homepage-shell .hero-atmosphere {
+  background:
+    radial-gradient(ellipse 58% 72% at 10% 18%, color-mix(in srgb, #2f6bc0 38%, transparent), transparent 68%),
+    radial-gradient(ellipse 42% 50% at 38% 92%, color-mix(in srgb, var(--highlight) 16%, transparent), transparent 70%),
+    radial-gradient(ellipse 30% 40% at 70% 10%, color-mix(in srgb, #7eb6e8 12%, transparent), transparent 65%),
+    linear-gradient(168deg, #001433 0%, var(--bg-inverse) 46%, #00122f 100%);
+}
+
+.homepage-shell .hero-cta-primary {
+  position: relative;
+  overflow: hidden;
+}
+
+.homepage-shell .hero-cta-primary::after {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.22) 48%, transparent 62%);
+  transform: translateX(-120%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .homepage-shell .hero-cta-primary:hover::after {
+    animation: ya-hp-sheen 700ms var(--ease-out) both;
+  }
+
+  .homepage-shell .motion-reveal {
+    transform: translateY(20px);
+    transition:
+      opacity 520ms var(--ease-out),
+      transform 520ms var(--ease-out);
+  }
+
+  .homepage-shell .motion-reveal.is-visible {
+    transform: translateY(0);
+  }
+}
+
+@keyframes ya-hp-sheen {
+  to {
+    transform: translateX(120%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hp-card-interactive:hover,
+  .hp-card-interactive:active,
+  .hp-list-link:hover,
+  .hp-step:hover,
+  .group:hover .hp-icon-chip,
+  .hp-card-interactive:hover .hp-icon-chip {
+    transform: none;
+  }
+
+  .homepage-shell .hero-cta-primary::after {
+    display: none;
+  }
+}
+
 /* Quiet list row — preferred over boxed cards for browse lists */
 .list-row {
   display: block;

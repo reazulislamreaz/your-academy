@@ -420,6 +420,10 @@ const coreHomepagePayloadSchema = z.object({
   topics: z.object({
     visible: z.boolean().default(true),
     heading: mediumText,
+    /** Short tagline under the heading (mirrors categories’ supporting line hierarchy). */
+    subheading: mediumText.default(''),
+    /** Longer description under the subheading. */
+    subtitle: mediumText.default(''),
     cta: ctaSchema,
     tiles: z.array(topicTileSchema).max(200).default([]),
   }),
@@ -595,7 +599,10 @@ export function createDefaultHomepagePayload(): HomepagePayload {
     },
     topics: {
       visible: true,
-      heading: 'Topic-based practice',
+      heading: 'Topic Base Question Analysis',
+      subheading: '',
+      subtitle:
+        'Explore subject-wise questions and practice important topics to strengthen your knowledge and prepare more effectively for competitive exams.',
       cta: { label: 'View all topics', href: '/topic-categories', visible: true },
       tiles: [
         {

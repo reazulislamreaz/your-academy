@@ -15,6 +15,15 @@ describe('normalizeCorrectAnswer', () => {
     }
   });
 
+  it('treats Note / annotation cells as missing answers (Excel unanswered marker)', () => {
+    for (const token of ['Note', 'Notes', 'NOTE', 'Note:', 'see note', 'নোট', 'মন্তব্য']) {
+      expect(isBlankAnswerToken(token)).toBe(true);
+      expect(normalizeCorrectAnswer(token)).toBeNull();
+    }
+    expect(isBlankAnswerToken('Note - answer later')).toBe(true);
+    expect(normalizeCorrectAnswer('Note - answer later')).toBeNull();
+  });
+
   it('maps Bangla and Latin letters', () => {
     expect(normalizeCorrectAnswer('ক')).toBe('A');
     expect(normalizeCorrectAnswer('B')).toBe('B');

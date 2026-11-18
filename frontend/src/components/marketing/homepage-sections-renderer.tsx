@@ -48,7 +48,7 @@ export function HomepageSectionsRenderer({
   const layout = normalizeHomepageLayout(payload.layout);
 
   return (
-    <div className="bg-[var(--bg-desk)]">
+    <div className="homepage-shell">
       {layout.sections.map((entry) => {
         if (!entry.visible) return null;
 

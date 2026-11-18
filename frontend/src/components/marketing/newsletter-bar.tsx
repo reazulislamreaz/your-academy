@@ -14,25 +14,25 @@ export function NewsletterBar({ newsletter }: Props) {
   if (!newsletter.visible) return null;
 
   return (
-    <div className="rounded-[18px] bg-[var(--bg-inverse)] px-5 py-5 text-white shadow-[var(--shadow)] sm:px-7 sm:py-6">
-      <div className="flex flex-col items-start gap-5 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+    <div className="hp-cta-panel px-5 py-5 text-white sm:px-7 sm:py-6">
+      <div className="relative z-[1] flex flex-col items-start gap-5 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
         <div className="flex items-center gap-3.5">
           <span
             aria-hidden
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/10"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]"
           >
             <Send className="h-5 w-5 text-white" />
           </span>
           <div>
             <p className="font-display text-xl font-bold tracking-tight">{newsletter.title}</p>
-            <p className="mt-0.5 max-w-md text-sm leading-relaxed text-white/65">
+            <p className="mt-0.5 max-w-md text-sm leading-relaxed text-pretty text-white/68">
               {newsletter.body}
             </p>
           </div>
         </div>
         {newsletter.cta.visible ? (
           <Link href={newsletter.cta.href} className="w-full sm:w-auto">
-            <Button className="h-11 w-full rounded-full px-6 sm:w-auto">
+            <Button className="h-11 w-full rounded-full px-6 shadow-[0_10px_24px_-10px_rgba(227,30,36,0.5)] transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 sm:w-auto">
               {newsletter.cta.label}
             </Button>
           </Link>

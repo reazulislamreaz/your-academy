@@ -12,18 +12,18 @@ type Props = {
 export function HomepageCustomSection({ section }: Props) {
   if (!section.visible) return null;
   return (
-    <section className="scroll-mt-24 bg-[var(--bg-elevated)] py-[var(--space-section)]">
+    <section className="scroll-mt-24 py-[var(--space-section)]">
       <Reveal className="marketing-container max-w-3xl space-y-4">
-        <span className="mb-1 block h-[3px] w-7 rounded-full bg-[var(--highlight)]" aria-hidden />
-        <h2 className="font-display text-2xl font-bold tracking-tight text-[var(--ink)] sm:text-[2rem]">
+        <span className="hp-mark" aria-hidden />
+        <h2 className="hp-heading text-2xl sm:text-[2rem]">
           {section.heading}
         </h2>
-        <p className="text-sm leading-relaxed whitespace-pre-wrap text-[var(--muted-strong)] sm:text-base">
+        <p className="hp-lede text-sm whitespace-pre-wrap sm:text-base">
           {section.body}
         </p>
         {section.cta.visible ? (
           <Link href={section.cta.href} className="inline-flex pt-1">
-            <Button className="rounded-full px-6">
+            <Button className="rounded-full px-6 shadow-[0_10px_24px_-12px_rgba(227,30,36,0.45)] transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5">
               {section.cta.label}
               <ArrowRight className="h-4 w-4" aria-hidden />
             </Button>

@@ -115,7 +115,12 @@ export function useHomepageSection(section: HomepageSectionKind) {
     setDirty(true);
   };
 
-  const patchSectionMeta = (patch: { heading?: string; visible?: boolean; subtitle?: string }) => {
+  const patchSectionMeta = (patch: {
+    heading?: string;
+    visible?: boolean;
+    subtitle?: string;
+    subheading?: string;
+  }) => {
     setPayload((prev) => {
       if (section === 'categories') {
         return {
@@ -134,6 +139,8 @@ export function useHomepageSection(section: HomepageSectionKind) {
           ...prev.topics,
           ...(patch.heading !== undefined ? { heading: patch.heading } : {}),
           ...(patch.visible !== undefined ? { visible: patch.visible } : {}),
+          ...(patch.subheading !== undefined ? { subheading: patch.subheading } : {}),
+          ...(patch.subtitle !== undefined ? { subtitle: patch.subtitle } : {}),
         },
       };
     });

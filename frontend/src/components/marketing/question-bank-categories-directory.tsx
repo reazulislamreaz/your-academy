@@ -1,17 +1,21 @@
 'use client';
 
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import type { HomepagePayload } from '@your-academy/shared';
+import type { HomepageIconKey, HomepagePayload } from '@your-academy/shared';
+import { isHomepageOthersTile } from '@your-academy/shared';
 import { Reveal } from '@/components/motion/reveal';
 import { DirectoryPageShell } from '@/components/marketing/directory-page-shell';
 import { DirectoryTileGridSkeleton } from '@/components/marketing/directory-tile-grid-skeleton';
 import { HomepageTileCard } from '@/components/marketing/homepage-tile-card';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
+import { SearchField } from '@/components/ui/search-field';
 import { SkeletonRegion } from '@/components/ui/skeleton';
 import { apiFetch } from '@/lib/api/client';
 import type { CategoryNode } from '@/lib/api/types';
 import {
+  categoryTileHref,
   dbCategoryHref,
   dbSubcategoryHref,
   guessHomepageIconKey,
@@ -21,12 +25,32 @@ import {
 type Props = {
   heading: string;
   subtitle?: string;
-  /** Published homepage tiles — used only to enrich logos/icons when IDs/names match. */
+  /** Published homepage tiles — logos/icons + any CMS-only titles. */
   tiles: HomepagePayload['categories']['tiles'];
 };
 
+type DirectoryCard = {
+  key: string;
+  href: string;
+  title: string;
+  subtitle?: string;
+  iconKey: HomepageIconKey;
+  logoUrl?: string | null;
+};
+
+/**
+ * Full Target Exam Categories catalog — same HomepageTileCard chrome as the
+ * homepage strip, including the Top 4 preview tiles (not Others-only).
+ */
 export function QuestionBankCategoriesDirectory({ heading, subtitle, tiles }: Props) {
-  const visibleTiles = tiles.filter((t) => t.visible);
+  const [query, setQuery] = useState('');
+  const q = query.trim().toLowerCase();
+
+  const cmsTiles = useMemo(
+    () => tiles.filter((t) => t.visible && !isHomepageOthersTile(t)),
+    [tiles],
+  );
+
   const tree = useQuery({
     queryKey: ['categories', 'public'],
     queryFn: () => apiFetch<CategoryNode[]>('/categories', { skipRefresh: true }),
@@ -34,93 +58,157 @@ export function QuestionBankCategoriesDirectory({ heading, subtitle, tiles }: Pr
   });
 
   const roots = tree.data ?? [];
-  const hasAny =
-    roots.length > 0 &&
-    roots.some((r) => (r.children?.length ?? 0) > 0 || Boolean(r.id));
+
+  const cards = useMemo(() => {
+    const items: DirectoryCard[] = [];
+    const coveredIds = new Set<string>();
+    const coveredNames = new Set<string>();
+
+    const markName = (name: string) => {
+      coveredNames.add(name.trim().toLowerCase());
+    };
+
+    // CMS tiles first (preserves Top 4 + library order, including homepage logos).
+    for (const tile of cmsTiles) {
+      items.push({
+        key: `cms:${tile.id}`,
+        href: categoryTileHref(tile),
+        title: tile.displayTitle,
+        subtitle: tile.subtitle || undefined,
+        iconKey: tile.iconKey,
+        logoUrl: tile.logoUrl,
+      });
+      markName(tile.displayTitle);
+      if (tile.subcategoryId) coveredIds.add(`sub:${tile.subcategoryId}`);
+      if (tile.categoryId && !tile.subcategoryId) {
+        coveredIds.add(`cat:${tile.categoryId}`);
+        // Legacy: categoryId sometimes stored the child id.
+        coveredIds.add(`sub:${tile.categoryId}`);
+      }
+      if (tile.categoryId && tile.subcategoryId) {
+        coveredIds.add(`sub:${tile.subcategoryId}`);
+      }
+    }
+
+    // Remaining live taxonomy nodes so the page is a complete DB list.
+    for (const root of roots) {
+      const rootNameKey = root.name.trim().toLowerCase();
+      if (!coveredIds.has(`cat:${root.id}`) && !coveredNames.has(rootNameKey)) {
+        const tile = matchCategoryTile(cmsTiles, {
+          categoryId: root.id,
+          name: root.name,
+        });
+        items.push({
+          key: `cat:${root.id}`,
+          href: dbCategoryHref(root.id),
+          title: root.name,
+          subtitle: root.description ?? undefined,
+          iconKey: tile?.iconKey ?? guessHomepageIconKey(root.name),
+          logoUrl: tile?.logoUrl,
+        });
+        coveredIds.add(`cat:${root.id}`);
+        markName(root.name);
+      }
+
+      for (const child of root.children ?? []) {
+        const childNameKey = child.name.trim().toLowerCase();
+        if (coveredIds.has(`sub:${child.id}`) || coveredNames.has(childNameKey)) continue;
+        const tile = matchCategoryTile(cmsTiles, {
+          categoryId: root.id,
+          subcategoryId: child.id,
+          name: child.name,
+        });
+        items.push({
+          key: `sub:${child.id}`,
+          href: dbSubcategoryHref(root.id, child.id),
+          title: child.name,
+          subtitle: child.description ?? root.name,
+          iconKey: tile?.iconKey ?? guessHomepageIconKey(child.name),
+          logoUrl: tile?.logoUrl,
+        });
+        coveredIds.add(`sub:${child.id}`);
+        markName(child.name);
+      }
+    }
+
+    return items;
+  }, [cmsTiles, roots]);
+
+  const filtered = useMemo(() => {
+    if (!q) return cards;
+    return cards.filter(
+      (card) =>
+        card.title.toLowerCase().includes(q) ||
+        (card.subtitle?.toLowerCase().includes(q) ?? false),
+    );
+  }, [cards, q]);
+
+  const hasCms = cmsTiles.length > 0;
+  const waitingOnTree = tree.isLoading;
 
   return (
     <DirectoryPageShell heading={heading} subtitle={subtitle}>
-      <SkeletonRegion
-        loading={tree.isLoading}
-        label="Loading categories"
-        fallback={<DirectoryTileGridSkeleton count={12} />}
-      >
-        {tree.isError ? (
-          <EmptyState
-            align="center"
-            title="Couldn’t load categories"
-            description="Check your connection and try again."
-            action={
-              <Button type="button" variant="secondary" onClick={() => void tree.refetch()}>
-                Retry
-              </Button>
-            }
-          />
-        ) : !hasAny ? (
-          <EmptyState
-            align="center"
-            title="No categories yet"
-            description="When exam categories are published in the question bank, they will appear here."
-          />
-        ) : (
-          <div className="space-y-10">
-            {roots.map((root) => {
-              const children = root.children ?? [];
-              const rootTile = matchCategoryTile(visibleTiles, {
-                categoryId: root.id,
-                name: root.name,
-              });
+      {!hasCms && !waitingOnTree && roots.length === 0 && !tree.isError ? (
+        <EmptyState
+          align="center"
+          title="No categories yet"
+          description="When exam categories are published in the question bank, they will appear here."
+        />
+      ) : (
+        <div className="space-y-6">
+          {hasCms || waitingOnTree || roots.length > 0 ? (
+            <SearchField
+              value={query}
+              onChange={setQuery}
+              placeholder="Search categories…"
+              aria-label="Search categories"
+              variant="pill"
+              className="max-w-md"
+            />
+          ) : null}
 
-              return (
-                <Reveal key={root.id} className="space-y-4">
-                  <div className="flex flex-wrap items-end justify-between gap-3">
-                    <div>
-                      <h2 className="font-display text-xl font-bold tracking-tight text-[var(--ink)] sm:text-2xl">
-                        {root.name}
-                      </h2>
-                      {root.description ? (
-                        <p className="mt-1 text-sm text-[var(--muted-strong)]">
-                          {root.description}
-                        </p>
-                      ) : null}
-                    </div>
-                  </div>
-
-                  <ul className="motion-stagger grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:gap-4">
-                    <li>
+          <SkeletonRegion
+            loading={waitingOnTree && !hasCms}
+            label="Loading categories"
+            fallback={<DirectoryTileGridSkeleton count={12} />}
+          >
+            {tree.isError && !hasCms ? (
+              <EmptyState
+                align="center"
+                title="Couldn’t load categories"
+                description="Check your connection and try again."
+                action={
+                  <Button type="button" variant="secondary" onClick={() => void tree.refetch()}>
+                    Retry
+                  </Button>
+                }
+              />
+            ) : filtered.length === 0 ? (
+              <EmptyState
+                align="center"
+                title="No matches"
+                description="Try a different search term."
+              />
+            ) : (
+              <Reveal>
+                <ul className="motion-stagger grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 lg:gap-4 xl:grid-cols-6">
+                  {filtered.map((card) => (
+                    <li key={card.key}>
                       <HomepageTileCard
-                        href={dbCategoryHref(root.id)}
-                        title={`All ${root.name}`}
-                        subtitle="Full category"
-                        iconKey={rootTile?.iconKey ?? guessHomepageIconKey(root.name)}
-                        logoUrl={rootTile?.logoUrl}
+                        href={card.href}
+                        title={card.title}
+                        subtitle={card.subtitle}
+                        iconKey={card.iconKey}
+                        logoUrl={card.logoUrl}
                       />
                     </li>
-                    {children.map((child) => {
-                      const tile = matchCategoryTile(visibleTiles, {
-                        categoryId: root.id,
-                        subcategoryId: child.id,
-                        name: child.name,
-                      });
-                      return (
-                        <li key={child.id}>
-                          <HomepageTileCard
-                            href={dbSubcategoryHref(root.id, child.id)}
-                            title={child.name}
-                            subtitle={child.description ?? undefined}
-                            iconKey={tile?.iconKey ?? guessHomepageIconKey(child.name)}
-                            logoUrl={tile?.logoUrl}
-                          />
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </Reveal>
-              );
-            })}
-          </div>
-        )}
-      </SkeletonRegion>
+                  ))}
+                </ul>
+              </Reveal>
+            )}
+          </SkeletonRegion>
+        </div>
+      )}
     </DirectoryPageShell>
   );
 }
