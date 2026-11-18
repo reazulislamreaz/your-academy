@@ -122,11 +122,9 @@ export function LearnerMobileNav() {
 
               <nav className="flex flex-col gap-5" aria-label="Mobile study">
                 {learnerNavGroups.map((group) => (
-                  <div key={group.title}>
-                    <p className="px-3 pb-2 text-[0.6875rem] font-semibold tracking-[0.16em] text-[var(--muted)] uppercase">
-                      {group.title}
-                    </p>
-                    <div className="flex flex-col gap-0.5">
+                  <div key={group.title} className="learner-nav-group">
+                    <p className="learner-nav-group-title">{group.title}</p>
+                    <div className="flex flex-col gap-1">
                       {group.items.map((item) => {
                         const Icon = item.icon;
                         const active = learnerLinkActive(pathname, item);
@@ -137,22 +135,12 @@ export function LearnerMobileNav() {
                             aria-current={active ? 'page' : undefined}
                             data-active={active ? 'true' : 'false'}
                             onClick={() => setOpen(false)}
-                            className={cn(
-                              'learner-nav-link flex min-h-12 items-center gap-2.5 rounded-[var(--radius)] px-3 py-2.5 text-base font-medium',
-                              active
-                                ? 'font-semibold text-[var(--ink)]'
-                                : 'text-[var(--muted)] hover:bg-[var(--brand-wash)] hover:text-[var(--ink-soft)]',
-                            )}
+                            className="learner-nav-link motion-nav-indicator min-h-12 text-base"
                           >
-                            <span
-                              className={cn(
-                                'flex size-8 shrink-0 items-center justify-center rounded-[var(--radius-sm)]',
-                                active ? 'text-[var(--ink)]' : 'text-current',
-                              )}
-                            >
-                              <Icon className="size-4" aria-hidden />
+                            <span className="learner-nav-icon" aria-hidden>
+                              <Icon className="size-4" strokeWidth={1.75} />
                             </span>
-                            {item.label}
+                            <span className="learner-nav-label">{item.label}</span>
                           </Link>
                         );
                       })}

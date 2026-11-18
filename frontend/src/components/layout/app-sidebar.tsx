@@ -75,7 +75,7 @@ function SidebarNav() {
     >
       <div
         className={cn(
-          'flex h-[var(--header-h,4.5rem)] shrink-0 items-center gap-2 border-b border-[var(--line)]/70',
+          'learner-sidebar-header flex h-[var(--header-h,4.5rem)] shrink-0 items-center gap-2',
           collapsed ? 'justify-center px-2' : 'justify-between px-4',
         )}
       >
@@ -89,7 +89,7 @@ function SidebarNav() {
             type="button"
             onClick={toggleCollapsed}
             aria-label="Collapse sidebar"
-            className="flex size-8 items-center justify-center rounded-full text-[var(--muted)] transition-[color,background-color,box-shadow] hover:bg-[var(--brand-wash)] hover:text-[var(--ink)] hover:shadow-[0_0_16px_-6px_color-mix(in_srgb,var(--accent)_40%,transparent)]"
+            className="learner-sidebar-toggle"
           >
             <PanelLeftClose className="size-4" aria-hidden strokeWidth={1.75} />
           </button>
@@ -97,12 +97,12 @@ function SidebarNav() {
       </div>
 
       {collapsed ? (
-        <div className="flex justify-center border-b border-[var(--line)]/70 py-2">
+        <div className="flex justify-center border-b border-[var(--line)]/60 py-2">
           <button
             type="button"
             onClick={toggleCollapsed}
             aria-label="Expand sidebar"
-            className="flex size-8 items-center justify-center rounded-full text-[var(--muted)] transition-[color,background-color,box-shadow] hover:bg-[var(--brand-wash)] hover:text-[var(--ink)] hover:shadow-[0_0_16px_-6px_color-mix(in_srgb,var(--accent)_40%,transparent)]"
+            className="learner-sidebar-toggle"
           >
             <PanelLeftOpen className="size-4" aria-hidden strokeWidth={1.75} />
           </button>
@@ -110,24 +110,27 @@ function SidebarNav() {
       ) : null}
 
       <nav
-        className={cn('flex flex-1 flex-col gap-4 overflow-y-auto pb-4', collapsed ? 'px-2' : 'px-3')}
+        className={cn(
+          'learner-sidebar-nav flex flex-1 flex-col gap-5 overflow-y-auto pb-4',
+          collapsed ? 'px-2 pt-3' : 'px-3 pt-4',
+        )}
         aria-label="Study"
       >
         {learnerNavGroups.map((group) => (
-          <div key={group.title}>
+          <div key={group.title} className="learner-nav-group">
             {!collapsed ? (
-              <p className="px-3 pb-2 text-[0.6875rem] font-semibold tracking-[0.16em] text-[var(--muted)] uppercase">
-                {group.title}
-              </p>
+              <p className="learner-nav-group-title">{group.title}</p>
             ) : (
-              <div className="mx-auto mb-2 h-px w-6 bg-[var(--line)]" aria-hidden />
+              <div className="learner-nav-group-rule" aria-hidden />
             )}
-            <div className="flex flex-col gap-0.5">
+            <div className="flex flex-col gap-1">
               {group.items.map((item) => {
                 const Icon = item.icon;
                 const active = learnerLinkActive(pathname, item);
                 const showSavedBadge =
-                  item.href.startsWith('/bookmarks') && typeof savedCount === 'number' && savedCount > 0;
+                  item.href.startsWith('/bookmarks') &&
+                  typeof savedCount === 'number' &&
+                  savedCount > 0;
                 return (
                   <Link
                     key={`${item.label}-${item.href}`}
@@ -136,24 +139,21 @@ function SidebarNav() {
                     aria-current={active ? 'page' : undefined}
                     data-active={active ? 'true' : 'false'}
                     className={cn(
-                      'learner-nav-link motion-nav-indicator flex items-center rounded-[var(--radius)] text-sm font-medium',
-                      collapsed ? 'justify-center px-0 py-2.5' : 'gap-2.5 px-3 py-2.5',
-                      active
-                        ? 'font-semibold text-[var(--ink)]'
-                        : 'text-[var(--muted)] hover:bg-[var(--brand-wash)] hover:text-[var(--ink-soft)]',
+                      'learner-nav-link motion-nav-indicator',
+                      collapsed && 'is-collapsed',
                     )}
                   >
-                    <span className="relative flex size-7 shrink-0 items-center justify-center">
-                      <Icon className="size-4" aria-hidden strokeWidth={1.75} />
+                    <span className="learner-nav-icon" aria-hidden>
+                      <Icon className="size-4" strokeWidth={1.75} />
                       {showSavedBadge && collapsed ? (
-                        <span className="absolute -top-0.5 -right-0.5 size-1.5 rounded-full bg-[var(--accent-blue)]" />
+                        <span className="learner-nav-dot" />
                       ) : null}
                     </span>
                     {!collapsed ? (
                       <>
-                        <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                        <span className="learner-nav-label">{item.label}</span>
                         {showSavedBadge ? (
-                          <span className="rounded-full bg-[var(--bg-muted)] px-1.5 py-0.5 text-[0.65rem] font-semibold text-[var(--muted-strong)] tabular-nums">
+                          <span className="learner-nav-badge">
                             {savedCount > 99 ? '99+' : savedCount}
                           </span>
                         ) : null}
@@ -168,10 +168,8 @@ function SidebarNav() {
       </nav>
 
       {!collapsed ? (
-        <div className="border-t border-[var(--line)] px-4 py-3">
-          <p className="text-[0.6875rem] leading-relaxed text-[var(--muted)]">
-            Practice daily. Answers stay private to your account.
-          </p>
+        <div className="learner-sidebar-footer">
+          <p>Practice daily. Answers stay private to your account.</p>
         </div>
       ) : null}
     </aside>
