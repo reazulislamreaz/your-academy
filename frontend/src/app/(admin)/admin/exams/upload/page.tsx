@@ -88,9 +88,10 @@ export default function AdminExamUploadPage() {
 
             <FileDropzone file={file} onFileChange={setFile} disabled={upload.isPending} />
 
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
               <Button
                 type="button"
+                className="h-11 w-full sm:h-10 sm:w-auto"
                 disabled={upload.isPending || !file || !title.trim()}
                 onClick={() => {
                   if (!file) return;
@@ -104,8 +105,8 @@ export default function AdminExamUploadPage() {
               >
                 {upload.isPending ? 'Uploading…' : 'Create exam'}
               </Button>
-              <a href={adminDownloadUrl('/admin/exams/template')} className="inline-flex">
-                <Button type="button" variant="outline">
+              <a href={adminDownloadUrl('/admin/exams/template')} className="block w-full sm:inline-flex sm:w-auto">
+                <Button type="button" variant="outline" className="h-11 w-full sm:h-10 sm:w-auto">
                   Download template
                 </Button>
               </a>
@@ -156,16 +157,19 @@ export default function AdminExamUploadPage() {
           ) : exams.data?.length ? (
             <ul className="divide-y divide-[var(--line)]">
               {exams.data.map((exam) => (
-                <li key={exam.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
-                  <div>
-                    <p className="font-medium text-[var(--ink)]">{exam.title}</p>
-                    <p className="text-xs text-[var(--muted)]">
+                <li
+                  key={exam.id}
+                  className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-2"
+                >
+                  <div className="min-w-0">
+                    <p className="font-medium break-words text-[var(--ink)]">{exam.title}</p>
+                    <p className="mt-0.5 text-xs text-[var(--muted)]">
                       {exam.totalQuestions} Q · {exam.durationInMinutes} mins ·{' '}
                       {exam._count.attempts} attempts
                     </p>
                   </div>
-                  <Link href={`/exams/${exam.slug}`}>
-                    <Button size="sm" variant="outline">
+                  <Link href={`/exams/${exam.slug}`} className="shrink-0">
+                    <Button size="sm" variant="outline" className="h-10 w-full sm:w-auto">
                       View
                     </Button>
                   </Link>
