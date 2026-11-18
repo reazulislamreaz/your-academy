@@ -10,29 +10,41 @@ function formatMmSs(totalSeconds: number): string {
 }
 
 /**
- * Live countdown for guest exams. Calls onExpire once when reaching 0.
+ * Wall-clock countdown from a fixed start timestamp.
+ * Survives remounts when `startedAtMs` is restored from sessionStorage.
+ * Calls `onExpire` once when remaining hits 0.
  */
 export function useExamCountdown(opts: {
   durationInMinutes: number;
-  running: boolean;
+  /** Epoch ms when the attempt started; null = not running. */
+  startedAtMs: number | null;
   onExpire: () => void;
 }) {
-  const total = Math.max(1, opts.durationInMinutes) * 60;
-  const [remaining, setRemaining] = useState(total);
+  const total = Math.max(1, Math.floor(opts.durationInMinutes)) * 60;
+  const [remaining, setRemaining] = useState(() => {
+    if (!opts.startedAtMs) return total;
+    const elapsed = Math.floor((Date.now() - opts.startedAtMs) / 1000);
+    return Math.max(0, total - elapsed);
+  });
   const expiredRef = useRef(false);
   const onExpireRef = useRef(opts.onExpire);
   onExpireRef.current = opts.onExpire;
 
   useEffect(() => {
-    setRemaining(total);
     expiredRef.current = false;
-  }, [total, opts.running]);
+    if (!opts.startedAtMs) {
+      setRemaining(total);
+      return;
+    }
+    const elapsed = Math.floor((Date.now() - opts.startedAtMs) / 1000);
+    setRemaining(Math.max(0, total - elapsed));
+  }, [opts.startedAtMs, total]);
 
   useEffect(() => {
-    if (!opts.running) return;
-    const startedAt = Date.now();
+    if (!opts.startedAtMs) return;
+
     const tick = () => {
-      const elapsed = Math.floor((Date.now() - startedAt) / 1000);
+      const elapsed = Math.floor((Date.now() - opts.startedAtMs!) / 1000);
       const next = Math.max(0, total - elapsed);
       setRemaining(next);
       if (next <= 0 && !expiredRef.current) {
@@ -40,15 +52,27 @@ export function useExamCountdown(opts: {
         onExpireRef.current();
       }
     };
+
     tick();
     const id = window.setInterval(tick, 250);
-    return () => window.clearInterval(id);
-  }, [opts.running, total]);
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') tick();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [opts.startedAtMs, total]);
+
+  const elapsedSeconds = opts.startedAtMs
+    ? Math.min(total, Math.max(0, total - remaining))
+    : 0;
 
   return {
     remainingSeconds: remaining,
     display: formatMmSs(remaining),
-    elapsedSeconds: total - remaining,
-    isExpired: remaining <= 0,
+    elapsedSeconds,
+    isExpired: remaining <= 0 && Boolean(opts.startedAtMs),
   };
 }

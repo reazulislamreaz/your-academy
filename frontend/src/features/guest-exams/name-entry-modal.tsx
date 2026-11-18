@@ -8,15 +8,36 @@ import { Label } from '@/components/ui/label';
 type Props = {
   examTitle: string;
   open: boolean;
+  durationInMinutes: number;
+  totalQuestions: number;
   onStart: (fullName: string) => void;
 };
 
-export function NameEntryModal({ examTitle, open, onStart }: Props) {
+export function NameEntryModal({
+  examTitle,
+  open,
+  durationInMinutes,
+  totalQuestions,
+  onStart,
+}: Props) {
   const id = useId();
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   if (!open) return null;
+
+  const tryStart = () => {
+    const trimmed = name.trim();
+    if (trimmed.length < 2) {
+      setError('Please enter your full name (at least 2 characters).');
+      return;
+    }
+    if (trimmed.length > 120) {
+      setError('Name must be 120 characters or fewer.');
+      return;
+    }
+    onStart(trimmed);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-4 sm:items-center">
@@ -33,8 +54,10 @@ export function NameEntryModal({ examTitle, open, onStart }: Props) {
           Enter your name
         </h2>
         <p className="mt-2 text-sm text-[var(--muted-strong)]">
-          You are about to begin <span className="font-semibold text-[var(--ink)]">{examTitle}</span>.
-          Your name appears on the result sheet.
+          You are about to begin <span className="font-semibold text-[var(--ink)]">{examTitle}</span>
+          {' '}
+          ({totalQuestions} questions · {durationInMinutes} mins). Your name appears on the result
+          sheet.
         </p>
 
         <div className="mt-5 space-y-2">
@@ -44,6 +67,7 @@ export function NameEntryModal({ examTitle, open, onStart }: Props) {
             value={name}
             autoFocus
             autoComplete="name"
+            maxLength={120}
             placeholder="e.g. Rahim Uddin"
             onChange={(e) => {
               setName(e.target.value);
@@ -52,12 +76,7 @@ export function NameEntryModal({ examTitle, open, onStart }: Props) {
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
-                const trimmed = name.trim();
-                if (trimmed.length < 2) {
-                  setError('Please enter your full name (at least 2 characters).');
-                  return;
-                }
-                onStart(trimmed);
+                tryStart();
               }
             }}
           />
@@ -65,17 +84,7 @@ export function NameEntryModal({ examTitle, open, onStart }: Props) {
         </div>
 
         <div className="mt-6 flex justify-end gap-2">
-          <Button
-            type="button"
-            onClick={() => {
-              const trimmed = name.trim();
-              if (trimmed.length < 2) {
-                setError('Please enter your full name (at least 2 characters).');
-                return;
-              }
-              onStart(trimmed);
-            }}
-          >
+          <Button type="button" onClick={tryStart}>
             Start exam
           </Button>
         </div>

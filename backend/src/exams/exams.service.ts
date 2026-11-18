@@ -87,13 +87,30 @@ export class ExamsService {
       );
     }
 
-    const answers = dto.userAnswers ?? {};
+    const name = dto.userName?.trim() ?? '';
+    if (name.length < 2) {
+      throw new BadRequestException(
+        createErrorResponse('NAME_REQUIRED', 'Full name is required', newRequestId()),
+      );
+    }
+
+    const answers =
+      dto.userAnswers && typeof dto.userAnswers === 'object' && !Array.isArray(dto.userAnswers)
+        ? dto.userAnswers
+        : {};
+    const optionSetByQuestion = new Map(
+      questions.map((q) => [q.id, new Set(asStringOptions(q.options))]),
+    );
+
     let correctCount = 0;
     let wrongCount = 0;
     const normalizedAnswers: Record<string, string> = {};
 
     for (const q of questions) {
-      const selected = typeof answers[q.id] === 'string' ? answers[q.id].trim() : '';
+      const raw = typeof answers[q.id] === 'string' ? answers[q.id].trim() : '';
+      const allowed = optionSetByQuestion.get(q.id);
+      // Ignore forged answers that are not one of the four options.
+      const selected = raw && allowed?.has(raw) ? raw : '';
       normalizedAnswers[q.id] = selected;
       if (!selected) {
         wrongCount += 1;
@@ -109,7 +126,7 @@ export class ExamsService {
     const attempt = await this.prisma.examAttempt.create({
       data: {
         examId: exam.id,
-        userName: dto.userName.trim(),
+        userName: name.slice(0, 120),
         score: correctCount,
         correctCount,
         wrongCount,

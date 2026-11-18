@@ -88,21 +88,24 @@ export function ExamResultView({ result }: Props) {
                 {item.questionText}
               </h3>
               <ul className="mt-3 space-y-1.5">
-                {item.options.map((option) => {
+                {item.options.map((option, optIdx) => {
                   const isSelected = item.selectedAnswer === option;
                   const isCorrect = item.correctAnswer === option;
+                  const letter = String.fromCharCode(65 + optIdx);
                   return (
                     <li
-                      key={option}
+                      key={`${item.id}-opt-${optIdx}`}
                       className={cn(
                         'rounded-[var(--radius)] border px-3 py-2 text-sm font-reading',
-                        isCorrect && 'border-[var(--success)] bg-[var(--success-soft)] text-[var(--success-fg)]',
+                        isCorrect &&
+                          'border-[var(--success)] bg-[var(--success-soft)] text-[var(--success-fg)]',
                         isSelected &&
                           !isCorrect &&
                           'border-[var(--danger)] bg-[var(--danger-soft)] text-[var(--danger-fg)]',
                         !isSelected && !isCorrect && 'border-transparent text-[var(--ink-soft)]',
                       )}
                     >
+                      <span className="mr-2 font-semibold opacity-70">{letter}.</span>
                       {option}
                       {isSelected ? (
                         <span className="ml-2 text-xs font-semibold">
@@ -116,6 +119,9 @@ export function ExamResultView({ result }: Props) {
                   );
                 })}
               </ul>
+              {item.isSkipped ? (
+                <p className="mt-2 text-xs font-semibold text-[var(--warning-fg)]">Skipped</p>
+              ) : null}
               {item.explanation ? (
                 <p className="mt-3 text-sm leading-relaxed text-[var(--muted-strong)]">
                   <span className="font-semibold text-[var(--ink)]">Explanation: </span>
