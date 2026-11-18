@@ -26,7 +26,6 @@ export function GuestExamPlayer({ exam }: Props) {
   const [userName, setUserName] = useState<string | null>(null);
   const [startedAtMs, setStartedAtMs] = useState<number | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,11 +41,9 @@ export function GuestExamPlayer({ exam }: Props) {
       setUserName(saved.userName);
       setStartedAtMs(saved.startedAtMs);
       setAnswers(saved.answers);
-      const maxIdx = Math.max(0, exam.questions.length - 1);
-      setCurrentIndex(Math.min(Math.max(0, saved.currentIndex), maxIdx));
     }
     setHydrated(true);
-  }, [exam.id, exam.questions.length]);
+  }, [exam.id]);
 
   useEffect(() => {
     if (!hydrated || !userName || !startedAtMs) return;
@@ -55,9 +52,8 @@ export function GuestExamPlayer({ exam }: Props) {
       userName,
       startedAtMs,
       answers,
-      currentIndex,
     });
-  }, [answers, currentIndex, exam.id, hydrated, startedAtMs, userName]);
+  }, [answers, exam.id, hydrated, startedAtMs, userName]);
 
   const submit = useCallback(
     async (timedOut: boolean, elapsedSeconds: number) => {
@@ -100,7 +96,6 @@ export function GuestExamPlayer({ exam }: Props) {
     }
   }, [exam.durationInMinutes, hydrated, isExpired, startedAtMs, submit, userName]);
 
-  const question = exam.questions[currentIndex];
   const totalQuestions = exam.questions.length;
 
   const answeredCount = useMemo(
@@ -109,9 +104,6 @@ export function GuestExamPlayer({ exam }: Props) {
   );
 
   const allAnswered = totalQuestions > 0 && answeredCount === totalQuestions;
-  const isLast = currentIndex >= totalQuestions - 1;
-  const canGoPrev = currentIndex > 0 && !submitting;
-  const canGoNext = currentIndex < totalQuestions - 1 && !submitting;
 
   const startExam = (name: string) => {
     const now = Date.now();
@@ -122,8 +114,15 @@ export function GuestExamPlayer({ exam }: Props) {
       userName: name,
       startedAtMs: now,
       answers: {},
-      currentIndex: 0,
     });
+  };
+
+  const selectAnswer = (questionId: string, option: string) => {
+    if (submitting || !userName) return;
+    setAnswers((prev) => ({
+      ...prev,
+      [questionId]: option,
+    }));
   };
 
   if (!hydrated) {
@@ -144,7 +143,7 @@ export function GuestExamPlayer({ exam }: Props) {
         onStart={startExam}
       />
 
-      <header className="guest-exam-chrome sticky top-[calc(var(--header-h,4.5rem)+0.25rem)] z-20 mb-3 rounded-[var(--radius-lg)] border border-[var(--line)] bg-[color-mix(in_srgb,var(--bg-elevated)_94%,transparent)] px-3 py-2.5 shadow-[var(--shadow-sm)] backdrop-blur-md sm:px-4 sm:py-3">
+      <header className="guest-exam-chrome sticky top-[calc(var(--header-h,4.5rem)+0.25rem)] z-20 mb-4 rounded-[var(--radius-lg)] border border-[var(--line)] bg-[color-mix(in_srgb,var(--bg-elevated)_94%,transparent)] px-3 py-2.5 shadow-[var(--shadow-sm)] backdrop-blur-md sm:mb-5 sm:px-4 sm:py-3">
         <div className="flex items-start justify-between gap-2.5 sm:items-center sm:gap-3">
           <div className="min-w-0 flex-1">
             <p className="text-[0.625rem] font-semibold tracking-[0.14em] text-[var(--muted)] uppercase sm:text-[0.65rem]">
@@ -159,169 +158,125 @@ export function GuestExamPlayer({ exam }: Props) {
               </p>
             ) : null}
           </div>
-          <div
-            className={cn(
-              'shrink-0 rounded-[var(--radius)] border px-2.5 py-1.5 text-center tabular-nums sm:px-3 sm:py-2',
-              remainingSeconds <= 60
-                ? 'border-[var(--danger)] bg-[var(--danger-soft)] text-[var(--danger-fg)]'
-                : 'border-[var(--line)] bg-[var(--bg-muted)] text-[var(--ink)]',
-            )}
-            aria-live="polite"
-            aria-label={`Time remaining ${display}`}
-          >
-            <p className="text-[0.6rem] font-semibold tracking-wide text-[var(--muted)] uppercase sm:text-[0.65rem]">
-              Time left
+          <div className="flex shrink-0 flex-col items-end gap-1.5">
+            <div
+              className={cn(
+                'rounded-[var(--radius)] border px-2.5 py-1.5 text-center tabular-nums sm:px-3 sm:py-2',
+                remainingSeconds <= 60
+                  ? 'border-[var(--danger)] bg-[var(--danger-soft)] text-[var(--danger-fg)]'
+                  : 'border-[var(--line)] bg-[var(--bg-muted)] text-[var(--ink)]',
+              )}
+              aria-live="polite"
+              aria-label={`Time remaining ${display}`}
+            >
+              <p className="text-[0.6rem] font-semibold tracking-wide text-[var(--muted)] uppercase sm:text-[0.65rem]">
+                Time left
+              </p>
+              <p className="font-display text-xl font-bold leading-none sm:text-2xl">{display}</p>
+            </div>
+            <p className="text-[0.7rem] font-medium tabular-nums text-[var(--muted-strong)] sm:text-xs">
+              Answered {answeredCount}/{exam.totalQuestions}
             </p>
-            <p className="font-display text-xl font-bold leading-none sm:text-2xl">{display}</p>
           </div>
         </div>
       </header>
 
       {error ? (
-        <Alert variant="danger" className="mb-3">
+        <Alert variant="danger" className="mb-4">
           {error}
         </Alert>
       ) : null}
 
-      {totalQuestions > 1 ? (
-        <nav
-          className="guest-exam-palette mb-4 grid grid-cols-5 gap-1.5 min-[380px]:grid-cols-6 sm:flex sm:flex-wrap sm:gap-1.5"
-          aria-label="Question navigator"
-        >
-          {exam.questions.map((q, idx) => {
-            const answered = Boolean(answers[q.id]?.trim());
-            const active = idx === currentIndex;
+      {totalQuestions === 0 ? (
+        <Alert variant="warning">This exam has no questions yet.</Alert>
+      ) : (
+        <div className="space-y-4 sm:space-y-5">
+          {exam.questions.map((question, qIndex) => {
+            const selected = answers[question.id];
             return (
-              <button
-                key={q.id}
-                type="button"
-                disabled={submitting || !userName}
-                onClick={() => setCurrentIndex(idx)}
-                className={cn(
-                  'flex h-9 min-w-0 items-center justify-center rounded-[var(--radius-sm)] text-xs font-bold transition-colors sm:size-8 sm:h-8',
-                  active && 'bg-[var(--accent)] text-[var(--accent-fg)]',
-                  !active && answered && 'bg-[var(--accent-soft)] text-[var(--accent)]',
-                  !active && !answered && 'bg-[var(--bg-muted)] text-[var(--muted-strong)]',
-                )}
-                aria-label={`Question ${idx + 1}${answered ? ', answered' : ''}`}
-                aria-current={active ? 'step' : undefined}
+              <section
+                key={question.id}
+                id={`exam-q-${qIndex + 1}`}
+                className="guest-exam-card rounded-[var(--radius-xl)] border border-[var(--line)] bg-[var(--bg-elevated)] p-3.5 shadow-[var(--shadow-sm)] sm:p-6"
               >
-                {idx + 1}
-              </button>
+                <div className="flex items-center justify-between gap-2 text-xs text-[var(--muted-strong)] sm:text-sm">
+                  <span className="font-medium">
+                    Question {qIndex + 1} of {exam.totalQuestions}
+                  </span>
+                  {selected ? (
+                    <span className="font-medium text-[var(--accent)]">Answered</span>
+                  ) : (
+                    <span>Unanswered</span>
+                  )}
+                </div>
+
+                <h2 className="type-prose-title mt-3 break-words font-reading text-[1.05rem] leading-relaxed font-medium text-[var(--ink)] sm:mt-4 sm:text-xl">
+                  {question.questionText}
+                </h2>
+
+                <div
+                  className="mt-4 grid gap-2.5 sm:mt-5"
+                  role="radiogroup"
+                  aria-label={`Options for question ${qIndex + 1}`}
+                >
+                  {question.options.map((option, idx) => {
+                    const isSelected = selected === option;
+                    const label = String.fromCharCode(65 + idx);
+                    return (
+                      <button
+                        key={`${question.id}-${idx}`}
+                        type="button"
+                        role="radio"
+                        aria-checked={isSelected}
+                        disabled={submitting || !userName}
+                        onClick={() => selectAnswer(question.id, option)}
+                        className={cn(
+                          'flex min-h-12 w-full items-start gap-3 rounded-[var(--radius)] border px-3 py-3 text-left transition-[border-color,background-color,box-shadow,transform] duration-150 active:scale-[0.995] sm:min-h-0 sm:px-3.5',
+                          isSelected
+                            ? 'border-[var(--accent)] bg-[var(--accent-soft)] shadow-[0_0_0_1px_color-mix(in_srgb,var(--accent)_35%,transparent)]'
+                            : 'border-[var(--line)] bg-[var(--bg)] hover:border-[color-mix(in_srgb,var(--accent)_45%,var(--line))] hover:bg-[var(--brand-wash)]',
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            'mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-bold sm:size-7',
+                            isSelected
+                              ? 'bg-[var(--accent)] text-[var(--accent-fg)]'
+                              : 'bg-[var(--bg-muted)] text-[var(--muted-strong)]',
+                          )}
+                          aria-hidden
+                        >
+                          {label}
+                        </span>
+                        <span className="type-mcq-option min-w-0 flex-1 break-words font-reading text-[0.9375rem] leading-relaxed text-[var(--ink)] sm:text-[0.95rem]">
+                          {option}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
             );
           })}
-        </nav>
-      ) : null}
 
-      {question ? (
-        <section className="guest-exam-card rounded-[var(--radius-xl)] border border-[var(--line)] bg-[var(--bg-elevated)] p-3.5 sm:p-6">
-          <div className="flex items-center justify-between gap-2 text-xs text-[var(--muted-strong)] sm:text-sm">
-            <span className="font-medium">
-              Question {currentIndex + 1} of {exam.totalQuestions}
-            </span>
-            <span className="tabular-nums">
-              Answered {answeredCount}/{exam.totalQuestions}
-            </span>
-          </div>
-
-          <h2 className="type-prose-title mt-3 break-words font-reading text-[1.05rem] leading-relaxed font-medium text-[var(--ink)] sm:mt-4 sm:text-xl">
-            {question.questionText}
-          </h2>
-
-          <div className="mt-4 grid gap-2.5 sm:mt-5 sm:gap-2.5" role="radiogroup" aria-label="Options">
-            {question.options.map((option, idx) => {
-              const selected = answers[question.id] === option;
-              const label = String.fromCharCode(65 + idx);
-              return (
-                <button
-                  key={`${question.id}-${idx}`}
-                  type="button"
-                  role="radio"
-                  aria-checked={selected}
-                  disabled={submitting || !userName}
-                  onClick={() =>
-                    setAnswers((prev) => ({
-                      ...prev,
-                      [question.id]: option,
-                    }))
-                  }
-                  className={cn(
-                    'flex min-h-12 w-full items-start gap-3 rounded-[var(--radius)] border px-3 py-3 text-left transition-colors active:scale-[0.99] sm:min-h-0 sm:px-3.5',
-                    selected
-                      ? 'border-[var(--accent)] bg-[var(--accent-soft)] shadow-[0_0_0_1px_color-mix(in_srgb,var(--accent)_35%,transparent)]'
-                      : 'border-[var(--line)] bg-[var(--bg)] hover:border-[var(--accent)]/40 hover:bg-[var(--brand-wash)]',
-                  )}
-                >
-                  <span
-                    className={cn(
-                      'mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-bold sm:size-7',
-                      selected
-                        ? 'bg-[var(--accent)] text-[var(--accent-fg)]'
-                        : 'bg-[var(--bg-muted)] text-[var(--muted-strong)]',
-                    )}
-                    aria-hidden
-                  >
-                    {label}
-                  </span>
-                  <span className="type-mcq-option min-w-0 flex-1 break-words font-reading text-[0.9375rem] leading-relaxed text-[var(--ink)] sm:text-[0.95rem]">
-                    {option}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="mt-5 grid grid-cols-2 gap-2.5 sm:mt-6 sm:flex sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              className="h-11 w-full sm:h-10 sm:w-auto"
-              disabled={!canGoPrev}
-              onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
-            >
-              Previous
-            </Button>
-
-            {canGoNext ? (
-              <Button
-                type="button"
-                className="h-11 w-full sm:h-10 sm:w-auto"
-                disabled={!canGoNext}
-                onClick={() => setCurrentIndex((i) => Math.min(totalQuestions - 1, i + 1))}
-              >
-                Next
-              </Button>
-            ) : (
-              <div className="hidden sm:block" aria-hidden />
-            )}
-
+          <footer className="sticky bottom-0 z-10 -mx-3 border-t border-[var(--line)] bg-[color-mix(in_srgb,var(--bg-desk)_92%,transparent)] px-3 py-3 backdrop-blur-md sm:-mx-0 sm:rounded-[var(--radius-lg)] sm:border sm:px-4 sm:py-4">
             {allAnswered ? (
               <Button
                 type="button"
                 variant="primary"
-                className={cn(
-                  'guest-exam-submit h-11 w-full motion-fade-in sm:h-10 sm:w-auto',
-                  !isLast && 'col-span-2 sm:ml-auto',
-                  isLast && !canGoNext && 'col-span-1',
-                )}
+                className="guest-exam-submit h-12 w-full motion-fade-in sm:h-11"
                 disabled={!userName || submitting}
                 onClick={() => void submit(false, elapsedSeconds)}
               >
                 {submitting ? 'Submitting…' : 'Submit exam'}
               </Button>
-            ) : null}
-          </div>
-
-          {!allAnswered ? (
-            <p className="mt-3 text-center text-xs text-[var(--muted)] sm:text-left">
-              Answer every question to unlock Submit ({answeredCount}/{totalQuestions}).
-            </p>
-          ) : null}
-        </section>
-      ) : (
-        <Alert variant="warning" className="mt-4">
-          This exam has no questions yet.
-        </Alert>
+            ) : (
+              <p className="text-center text-xs leading-relaxed text-[var(--muted-strong)] sm:text-sm">
+                Answer every question to unlock Submit ({answeredCount}/{totalQuestions}).
+              </p>
+            )}
+          </footer>
+        </div>
       )}
     </div>
   );

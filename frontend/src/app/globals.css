@@ -256,10 +256,11 @@ body {
 }
 
 .ya-btn-sweep--outline::before {
+  /* Soft wash — keep ink readable; solid accent fill made outline hover clash. */
   background: linear-gradient(
     105deg,
-    color-mix(in srgb, var(--accent) 92%, #0ea5e9),
-    color-mix(in srgb, var(--accent) 82%, var(--highlight))
+    color-mix(in srgb, var(--accent) 14%, transparent),
+    color-mix(in srgb, var(--highlight) 10%, transparent)
   );
 }
 
@@ -1348,13 +1349,9 @@ input:disabled {
   }
 }
 
-/* Guest exam taking UI — mobile-safe chrome */
+/* Guest exam taking UI — continuous scroll + sticky submit chrome */
 .guest-exam-player {
-  padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 0px));
-}
-
-.guest-exam-palette {
-  max-width: 100%;
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
 }
 
 .guest-exam-submit {

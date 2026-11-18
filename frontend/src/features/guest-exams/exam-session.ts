@@ -5,7 +5,6 @@ export type GuestExamSession = {
   userName: string;
   startedAtMs: number;
   answers: Record<string, string>;
-  currentIndex: number;
 };
 
 function storageKey(examId: string): string {
@@ -17,7 +16,7 @@ export function loadGuestExamSession(examId: string): GuestExamSession | null {
   try {
     const raw = window.sessionStorage.getItem(storageKey(examId));
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as GuestExamSession;
+    const parsed = JSON.parse(raw) as GuestExamSession & { currentIndex?: number };
     if (
       !parsed ||
       parsed.examId !== examId ||
@@ -33,7 +32,6 @@ export function loadGuestExamSession(examId: string): GuestExamSession | null {
       userName: parsed.userName,
       startedAtMs: parsed.startedAtMs,
       answers: parsed.answers,
-      currentIndex: Number.isFinite(parsed.currentIndex) ? parsed.currentIndex : 0,
     };
   } catch {
     return null;

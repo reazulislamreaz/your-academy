@@ -16,9 +16,15 @@ function isDocumentReaderPath(pathname: string): boolean {
   return /^\/news\/d\/[^/]+\/?$/.test(pathname);
 }
 
+/** Live guest exam take page (`/exams/:id`) — hide floating support chat. */
+function isLiveExamTakePath(pathname: string): boolean {
+  return /^\/exams\/[^/]+\/?$/.test(pathname);
+}
+
 export function MarketingShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const reader = isDocumentReaderPath(pathname);
+  const liveExam = isLiveExamTakePath(pathname);
 
   return (
     <div
@@ -45,7 +51,7 @@ export function MarketingShell({ children }: { children: ReactNode }) {
         </PageShell>
       </main>
       {!reader ? <SiteFooter /> : null}
-      <SupportWidget mode="guest" />
+      {!liveExam ? <SupportWidget mode="guest" /> : null}
     </div>
   );
 }

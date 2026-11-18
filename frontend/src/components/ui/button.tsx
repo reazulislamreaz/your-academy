@@ -18,7 +18,7 @@ const buttonVariants = cva(
         secondary:
           'ya-btn-sweep--secondary bg-[var(--accent)] text-[var(--accent-fg)] shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow)] active:brightness-95',
         outline:
-          'ya-btn-sweep--outline border border-[var(--line-strong)] bg-[var(--bg-elevated)] text-[var(--ink)] hover:border-transparent hover:text-[var(--accent-fg)] hover:shadow-[var(--shadow-sm)]',
+          'ya-btn-sweep--outline border border-[var(--line-strong)] bg-[var(--bg-elevated)] text-[var(--ink)] hover:border-[var(--accent)]/50 hover:bg-[var(--brand-wash)] hover:text-[var(--ink)] hover:shadow-[var(--shadow-sm)]',
         ghost:
           'ya-btn-sweep--ghost bg-transparent text-[var(--ink-soft)] hover:text-[var(--ink)]',
         danger:
