@@ -74,10 +74,16 @@ function MarketingSearchField({
       </label>
       <SearchField
         id={id}
+        name="exam-search"
         value={value}
         onChange={onChange}
         placeholder="Search exams…"
         aria-label="Search exams"
+        autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="off"
+        spellCheck={false}
+        enterKeyHint="search"
         variant="header"
       />
     </div>
@@ -250,14 +256,15 @@ function MarketingHeaderInner() {
       style={{ '--header-h': '64px' } as CSSProperties}
     >
       <div className="marketing-nav-shell mx-auto h-14 max-w-[var(--marketing-content-max)] px-3 sm:h-16 sm:px-6">
-        <div className="flex shrink-0 items-center">
+        <div className="flex shrink-0 items-center gap-2">
           <BrandMark markOnly className="shrink-0 lg:hidden [&_img]:h-8" priority />
           <BrandMark className="hidden shrink-0 lg:inline-flex [&_img]:h-10" priority />
         </div>
 
+        {/* Desktop-only primary nav — never shown below xl (CSS must not force display). */}
         <MarketingNavLinks activeId={activeId} />
 
-        <div className="marketing-nav-tools">
+        <div className="marketing-nav-tools gap-1.5 sm:gap-2">
           <MarketingSearchField
             id="marketing-search"
             value={query}
@@ -270,7 +277,7 @@ function MarketingHeaderInner() {
             {me.data ? <UserMenu variant="header" /> : <UserMenu loginOnly />}
           </div>
 
-          <div className="flex items-center gap-1 md:hidden">
+          <div className="flex items-center gap-1.5 md:hidden">
             {me.data ? (
               <UserMenu variant="header" />
             ) : (

@@ -350,7 +350,8 @@ body {
 
 .marketing-nav-shell {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  /* Mobile/tablet: brand | tools only. Desktop nav mounts in the middle at xl. */
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 0.75rem;
   width: 100%;
@@ -360,6 +361,12 @@ body {
 @media (min-width: 640px) {
   .marketing-nav-shell {
     gap: 1rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .marketing-nav-shell {
+    grid-template-columns: auto minmax(0, 1fr) auto;
   }
 }
 
@@ -373,7 +380,9 @@ body {
 
 .marketing-nav-rail {
   position: relative;
-  display: flex;
+  /* Do NOT set `display` here — Tailwind `hidden xl:flex` must control visibility.
+     A CSS `display: flex` was overriding `hidden` on mobile and made the nav rail
+     look like a search field filled with the active menu label. */
   align-items: center;
   justify-content: center;
   /* Breathing room so hover washes never collide with neighbors */
