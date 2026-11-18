@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useId, useRef, type ReactNode } from 'react';
-import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
+import { LearnerThemePortal } from '@/components/theme/learner-theme-portal';
 import { cn } from '@/lib/utils';
 
 export type ConfirmDialogProps = {
@@ -81,61 +81,62 @@ export function ConfirmDialog({
   if (!open || typeof document === 'undefined') return null;
 
   // Portal escapes Surface overflow-hidden / transform so the modal is never clipped.
-  return createPortal(
-    <div className="fixed inset-0 z-[90] flex items-end justify-center p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:items-center sm:p-4">
-      <button
-        type="button"
-        aria-label="Dismiss"
-        className="absolute inset-0 bg-[var(--ink)]/40 backdrop-blur-[2px]"
-        disabled={pending}
-        tabIndex={-1}
-        onClick={() => {
-          if (!pending) onCancel();
-        }}
-      />
-      <div
-        ref={dialogRef}
-        role="alertdialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        aria-describedby={descId}
-        className={cn(
-          'relative z-10 max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-[var(--radius-lg)] border border-[var(--line)]',
-          'motion-scale-in bg-[var(--bg-elevated)] p-4 shadow-[var(--shadow-lg)] sm:p-6',
-        )}
-      >
-        <h2 id={titleId} className="font-display text-lg font-semibold text-[var(--ink)]">
-          {title}
-        </h2>
-        <div id={descId} className="mt-2 text-sm leading-relaxed text-[var(--ink-soft)]">
-          {description}
-        </div>
-        {reversible != null ? (
-          <p className="mt-3 text-xs font-medium text-[var(--muted-strong)]">
-            {reversible ? 'This can be reversed later.' : 'This action cannot be undone.'}
-          </p>
-        ) : null}
-        <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end [&>button]:w-full sm:[&>button]:w-auto">
-          <Button
-            ref={cancelRef}
-            type="button"
-            variant="outline"
-            disabled={pending}
-            onClick={onCancel}
-          >
-            {cancelLabel}
-          </Button>
-          <Button
-            type="button"
-            variant={destructive ? 'danger' : 'primary'}
-            disabled={pending}
-            onClick={onConfirm}
-          >
-            {pending ? 'Working…' : confirmLabel}
-          </Button>
+  return (
+    <LearnerThemePortal>
+      <div className="fixed inset-0 z-[90] flex items-end justify-center p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:items-center sm:p-4">
+        <button
+          type="button"
+          aria-label="Dismiss"
+          className="absolute inset-0 bg-[var(--ink)]/40 backdrop-blur-[2px]"
+          disabled={pending}
+          tabIndex={-1}
+          onClick={() => {
+            if (!pending) onCancel();
+          }}
+        />
+        <div
+          ref={dialogRef}
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          aria-describedby={descId}
+          className={cn(
+            'relative z-10 max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-[var(--radius-lg)] border border-[var(--line)]',
+            'motion-scale-in bg-[var(--bg-elevated)] p-4 text-[var(--ink)] shadow-[var(--shadow-lg)] sm:p-6',
+          )}
+        >
+          <h2 id={titleId} className="font-display text-lg font-semibold text-[var(--ink)]">
+            {title}
+          </h2>
+          <div id={descId} className="mt-2 text-sm leading-relaxed text-[var(--ink-soft)]">
+            {description}
+          </div>
+          {reversible != null ? (
+            <p className="mt-3 text-xs font-medium text-[var(--muted-strong)]">
+              {reversible ? 'This can be reversed later.' : 'This action cannot be undone.'}
+            </p>
+          ) : null}
+          <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end [&>button]:w-full sm:[&>button]:w-auto">
+            <Button
+              ref={cancelRef}
+              type="button"
+              variant="outline"
+              disabled={pending}
+              onClick={onCancel}
+            >
+              {cancelLabel}
+            </Button>
+            <Button
+              type="button"
+              variant={destructive ? 'danger' : 'primary'}
+              disabled={pending}
+              onClick={onConfirm}
+            >
+              {pending ? 'Working…' : confirmLabel}
+            </Button>
+          </div>
         </div>
       </div>
-    </div>,
-    document.body,
+    </LearnerThemePortal>
   );
 }

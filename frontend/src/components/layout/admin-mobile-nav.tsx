@@ -3,8 +3,9 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
-import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
+import { LearnerThemePortal } from '@/components/theme/learner-theme-portal';
+import { useLearnerTheme } from '@/components/theme/learner-theme-provider';
 import { cn } from '@/lib/utils';
 import { useBodyScrollLock } from '@/lib/hooks/use-body-scroll-lock';
 import { adminNavGroups, adminNavItems, isAdminNavActive } from './admin-nav';
@@ -24,6 +25,8 @@ export function AdminMobileNav({ themeToggle }: { themeToggle?: ReactNode }) {
   const panelId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const { theme } = useLearnerTheme();
+  const inverseLogo = theme === 'dark';
 
   const activeLabel =
     adminNavItems.find((i) => isAdminNavActive(pathname, i.href))?.label ?? 'Admin';
@@ -74,68 +77,66 @@ export function AdminMobileNav({ themeToggle }: { themeToggle?: ReactNode }) {
   }, [open]);
 
   const panel =
-    open && mounted
-      ? createPortal(
-          <>
-            <MobileDrawerBackdrop onClose={() => setOpen(false)} className="lg:hidden" />
-            <MobileDrawerPanel
-              id={panelId}
-              label="Admin navigation"
-              panelRef={panelRef}
-              title="Admin"
-              side="left"
-              onClose={() => setOpen(false)}
-              className="lg:hidden"
-            >
-              <nav className="flex flex-col gap-5" aria-label="Admin sections">
-                {adminNavGroups.map((group) => (
-                  <div key={group.title}>
-                    <p className="px-3 pb-2 text-[0.6875rem] font-semibold tracking-[0.16em] text-[var(--muted)] uppercase">
-                      {group.title}
-                    </p>
-                    <div className="flex flex-col gap-0.5">
-                      {group.items.map((item) => {
-                        const Icon = item.icon;
-                        const active = isAdminNavActive(pathname, item.href);
-                        return (
-                          <Link
-                            key={item.href}
-                            href={item.href}
-                            aria-current={active ? 'page' : undefined}
-                            onClick={() => setOpen(false)}
-                            className={cn(
-                              'flex min-h-12 items-center gap-2.5 rounded-[var(--radius)] px-3 py-2.5 text-base font-medium',
-                              active
-                                ? 'bg-[var(--highlight-soft)] font-semibold text-[var(--highlight)]'
-                                : 'text-[var(--ink-soft)] hover:bg-[var(--brand-wash)] hover:text-[var(--ink)]',
-                            )}
-                          >
-                            <span className="flex size-8 shrink-0 items-center justify-center">
-                              <Icon className="size-4" aria-hidden strokeWidth={1.75} />
-                            </span>
-                            {item.label}
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </nav>
-
-              <div className="mt-6 border-t border-[var(--line)] pt-4">
-                <Link
-                  href="/"
-                  className="block min-h-11 px-3 py-2.5 text-sm font-semibold text-[var(--accent)] hover:underline"
-                  onClick={() => setOpen(false)}
-                >
-                  ← Back to website
-                </Link>
+    open && mounted ? (
+      <LearnerThemePortal>
+        <MobileDrawerBackdrop onClose={() => setOpen(false)} className="lg:hidden" />
+        <MobileDrawerPanel
+          id={panelId}
+          label="Admin navigation"
+          panelRef={panelRef}
+          title="Admin"
+          side="left"
+          onClose={() => setOpen(false)}
+          className="lg:hidden"
+          inverseLogo={inverseLogo}
+        >
+          <nav className="flex flex-col gap-5" aria-label="Admin sections">
+            {adminNavGroups.map((group) => (
+              <div key={group.title}>
+                <p className="px-3 pb-2 text-[0.6875rem] font-semibold tracking-[0.16em] text-[var(--muted)] uppercase">
+                  {group.title}
+                </p>
+                <div className="flex flex-col gap-0.5">
+                  {group.items.map((item) => {
+                    const Icon = item.icon;
+                    const active = isAdminNavActive(pathname, item.href);
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        aria-current={active ? 'page' : undefined}
+                        onClick={() => setOpen(false)}
+                        className={cn(
+                          'flex min-h-12 items-center gap-2.5 rounded-[var(--radius)] px-3 py-2.5 text-base font-medium',
+                          active
+                            ? 'bg-[var(--highlight-soft)] font-semibold text-[var(--highlight)]'
+                            : 'text-[var(--ink-soft)] hover:bg-[var(--brand-wash)] hover:text-[var(--ink)]',
+                        )}
+                      >
+                        <span className="flex size-8 shrink-0 items-center justify-center">
+                          <Icon className="size-4" aria-hidden strokeWidth={1.75} />
+                        </span>
+                        {item.label}
+                      </Link>
+                    );
+                  })}
+                </div>
               </div>
-            </MobileDrawerPanel>
-          </>,
-          document.body,
-        )
-      : null;
+            ))}
+          </nav>
+
+          <div className="mt-6 border-t border-[var(--line)] pt-4">
+            <Link
+              href="/"
+              className="block min-h-11 px-3 py-2.5 text-sm font-semibold text-[var(--accent)] hover:underline"
+              onClick={() => setOpen(false)}
+            >
+              ← Back to website
+            </Link>
+          </div>
+        </MobileDrawerPanel>
+      </LearnerThemePortal>
+    ) : null;
 
   return (
     <div className="ya-glass sticky top-0 z-30 border-b border-[var(--glass-border)] bg-[var(--glass-bg)] pt-[env(safe-area-inset-top,0px)] lg:hidden">

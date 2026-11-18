@@ -156,7 +156,7 @@ export default function NewQuestionImportPage() {
                   ? 'border-[var(--highlight)] bg-[var(--highlight-soft)]'
                   : done
                     ? 'border-[var(--success)]/30 bg-[var(--success-soft)]'
-                    : 'border-[var(--line)] bg-white',
+                    : 'border-[var(--line)] bg-[var(--bg-elevated)]',
               )}
             >
               <p className="flex items-center gap-2 text-xs font-semibold tracking-wide uppercase">
@@ -211,7 +211,7 @@ export default function NewQuestionImportPage() {
               {TEMPLATE_COLUMNS.map((col) => (
                 <span
                   key={col}
-                  className="border border-[var(--line)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--ink-soft)]"
+                  className="border border-[var(--line)] bg-[var(--bg-elevated)] px-2.5 py-1 text-xs font-semibold text-[var(--ink-soft)]"
                 >
                   {col}
                 </span>
@@ -348,7 +348,7 @@ export default function NewQuestionImportPage() {
                             'flex cursor-pointer items-start gap-3 rounded-[12px] border px-3 py-3 transition-colors',
                             checked
                               ? 'border-[var(--highlight)] bg-[var(--highlight-soft)]'
-                              : 'border-[var(--line)] bg-white hover:border-[var(--highlight)]/40',
+                              : 'border-[var(--line)] bg-[var(--bg-elevated)] hover:border-[var(--highlight)]/40',
                             disabled && 'cursor-not-allowed opacity-50',
                           )}
                         >

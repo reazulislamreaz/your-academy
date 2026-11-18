@@ -39,6 +39,8 @@ type PanelProps = {
   title?: string;
   /** Extra chrome under the header (e.g. search). */
   headerExtra?: ReactNode;
+  /** Use inverse (light) brand mark on dark Orbit shells. */
+  inverseLogo?: boolean;
 };
 
 /**
@@ -55,6 +57,7 @@ export function MobileDrawerPanel({
   onClose,
   title = 'Menu',
   headerExtra,
+  inverseLogo = false,
 }: PanelProps) {
   return (
     <div
@@ -65,7 +68,7 @@ export function MobileDrawerPanel({
       aria-label={label}
       className={cn(
         'fixed inset-y-0 z-[60] flex w-[min(100vw-2.5rem,21rem)] flex-col',
-        'border-[var(--line)] bg-[var(--bg-elevated)] shadow-[var(--shadow-lg)]',
+        'border-[var(--line)] bg-[var(--bg-elevated)] text-[var(--ink)] shadow-[var(--shadow-lg)]',
         'pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)]',
         side === 'right'
           ? 'motion-drawer-slide-in right-0 border-l pl-0 pr-[env(safe-area-inset-right,0px)]'
@@ -74,7 +77,7 @@ export function MobileDrawerPanel({
       )}
     >
       <div className="flex shrink-0 items-center gap-3 border-b border-[var(--line)] px-4 py-3.5">
-        <BrandMark markOnly className="shrink-0 [&_img]:h-8" />
+        <BrandMark markOnly inverse={inverseLogo} className="shrink-0 [&_img]:h-8" />
         <div className="min-w-0 flex-1">
           <p className="truncate font-display text-sm font-bold tracking-tight text-[var(--ink)]">
             {title}

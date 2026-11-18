@@ -10,8 +10,8 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
+import { LearnerThemePortal } from '@/components/theme/learner-theme-portal';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -113,35 +113,34 @@ export function AdminRowActions({ primary, children, className, align = 'right' 
   const hasMenu = Boolean(children);
 
   const menu =
-    open && coords && typeof document !== 'undefined'
-      ? createPortal(
-          <div
-            ref={menuRef}
-            id={menuId}
-            role="menu"
-            className={cn(
-              'fixed z-[80] min-w-[10.5rem] rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] p-1 shadow-[var(--shadow-lg)]',
-              'motion-pop',
-            )}
-            style={{
-              top: coords.top,
-              left: coords.left,
-              minWidth: coords.minWidth,
-            }}
-            onClick={(e) => {
-              // Close after choosing an item, but not when opening a nested confirm.
-              const target = e.target as HTMLElement | null;
-              if (target?.closest('[role="alertdialog"], [role="dialog"]')) return;
-              if (target?.closest('button, a')) setOpen(false);
-            }}
-          >
-            <div className="flex flex-col gap-0.5 [&_a]:w-full [&_button]:w-full [&_button]:justify-start">
-              {children}
-            </div>
-          </div>,
-          document.body,
-        )
-      : null;
+    open && coords && typeof document !== 'undefined' ? (
+      <LearnerThemePortal>
+        <div
+          ref={menuRef}
+          id={menuId}
+          role="menu"
+          className={cn(
+            'fixed z-[80] min-w-[10.5rem] rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] p-1 text-[var(--ink)] shadow-[var(--shadow-lg)]',
+            'motion-pop',
+          )}
+          style={{
+            top: coords.top,
+            left: coords.left,
+            minWidth: coords.minWidth,
+          }}
+          onClick={(e) => {
+            // Close after choosing an item, but not when opening a nested confirm.
+            const target = e.target as HTMLElement | null;
+            if (target?.closest('[role="alertdialog"], [role="dialog"]')) return;
+            if (target?.closest('button, a')) setOpen(false);
+          }}
+        >
+          <div className="flex flex-col gap-0.5 [&_a]:w-full [&_button]:w-full [&_button]:justify-start">
+            {children}
+          </div>
+        </div>
+      </LearnerThemePortal>
+    ) : null;
 
   return (
     <div

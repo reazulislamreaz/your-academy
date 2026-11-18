@@ -2,11 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bell, Bookmark, MessageCircle } from 'lucide-react';
+import { Bell, Bookmark, Headset } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
+import { LearnerThemePortal } from '@/components/theme/learner-theme-portal';
 import { LearnerThemeToggle } from '@/components/theme/learner-theme-toggle';
+import { useLearnerTheme } from '@/components/theme/learner-theme-provider';
 import { useSupportChat } from '@/features/support/support-chat-provider';
 import { useBodyScrollLock } from '@/lib/hooks/use-body-scroll-lock';
 import {
@@ -27,6 +28,8 @@ export function LearnerMobileNav() {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const support = useSupportChat();
+  const { theme } = useLearnerTheme();
+  const inverseLogo = theme === 'dark';
 
   useEffect(() => {
     setMounted(true);
@@ -75,87 +78,85 @@ export function LearnerMobileNav() {
   }, [open]);
 
   const panel =
-    open && mounted
-      ? createPortal(
-          <>
-            <MobileDrawerBackdrop onClose={() => setOpen(false)} className="lg:hidden" />
-            <MobileDrawerPanel
-              id={panelId}
-              label="Study navigation"
-              panelRef={panelRef}
-              title="Study desk"
-              side="left"
-              onClose={() => setOpen(false)}
-              className="lg:hidden"
+    open && mounted ? (
+      <LearnerThemePortal>
+        <MobileDrawerBackdrop onClose={() => setOpen(false)} className="lg:hidden" />
+        <MobileDrawerPanel
+          id={panelId}
+          label="Study navigation"
+          panelRef={panelRef}
+          title="Study desk"
+          side="left"
+          onClose={() => setOpen(false)}
+          className="lg:hidden"
+          inverseLogo={inverseLogo}
+        >
+          <div className="mb-4 grid grid-cols-2 gap-2 rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-muted)] p-3">
+            <LearnerThemeToggle showLabel className="col-span-2 bg-[var(--bg-elevated)]" />
+            <Link
+              href="/bookmarks"
+              className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] px-3 text-sm font-semibold text-[var(--ink-soft)] transition-colors hover:bg-[var(--bg-muted)] hover:text-[var(--ink)]"
+              onClick={() => setOpen(false)}
             >
-              <div className="mb-4 grid grid-cols-2 gap-2 rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-muted)] p-3">
-                <LearnerThemeToggle showLabel className="col-span-2 bg-[var(--bg-elevated)]" />
-                <Link
-                  href="/bookmarks"
-                  className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] px-3 text-sm font-semibold text-[var(--ink)]"
-                  onClick={() => setOpen(false)}
-                >
-                  <Bookmark className="size-4" aria-hidden />
-                  Saved
-                </Link>
-                <Link
-                  href="/news"
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] px-3 text-sm font-semibold text-[var(--ink-soft)]"
-                  onClick={() => setOpen(false)}
-                >
-                  <Bell className="size-4" aria-hidden />
-                  News
-                </Link>
-                <button
-                  type="button"
-                  className="col-span-2 inline-flex h-11 items-center justify-center gap-2 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] px-3 text-sm font-semibold text-[var(--ink-soft)]"
-                  aria-label="Open messages"
-                  onClick={() => {
-                    setOpen(false);
-                    support.setOpen(true);
-                  }}
-                >
-                  <MessageCircle className="size-4" aria-hidden />
-                  Messages
-                </button>
-              </div>
+              <Bookmark className="size-4" aria-hidden strokeWidth={1.75} />
+              Saved
+            </Link>
+            <Link
+              href="/news"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] px-3 text-sm font-semibold text-[var(--ink-soft)] transition-colors hover:bg-[var(--bg-muted)] hover:text-[var(--ink)]"
+              onClick={() => setOpen(false)}
+            >
+              <Bell className="size-4" aria-hidden strokeWidth={1.75} />
+              News
+            </Link>
+            <button
+              type="button"
+              className="col-span-2 inline-flex h-11 items-center justify-center gap-2 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] px-3 text-sm font-semibold text-[var(--ink-soft)] transition-colors hover:bg-[var(--bg-muted)] hover:text-[var(--ink)]"
+              aria-label="Open support"
+              onClick={() => {
+                setOpen(false);
+                support.setOpen(true);
+              }}
+            >
+              <Headset className="size-4" aria-hidden strokeWidth={1.75} />
+              Support
+            </button>
+          </div>
 
-              <nav className="flex flex-col gap-5" aria-label="Mobile study">
-                {learnerNavGroups.map((group) => (
-                  <div key={group.title} className="learner-nav-group">
-                    <p className="learner-nav-group-title">{group.title}</p>
-                    <div className="flex flex-col gap-1">
-                      {group.items.map((item) => {
-                        const Icon = item.icon;
-                        const active = learnerLinkActive(pathname, item);
-                        return (
-                          <Link
-                            key={`${item.label}-${item.href}`}
-                            href={item.href}
-                            aria-current={active ? 'page' : undefined}
-                            data-active={active ? 'true' : 'false'}
-                            onClick={() => setOpen(false)}
-                            className="learner-nav-link motion-nav-indicator min-h-12 text-base"
-                          >
-                            <span className="learner-nav-icon" aria-hidden>
-                              <Icon className="size-4" strokeWidth={1.75} />
-                            </span>
-                            <span className="learner-nav-label">{item.label}</span>
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </nav>
-              <div className="mt-6 border-t border-[var(--line)] pt-4">
-                <UserMenu compact />
+          <nav className="flex flex-col gap-5" aria-label="Mobile study">
+            {learnerNavGroups.map((group) => (
+              <div key={group.title} className="learner-nav-group">
+                <p className="learner-nav-group-title">{group.title}</p>
+                <div className="flex flex-col gap-1">
+                  {group.items.map((item) => {
+                    const Icon = item.icon;
+                    const active = learnerLinkActive(pathname, item);
+                    return (
+                      <Link
+                        key={`${item.label}-${item.href}`}
+                        href={item.href}
+                        aria-current={active ? 'page' : undefined}
+                        data-active={active ? 'true' : 'false'}
+                        onClick={() => setOpen(false)}
+                        className="learner-nav-link motion-nav-indicator min-h-12 text-base"
+                      >
+                        <span className="learner-nav-icon" aria-hidden>
+                          <Icon className="size-4" strokeWidth={1.75} />
+                        </span>
+                        <span className="learner-nav-label">{item.label}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
               </div>
-            </MobileDrawerPanel>
-          </>,
-          document.body,
-        )
-      : null;
+            ))}
+          </nav>
+          <div className="mt-6 border-t border-[var(--line)] pt-4">
+            <UserMenu compact />
+          </div>
+        </MobileDrawerPanel>
+      </LearnerThemePortal>
+    ) : null;
 
   return (
     <div className="lg:hidden">

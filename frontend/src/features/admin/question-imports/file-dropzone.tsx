@@ -64,11 +64,11 @@ export function FileDropzone({ file, onFileChange, disabled, progress }: Props) 
           'flex cursor-pointer flex-col items-center justify-center gap-3 rounded-[16px] border-2 border-dashed px-4 py-10 text-center transition-colors',
           dragging
             ? 'border-[var(--highlight)] bg-[var(--highlight-soft)]'
-            : 'border-[var(--line)] bg-[var(--bg-desk)] hover:border-[var(--highlight)]/50 hover:bg-white',
+            : 'border-[var(--line)] bg-[var(--bg-desk)] hover:border-[var(--highlight)]/50 hover:bg-[var(--bg-elevated)]',
           disabled && 'pointer-events-none opacity-60',
         )}
       >
-        <span className="flex size-12 items-center justify-center rounded-full bg-white shadow-[var(--shadow-sm)]">
+        <span className="flex size-12 items-center justify-center rounded-full bg-[var(--bg-elevated)] shadow-[var(--shadow-sm)]">
           <UploadCloud className="size-5 text-[var(--highlight)]" aria-hidden />
         </span>
         <div>
@@ -96,7 +96,7 @@ export function FileDropzone({ file, onFileChange, disabled, progress }: Props) 
       ) : null}
 
       {file ? (
-        <div className="flex items-start gap-3 rounded-[12px] border border-[var(--line)] bg-white p-3 shadow-[var(--shadow-sm)]">
+        <div className="flex items-start gap-3 rounded-[12px] border border-[var(--line)] bg-[var(--bg-elevated)] p-3 shadow-[var(--shadow-sm)]">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-[var(--success-soft)] text-[var(--success)]">
             <FileSpreadsheet className="size-5" aria-hidden />
           </span>

@@ -520,7 +520,7 @@ function QuestionImportDetailContent() {
                       ? 'bg-[var(--warning)]/5'
                       : row.status === 'INVALID'
                         ? 'bg-[var(--danger-soft)]/40'
-                        : 'bg-white',
+                        : 'bg-[var(--bg-elevated)]',
                   )}
                 >
                   <td className="px-3 py-3 tabular-nums text-sm font-medium text-[var(--muted-strong)]">

@@ -25,16 +25,23 @@ type LearnerThemeContextValue = {
 
 const LearnerThemeContext = createContext<LearnerThemeContextValue | null>(null);
 
+/** Safe read when a portal may render outside the provider tree. */
+export function useOptionalLearnerTheme(): LearnerThemeContextValue | null {
+  return useContext(LearnerThemeContext);
+}
+
 function applyThemeToShell(theme: LearnerColorScheme, animate: boolean) {
-  const root = document.querySelector('.learner-theme') as HTMLElement | null;
-  if (!root) return;
-  root.setAttribute('data-theme', theme);
-  root.style.colorScheme = theme;
-  if (!animate) return;
-  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (reduce) return;
-  root.classList.add('theme-transitioning');
-  window.setTimeout(() => root.classList.remove('theme-transitioning'), 260);
+  const roots = document.querySelectorAll<HTMLElement>('.learner-theme');
+  if (!roots.length) return;
+  const reduce =
+    animate && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  roots.forEach((root) => {
+    root.setAttribute('data-theme', theme);
+    root.style.colorScheme = theme;
+    if (!animate || reduce) return;
+    root.classList.add('theme-transitioning');
+    window.setTimeout(() => root.classList.remove('theme-transitioning'), 260);
+  });
 }
 
 function readInitialTheme(): LearnerColorScheme {

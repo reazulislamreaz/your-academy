@@ -3,20 +3,22 @@
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import {
-  ArrowRight,
   BookOpen,
   ClipboardCheck,
   ClipboardList,
   FileText,
+  Flame,
   Sparkles,
   Target,
+  Trophy,
 } from 'lucide-react';
 import { AccuracyDonut } from '@/components/dashboard/accuracy-donut';
 import { BarChart } from '@/components/dashboard/bar-chart';
-import { ExamPerformancePanel } from '@/components/dashboard/exam-performance-panel';
-import { HomeStatCard } from '@/components/dashboard/home-stat-card';
-import { ProgressRing } from '@/components/dashboard/progress-ring';
+import { DashboardWelcomeBanner } from '@/components/dashboard/dashboard-welcome-banner';
+import { MetricTile } from '@/components/dashboard/metric-tile';
 import { QuickLink } from '@/components/dashboard/quick-link';
+import { RecentExamAttempts } from '@/components/dashboard/recent-exam-attempts';
+import { RecommendedExams } from '@/components/dashboard/recommended-exams';
 import { SubjectProgress } from '@/components/dashboard/subject-progress';
 import { LoadError } from '@/components/loading';
 import { Reveal } from '@/components/motion/reveal';
@@ -35,15 +37,17 @@ import {
 import { ContentIn } from '@/components/ui/skeleton';
 import { Surface } from '@/components/ui/surface';
 import { isUnauthorized, useMe } from '@/features/auth/use-auth';
+import { listPublicExams } from '@/lib/api/exams';
 import { apiFetch } from '@/lib/api/client';
 import type {
   AnalyticsSummary,
   CategoryNode,
+  ExamPerformance,
   NewsListItem,
+  PracticeSetListItem,
   UserStats,
 } from '@/lib/api/types';
 import { formatStudyHours, formatStudyMinutes } from '@/lib/study-prefs';
-import { cn } from '@/lib/utils';
 
 function emptyPerformance(): UserStats['performance'] {
   return {
@@ -86,27 +90,19 @@ function SectionTitle({
   );
 }
 
-function TrendPill({ children, muted }: { children: string; muted?: boolean }) {
-  return (
-    <span
-      className={cn(
-        'inline-flex rounded-full px-3 py-1 text-xs font-semibold',
-        muted
-          ? 'bg-[var(--bg-muted)] text-[var(--muted)]'
-          : 'bg-[var(--success-soft)] text-[var(--success-fg)]',
-      )}
-    >
-      {children}
-    </span>
-  );
-}
-
 export default function StudyHomePage() {
   const me = useMe();
 
   const stats = useQuery({
     queryKey: ['stats'],
     queryFn: () => apiFetch<UserStats>('/users/me/stats'),
+    enabled: Boolean(me.data),
+    staleTime: 30_000,
+  });
+
+  const examPerf = useQuery({
+    queryKey: ['exam-performance'],
+    queryFn: () => apiFetch<ExamPerformance>('/me/exam-performance'),
     enabled: Boolean(me.data),
     staleTime: 30_000,
   });
@@ -132,8 +128,20 @@ export default function StudyHomePage() {
     staleTime: 60_000,
   });
 
-  // LearnerGate already resolves `me` — avoid a second full-page BrandPulse/skeleton flash.
-  // Only show the full home skeleton if this page is reached before the gate finishes.
+  const practiceSets = useQuery({
+    queryKey: ['practice-sets', 'home-recommended'],
+    queryFn: () => apiFetch<PracticeSetListItem[]>('/practice-sets?limit=6'),
+    enabled: Boolean(me.data),
+    staleTime: 60_000,
+  });
+
+  const publicExams = useQuery({
+    queryKey: ['public-exams', 'home'],
+    queryFn: () => listPublicExams(),
+    enabled: Boolean(me.data),
+    staleTime: 60_000,
+  });
+
   if (me.isLoading && !me.data) {
     return <HomePageSkeleton />;
   }
@@ -159,126 +167,95 @@ export default function StudyHomePage() {
   const statsFailed = stats.isError;
   const analyticsFailed = analytics.isError;
   const perf = stats.data?.performance ?? emptyPerformance();
+  const exams = examPerf.data ?? stats.data?.examPerformance ?? null;
   const daySec = analytics.data?.daySeconds ?? 0;
   const weekSec = analytics.data?.weekSeconds ?? 0;
   const totalSec = analytics.data?.totalSeconds ?? stats.data?.browsingSeconds ?? 0;
   const newsItems = (news.data ?? []).slice(0, 4);
-  const weekHoursLabel = formatStudyHours(weekSec).replace(' hrs', '').replace(' min', 'm');
   const resumeHref = last
     ? `/questions/${last.id}${last.filterQs ? `?${last.filterQs}` : ''}`
     : '/questions';
 
   const progressLine =
-    perf.weekAttempts > 0
-      ? `You checked ${perf.weekAttempts.toLocaleString()} MCQ${perf.weekAttempts === 1 ? '' : 's'} this week · ${perf.accuracyPercent}% overall accuracy`
-      : perf.uniqueQuestions > 0
-        ? `${perf.uniqueQuestions.toLocaleString()} unique MCQs practiced · ${perf.accuracyPercent}% accuracy`
-        : 'Start a check to unlock progress here.';
+    exams && exams.totalExamsCompleted > 0
+      ? `${exams.totalExamsCompleted} exam${exams.totalExamsCompleted === 1 ? '' : 's'} completed · avg ${exams.averageExamScorePercent}% · ${perf.accuracyPercent}% MCQ accuracy`
+      : perf.weekAttempts > 0
+        ? `You checked ${perf.weekAttempts.toLocaleString()} MCQ${perf.weekAttempts === 1 ? '' : 's'} this week · ${perf.accuracyPercent}% overall accuracy`
+        : perf.uniqueQuestions > 0
+          ? `${perf.uniqueQuestions.toLocaleString()} unique MCQs practiced · ${perf.accuracyPercent}% accuracy`
+          : 'Start a quiz or live exam to unlock progress here.';
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-5 pb-8 sm:gap-6 md:gap-7">
-      <Reveal className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
-        <div className="min-w-0 space-y-1">
-          <div className="flex items-center gap-2">
-            <span
-              className="inline-block h-[3px] w-6 shrink-0 rounded-full bg-[linear-gradient(90deg,var(--highlight),var(--accent))]"
-              aria-hidden
-            />
-            <p className="text-[0.6875rem] font-semibold tracking-[0.16em] text-[var(--muted)] uppercase">
-              Study desk
-            </p>
-          </div>
-          <h1 className="font-display text-[clamp(1.5rem,4.5vw,2.15rem)] font-bold tracking-[-0.02em] text-[var(--ink)]">
-            Hi, {displayName.split(' ')[0] || displayName}
-          </h1>
-          <p className="max-w-xl text-sm leading-relaxed text-[var(--muted)]">{progressLine}</p>
-        </div>
-        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center">
-          <Link href={resumeHref} className="min-w-0">
-            <Button className="motion-press w-full px-3 sm:w-auto sm:px-5">
-              {last ? 'Resume' : 'Practice'}
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          </Link>
-          <Link href="/profile" className="min-w-0">
-            <Button variant="outline" className="motion-press w-full px-3 sm:w-auto sm:px-5">
-              Account
-            </Button>
-          </Link>
-        </div>
+      <Reveal>
+        <DashboardWelcomeBanner
+          displayName={displayName}
+          progressLine={progressLine}
+          primaryHref={resumeHref}
+          primaryLabel={last ? 'Resume practice' : 'Start practicing'}
+        />
       </Reveal>
 
-      {statsFailed || analyticsFailed ? (
+      {statsFailed || analyticsFailed || examPerf.isError ? (
         <LoadError
-          message={
-            statsFailed && analyticsFailed
-              ? 'Could not load practice stats or study time.'
-              : statsFailed
-                ? 'Could not load practice stats.'
-                : 'Could not load study-time summary.'
-          }
+          message="Could not load some dashboard stats. Retry to refresh."
           onRetry={() => {
             void stats.refetch();
             void analytics.refetch();
+            void examPerf.refetch();
           }}
         />
       ) : null}
 
-      {/* Two wide KPI cards */}
       {!statsFailed ? (
-        <Reveal>
-          <Stagger className="grid gap-4 md:grid-cols-2" stepMs={70}>
-            <HomeStatCard
-              tone="neutral"
+        <Reveal delayMs={30}>
+          <Stagger
+            className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4"
+            stepMs={55}
+          >
+            <MetricTile
               icon={ClipboardCheck}
-              value={perf.uniqueQuestions.toLocaleString()}
-              label="MCQs practiced"
-              subtitle="Unique questions you have checked"
-              footer={
-                <TrendPill muted={perf.weekAttempts === 0}>
-                  {perf.weekAttempts > 0
-                    ? `+${perf.weekAttempts.toLocaleString()} this week`
-                    : 'No checks this week'}
-                </TrendPill>
-              }
+              tone="navy"
+              value={exams?.totalExamsCompleted ?? 0}
+              label="Exams completed"
             />
-
-            <HomeStatCard
-              tone="positive"
+            <MetricTile
+              icon={Trophy}
+              tone="amber"
+              value={exams?.averageExamScorePercent ?? 0}
+              suffix="%"
+              label="Average exam score"
+            />
+            <MetricTile
               icon={Target}
-              value={`${perf.accuracyPercent}%`}
-              label="Success rate"
-              subtitle={
-                analyticsFailed
-                  ? 'Accuracy across all checks'
-                  : `Study time ${formatStudyHours(totalSec)} · week ${weekHoursLabel || '0'}`
-              }
-              footer={
-                <div className="flex items-center justify-between gap-4">
-                  <TrendPill muted={analyticsFailed || weekSec === 0}>
-                    {analyticsFailed
-                      ? 'Study time unavailable'
-                      : weekSec > 0
-                        ? `+${weekHoursLabel} study this week`
-                        : 'No study time this week'}
-                  </TrendPill>
-                  <ProgressRing
-                    value={perf.accuracyPercent}
-                    size={72}
-                    stroke={7}
-                    label={`${perf.accuracyPercent}%`}
-                    color="var(--viz-positive)"
-                    trackColor="var(--line)"
-                  />
-                </div>
-              }
+              tone="green"
+              value={perf.accuracyPercent}
+              suffix="%"
+              label="MCQ accuracy"
+            />
+            <MetricTile
+              icon={Flame}
+              tone="red"
+              value={perf.weekAttempts}
+              label="Checks this week"
             />
           </Stagger>
         </Reveal>
       ) : null}
 
-      {/* Continue + quick actions + answer mix */}
-      <Reveal delayMs={40} className="grid gap-4 lg:grid-cols-5">
+      <Reveal delayMs={50}>
+        <RecentExamAttempts recentExams={exams?.recentExams ?? []} />
+      </Reveal>
+
+      <Reveal delayMs={70}>
+        <RecommendedExams
+          practiceSets={practiceSets.data ?? []}
+          publicExams={publicExams.data ?? []}
+          loading={practiceSets.isLoading || publicExams.isLoading}
+        />
+      </Reveal>
+
+      <Reveal delayMs={80} className="grid gap-4 lg:grid-cols-5">
         <Surface elevated className="space-y-5 p-4 sm:p-5 lg:col-span-3">
           <SectionTitle title="Continue practice" href="/questions" linkLabel="Question bank" />
           {last ? (
@@ -286,17 +263,14 @@ export default function StudyHomePage() {
               <p className="text-[0.6875rem] font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
                 Last opened
               </p>
-              <p className="mt-1.5 text-lg font-semibold tracking-tight text-[var(--ink)] break-words">
+              <p className="mt-1.5 text-lg font-semibold tracking-tight break-words text-[var(--ink)]">
                 {last.title}
               </p>
               {last.categoryName ? (
                 <p className="mt-0.5 text-sm text-[var(--muted)]">{last.categoryName}</p>
               ) : null}
               <Link href={resumeHref} className="mt-3 inline-flex">
-                <Button size="sm">
-                  Resume
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
+                <Button size="sm">Resume</Button>
               </Link>
             </div>
           ) : (
@@ -304,7 +278,7 @@ export default function StudyHomePage() {
               nested
               className="py-8"
               title="No practice history yet"
-              description="Open any MCQ and press Check answer. Accuracy, subject progress, and recent results will appear here."
+              description="Open any MCQ and press Check answer. Accuracy and subject progress will appear here."
               action={
                 <Link href="/questions">
                   <Button size="sm">Browse questions</Button>
@@ -313,56 +287,56 @@ export default function StudyHomePage() {
             />
           )}
 
-            <div>
-              <h3 className="mb-3 text-[0.6875rem] font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
-                Quick actions
-              </h3>
-              <Stagger className="grid gap-2.5 sm:grid-cols-2" stepMs={55}>
-                <QuickLink
-                  href="/questions"
-                  title="Question bank"
-                  description="Subject, topic, and exam-track MCQs"
-                  icon={BookOpen}
-                />
-                <QuickLink
-                  href="/model-tests"
-                  title="Model tests"
-                  description="Timed mocks with score review"
-                  icon={ClipboardList}
-                />
-                <QuickLink
-                  href="/exam-tracks"
-                  title="Govt job prep"
-                  description="BCS, bank, NTRCA, and more"
-                  icon={FileText}
-                />
-                <QuickLink
-                  href="/quizzes"
-                  title="Quiz center"
-                  description={
-                    preferredIds.length
-                      ? `${preferredIds.length} preferred subjects ready`
-                      : 'Daily, subject, and topic quizzes'
-                  }
-                  icon={Sparkles}
-                />
-              </Stagger>
-            </div>
-          </Surface>
+          <div>
+            <h3 className="mb-3 text-[0.6875rem] font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
+              Quick actions
+            </h3>
+            <Stagger className="grid gap-2.5 sm:grid-cols-2" stepMs={55}>
+              <QuickLink
+                href="/questions"
+                title="Question bank"
+                description="Subject, topic, and exam-track MCQs"
+                icon={BookOpen}
+              />
+              <QuickLink
+                href="/model-tests"
+                title="Model tests"
+                description="Timed mocks with score review"
+                icon={ClipboardList}
+              />
+              <QuickLink
+                href="/exam-tracks"
+                title="Govt job prep"
+                description="BCS, bank, NTRCA, and more"
+                icon={FileText}
+              />
+              <QuickLink
+                href="/quizzes"
+                title="Quiz center"
+                description={
+                  preferredIds.length
+                    ? `${preferredIds.length} preferred subjects ready`
+                    : 'Daily, subject, and topic quizzes'
+                }
+                icon={Sparkles}
+              />
+            </Stagger>
+          </div>
+        </Surface>
 
-          <Surface elevated className="space-y-3 p-4 sm:p-5 lg:col-span-2">
-            <SectionTitle title="Answer mix" />
-            {stats.isLoading ? (
-              <HomeAnswerMixSkeleton />
-            ) : (
-              <ContentIn>
-                <AccuracyDonut correct={perf.correct} incorrect={perf.incorrect} />
-              </ContentIn>
-            )}
-          </Surface>
+        <Surface elevated className="space-y-3 p-4 sm:p-5 lg:col-span-2">
+          <SectionTitle title="Answer mix" />
+          {stats.isLoading ? (
+            <HomeAnswerMixSkeleton />
+          ) : (
+            <ContentIn>
+              <AccuracyDonut correct={perf.correct} incorrect={perf.incorrect} />
+            </ContentIn>
+          )}
+        </Surface>
       </Reveal>
 
-      <Reveal delayMs={60} className="grid gap-4 md:grid-cols-2">
+      <Reveal delayMs={90} className="grid gap-4 md:grid-cols-2">
         <Surface elevated className="space-y-3 p-4 sm:p-5">
           <SectionTitle title="Subject performance" href="/onboarding" linkLabel="My topics" />
           {stats.isLoading ? (
@@ -389,12 +363,17 @@ export default function StudyHomePage() {
                   { label: 'All time', value: totalSec, color: 'var(--viz-insight)' },
                 ]}
               />
+              {!analyticsFailed ? (
+                <p className="mt-2 text-xs text-[var(--muted)]">
+                  All-time browsing {formatStudyHours(totalSec)}
+                </p>
+              ) : null}
             </ContentIn>
           )}
         </Surface>
       </Reveal>
 
-      <Reveal delayMs={80} className="grid gap-4 lg:grid-cols-2">
+      <Reveal delayMs={100} className="grid gap-4 lg:grid-cols-2">
         <Surface elevated className="space-y-3 p-4 sm:p-5">
           <SectionTitle
             title={preferredIds.length ? 'Your topics' : 'Recommended topics'}
@@ -467,13 +446,7 @@ export default function StudyHomePage() {
         </Surface>
       </Reveal>
 
-      {stats.data?.examPerformance || !stats.isLoading ? (
-        <Reveal delayMs={90}>
-          <ExamPerformancePanel initial={stats.data?.examPerformance ?? null} />
-        </Reveal>
-      ) : null}
-
-      <Reveal delayMs={100}>
+      <Reveal delayMs={110}>
         <Surface elevated className="space-y-3 overflow-hidden p-4 sm:p-5">
           <SectionTitle title="Saved for later" href="/bookmarks" linkLabel="View all" />
           {stats.isLoading ? <HomeActivityListSkeleton rows={3} /> : null}

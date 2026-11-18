@@ -2,8 +2,8 @@
 
 import { X } from 'lucide-react';
 import { useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
+import { LearnerThemePortal } from '@/components/theme/learner-theme-portal';
 import { ExamProgressCard } from './exam-progress-card';
 import { ExamQuestionNavigator } from './exam-question-navigator';
 
@@ -51,43 +51,49 @@ export function ExamNavigatorSheet({
 
   if (!open || typeof document === 'undefined') return null;
 
-  return createPortal(
-    <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true" aria-label="Question navigator">
-      <button
-        type="button"
-        className="absolute inset-0 bg-[color-mix(in_srgb,var(--ink)_40%,transparent)] backdrop-blur-[1px]"
-        aria-label="Close navigator"
-        onClick={onClose}
-      />
-      <div className="motion-drawer-in absolute inset-x-0 bottom-0 max-h-[85dvh] overflow-y-auto rounded-t-[1.25rem] border border-[var(--line)] bg-[var(--bg-elevated)] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[var(--shadow-lg)]">
-        <div className="mb-3 flex items-center justify-between gap-2">
-          <p className="font-display text-base font-semibold text-[var(--ink)]">Questions</p>
-          <Button type="button" size="icon" variant="ghost" aria-label="Close" onClick={onClose}>
-            <X className="size-5" />
-          </Button>
-        </div>
-        <div className="space-y-4">
-          <ExamProgressCard
-            total={total}
-            answered={answered}
-            unanswered={unanswered}
-            marked={markedCount}
-            className="shadow-none"
-          />
-          <ExamQuestionNavigator
-            total={total}
-            currentIndex={currentIndex}
-            answers={answers}
-            marked={marked}
-            questionIds={questionIds}
-            onJump={(i) => {
-              onJump(i);
-              onClose();
-            }}
-          />
+  return (
+    <LearnerThemePortal>
+      <div
+        className="fixed inset-0 z-40 lg:hidden"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Question navigator"
+      >
+        <button
+          type="button"
+          className="absolute inset-0 bg-[color-mix(in_srgb,var(--ink)_40%,transparent)] backdrop-blur-[1px]"
+          aria-label="Close navigator"
+          onClick={onClose}
+        />
+        <div className="motion-drawer-in absolute inset-x-0 bottom-0 max-h-[85dvh] overflow-y-auto rounded-t-[1.25rem] border border-[var(--line)] bg-[var(--bg-elevated)] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-[var(--ink)] shadow-[var(--shadow-lg)]">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <p className="font-display text-base font-semibold text-[var(--ink)]">Questions</p>
+            <Button type="button" size="icon" variant="ghost" aria-label="Close" onClick={onClose}>
+              <X className="size-5" />
+            </Button>
+          </div>
+          <div className="space-y-4">
+            <ExamProgressCard
+              total={total}
+              answered={answered}
+              unanswered={unanswered}
+              marked={markedCount}
+              className="shadow-none"
+            />
+            <ExamQuestionNavigator
+              total={total}
+              currentIndex={currentIndex}
+              answers={answers}
+              marked={marked}
+              questionIds={questionIds}
+              onJump={(i) => {
+                onJump(i);
+                onClose();
+              }}
+            />
+          </div>
         </div>
       </div>
-    </div>,
-    document.body,
+    </LearnerThemePortal>
   );
 }

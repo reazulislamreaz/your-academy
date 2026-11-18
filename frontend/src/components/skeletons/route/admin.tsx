@@ -602,7 +602,7 @@ export function AdminBulkUploadNewPageSkeleton() {
       <PageHeaderSkeleton />
       <ol className="grid gap-3 sm:grid-cols-3">
         {Array.from({ length: 3 }).map((_, i) => (
-          <li key={i} className="rounded-[14px] border border-[var(--line)] bg-white px-3 py-3">
+          <li key={i} className="rounded-[14px] border border-[var(--line)] bg-[var(--bg-elevated)] px-3 py-3">
             <div className="flex items-center gap-2">
               <Skeleton className="size-6 rounded-full" />
               <SkLine className="h-3 w-20" />
