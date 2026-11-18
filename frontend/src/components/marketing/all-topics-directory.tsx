@@ -61,7 +61,12 @@ export function AllTopicsDirectory({
   const loadingHrefs = tree.isLoading && visibleTiles.length > 0;
 
   return (
-    <DirectoryPageShell heading={heading} subtitle={subtitle}>
+    <DirectoryPageShell
+      heading={heading}
+      subtitle={subtitle}
+      breadcrumbLabel="Topic Base Question Analysis"
+      backLabel="Back to homepage"
+    >
       {visibleTiles.length === 0 ? (
         <EmptyState
           align="center"

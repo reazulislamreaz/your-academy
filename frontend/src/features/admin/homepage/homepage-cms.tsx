@@ -24,7 +24,8 @@ import {
   Upload,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { CmsImagePreview } from '@/components/admin/cms-image-preview';
 import { AdminFormPanel, AdminPage } from '@/components/admin/admin-page';
 import { PageHeader } from '@/components/layout/page-header';
 import { Reveal } from '@/components/motion/reveal';
@@ -44,7 +45,11 @@ import {
   restoreHomepageRevision,
   saveHomepageDraft,
 } from '@/lib/api/homepage';
-import { getStorageStatus, uploadViaSignedRequest } from '@/lib/cloudinary-upload';
+import {
+  assertHomepageHeroFile,
+  getStorageStatus,
+  uploadViaSignedRequest,
+} from '@/lib/cloudinary-upload';
 import { cn } from '@/lib/utils';
 
 type PreviewDevice = 'desktop' | 'tablet' | 'mobile';
@@ -81,6 +86,20 @@ export function HomepageCms() {
   const [confirmDeleteCustom, setConfirmDeleteCustom] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewDevice, setPreviewDevice] = useState<PreviewDevice>('desktop');
+  const heroObjectUrlRef = useRef<string | null>(null);
+
+  const revokeHeroObjectUrl = () => {
+    if (heroObjectUrlRef.current) {
+      URL.revokeObjectURL(heroObjectUrlRef.current);
+      heroObjectUrlRef.current = null;
+    }
+  };
+
+  const setHeroPreview = (url: string | null, isObjectUrl = false) => {
+    revokeHeroObjectUrl();
+    if (isObjectUrl && url) heroObjectUrlRef.current = url;
+    setHeroPreviewUrl(url);
+  };
 
   const adminQ = useQuery({
     queryKey: ['admin-homepage'],
@@ -100,9 +119,11 @@ export function HomepageCms() {
     if (!adminQ.data) return;
     setPayload(normalizeHomepagePayload(adminQ.data.draft.payload));
     setHeroImageAssetId(adminQ.data.draft.heroImageAssetId);
-    setHeroPreviewUrl(adminQ.data.draft.heroImageUrl);
+    setHeroPreview(adminQ.data.draft.heroImageUrl);
     setDirty(false);
   }, [adminQ.data]);
+
+  useEffect(() => () => revokeHeroObjectUrl(), []);
 
   const sections = payload.layout.sections;
   const selected = sections.find((s) => s.id === selectedId) ?? sections[0];
@@ -210,7 +231,7 @@ export function HomepageCms() {
     onSuccess: (draft) => {
       setPayload(normalizeHomepagePayload(draft.payload));
       setHeroImageAssetId(draft.heroImageAssetId);
-      setHeroPreviewUrl(draft.heroImageUrl);
+      setHeroPreview(draft.heroImageUrl);
       setDirty(false);
       setMessage({
         tone: 'success',
@@ -252,7 +273,7 @@ export function HomepageCms() {
     onSuccess: (draft) => {
       setPayload(normalizeHomepagePayload(draft.payload));
       setHeroImageAssetId(draft.heroImageAssetId);
-      setHeroPreviewUrl(draft.heroImageUrl);
+      setHeroPreview(draft.heroImageUrl);
       setDirty(false);
       setConfirmRestore(false);
       setMessage({ tone: 'success', text: 'Draft restored from the live published homepage.' });
@@ -269,7 +290,7 @@ export function HomepageCms() {
     onSuccess: (draft) => {
       setPayload(normalizeHomepagePayload(draft.payload));
       setHeroImageAssetId(draft.heroImageAssetId);
-      setHeroPreviewUrl(draft.heroImageUrl);
+      setHeroPreview(draft.heroImageUrl);
       setDirty(true);
       setMessage({
         tone: 'success',
@@ -281,10 +302,14 @@ export function HomepageCms() {
   });
 
   const uploadHero = useMutation({
-    mutationFn: (file: File) => uploadViaSignedRequest('homepage-hero', file),
+    mutationFn: async (file: File) => {
+      assertHomepageHeroFile(file);
+      const localUrl = URL.createObjectURL(file);
+      setHeroPreview(localUrl, true);
+      return uploadViaSignedRequest('homepage-hero', file);
+    },
     onSuccess: (asset) => {
       setHeroImageAssetId(asset.id);
-      setHeroPreviewUrl(null);
       setDirty(true);
       setMessage({
         tone: 'success',
@@ -405,7 +430,9 @@ export function HomepageCms() {
                 Custom
               </Button>
             </div>
-            <p className="text-xs text-[var(--muted)]">Drag to reorder. Toggle eye to hide.</p>
+            <p className="text-xs text-[var(--muted)]">
+              Drag to reorder. Use the eye icon or the editor checkbox to show/hide sections.
+            </p>
             <Stagger
               stepMs={30}
               className="space-y-1.5"
@@ -504,22 +531,28 @@ export function HomepageCms() {
             description="Changes apply to the draft. Publish to update the live homepage."
           >
             {selected ? (
-              <SectionEditor
-                sectionId={selected.id}
-                payload={payload}
-                heroPreviewUrl={heroPreviewUrl}
-                storageConfigured={Boolean(storageQ.data?.configured)}
-                uploadingHero={uploadHero.isPending}
-                onPatch={patch}
-                onUploadHero={(file) => uploadHero.mutate(file)}
-                onClearHero={() => {
-                  setHeroImageAssetId(null);
-                  setHeroPreviewUrl(null);
-                  setDirty(true);
-                }}
-                onRequestRemoveCustom={() => setConfirmDeleteCustom(true)}
-                onDuplicateCustom={() => duplicateCustom(selected.id)}
-              />
+              <div className="space-y-4">
+                <SectionVisibilityToggle
+                  checked={selected.visible}
+                  onChange={() => toggleVisible(selected.id)}
+                />
+                <SectionEditor
+                  sectionId={selected.id}
+                  payload={payload}
+                  heroPreviewUrl={heroPreviewUrl}
+                  storageConfigured={Boolean(storageQ.data?.configured)}
+                  uploadingHero={uploadHero.isPending}
+                  onPatch={patch}
+                  onUploadHero={(file) => uploadHero.mutate(file)}
+                  onClearHero={() => {
+                    setHeroImageAssetId(null);
+                    setHeroPreview(null);
+                    setDirty(true);
+                  }}
+                  onRequestRemoveCustom={() => setConfirmDeleteCustom(true)}
+                  onDuplicateCustom={() => duplicateCustom(selected.id)}
+                />
+              </div>
             ) : null}
           </AdminFormPanel>
         </Reveal>
@@ -622,6 +655,33 @@ export function HomepageCms() {
   );
 }
 
+function SectionVisibilityToggle({
+  checked,
+  onChange,
+}: {
+  checked: boolean;
+  onChange: () => void;
+}) {
+  return (
+    <label className="flex cursor-pointer items-start gap-3 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-muted)]/40 px-3 py-2.5">
+      <input
+        type="checkbox"
+        className="mt-0.5 size-4 accent-[var(--highlight)]"
+        checked={checked}
+        onChange={onChange}
+      />
+      <span className="space-y-0.5">
+        <span className="block text-sm font-medium text-[var(--ink)]">
+          Show this section on the homepage
+        </span>
+        <span className="block text-xs text-[var(--muted)]">
+          Hidden sections stay in draft order but are omitted from the live site after publish.
+        </span>
+      </span>
+    </label>
+  );
+}
+
 function SectionEditor({
   sectionId,
   payload,
@@ -657,7 +717,7 @@ function SectionEditor({
             }
           />
         </Field>
-        <Field label="Title (before highlight)">
+        <Field label="Main title (before highlight)">
           <Input
             value={h.titleBefore}
             onChange={(e) =>
@@ -681,7 +741,7 @@ function SectionEditor({
             }
           />
         </Field>
-        <Field label="Description">
+        <Field label="Subtitle / description">
           <Textarea
             rows={3}
             value={h.description}
@@ -691,36 +751,35 @@ function SectionEditor({
           />
         </Field>
         <CtaFields
-          label="Primary button"
+          label="Primary CTA"
           cta={h.primaryCta}
           onChange={(cta) => onPatch((p) => ({ ...p, hero: { ...p.hero, primaryCta: cta } }))}
         />
         <CtaFields
-          label="Secondary button"
+          label="Secondary CTA"
           cta={h.secondaryCta}
           onChange={(cta) => onPatch((p) => ({ ...p, hero: { ...p.hero, secondaryCta: cta } }))}
         />
         <div className="space-y-2">
-          <Label>Hero image</Label>
-          {heroPreviewUrl ? (
-            <img
-              src={heroPreviewUrl}
-              alt=""
-              className="h-28 w-full rounded-md object-cover"
-            />
-          ) : (
-            <p className="text-xs text-[var(--muted)]">No preview URL (upload or publish to resolve).</p>
-          )}
-          <div className="flex flex-wrap gap-2">
+          <Label>Hero image / banner</Label>
+          <CmsImagePreview
+            key={heroPreviewUrl ?? 'empty'}
+            src={heroPreviewUrl}
+            className="h-36 w-full sm:h-44"
+            fit="cover"
+            emptyLabel="No hero image selected"
+          />
+          <div className="flex flex-wrap items-center gap-2">
             <label className="inline-flex cursor-pointer items-center gap-1.5 text-sm font-medium text-[var(--highlight)]">
-              Upload image
+              {uploadingHero ? 'Uploading…' : 'Upload image'}
               <input
                 type="file"
-                accept="image/*"
+                accept="image/png,image/jpeg,image/webp"
                 className="sr-only"
                 disabled={!storageConfigured || uploadingHero}
                 onChange={(e) => {
                   const file = e.target.files?.[0];
+                  e.target.value = '';
                   if (file) onUploadHero(file);
                 }}
               />
@@ -729,6 +788,15 @@ function SectionEditor({
               Remove image
             </Button>
           </div>
+          <p className="text-xs text-[var(--muted)]">
+            PNG, JPG, or WebP up to 8MB. Preview appears immediately; save draft, then publish to go
+            live. Images are stored via signed Cloudinary upload (no public URL paste).
+          </p>
+          {!storageConfigured ? (
+            <p className="text-xs text-[var(--danger)]">
+              Cloudinary is not configured — hero upload is disabled.
+            </p>
+          ) : null}
         </div>
       </div>
     );

@@ -147,7 +147,12 @@ export function QuestionBankCategoriesDirectory({ heading, subtitle, tiles }: Pr
   const waitingOnTree = tree.isLoading;
 
   return (
-    <DirectoryPageShell heading={heading} subtitle={subtitle}>
+    <DirectoryPageShell
+      heading={heading}
+      subtitle={subtitle}
+      breadcrumbLabel="Target Exam Categories"
+      backLabel="Back to homepage"
+    >
       {!hasCms && !waitingOnTree && roots.length === 0 && !tree.isError ? (
         <EmptyState
           align="center"

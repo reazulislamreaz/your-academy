@@ -305,6 +305,10 @@ function assertUploadFile(purpose: UploadPurposeClient, file: File): void {
     assertHomepageTileLogoFile(file);
     return;
   }
+  if (purpose === 'homepage-hero') {
+    assertHomepageHeroFile(file);
+    return;
+  }
   if (purpose === 'pdf') {
     assertPdfFile(file);
   }
@@ -333,6 +337,11 @@ const TILE_LOGO_MIMES = new Set([
   'image/svg+xml',
 ]);
 
+/** Must stay aligned with backend `IMAGE_MAX_BYTES` for homepage-hero. */
+export const HOMEPAGE_HERO_MAX_BYTES = 8 * 1024 * 1024;
+
+const HERO_IMAGE_MIMES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+
 /** Client-side validation + basic SVG script rejection before upload. */
 export function assertHomepageTileLogoFile(file: File): void {
   const mime = (file.type || '').toLowerCase();
@@ -341,6 +350,20 @@ export function assertHomepageTileLogoFile(file: File): void {
   }
   if (file.size > 2 * 1024 * 1024) {
     throw new Error('Logo must be 2MB or smaller');
+  }
+}
+
+/** Client-side hero banner checks before starting a signed upload. */
+export function assertHomepageHeroFile(file: File): void {
+  const mime = (file.type || '').toLowerCase();
+  if (!HERO_IMAGE_MIMES.has(mime)) {
+    throw new Error('Hero image must be PNG, JPG, or WebP');
+  }
+  if (file.size < 1) {
+    throw new Error('File is empty');
+  }
+  if (file.size > HOMEPAGE_HERO_MAX_BYTES) {
+    throw new Error('Hero image must be 8MB or smaller');
   }
 }
 

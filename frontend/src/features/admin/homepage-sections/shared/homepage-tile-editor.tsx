@@ -8,6 +8,7 @@ import {
   isHomepageOthersTile,
 } from '@your-academy/shared';
 import { ImagePlus } from 'lucide-react';
+import { CmsImagePreview } from '@/components/admin/cms-image-preview';
 import { AdminFormPanel } from '@/components/admin/admin-page';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -199,34 +200,45 @@ export function HomepageTileEditor({
             <Label>
               Logo ({HOMEPAGE_TILE_LOGO_SIZE}×{HOMEPAGE_TILE_LOGO_SIZE}px)
             </Label>
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-md border border-[var(--line)] bg-[var(--bg-muted)]">
-                {logoPreview || draftTile.logoUrl ? (
-                  <img
-                    src={logoPreview || draftTile.logoUrl || ''}
-                    alt=""
-                    className="h-full w-full object-contain p-0.5"
-                  />
-                ) : (
-                  <HomepageIcon iconKey={draftTile.iconKey} className="h-5 w-5" />
-                )}
-              </div>
-              <label className="inline-flex cursor-pointer items-center gap-1.5 text-sm font-medium text-[var(--highlight)]">
-                <ImagePlus className="h-4 w-4" />
-                Upload logo
-                <input
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                  className="sr-only"
-                  disabled={!storageConfigured}
-                  onChange={(e) => void onLogoPick(e.target.files?.[0] ?? null)}
+            <div className="flex flex-wrap items-center gap-3">
+              {logoPreview || draftTile.logoUrl ? (
+                <CmsImagePreview
+                  key={logoPreview || draftTile.logoUrl || 'logo'}
+                  src={logoPreview || draftTile.logoUrl}
+                  className="h-14 w-14"
+                  fit="contain"
+                  emptyLabel="No logo"
                 />
-              </label>
-              {(draftTile.logoAssetId || logoPreview) && (
-                <Button type="button" size="sm" variant="ghost" onClick={onClearLogo}>
-                  Remove logo
-                </Button>
+              ) : (
+                <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-md border border-[var(--line)] bg-[var(--bg-muted)]">
+                  <HomepageIcon iconKey={draftTile.iconKey} className="h-6 w-6" />
+                </div>
               )}
+              <div className="space-y-1">
+                <label className="inline-flex cursor-pointer items-center gap-1.5 text-sm font-medium text-[var(--highlight)]">
+                  <ImagePlus className="h-4 w-4" />
+                  Upload logo
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                    className="sr-only"
+                    disabled={!storageConfigured}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] ?? null;
+                      e.target.value = '';
+                      void onLogoPick(file);
+                    }}
+                  />
+                </label>
+                {(draftTile.logoAssetId || logoPreview) && (
+                  <Button type="button" size="sm" variant="ghost" onClick={onClearLogo}>
+                    Remove logo
+                  </Button>
+                )}
+                <p className="text-xs text-[var(--muted)]">
+                  PNG, JPG, WebP, or SVG up to 2MB. Preview updates before you apply.
+                </p>
+              </div>
             </div>
             {uploadProgress ? (
               <p className="text-xs text-[var(--muted)]">{uploadProgress}</p>

@@ -37,10 +37,10 @@ export function HomepageBankBrowseCategories({ categories }: CategoriesProps) {
     .slice(0, HOMEPAGE_EDITABLE_PREVIEW_SLOTS);
   const categoriesOthers =
     categorySplit.others ??
-    createDefaultOthersCategoryTile(categories.cta.href || QUESTION_BANK_CATEGORIES_PATH);
+    createDefaultOthersCategoryTile(QUESTION_BANK_CATEGORIES_PATH);
   const categoriesCtaHref = categories.cta.href || QUESTION_BANK_CATEGORIES_PATH;
-  const categoriesOthersHref =
-    categoriesOthers.fallbackHref || QUESTION_BANK_CATEGORIES_PATH;
+  // Others always opens the full categories directory (not a filtered "rest-only" list).
+  const categoriesOthersHref = QUESTION_BANK_CATEGORIES_PATH;
 
   if (!categories.visible) return null;
 
@@ -100,10 +100,10 @@ export function HomepageBankBrowseTopics({ topics }: TopicsProps) {
     .filter((t) => t.visible && !isHomepageOthersTile(t))
     .slice(0, HOMEPAGE_EDITABLE_PREVIEW_SLOTS);
   const topicsOthers =
-    topicSplit.others ??
-    createDefaultOthersTopicTile(topics.cta.href || ALL_TOPICS_PATH);
+    topicSplit.others ?? createDefaultOthersTopicTile(ALL_TOPICS_PATH);
   const topicsCtaHref = topics.cta.href || ALL_TOPICS_PATH;
-  const topicsOthersHref = topicsOthers.fallbackHref || ALL_TOPICS_PATH;
+  // Others always opens the full topics directory (includes Top 4 + library).
+  const topicsOthersHref = ALL_TOPICS_PATH;
 
   if (!topics.visible) return null;
 
