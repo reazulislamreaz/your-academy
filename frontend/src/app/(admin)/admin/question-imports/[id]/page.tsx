@@ -424,8 +424,8 @@ function QuestionImportDetailContent() {
             </h3>
             <p className="mt-1 text-sm leading-relaxed text-[var(--ink-soft)]">
               Import {data.validCount} valid question{data.validCount === 1 ? '' : 's'}. Duplicate
-              stems and blank question text are allowed. Only genuinely invalid rows are skipped —
-              they never stop the rest of the batch.
+              stems, blank question text, and missing answers are allowed (unanswered rows import as
+              draft). Only genuinely invalid rows are skipped — they never stop the rest of the batch.
             </p>
             {importProgress != null ? (
               <div className="mt-3">
@@ -471,8 +471,9 @@ function QuestionImportDetailContent() {
           <div>
             <h2 className="font-display text-base font-bold">Question preview</h2>
             <p className="text-sm text-[var(--muted-strong)]">
-              Row-level validation with options. Duplicates require matching question text and correct
-              answer (missing answers allowed; unanswered imports save as draft).
+              Row-level validation with options. Missing answers are allowed — unanswered rows stay
+              Valid and import as draft. Only unparseable non-empty answers or missing options are
+              Invalid.
             </p>
           </div>
           <Select

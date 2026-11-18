@@ -165,10 +165,55 @@ export function toAsciiDigits(input: string): string {
   return input.replace(/[০-৯]/g, (d) => BN_DIGIT[d] ?? d);
 }
 
-/** Normalize উত্তর / Correct Answer → A|B|C|D. */
-export function normalizeCorrectAnswer(raw: string): string | null {
+/**
+ * Tokens that mean "no answer provided" in real Excel sheets (dashes, N/A, etc.).
+ * These must never produce INVALID / "Missing Answer" row errors.
+ */
+const BLANK_ANSWER_TOKENS = new Set(
+  [
+    '-',
+    '--',
+    '---',
+    '—',
+    '–',
+    '−',
+    '.',
+    '..',
+    '…',
+    '*',
+    '?',
+    '??',
+    'n/a',
+    'na',
+    'n.a.',
+    'n.a',
+    'nil',
+    'null',
+    'none',
+    'no',
+    'blank',
+    'empty',
+    'tbd',
+    'tba',
+    'নাই',
+    'নেই',
+    'না',
+    'খালি',
+  ].map((t) => t.normalize('NFC').toLowerCase()),
+);
+
+/** True when the cell is empty or a common "no answer" placeholder. */
+export function isBlankAnswerToken(raw: string | null | undefined): boolean {
+  if (raw == null) return true;
   const v = raw.normalize('NFC').trim();
-  if (!v) return null;
+  if (!v) return true;
+  return BLANK_ANSWER_TOKENS.has(v.toLowerCase());
+}
+
+/** Normalize উত্তর / Correct Answer → A|B|C|D. Empty / placeholder → null (allowed). */
+export function normalizeCorrectAnswer(raw: string | null | undefined): string | null {
+  if (isBlankAnswerToken(raw)) return null;
+  const v = String(raw).normalize('NFC').trim();
   const compact = v.replace(/[.\s)\]）】]+$/g, '').replace(/^[([【]+/, '');
   const upper = compact.toUpperCase();
   const map: Record<string, string> = {
@@ -315,9 +360,9 @@ export async function parseQuestionWorkbook(
     fields.includes('optionB') &&
     fields.includes('optionC') &&
     fields.includes('optionD');
-  const hasAnswer = fields.includes('correctAnswer');
+  // উত্তর / Correct Answer column is optional — missing answers are allowed (DEC-024).
 
-  if (!headerRowNumber || bestScore < 8 || !hasQuestion || !hasOptions || !hasAnswer) {
+  if (!headerRowNumber || bestScore < 8 || !hasQuestion || !hasOptions) {
     throw new Error('MISSING_HEADERS');
   }
 

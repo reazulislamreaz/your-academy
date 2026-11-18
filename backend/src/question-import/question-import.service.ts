@@ -24,6 +24,7 @@ import { mapExamCategoryToTag, parseDifficulty } from './exam-tag-map';
 import {
   buildImportReportBuffer,
   buildTemplateBuffer,
+  isBlankAnswerToken,
   normalizeCorrectAnswer,
   parseQuestionWorkbook,
   TEMPLATE_HEADERS,
@@ -578,8 +579,9 @@ export class QuestionImportService {
 
       const answerRaw = row.correctAnswer?.trim() ?? '';
       const correct = normalizeCorrectAnswer(row.correctAnswer);
-      // Missing answer is allowed (null). Only reject non-empty unparseable values.
-      if (answerRaw && !correct) {
+      // Missing / blank-placeholder answers are allowed (null → DRAFT on import).
+      // Only reject genuinely unparseable non-empty values (e.g. "maybe", "5").
+      if (answerRaw && !isBlankAnswerToken(answerRaw) && !correct) {
         errors.push(
           'Column "উত্তর": must be ক/খ/গ/ঘ (or A/B/C/D) when provided. Got: ' + answerRaw,
         );

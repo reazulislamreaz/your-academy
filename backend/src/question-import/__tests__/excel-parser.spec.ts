@@ -45,4 +45,31 @@ describe('parseQuestionWorkbook', () => {
     expect(result.rows[2].sectionTitle).toBe('ইংরেজি');
     expect(result.rows[2].examYear).toBe('2024');
   });
+
+  it('allows workbooks without an উত্তর column and keeps empty answers', async () => {
+    const buf = await workbookBuffer([
+      ['প্রশ্ন নং', 'প্রশ্ন', 'পরীক্ষার নাম ও সাল', 'ক', 'খ', 'গ', 'ঘ'],
+      ['১', 'No answer column Q?', 'BB: 2026', 'a', 'b', 'c', 'd'],
+    ]);
+
+    const result = await parseQuestionWorkbook(buf, 'no-answer-col.xlsx', '');
+    expect(result.rows).toHaveLength(1);
+    expect(result.rows[0].correctAnswer).toBe('');
+    expect(result.rows[0].question).toBe('No answer column Q?');
+  });
+
+  it('preserves rows with blank or placeholder answers', async () => {
+    const buf = await workbookBuffer([
+      ['প্রশ্ন নং', 'প্রশ্ন', 'পরীক্ষার নাম ও সাল', 'ক', 'খ', 'গ', 'ঘ', 'উত্তর'],
+      ['১', 'Answered?', 'BB: 2026', 'a', 'b', 'c', 'd', 'ক'],
+      ['২', 'Blank answer?', 'BB: 2026', 'a', 'b', 'c', 'd', ''],
+      ['৩', 'Dash placeholder?', 'BB: 2026', 'a', 'b', 'c', 'd', '-'],
+    ]);
+
+    const result = await parseQuestionWorkbook(buf, 'mixed-answers.xlsx', '');
+    expect(result.rows).toHaveLength(3);
+    expect(result.rows[0].correctAnswer).toBe('ক');
+    expect(result.rows[1].correctAnswer).toBe('');
+    expect(result.rows[2].correctAnswer).toBe('-');
+  });
 });

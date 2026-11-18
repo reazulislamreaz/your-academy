@@ -188,7 +188,8 @@ export default function NewQuestionImportPage() {
               <h2 className="font-display text-lg font-bold">Select Excel file</h2>
               <p className="text-sm leading-relaxed text-[var(--muted-strong)]">
                 Upload the Google Sheets MCQ template as `.xlsx` or `.csv` — no column renaming needed.
-                Answers use ক / খ / গ / ঘ. Serial numbers (`প্রশ্ন নং`) and sheet preamble rows are kept.
+                Answers (`উত্তর`) are optional; when present use ক / খ / গ / ঘ. Serial numbers (`প্রশ্ন নং`)
+                and sheet preamble rows are kept.
               </p>
             </div>
             <a href={adminDownloadUrl('/admin/question-imports/template')}>
@@ -218,8 +219,9 @@ export default function NewQuestionImportPage() {
             </div>
             <p className="mt-3 text-xs leading-relaxed text-[var(--muted-strong)]">
               First-column title rows above the header become the set preamble. Mid-sheet section
-              headers are shown between questions. Category + multi-subcategory placements are set in
-              the next step.
+              headers are shown between questions. The <span className="font-medium">উত্তর</span>{' '}
+              column may be blank or omitted — unanswered questions still import. Category +
+              multi-subcategory placements are set in the next step.
             </p>
           </div>
 

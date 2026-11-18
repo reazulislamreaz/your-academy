@@ -1,9 +1,18 @@
-import { normalizeCorrectAnswer } from '../excel-parser';
+import { isBlankAnswerToken, normalizeCorrectAnswer } from '../excel-parser';
 
 describe('normalizeCorrectAnswer', () => {
   it('returns null for empty / whitespace (missing answer)', () => {
     expect(normalizeCorrectAnswer('')).toBeNull();
     expect(normalizeCorrectAnswer('   ')).toBeNull();
+    expect(normalizeCorrectAnswer(null)).toBeNull();
+    expect(normalizeCorrectAnswer(undefined)).toBeNull();
+  });
+
+  it('returns null for common blank placeholders (not invalid)', () => {
+    for (const token of ['-', '—', 'N/A', 'na', '?', '.', 'নাই', 'নেই', 'TBD']) {
+      expect(isBlankAnswerToken(token)).toBe(true);
+      expect(normalizeCorrectAnswer(token)).toBeNull();
+    }
   });
 
   it('maps Bangla and Latin letters', () => {
@@ -13,6 +22,7 @@ describe('normalizeCorrectAnswer', () => {
   });
 
   it('returns null for unparseable non-empty values', () => {
+    expect(isBlankAnswerToken('maybe')).toBe(false);
     expect(normalizeCorrectAnswer('maybe')).toBeNull();
     expect(normalizeCorrectAnswer('5')).toBeNull();
   });
