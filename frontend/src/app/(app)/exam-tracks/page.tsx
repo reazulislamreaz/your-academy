@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Surface } from '@/components/ui/surface';
 import { EXAM_TRACKS } from '@/lib/exam-tags';
 
-export default function ExamsPage() {
+export default function ExamTracksPage() {
   return (
     <LearnerPage>
       <PageHeader

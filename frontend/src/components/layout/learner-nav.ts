@@ -41,7 +41,7 @@ export const learnerNavGroups: LearnerNavGroup[] = [
       { href: '/quizzes', label: 'Quiz center', icon: Sparkles, match: 'prefix' },
       { href: '/daily-quiz', label: 'Daily quiz', icon: Target, match: 'prefix' },
       { href: '/model-tests', label: 'Model tests', icon: ClipboardList, match: 'prefix' },
-      { href: '/exams', label: 'Govt job prep', icon: Building2, match: 'prefix' },
+      { href: '/exam-tracks', label: 'Govt job prep', icon: Building2, match: 'prefix' },
       { href: '/previous-year', label: 'Previous-year style', icon: FileText, match: 'prefix' },
     ],
   },

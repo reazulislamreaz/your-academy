@@ -60,7 +60,7 @@ export function GoForExamCta({ className, compact }: Props) {
         </div>
 
         <Link
-          href="/exams"
+          href="/exam-tracks"
           className={cn(
             'ya-exam-cta-btn motion-press group inline-flex min-h-12 w-full shrink-0 items-center justify-center gap-2',
             'rounded-full bg-[var(--highlight)] px-6 text-sm font-semibold text-[var(--highlight-fg)]',

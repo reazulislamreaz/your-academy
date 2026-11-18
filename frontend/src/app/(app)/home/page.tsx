@@ -331,7 +331,7 @@ export default function StudyHomePage() {
                   icon={ClipboardList}
                 />
                 <QuickLink
-                  href="/exams"
+                  href="/exam-tracks"
                   title="Govt job prep"
                   description="BCS, bank, NTRCA, and more"
                   icon={FileText}

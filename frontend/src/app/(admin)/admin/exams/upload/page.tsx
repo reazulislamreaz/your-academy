@@ -1,0 +1,182 @@
+'use client';
+
+import Link from 'next/link';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
+import { AdminFormPanel, AdminPage, AdminSection } from '@/components/admin/admin-page';
+import { PageHeader } from '@/components/layout/page-header';
+import { Alert } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Field } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { FileDropzone } from '@/features/admin/question-imports/file-dropzone';
+import { ApiError } from '@/lib/api/client';
+import { listAdminExams, uploadAdminExam } from '@/lib/api/exams';
+import { adminDownloadUrl } from '@/lib/api/upload';
+import type { AdminExamUploadResult } from '@your-academy/shared';
+
+export default function AdminExamUploadPage() {
+  const qc = useQueryClient();
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [durationInMinutes, setDurationInMinutes] = useState('15');
+  const [file, setFile] = useState<File | null>(null);
+  const [result, setResult] = useState<AdminExamUploadResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const exams = useQuery({
+    queryKey: ['admin-exams'],
+    queryFn: listAdminExams,
+  });
+
+  const upload = useMutation({
+    mutationFn: uploadAdminExam,
+    onSuccess: (data) => {
+      setResult(data);
+      setError(null);
+      setFile(null);
+      void qc.invalidateQueries({ queryKey: ['admin-exams'] });
+    },
+    onError: (err) => {
+      setResult(null);
+      setError(err instanceof ApiError ? err.message : 'Upload failed');
+    },
+  });
+
+  return (
+    <AdminPage>
+      <PageHeader
+        eyebrow="Guest exams"
+        title="Upload exam from Excel"
+        description="Create a public timed exam (Quizzory-style). Columns: Question, OptionA–D, CorrectAnswer, Explanation."
+      />
+
+      <AdminSection title="Create from Excel">
+        <AdminFormPanel title="New exam">
+          <div className="grid gap-4">
+            <Field>
+              <Label htmlFor="exam-title">Exam title</Label>
+              <Input
+                id="exam-title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="BCS Preliminary Model Test 01"
+              />
+            </Field>
+            <Field>
+              <Label htmlFor="exam-desc">Description (optional)</Label>
+              <Textarea
+                id="exam-desc"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+              />
+            </Field>
+            <Field>
+              <Label htmlFor="exam-duration">Duration (minutes)</Label>
+              <Input
+                id="exam-duration"
+                type="number"
+                min={1}
+                max={600}
+                value={durationInMinutes}
+                onChange={(e) => setDurationInMinutes(e.target.value)}
+              />
+            </Field>
+
+            <FileDropzone file={file} onFileChange={setFile} disabled={upload.isPending} />
+
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                disabled={upload.isPending || !file || !title.trim()}
+                onClick={() => {
+                  if (!file) return;
+                  upload.mutate({
+                    title: title.trim(),
+                    description: description.trim() || undefined,
+                    durationInMinutes: Number(durationInMinutes),
+                    file,
+                  });
+                }}
+              >
+                {upload.isPending ? 'Uploading…' : 'Create exam'}
+              </Button>
+              <a href={adminDownloadUrl('/admin/exams/template')} className="inline-flex">
+                <Button type="button" variant="outline">
+                  Download template
+                </Button>
+              </a>
+            </div>
+
+            {error ? <Alert variant="danger">{error}</Alert> : null}
+            {result ? (
+              <Alert>
+                Created <strong>{result.title}</strong> with {result.totalQuestions} questions (
+                {result.durationInMinutes} mins).{' '}
+                <Link href={`/exams/${result.slug}`} className="font-semibold underline">
+                  Open public exam
+                </Link>
+                {result.parseWarnings.length ? (
+                  <p className="mt-2 text-sm">Warnings: {result.parseWarnings.join('; ')}</p>
+                ) : null}
+              </Alert>
+            ) : null}
+
+            {result?.preview?.length ? (
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-[var(--ink)]">Preview (first rows)</h3>
+                <ul className="space-y-2">
+                  {result.preview.map((q, i) => (
+                    <li
+                      key={q.id}
+                      className="rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-desk)] p-3 text-sm"
+                    >
+                      <p className="font-medium text-[var(--ink)]">
+                        {i + 1}. {q.questionText}
+                      </p>
+                      <p className="mt-1 text-[var(--muted-strong)]">
+                        Correct: {q.correctAnswer}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </div>
+        </AdminFormPanel>
+      </AdminSection>
+
+      <AdminSection title="Existing exams">
+        <AdminFormPanel title="Published exams">
+          {exams.isLoading ? (
+            <p className="text-sm text-[var(--muted)]">Loading…</p>
+          ) : exams.data?.length ? (
+            <ul className="divide-y divide-[var(--line)]">
+              {exams.data.map((exam) => (
+                <li key={exam.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
+                  <div>
+                    <p className="font-medium text-[var(--ink)]">{exam.title}</p>
+                    <p className="text-xs text-[var(--muted)]">
+                      {exam.totalQuestions} Q · {exam.durationInMinutes} mins ·{' '}
+                      {exam._count.attempts} attempts
+                    </p>
+                  </div>
+                  <Link href={`/exams/${exam.slug}`}>
+                    <Button size="sm" variant="outline">
+                      View
+                    </Button>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-[var(--muted)]">No guest exams yet.</p>
+          )}
+        </AdminFormPanel>
+      </AdminSection>
+    </AdminPage>
+  );
+}

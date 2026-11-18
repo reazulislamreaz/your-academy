@@ -184,6 +184,7 @@ model User {
   questionAttempts    QuestionAttempt[]
   practiceAttempts    PracticeAttempt[]
   createdPracticeSets PracticeSet[]       @relation("PracticeSetCreator")
+  createdExams        Exam[]              @relation("ExamCreator")
   questionUploadBatches QuestionUploadBatch[]
   browsingSessions    BrowsingSession[]
   subscriptions       UserSubscription[]
@@ -646,6 +647,64 @@ model LearningActivityEvent {
   @@index([subjectCategoryId, occurredAt(sort: Desc)])
   @@index([occurredAt(sort: Desc)])
   @@map("learning_activity_events")
+}
+
+/// Public guest timed exams (Quizzory-style; DEC-039). Separate from Question bank / PracticeSet.
+model Exam {
+  id                 String   @id @default(uuid()) @db.Uuid
+  title              String   @db.VarChar(200)
+  slug               String   @unique @db.VarChar(220)
+  description        String?
+  totalQuestions     Int      @map("total_questions")
+  durationInMinutes  Int      @map("duration_in_minutes")
+  isPublished        Boolean  @default(true) @map("is_published")
+  createdById        String?  @map("created_by_id") @db.Uuid
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  createdBy User?          @relation("ExamCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  questions ExamQuestion[]
+  attempts  ExamAttempt[]
+
+  @@index([isPublished, createdAt(sort: Desc)])
+  @@map("exams")
+}
+
+/// Guest-exam MCQ row. Named ExamQuestion so it does not collide with bank `Question` (DEC-039).
+model ExamQuestion {
+  id            String  @id @default(uuid()) @db.Uuid
+  examId        String  @map("exam_id") @db.Uuid
+  questionText  String  @map("question_text")
+  /// Exactly four option strings [A, B, C, D].
+  options       Json
+  correctAnswer String  @map("correct_answer") @db.VarChar(1000)
+  explanation   String?
+  sortOrder     Int     @default(0) @map("sort_order")
+
+  exam Exam @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  @@index([examId, sortOrder])
+  @@map("exam_questions")
+}
+
+model ExamAttempt {
+  id           String   @id @default(uuid()) @db.Uuid
+  examId       String   @map("exam_id") @db.Uuid
+  userName     String   @map("user_name") @db.VarChar(120)
+  score        Int
+  correctCount Int      @map("correct_count")
+  wrongCount   Int      @map("wrong_count")
+  /// Map of questionId → selected option text (or empty if skipped).
+  userAnswers  Json     @map("user_answers")
+  /// Wall-clock seconds from client start to submit (informational).
+  elapsedSeconds Int?   @map("elapsed_seconds")
+  timedOut     Boolean  @default(false) @map("timed_out")
+  submittedAt  DateTime @default(now()) @map("submitted_at") @db.Timestamptz(3)
+
+  exam Exam @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  @@index([examId, submittedAt(sort: Desc)])
+  @@map("exam_attempts")
 }
 
 /// Timed or untimed practice packs: daily quiz, subject quiz, model test, etc. (DEC-023).

@@ -16,7 +16,7 @@ export const LEARNER_APP_PREFIXES = [
   '/quizzes',
   '/daily-quiz',
   '/model-tests',
-  '/exams',
+  '/exam-tracks',
   '/previous-year',
 ] as const;
 
@@ -26,6 +26,7 @@ export const PUBLIC_MARKETING_PREFIXES = [
   '/preli-question-bank',
   '/written-question-bank',
   '/news',
+  '/exams',
 ] as const;
 
 export function isPublicMarketingPath(pathname: string): boolean {

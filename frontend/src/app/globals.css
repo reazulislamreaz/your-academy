@@ -1314,6 +1314,14 @@ input:disabled {
     linear-gradient(165deg, #001a44 0%, var(--bg-inverse) 48%, #001638 100%);
 }
 
+/* Guest exam result conversion card (DEC-039) */
+.guest-exam-cta {
+  background:
+    radial-gradient(ellipse 70% 80% at 0% 0%, color-mix(in srgb, var(--highlight) 10%, transparent), transparent 55%),
+    linear-gradient(165deg, color-mix(in srgb, var(--accent) 8%, var(--bg-elevated)), var(--bg-elevated));
+  box-shadow: 0 18px 40px -28px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
 /* Custom 404 — simple, professional, quiet motion */
 .not-found-shell {
   width: 100%;

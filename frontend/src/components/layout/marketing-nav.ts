@@ -36,6 +36,12 @@ export const marketingNavItems: MarketingNavItem[] = [
     match: 'prefix',
   },
   {
+    id: 'exams',
+    href: '/exams',
+    label: 'Exams',
+    match: 'prefix',
+  },
+  {
     id: 'jobs',
     href: '/preli-question-bank?q=Job',
     label: 'চাকরি',

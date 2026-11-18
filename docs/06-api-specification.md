@@ -227,6 +227,22 @@ Duplicate file (`409 DUPLICATE_FILE`) when the same SHA-256 was already **comple
 
 ---
 
+### 2.5c Public guest exams (DEC-039)
+
+Quizzory-style timed exams with name-only entry. Separate from bank `Question` / PracticeSet. Correct answers are omitted until after submit.
+
+| Method | Endpoint | Description | Auth | Role |
+|--------|----------|-------------|------|------|
+| GET | `/public/exams` | Published exams, `createdAt DESC` | Public | — |
+| GET | `/public/exams/:idOrSlug` | Exam + questions (no correct answers / explanations) | Public | — |
+| POST | `/public/exams/:idOrSlug/attempts` | Submit answers (`userName`, `userAnswers`, optional `elapsedSeconds`/`timedOut`); scores server-side | Public | — |
+| GET | `/public/exams/attempts/:attemptId` | Result + full answer sheet (correct + explanation) | Public | — |
+| GET | `/admin/exams` | Admin list | User | ADMIN |
+| GET | `/admin/exams/template` | Excel template download | User | ADMIN |
+| POST | `/admin/exams/upload` | Multipart create (`title`, `description`, `durationInMinutes`, `.xlsx` file) | User | ADMIN |
+
+---
+
 ### 2.5b Practice sets (DEC-023)
 
 Timed/untimed quizzes and model tests built from published questions. Review payloads still strip answers/explanations when the learner is not entitled.

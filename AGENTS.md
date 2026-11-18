@@ -71,6 +71,7 @@ Forbidden without approval: microservices, GraphQL, alternate ORMs, payment prov
 | Register fields | name, WhatsApp (unique), password; avatar optional; email optional at register |
 | Password reset | **Email** only (DEC-004); needs email on account; no enumeration |
 | Web auth | HTTP-only cookies + CSRF (DEC-012); never `localStorage` for tokens |
+| Guest exams | Public timed `Exam` / `ExamQuestion` / `ExamAttempt` (DEC-039); separate from bank `Question` + PracticeSet; answers only after submit |
 
 ---
 
