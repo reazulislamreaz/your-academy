@@ -1,0 +1,618 @@
+'use client';
+
+import Link from 'next/link';
+import { useParams, useSearchParams } from 'next/navigation';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  Archive,
+  Download,
+  FileSpreadsheet,
+  Pencil,
+  Trash2,
+} from 'lucide-react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
+import { AdminPage } from '@/components/admin/admin-page';
+import { PageHeader } from '@/components/layout/page-header';
+import { Alert } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { ConfirmButton } from '@/components/ui/confirm-button';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Field } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
+import { Surface } from '@/components/ui/surface';
+import {
+  QuickCreateCategoryButton,
+  QuickCreateSubcategoryButton,
+} from '@/features/admin/categories/quick-create-dialogs';
+import {
+  type ImportRow,
+  type UploadBatch,
+  statusTone,
+} from '@/features/admin/question-imports/types';
+import { ApiError, apiFetch, apiFetchResult } from '@/lib/api/client';
+import type { CategoryNode } from '@/lib/api/types';
+import { adminDownloadUrl } from '@/lib/api/upload';
+import { cn } from '@/lib/utils';
+import { AdminBulkPreviewTableSkeleton, AdminBulkUploadDetailPageSkeleton } from '@/components/skeletons';
+
+function QuestionImportDetailContent() {
+  const { id } = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
+  const qc = useQueryClient();
+  const [rowStatus, setRowStatus] = useState('');
+  const [skipDuplicates] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [displayName, setDisplayName] = useState('');
+  const [subjectHint, setSubjectHint] = useState('');
+  const [topicHint, setTopicHint] = useState('');
+  const [importProgress, setImportProgress] = useState<number | null>(null);
+
+  const batch = useQuery({
+    queryKey: ['admin-written-question-import', id],
+    queryFn: () => apiFetch<UploadBatch>(`/admin/written-question-imports/${id}`),
+  });
+
+  const categories = useQuery({
+    queryKey: ['categories'],
+    queryFn: () => apiFetch<CategoryNode[]>('/categories'),
+  });
+
+  const selectedCategory = useMemo(
+    () => (categories.data ?? []).find((c) => c.name === subjectHint),
+    [categories.data, subjectHint],
+  );
+
+  useEffect(() => {
+    if (!batch.data) return;
+    setDisplayName(batch.data.displayName);
+    setSubjectHint(batch.data.subjectHint ?? '');
+    setTopicHint(batch.data.topicHint ?? '');
+  }, [batch.data]);
+
+  const rows = useInfiniteQuery({
+    queryKey: ['admin-written-question-import-rows', id, rowStatus],
+    initialPageParam: undefined as string | undefined,
+    queryFn: async ({ pageParam }) => {
+      const qs = new URLSearchParams({ limit: '50' });
+      if (rowStatus) qs.set('status', rowStatus);
+      if (pageParam) qs.set('cursor', pageParam);
+      return apiFetchResult<ImportRow[]>(`/admin/written-question-imports/${id}/rows?${qs}`);
+    },
+    getNextPageParam: (last) => last.pagination?.nextCursor ?? undefined,
+  });
+
+  const confirm = useMutation({
+    mutationFn: async () => {
+      setImportProgress(20);
+      const timer = window.setInterval(() => {
+        setImportProgress((p) => (p == null || p >= 90 ? p : p + 8));
+      }, 400);
+      try {
+        const result = await apiFetch<UploadBatch>(`/admin/written-question-imports/${id}/confirm`, {
+          method: 'POST',
+          body: JSON.stringify({ skipDuplicates }),
+        });
+        setImportProgress(100);
+        return result;
+      } finally {
+        window.clearInterval(timer);
+      }
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['admin-written-question-import', id] });
+      void qc.invalidateQueries({ queryKey: ['admin-written-question-import-rows', id] });
+      void qc.invalidateQueries({ queryKey: ['admin-written-question-imports'] });
+      void qc.invalidateQueries({ queryKey: ['admin-written-question-import-stats'] });
+      void qc.invalidateQueries({ queryKey: ['admin-questions'] });
+      window.setTimeout(() => setImportProgress(null), 800);
+    },
+    onError: () => setImportProgress(null),
+  });
+
+  const saveMeta = useMutation({
+    mutationFn: () =>
+      apiFetch<UploadBatch>(`/admin/written-question-imports/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          displayName,
+          subjectHint: subjectHint.trim() || null,
+          topicHint: topicHint.trim() || null,
+        }),
+      }),
+    onSuccess: () => {
+      setEditing(false);
+      void qc.invalidateQueries({ queryKey: ['admin-written-question-import', id] });
+      void qc.invalidateQueries({ queryKey: ['admin-written-question-imports'] });
+    },
+  });
+
+  const archive = useMutation({
+    mutationFn: () =>
+      apiFetch(`/admin/written-question-imports/${id}/archive`, { method: 'PATCH' }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['admin-written-question-import', id] });
+      void qc.invalidateQueries({ queryKey: ['admin-written-question-imports'] });
+      void qc.invalidateQueries({ queryKey: ['admin-written-question-import-stats'] });
+    },
+  });
+
+  const remove = useMutation({
+    mutationFn: () => apiFetch(`/admin/written-question-imports/${id}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['admin-written-question-imports'] });
+      void qc.invalidateQueries({ queryKey: ['admin-written-question-import-stats'] });
+      window.location.href = '/admin/written-question-imports';
+    },
+  });
+
+  const rowItems = rows.data?.pages.flatMap((p) => p.data) ?? [];
+  const highlightPreview = searchParams.get('step') === 'preview';
+
+  const summary = useMemo(() => {
+    const data = batch.data;
+    if (!data) return [];
+    return [
+      { label: 'Total processed', value: data.totalRows },
+      { label: 'Valid (ready)', value: data.validCount, tone: 'text-[var(--success-fg)]' },
+      { label: 'Invalid (skipped)', value: data.invalidCount, tone: 'text-[var(--danger-fg)]' },
+      { label: 'Successfully imported', value: data.importedCount, tone: 'text-[var(--success-fg)]' },
+      { label: 'Other skipped', value: data.skippedCount ?? 0 },
+    ];
+  }, [batch.data]);
+
+  if (batch.isLoading) {
+    return <AdminBulkUploadDetailPageSkeleton />;
+  }
+
+  if (batch.isError || !batch.data) {
+    return (
+      <EmptyState
+        title="Collection not found"
+        description="This upload may have been deleted."
+        action={
+          <Link href="/admin/written-question-imports" className="text-sm font-semibold text-[var(--highlight)]">
+            Back to collections
+          </Link>
+        }
+      />
+    );
+  }
+
+  const data = batch.data;
+  const canImport = data.status === 'VALIDATED' || data.status === 'FAILED';
+
+  return (
+    <AdminPage>
+      <PageHeader
+        eyebrow={data.batchCode}
+        title={data.displayName}
+        description={`${data.originalFilename} · uploaded by ${data.uploadedBy.name} · ${new Date(data.createdAt).toLocaleString()}`}
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <a href={adminDownloadUrl(`/admin/written-question-imports/${id}/file`)}>
+              <Button type="button" variant="outline" size="sm" className="cursor-pointer">
+                <Download className="size-3.5" />
+                Original
+              </Button>
+            </a>
+            <a href={adminDownloadUrl(`/admin/written-question-imports/${id}/report`)}>
+              <Button type="button" variant="outline" size="sm" className="cursor-pointer">
+                <FileSpreadsheet className="size-3.5" />
+                Report
+              </Button>
+            </a>
+            {data.status === 'COMPLETED' ? (
+              <a href={adminDownloadUrl(`/admin/written-question-imports/${id}/export`)}>
+                <Button type="button" variant="outline" size="sm" className="cursor-pointer">
+                  Export
+                </Button>
+              </a>
+            ) : null}
+          </div>
+        }
+      />
+
+      {highlightPreview && canImport ? (
+        <Alert variant="info">
+          File validated. Review the preview below, then import valid questions.
+        </Alert>
+      ) : null}
+
+      {data.status === 'IMPORTING' ? (
+        <Alert variant="info">
+          Import in progress. Counts update as chunks commit — refresh if the status stalls.
+          Download the report after completion for a full processed / imported / skipped summary.
+        </Alert>
+      ) : null}
+
+      {data.status === 'COMPLETED' ? (
+        <Alert variant="success">
+          Import finished. Use Report / Export for a durable audit of what landed in the bank.
+        </Alert>
+      ) : null}
+
+      {data.duplicateFileBatch ? (
+        <Alert variant="warning">
+          File hash matches a previous upload:{' '}
+          <Link
+            href={`/admin/written-question-imports/${data.duplicateFileBatch.id}`}
+            className="font-semibold underline"
+          >
+            {data.duplicateFileBatch.batchCode}
+          </Link>
+          .
+        </Alert>
+      ) : null}
+
+      {data.errorMessage ? <Alert variant="danger">{data.errorMessage}</Alert> : null}
+
+      <div className="motion-stagger grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        {summary.map((item) => (
+          <Surface key={item.label} interactive className="p-4">
+            <p className="text-xs font-semibold tracking-wide text-[var(--muted-strong)] uppercase">
+              {item.label}
+            </p>
+            <p
+              className={cn(
+                'mt-1 font-display text-2xl font-bold tabular-nums text-[var(--ink)]',
+                item.tone,
+              )}
+            >
+              {item.value}
+            </p>
+          </Surface>
+        ))}
+      </div>
+
+      <Surface className="space-y-4 p-4 sm:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant={statusTone(data.status)}>{data.status}</Badge>
+            {data.subjectHint ? <Badge variant="outline">{data.subjectHint}</Badge> : null}
+            {data.topicHint ? <Badge variant="outline">{data.topicHint}</Badge> : null}
+            {data.examYear ? <Badge variant="outline">{data.examYear}</Badge> : null}
+            {data.examCategoryHint ? (
+              <Badge variant="outline">{data.examCategoryHint}</Badge>
+            ) : null}
+            {(data.placements ?? []).map((p) => (
+              <Badge key={p.id} variant="info">
+                {p.subcategory.name}
+              </Badge>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="cursor-pointer"
+              onClick={() => setEditing((v) => !v)}
+            >
+              <Pencil className="size-3.5" />
+              {editing ? 'Close editor' : 'Edit details'}
+            </Button>
+            {data.status !== 'ARCHIVED' ? (
+              <ConfirmButton
+                size="sm"
+                variant="outline"
+                confirmTitle="Archive this collection?"
+                confirmMessage="Archive this collection? Imported questions stay in the bank."
+                confirmLabel="Archive"
+                reversible
+                disabled={archive.isPending}
+                onConfirm={() => archive.mutate()}
+              >
+                <Archive className="size-3.5" />
+                Archive
+              </ConfirmButton>
+            ) : null}
+            {data.status !== 'COMPLETED' && data.status !== 'IMPORTING' ? (
+              <ConfirmButton
+                size="sm"
+                variant="outline"
+                className="text-[var(--danger)]"
+                confirmTitle="Delete this collection?"
+                confirmMessage="Delete this collection permanently? This cannot be undone."
+                confirmLabel="Delete"
+                reversible={false}
+                disabled={remove.isPending}
+                onConfirm={() => remove.mutate()}
+              >
+                <Trash2 className="size-3.5" />
+                Delete
+              </ConfirmButton>
+            ) : null}
+          </div>
+        </div>
+
+        {editing ? (
+          <div className="grid gap-3 rounded-[12px] border border-[var(--line)] bg-[var(--bg-desk)] p-4">
+            <Field>
+              <Label htmlFor="edit-name">Title</Label>
+              <Input
+                id="edit-name"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+              />
+            </Field>
+            <Field>
+              <Label htmlFor="edit-category">Category</Label>
+              <div className="flex gap-2">
+                <Select
+                  id="edit-category"
+                  className="min-w-0 flex-1"
+                  value={subjectHint}
+                  onChange={(e) => {
+                    setSubjectHint(e.target.value);
+                    setTopicHint('');
+                  }}
+                >
+                  <option value="">Select category…</option>
+                  {(categories.data ?? []).map((c) => (
+                    <option key={c.id} value={c.name}>
+                      {c.name}
+                    </option>
+                  ))}
+                </Select>
+                <QuickCreateCategoryButton
+                  onCreated={(created) => {
+                    setSubjectHint(created.name);
+                    setTopicHint('');
+                  }}
+                />
+              </div>
+            </Field>
+            <Field>
+              <Label htmlFor="edit-subcategory">Subcategory (Optional)</Label>
+              <div className="flex gap-2">
+                <Select
+                  id="edit-subcategory"
+                  className="min-w-0 flex-1"
+                  value={topicHint}
+                  onChange={(e) => setTopicHint(e.target.value)}
+                  disabled={!selectedCategory}
+                >
+                  <option value="">
+                    {selectedCategory
+                      ? selectedCategory.children.length
+                        ? 'None'
+                        : 'No subcategories'
+                      : 'Select a category first…'}
+                  </option>
+                  {(selectedCategory?.children ?? []).map((t) => (
+                    <option key={t.id} value={t.name}>
+                      {t.name}
+                    </option>
+                  ))}
+                </Select>
+                <QuickCreateSubcategoryButton
+                  parentId={selectedCategory?.id ?? null}
+                  parentName={selectedCategory?.name}
+                  onCreated={(created) => {
+                    setTopicHint(created.name);
+                  }}
+                />
+              </div>
+            </Field>
+            <div>
+              <Button
+                type="button"
+                className="cursor-pointer"
+                disabled={saveMeta.isPending || !displayName.trim() || !subjectHint.trim()}
+                onClick={() => saveMeta.mutate()}
+              >
+                {saveMeta.isPending ? 'Saving…' : 'Save changes'}
+              </Button>
+              {saveMeta.isError ? (
+                <p className="mt-2 text-sm font-medium text-[var(--danger-fg)]">
+                  {saveMeta.error instanceof ApiError
+                    ? saveMeta.error.message
+                    : 'Could not save'}
+                </p>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+
+        {canImport ? (
+          <div className="rounded-[14px] border border-[var(--info)]/30 bg-[var(--info-soft)] p-4">
+            <h3 className="font-display text-base font-bold text-[var(--info-fg)]">
+              Import questions
+            </h3>
+            <p className="mt-1 text-sm leading-relaxed text-[var(--ink-soft)]">
+              Import {data.validCount} valid question{data.validCount === 1 ? '' : 's'}. Duplicate
+              stems, blank question text, and missing answers are allowed (unanswered rows import as
+              draft). Only genuinely invalid rows are skipped — they never stop the rest of the batch.
+            </p>
+            {importProgress != null ? (
+              <div className="mt-3">
+                <div className="mb-1 flex justify-between text-sm font-medium text-[var(--ink-soft)]">
+                  <span>Importing…</span>
+                  <span className="tabular-nums">{importProgress}%</span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-white/80">
+                  <div
+                    className="h-full rounded-full bg-[var(--highlight)] transition-all"
+                    style={{ width: `${importProgress}%` }}
+                  />
+                </div>
+              </div>
+            ) : null}
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button
+                type="button"
+                className="cursor-pointer"
+                disabled={confirm.isPending || data.validCount < 1}
+                onClick={() => confirm.mutate()}
+              >
+                {confirm.isPending ? 'Importing…' : 'Confirm import'}
+              </Button>
+            </div>
+            {confirm.isError ? (
+              <Alert variant="danger" className="mt-3">
+                {confirm.error instanceof ApiError ? confirm.error.message : 'Import failed'}
+              </Alert>
+            ) : null}
+            {confirm.isSuccess ? (
+              <Alert variant="success" className="mt-3">
+                Import finished. {confirm.data.importedCount} question
+                {confirm.data.importedCount === 1 ? '' : 's'} added to the bank.
+              </Alert>
+            ) : null}
+          </div>
+        ) : null}
+      </Surface>
+
+      <Surface className="space-y-4 p-4 sm:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="font-display text-base font-bold">Question preview</h2>
+            <p className="text-sm text-[var(--muted-strong)]">
+              Row-level validation with options. Missing answers are allowed — unanswered rows stay
+              Valid and import as draft. Only unparseable non-empty answers or missing options are
+              Invalid.
+            </p>
+          </div>
+          <Select
+            className="h-9 w-auto min-w-[10rem]"
+            value={rowStatus}
+            onChange={(e) => setRowStatus(e.target.value)}
+          >
+            <option value="">All rows</option>
+            <option value="VALID">Valid</option>
+            <option value="DUPLICATE">Duplicate</option>
+            <option value="INVALID">Invalid</option>
+            <option value="IMPORTED">Imported</option>
+            <option value="SKIPPED">Skipped</option>
+          </Select>
+        </div>
+
+        {rows.isLoading ? <AdminBulkPreviewTableSkeleton rows={4} /> : null}
+
+        {!rows.isLoading && rowItems.length === 0 ? (
+          <EmptyState title="No rows" description="No rows match this filter." />
+        ) : null}
+
+        <div className="min-w-0 w-full max-w-full overflow-x-auto rounded-[12px] border border-[var(--line)]">
+          <table className="min-w-[960px] w-full text-left text-sm">
+            <thead className="bg-[var(--bg-desk)] text-xs font-semibold tracking-wide text-[var(--muted-strong)] uppercase">
+              <tr>
+                <th className="px-3 py-3">Row</th>
+                <th className="px-3 py-3">Question</th>
+                <th className="px-3 py-3">Date</th>
+                <th className="px-3 py-3">Marks</th>
+                <th className="px-3 py-3">Model answer</th>
+                <th className="px-3 py-3">Subject</th>
+                <th className="px-3 py-3">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rowItems.map((row) => (
+                <tr
+                  key={row.id}
+                  className={cn(
+                    'border-t border-[var(--line)] align-top',
+                    row.status === 'DUPLICATE' || row.status === 'SKIPPED'
+                      ? 'bg-[var(--warning)]/5'
+                      : row.status === 'INVALID'
+                        ? 'bg-[var(--danger-soft)]/40'
+                        : 'bg-[var(--bg-elevated)]',
+                  )}
+                >
+                  <td className="px-3 py-3 tabular-nums text-sm font-medium text-[var(--muted-strong)]">
+                    {row.rowNumber}
+                  </td>
+                  <td className="px-3 py-3">
+                    <p className="line-clamp-4 max-w-md text-sm leading-relaxed font-medium text-[var(--ink)]">
+                      {row.questionText}
+                    </p>
+                    {row.errorMessage ? (
+                      <p className="mt-1 text-sm font-medium text-[var(--danger-fg)]">
+                        {row.errorMessage}
+                      </p>
+                    ) : null}
+                  </td>
+                  <td className="px-3 py-3">
+                    {data.status === 'VALIDATED' || data.status === 'FAILED' ? (
+                      <Input
+                        type="date"
+                        className="h-9 w-[9.5rem]"
+                        defaultValue={
+                          row.questionDate
+                            ? row.questionDate.slice(0, 10)
+                            : ''
+                        }
+                        onBlur={(e) => {
+                          const next = e.target.value;
+                          const prev = row.questionDate?.slice(0, 10) ?? '';
+                          if (next === prev) return;
+                          void apiFetch(`/admin/written-question-imports/${id}/rows/${row.id}`, {
+                            method: 'PATCH',
+                            body: JSON.stringify({ questionDate: next || null }),
+                          }).then(() => {
+                            void qc.invalidateQueries({
+                              queryKey: ['admin-written-question-import-rows', id],
+                            });
+                          });
+                        }}
+                        aria-label={`Question date for row ${row.rowNumber}`}
+                      />
+                    ) : (
+                      <span className="tabular-nums text-sm text-[var(--ink-soft)]">
+                        {row.questionDate ? row.questionDate.slice(0, 10) : '—'}
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-3 py-3 text-sm font-semibold tabular-nums text-[var(--ink)]">
+                    {row.marks != null && row.marks !== '' ? String(row.marks) : '—'}
+                  </td>
+                  <td className="px-3 py-3 text-sm leading-relaxed text-[var(--ink)]">
+                    <p className="line-clamp-4 max-w-md whitespace-pre-wrap">
+                      {row.modelAnswer?.trim() ? row.modelAnswer : '—'}
+                    </p>
+                  </td>
+                  <td className="px-3 py-3 text-sm text-[var(--ink-soft)]">
+                    <p className="font-medium">{row.subjectName ?? '—'}</p>
+                    <p className="text-sm text-[var(--muted-strong)]">{row.topicName ?? '—'}</p>
+                  </td>
+                  <td className="px-3 py-3">
+                    <Badge variant={statusTone(row.status)}>{row.status}</Badge>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {rows.hasNextPage ? (
+          <Button
+            type="button"
+            variant="outline"
+            className="cursor-pointer"
+            disabled={rows.isFetchingNextPage}
+            onClick={() => void rows.fetchNextPage()}
+          >
+            {rows.isFetchingNextPage ? 'Loading…' : 'Load more rows'}
+          </Button>
+        ) : null}
+      </Surface>
+
+      <Link href="/admin/written-question-imports" className="text-sm font-semibold text-[var(--highlight)]">
+        ← All collections
+      </Link>
+    </AdminPage>
+  );
+}
+
+export default function QuestionImportDetailPage() {
+  return (
+    <Suspense
+      fallback={<AdminBulkUploadDetailPageSkeleton />}
+    >
+      <QuestionImportDetailContent />
+    </Suspense>
+  );
+}

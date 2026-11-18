@@ -138,6 +138,10 @@ Profile picture: separate upload after auth or multipart field if approved.
 | GET | `/public/question-sets/years` | Distinct exam years for Preli bank year chips | Public | — |
 | GET | `/public/question-sets/:id` | Question Set metadata (`sheetPreamble`, `examYear`, `placements`) | Public | — |
 | GET | `/public/question-sets/:id/questions` | MCQs in a set in original upload `rowNumber` order (`sourceSerial`, `sectionTitle`; no category badge under stem) | Public | — |
+| GET | `/public/written-question-sets` | Written Question Sets (DEC-040); same filters as Preli sets | Public | — |
+| GET | `/public/written-question-sets/years` | Distinct years for Written bank year filter | Public | — |
+| GET | `/public/written-question-sets/:id` | Written set metadata | Public | — |
+| GET | `/public/written-question-sets/:id/questions` | Written questions in upload order (modelAnswer, marks) | Public | — |
 | GET | `/public/homepage` | Published homepage CMS payload + hero image URL (DEC-038; Cache-Control max-age=60) | Public | — |
 | GET | `/admin/homepage` | Draft + published homepage CMS documents | User | ADMIN |
 | PUT | `/admin/homepage/draft` | Replace draft payload (+ optional `heroImageAssetId`); normalizes `layout.sections` + tiles | User | ADMIN |
@@ -224,6 +228,15 @@ Query params for list: `cursor`, `limit`, `categoryId`, `subcategoryId`, `diffic
 | DELETE | `/admin/question-imports/:id` | Delete non-completed batch | User | ADMIN |
 
 Duplicate file (`409 DUPLICATE_FILE`) when the same SHA-256 was already **completed**. Row-level duplicates use `contentHash` = SHA-256 of normalized question text **and** correct-answer content (same stem with a different correct option is not a duplicate).
+
+### 2.5b Written Question Bank imports (DEC-040)
+
+Parallel to Preli bulk upload. Template columns: `প্রশ্ন নং | প্রশ্ন | পরীক্ষার নাম ও সাল | প্রশ্নের তারিখ | নম্বর | মডেল উত্তর`. Accepts `.xlsx` / `.csv` / `.docx` (table).
+
+| Method | Path | Description | Auth | Roles |
+|--------|------|-------------|------|-------|
+| GET | `/admin/written-question-imports/template` | Download written `.xlsx` template | User | ADMIN |
+| GET/POST/PATCH/DELETE | `/admin/written-question-imports…` | Same lifecycle as `/admin/question-imports` (list, upload, rows, confirm, file, report, export, archive, delete) | User | ADMIN |
 
 ---
 

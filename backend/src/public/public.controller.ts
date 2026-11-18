@@ -124,6 +124,68 @@ export class PublicController {
     );
   }
 
+  /** DEC-040 — Written Question Bank years */
+  @Get('written-question-sets/years')
+  async writtenQuestionSetYears() {
+    return createSuccessResponse(
+      await this.publicService.listWrittenQuestionSetYears(),
+      newRequestId(),
+    );
+  }
+
+  @Get('written-question-sets')
+  async writtenQuestionSets(
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit?: string,
+    @Query('q') q?: string,
+    @Query('categoryId') categoryId?: string,
+    @Query('subcategoryId') subcategoryId?: string,
+    @Query('year') year?: string,
+  ) {
+    const take = Math.min(Math.max(Number(limit) || 20, 1), 100);
+    const data = await this.publicService.listWrittenQuestionSets({
+      cursor,
+      limit: take,
+      q,
+      categoryId,
+      subcategoryId,
+      year,
+    });
+    return createSuccessResponse(
+      data.items,
+      newRequestId(),
+      cursorPaginationMeta(data.nextCursor, take, data.total),
+    );
+  }
+
+  @Get('written-question-sets/:id')
+  async writtenQuestionSet(@Param('id') id: string) {
+    return createSuccessResponse(
+      await this.publicService.getWrittenQuestionSet(id),
+      newRequestId(),
+    );
+  }
+
+  @Get('written-question-sets/:id/questions')
+  async writtenQuestionSetQuestions(
+    @Param('id') id: string,
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit?: string,
+    @Query('q') q?: string,
+  ) {
+    const take = Math.min(Math.max(Number(limit) || 20, 1), 100);
+    const data = await this.publicService.listWrittenSetQuestions(id, {
+      cursor,
+      limit: take,
+      q,
+    });
+    return createSuccessResponse(
+      data.items,
+      newRequestId(),
+      cursorPaginationMeta(data.nextCursor, take, data.total),
+    );
+  }
+
   @Get('questions')
   async questions(
     @Query('cursor') cursor?: string,

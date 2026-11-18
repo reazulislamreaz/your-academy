@@ -12,11 +12,26 @@ type Props = {
   onFileChange: (file: File | null) => void;
   disabled?: boolean;
   progress?: number | null;
+  /** Override accepted extensions (defaults to Preli .xlsx/.csv). */
+  accept?: string;
+  acceptHint?: string;
+  dropTitle?: string;
+  dropHint?: string;
 };
 
-const ACCEPT = '.xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv';
+const DEFAULT_ACCEPT =
+  '.xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv';
 
-export function FileDropzone({ file, onFileChange, disabled, progress }: Props) {
+export function FileDropzone({
+  file,
+  onFileChange,
+  disabled,
+  progress,
+  accept = DEFAULT_ACCEPT,
+  acceptHint = 'Only .xlsx and .csv files are supported.',
+  dropTitle = 'Drag & drop your Excel file here',
+  dropHint = 'or click to browse · .xlsx / .csv · up to 15MB',
+}: Props) {
   const inputId = useId();
   const [dragging, setDragging] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
@@ -28,8 +43,12 @@ export function FileDropzone({ file, onFileChange, disabled, progress }: Props) 
       return;
     }
     const lower = next.name.toLowerCase();
-    if (!lower.endsWith('.xlsx') && !lower.endsWith('.csv')) {
-      setLocalError('Only .xlsx and .csv files are supported.');
+    const allowed = accept
+      .split(',')
+      .map((p) => p.trim().toLowerCase())
+      .filter((p) => p.startsWith('.'));
+    if (allowed.length && !allowed.some((ext) => lower.endsWith(ext))) {
+      setLocalError(acceptHint);
       return;
     }
     if (next.size > 15 * 1024 * 1024) {
@@ -38,7 +57,7 @@ export function FileDropzone({ file, onFileChange, disabled, progress }: Props) 
     }
     setLocalError(null);
     onFileChange(next);
-  }, [onFileChange]);
+  }, [accept, acceptHint, onFileChange]);
 
   return (
     <div className="space-y-3">
@@ -72,18 +91,14 @@ export function FileDropzone({ file, onFileChange, disabled, progress }: Props) 
           <UploadCloud className="size-5 text-[var(--highlight)]" aria-hidden />
         </span>
         <div>
-          <p className="text-sm font-semibold text-[var(--ink)]">
-            Drag & drop your Excel file here
-          </p>
-          <p className="mt-1 text-sm text-[var(--muted-strong)]">
-            or click to browse · .xlsx / .csv · up to 15MB
-          </p>
+          <p className="text-sm font-semibold text-[var(--ink)]">{dropTitle}</p>
+          <p className="mt-1 text-sm text-[var(--muted-strong)]">{dropHint}</p>
         </div>
         <input
           id={inputId}
           type="file"
           className="sr-only"
-          accept={ACCEPT}
+          accept={accept}
           disabled={disabled}
           onChange={(e) => validate(e.target.files?.[0] ?? null)}
         />

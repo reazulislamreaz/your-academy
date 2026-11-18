@@ -64,6 +64,24 @@ export type PublicQuestionSet = {
   }>;
 };
 
+/** DEC-040 — public Written Question Bank card (descriptive / model answer). */
+export type PublicWrittenQuestionCard = {
+  id: string;
+  title: string;
+  content: string;
+  modelAnswer: string | null;
+  marks: string | null;
+  sourceSerial: string | null;
+  examYear: string | null;
+  sectionTitle: string | null;
+  category: { id: string; name: string; slug: string };
+  subcategory: { id: string; name: string; slug: string } | null;
+  createdAt: string;
+  publishedAt: string | null;
+  uploadBatchId: string | null;
+  rowNumber: number | null;
+};
+
 @Injectable()
 export class PublicService {
   constructor(private readonly prisma: PrismaService) {}
@@ -689,4 +707,346 @@ export class PublicService {
     };
   }
 
+  // ─── Written Question Bank (DEC-040) ─────────────────────────────────────
+
+  async listWrittenQuestionSetYears(): Promise<string[]> {
+    const [datedQuestions, batchYears, questionYears] = await Promise.all([
+      this.prisma.writtenQuestion.findMany({
+        where: {
+          status: QuestionStatus.PUBLISHED,
+          deletedAt: null,
+          uploadBatchId: { not: null },
+          questionDate: { not: null },
+        },
+        distinct: ['questionDate'],
+        select: { questionDate: true },
+      }),
+      this.prisma.writtenUploadBatch.findMany({
+        where: {
+          status: { in: [QuestionUploadStatus.COMPLETED, QuestionUploadStatus.ARCHIVED] },
+          examYear: { not: null },
+          questions: { some: { status: QuestionStatus.PUBLISHED, deletedAt: null } },
+        },
+        distinct: ['examYear'],
+        select: { examYear: true },
+      }),
+      this.prisma.writtenQuestion.findMany({
+        where: {
+          status: QuestionStatus.PUBLISHED,
+          deletedAt: null,
+          examYear: { not: null },
+          uploadBatchId: { not: null },
+        },
+        distinct: ['examYear'],
+        select: { examYear: true },
+      }),
+    ]);
+    const years = new Set<string>();
+    for (const row of datedQuestions) {
+      if (row.questionDate) years.add(String(row.questionDate.getUTCFullYear()));
+    }
+    for (const row of [...batchYears, ...questionYears]) {
+      const normalized = normalizeExamYear(row.examYear);
+      if (normalized) years.add(normalized);
+    }
+    return [...years].sort((a, b) => Number(b) - Number(a) || b.localeCompare(a));
+  }
+
+  async listWrittenQuestionSets(params: {
+    cursor?: string;
+    limit?: number;
+    q?: string;
+    categoryId?: string;
+    subcategoryId?: string;
+    year?: string;
+  }) {
+    const limit = Math.min(Math.max(params.limit ?? 20, 1), 100);
+    const q = params.q?.trim();
+    const categoryId = params.categoryId?.trim() || undefined;
+    const subcategoryId = params.subcategoryId?.trim() || undefined;
+    const year = params.year?.trim() || undefined;
+
+    const liveQuestion: Prisma.WrittenQuestionWhereInput = {
+      status: QuestionStatus.PUBLISHED,
+      deletedAt: null,
+    };
+
+    const yearStart = year ? new Date(Date.UTC(Number(year), 0, 1)) : null;
+    const yearEnd = year ? new Date(Date.UTC(Number(year) + 1, 0, 1)) : null;
+    const yearMatch: Prisma.WrittenUploadBatchWhereInput | undefined = year
+      ? {
+          OR: [
+            {
+              questionDate: { gte: yearStart!, lt: yearEnd! },
+              questions: { some: liveQuestion },
+            },
+            { examYear: year, questions: { some: liveQuestion } },
+            { examYear: { startsWith: year }, questions: { some: liveQuestion } },
+            {
+              questions: {
+                some: {
+                  ...liveQuestion,
+                  questionDate: { gte: yearStart!, lt: yearEnd! },
+                },
+              },
+            },
+            { questions: { some: { ...liveQuestion, examYear: year } } },
+            { questions: { some: { ...liveQuestion, examYear: { startsWith: year } } } },
+          ],
+        }
+      : { questions: { some: liveQuestion } };
+
+    const placementMatch: Prisma.WrittenUploadBatchWhereInput | undefined = subcategoryId
+      ? {
+          OR: [
+            { placements: { some: { subcategoryId } } },
+            { questions: { some: { ...liveQuestion, subcategoryId } } },
+          ],
+        }
+      : categoryId
+        ? {
+            OR: [
+              { questions: { some: { ...liveQuestion, categoryId } } },
+              { placements: { some: { categoryId } } },
+            ],
+          }
+        : undefined;
+
+    const where: Prisma.WrittenUploadBatchWhereInput = {
+      status: { in: [QuestionUploadStatus.COMPLETED, QuestionUploadStatus.ARCHIVED] },
+      AND: [
+        yearMatch,
+        ...(placementMatch ? [placementMatch] : []),
+        ...(q
+          ? ([
+              {
+                OR: [
+                  { displayName: { contains: q, mode: 'insensitive' as const } },
+                  { batchCode: { contains: q, mode: 'insensitive' as const } },
+                  { examCategoryHint: { contains: q, mode: 'insensitive' as const } },
+                  { subjectHint: { contains: q, mode: 'insensitive' as const } },
+                  { topicHint: { contains: q, mode: 'insensitive' as const } },
+                  { sheetPreamble: { contains: q, mode: 'insensitive' as const } },
+                ],
+              },
+            ] satisfies Prisma.WrittenUploadBatchWhereInput[])
+          : []),
+      ],
+    };
+
+    const batches = await this.prisma.writtenUploadBatch.findMany({
+      where,
+      take: limit + 1,
+      ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {}),
+      orderBy: [
+        { questionDate: { sort: 'desc', nulls: 'last' } },
+        { createdAt: 'desc' },
+        { id: 'desc' },
+      ],
+      select: {
+        id: true,
+        batchCode: true,
+        displayName: true,
+        description: true,
+        subjectHint: true,
+        topicHint: true,
+        examCategoryHint: true,
+        examYear: true,
+        questionDate: true,
+        sheetPreamble: true,
+        createdAt: true,
+        importedAt: true,
+        placements: {
+          orderBy: { sortOrder: 'asc' },
+          select: {
+            categoryId: true,
+            subcategoryId: true,
+            category: { select: { name: true } },
+            subcategory: { select: { name: true } },
+          },
+        },
+        _count: {
+          select: {
+            questions: {
+              where: year
+                ? {
+                    ...liveQuestion,
+                    OR: [{ examYear: year }, { examYear: { startsWith: year } }],
+                  }
+                : liveQuestion,
+            },
+          },
+        },
+      },
+    });
+
+    const nextCursor = batches.length > limit ? batches.pop()!.id : null;
+    const items = batches.map((b) => this.mapSet(b));
+    const total = await this.prisma.writtenUploadBatch.count({ where });
+    return { items, nextCursor, total };
+  }
+
+  async getWrittenQuestionSet(id: string): Promise<PublicQuestionSet> {
+    const batch = await this.prisma.writtenUploadBatch.findFirst({
+      where: {
+        id,
+        status: { in: [QuestionUploadStatus.COMPLETED, QuestionUploadStatus.ARCHIVED] },
+        questions: { some: { status: QuestionStatus.PUBLISHED, deletedAt: null } },
+      },
+      select: {
+        id: true,
+        batchCode: true,
+        displayName: true,
+        description: true,
+        subjectHint: true,
+        topicHint: true,
+        examCategoryHint: true,
+        examYear: true,
+        sheetPreamble: true,
+        createdAt: true,
+        importedAt: true,
+        placements: {
+          orderBy: { sortOrder: 'asc' },
+          select: {
+            categoryId: true,
+            subcategoryId: true,
+            category: { select: { name: true } },
+            subcategory: { select: { name: true } },
+          },
+        },
+        _count: {
+          select: {
+            questions: {
+              where: { status: QuestionStatus.PUBLISHED, deletedAt: null },
+            },
+          },
+        },
+      },
+    });
+    if (!batch) {
+      throw new NotFoundException(
+        createErrorResponse(
+          'WRITTEN_QUESTION_SET_NOT_FOUND',
+          'Written question set not found',
+          newRequestId(),
+        ),
+      );
+    }
+    return this.mapSet(batch);
+  }
+
+  async listWrittenSetQuestions(
+    batchId: string,
+    params: { cursor?: string; limit?: number; q?: string },
+  ) {
+    await this.getWrittenQuestionSet(batchId);
+    const limit = Math.min(Math.max(params.limit ?? 20, 1), 100);
+    const q = params.q?.trim();
+
+    const rows = await this.prisma.writtenImportRow.findMany({
+      where: {
+        batchId,
+        createdQuestionId: { not: null },
+        createdQuestion: {
+          status: QuestionStatus.PUBLISHED,
+          deletedAt: null,
+          ...(q
+            ? {
+                OR: [
+                  { title: { contains: q, mode: 'insensitive' } },
+                  { content: { contains: q, mode: 'insensitive' } },
+                  { modelAnswer: { contains: q, mode: 'insensitive' } },
+                  { sourceNote: { contains: q, mode: 'insensitive' } },
+                ],
+              }
+            : {}),
+        },
+      },
+      orderBy: [{ rowNumber: 'asc' }],
+      select: { rowNumber: true, createdQuestionId: true },
+    });
+
+    const orderedIds = rows
+      .map((r) => r.createdQuestionId)
+      .filter((id): id is string => Boolean(id));
+
+    const orphaned = await this.prisma.writtenQuestion.findMany({
+      where: {
+        uploadBatchId: batchId,
+        status: QuestionStatus.PUBLISHED,
+        deletedAt: null,
+        id: { notIn: orderedIds.length ? orderedIds : ['00000000-0000-0000-0000-000000000000'] },
+        ...(q
+          ? {
+              OR: [
+                { title: { contains: q, mode: 'insensitive' } },
+                { content: { contains: q, mode: 'insensitive' } },
+                { modelAnswer: { contains: q, mode: 'insensitive' } },
+              ],
+            }
+          : {}),
+      },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      select: { id: true },
+    });
+
+    const allIds = [...orderedIds, ...orphaned.map((o) => o.id)];
+    const total = allIds.length;
+    let start = 0;
+    if (params.cursor) {
+      const idx = allIds.indexOf(params.cursor);
+      start = idx >= 0 ? idx + 1 : 0;
+    }
+    const pageIds = allIds.slice(start, start + limit);
+    const nextCursor =
+      start + limit < allIds.length ? pageIds[pageIds.length - 1] ?? null : null;
+
+    if (!pageIds.length) {
+      return { items: [] as PublicWrittenQuestionCard[], nextCursor: null, total };
+    }
+
+    const questions = await this.prisma.writtenQuestion.findMany({
+      where: { id: { in: pageIds } },
+      select: {
+        id: true,
+        title: true,
+        content: true,
+        modelAnswer: true,
+        marks: true,
+        sourceSerial: true,
+        examYear: true,
+        sectionTitle: true,
+        createdAt: true,
+        publishedAt: true,
+        uploadBatchId: true,
+        category: { select: { id: true, name: true, slug: true } },
+        subcategory: { select: { id: true, name: true, slug: true } },
+      },
+    });
+
+    const byId = new Map(questions.map((item) => [item.id, item]));
+    const rowNumberById = new Map(rows.map((r) => [r.createdQuestionId!, r.rowNumber]));
+
+    const items: PublicWrittenQuestionCard[] = pageIds
+      .map((id) => byId.get(id))
+      .filter((item): item is NonNullable<typeof item> => Boolean(item))
+      .map((item) => ({
+        id: item.id,
+        title: item.title,
+        content: item.content,
+        modelAnswer: item.modelAnswer,
+        marks: item.marks != null ? String(item.marks) : null,
+        sourceSerial: item.sourceSerial,
+        examYear: item.examYear,
+        sectionTitle: item.sectionTitle,
+        category: item.category,
+        subcategory: item.subcategory,
+        createdAt: item.createdAt.toISOString(),
+        publishedAt: item.publishedAt?.toISOString() ?? null,
+        uploadBatchId: item.uploadBatchId,
+        rowNumber: rowNumberById.get(item.id) ?? null,
+      }));
+
+    return { items, nextCursor, total };
+  }
 }

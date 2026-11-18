@@ -10,6 +10,7 @@ import {
   LayoutGrid,
   MessageCircle,
   Newspaper,
+  PenLine,
   ScrollText,
   Shapes,
   Users,
@@ -37,6 +38,12 @@ export const adminNavItems: AdminNavItem[] = [
   { href: '/admin/audit', label: 'Audit', icon: ScrollText },
   { href: '/admin/questions', label: 'Questions', icon: FileQuestion },
   { href: '/admin/question-imports', label: 'Bulk upload', shortLabel: 'Bulk', icon: FileSpreadsheet },
+  {
+    href: '/admin/written-question-imports',
+    label: 'Written Question Bank',
+    shortLabel: 'Written',
+    icon: PenLine,
+  },
   { href: '/admin/practice-sets', label: 'Practice sets', shortLabel: 'Practice', icon: ClipboardList },
   { href: '/admin/exams/upload', label: 'Guest exams', shortLabel: 'Exams', icon: ClipboardList },
   { href: '/admin/practice-attempts', label: 'Exam results', shortLabel: 'Results', icon: Activity },
@@ -74,6 +81,7 @@ export const adminNavGroups: AdminNavGroup[] = [
       [
         '/admin/questions',
         '/admin/question-imports',
+        '/admin/written-question-imports',
         '/admin/practice-sets',
         '/admin/exams/upload',
         '/admin/practice-attempts',

@@ -20,6 +20,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | DEC-003 | Question bank requires authentication | SUPERSEDED by DEC-031 for public bank |
 | DEC-018 | Published news publicly readable (marketing `/news`) | SUPERSEDED in part by DEC-032 |
 | DEC-031 | Public Preli Question Bank (no login) | CONFIRMED |
+| DEC-040 | Public Written Question Bank (parallel domain + admin upload) | CONFIRMED |
 | DEC-032 | Admin PUBLIC documents on পত্রিকার গুরুত্বপূর্ণ কলাম | CONFIRMED |
 | DEC-033 | In-app PDF viewer; no download UI; API byte proxy | CONFIRMED |
 | DEC-034 | Excel serial/preamble/sections + multi-subcategory placements + year chips | CONFIRMED |
@@ -77,6 +78,15 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Decision | **Yes.** Public bank is organized by admin **upload batches** (`QuestionUploadBatch` → Question Set). `GET /api/v1/public/question-sets` lists sets; `…/question-sets/:id/questions` returns MCQs in original upload order. Cards include correct-answer data for UI toggles; **Show All / Hide All Answers** is a client preference (`localStorage`) with per-question reveal when hidden. Homepage lists latest sets; `/preli-question-bank` is the hub. Save still requires login. |
 | Impact | PublicModule batch APIs, marketing Question Set UI + answer visibility controls, DEC-003 exception for public surfaces only |
 | Status | **CONFIRMED** (product request 2026-11-12; grouping + answer toggles same day) |
+
+### DEC-040 — Public Written Question Bank
+
+| Field | Value |
+|-------|-------|
+| Question | Should written / descriptive questions get a dedicated public bank + admin bulk upload mirroring Preli (DEC-031/034), with model answers instead of MCQ options? |
+| Decision | **Yes.** Parallel Prisma domain (`WrittenQuestion`, `WrittenUploadBatch`, placements, import rows) — do not overload MCQ `Question` tables. Admin Excel/CSV (+ best-effort `.docx` table) upload under `/admin/written-question-imports`. Public `GET /api/v1/public/written-question-sets*` mirrors Preli set filters (q / subcategory / year). Marketing hub `/written-question-bank` with show/hide model answers (`localStorage` key `ya-written-show-all-answers`). Publish when model answer present; blank answer → DRAFT. Max 8 subcategory placements. Learner MCQ answer privacy unchanged. |
+| Impact | WrittenImportModule, PublicModule written-set APIs, admin Written nav, marketing written bank UI, migration `20261118190000_written_question_bank` |
+| Status | **CONFIRMED** (product request 2026-11-18) |
 
 ### DEC-034 — Excel serial, sheet preamble/sections, multi-placement, year filter
 

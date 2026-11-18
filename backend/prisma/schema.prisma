@@ -177,6 +177,7 @@ model User {
   uploadedAssets      MediaAsset[]        @relation("UploadedBy")
   authSessions        AuthSession[]
   createdQuestions    Question[]          @relation("QuestionCreator")
+  createdWrittenQuestions WrittenQuestion[] @relation("WrittenQuestionCreator")
   lastQuestion        Question?           @relation("UserLastQuestion", fields: [lastQuestionId], references: [id], onDelete: SetNull)
   questionBookmarks   QuestionBookmark[]
   documentBookmarks   DocumentBookmark[]
@@ -186,6 +187,7 @@ model User {
   createdPracticeSets PracticeSet[]       @relation("PracticeSetCreator")
   createdExams        Exam[]              @relation("ExamCreator")
   questionUploadBatches QuestionUploadBatch[]
+  writtenUploadBatches  WrittenUploadBatch[]
   browsingSessions    BrowsingSession[]
   subscriptions       UserSubscription[]
   createdNews         News[]              @relation("NewsCreator")
@@ -256,12 +258,16 @@ model Category {
   children         Category[]     @relation("CategoryTree")
   questions        Question[]     @relation("QuestionCategory")
   subQuestions     Question[]     @relation("QuestionSubcategory")
+  writtenQuestions WrittenQuestion[] @relation("WrittenQuestionCategory")
+  writtenSubQuestions WrittenQuestion[] @relation("WrittenQuestionSubcategory")
   documents        Document[]
   attempts         QuestionAttempt[]
   practiceSets     PracticeSet[]  @relation("PracticeSetCategory")
   practiceSetTopics PracticeSet[] @relation("PracticeSetSubcategory")
   batchPlacementsAsCategory    QuestionUploadBatchPlacement[] @relation("BatchPlacementCategory")
   batchPlacementsAsSubcategory QuestionUploadBatchPlacement[] @relation("BatchPlacementSubcategory")
+  writtenBatchPlacementsAsCategory    WrittenUploadBatchPlacement[] @relation("WrittenBatchPlacementCategory")
+  writtenBatchPlacementsAsSubcategory WrittenUploadBatchPlacement[] @relation("WrittenBatchPlacementSubcategory")
 
   @@index([parentId])
   @@index([isActive])
@@ -1020,4 +1026,140 @@ model SupportInternalNote {
   @@index([conversationId, createdAt(sort: Desc)])
   @@index([authorAdminId])
   @@map("support_internal_notes")
+}
+
+/// DEC-040 — Written Question Bank (descriptive / model-answer questions; parallel to Preli MCQ bank).
+model WrittenQuestion {
+  id             String         @id @default(uuid()) @db.Uuid
+  title          String         @db.VarChar(200)
+  content        String
+  modelAnswer    String?        @map("model_answer")
+  marks          Decimal?       @map("marks") @db.Decimal(6, 2)
+  categoryId     String         @map("category_id") @db.Uuid
+  subcategoryId  String?        @map("subcategory_id") @db.Uuid
+  status         QuestionStatus @default(DRAFT)
+  examTags       String[]       @default([]) @map("exam_tags")
+  sourceNote     String?        @map("source_note") @db.VarChar(240)
+  sourceSerial   String?        @map("source_serial") @db.VarChar(32)
+  examYear       String?        @map("exam_year") @db.VarChar(16)
+  questionDate   DateTime?      @map("question_date") @db.Timestamptz(3)
+  sectionTitle   String?        @map("section_title") @db.VarChar(500)
+  contentHash    String?        @map("content_hash") @db.VarChar(64)
+  uploadBatchId  String?        @map("upload_batch_id") @db.Uuid
+  createdById    String?        @map("created_by_id") @db.Uuid
+  publishedAt    DateTime?      @map("published_at") @db.Timestamptz(3)
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt      DateTime?      @map("deleted_at") @db.Timestamptz(3)
+
+  category    Category            @relation("WrittenQuestionCategory", fields: [categoryId], references: [id], onDelete: Restrict)
+  subcategory Category?           @relation("WrittenQuestionSubcategory", fields: [subcategoryId], references: [id], onDelete: SetNull)
+  createdBy   User?               @relation("WrittenQuestionCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  uploadBatch WrittenUploadBatch? @relation(fields: [uploadBatchId], references: [id], onDelete: SetNull)
+  importRows  WrittenImportRow[]  @relation("ImportRowCreatedWrittenQuestion")
+
+  @@index([status, publishedAt(sort: Desc), id(sort: Desc)])
+  @@index([status, createdAt(sort: Desc), id(sort: Desc)])
+  @@index([categoryId, status])
+  @@index([subcategoryId, status])
+  @@index([examYear, status])
+  @@index([status, questionDate(sort: Desc), id(sort: Desc)])
+  @@index([questionDate(sort: Desc), status])
+  @@index([examTags], type: Gin)
+  @@index([contentHash])
+  @@index([uploadBatchId])
+  @@map("written_questions")
+}
+
+model WrittenUploadBatch {
+  id                   String               @id @default(uuid()) @db.Uuid
+  batchCode            String               @unique @map("batch_code") @db.VarChar(80)
+  displayName          String               @map("display_name") @db.VarChar(200)
+  description          String?
+  originalFilename     String               @map("original_filename") @db.VarChar(255)
+  mimeType             String               @map("mime_type") @db.VarChar(127)
+  fileSha256           String               @map("file_sha256") @db.VarChar(64)
+  storagePath          String               @map("storage_path") @db.VarChar(500)
+  status               QuestionUploadStatus @default(VALIDATED)
+  totalRows            Int                  @default(0) @map("total_rows")
+  validCount           Int                  @default(0) @map("valid_count")
+  invalidCount         Int                  @default(0) @map("invalid_count")
+  duplicateCount       Int                  @default(0) @map("duplicate_count")
+  importedCount        Int                  @default(0) @map("imported_count")
+  skippedCount         Int                  @default(0) @map("skipped_count")
+  failedCount          Int                  @default(0) @map("failed_count")
+  subjectHint          String?              @map("subject_hint") @db.VarChar(120)
+  topicHint            String?              @map("topic_hint") @db.VarChar(120)
+  examCategoryHint     String?              @map("exam_category_hint") @db.VarChar(120)
+  sheetPreamble        String?              @map("sheet_preamble")
+  examYear             String?              @map("exam_year") @db.VarChar(16)
+  questionDate         DateTime?            @map("question_date") @db.Timestamptz(3)
+  duplicateFileBatchId String?              @map("duplicate_file_batch_id") @db.Uuid
+  errorMessage         String?              @map("error_message")
+  uploadedById         String               @map("uploaded_by_id") @db.Uuid
+  importedAt           DateTime?            @map("imported_at") @db.Timestamptz(3)
+  archivedAt           DateTime?            @map("archived_at") @db.Timestamptz(3)
+  createdAt            DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  uploadedBy User                          @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+  rows       WrittenImportRow[]
+  questions  WrittenQuestion[]
+  placements WrittenUploadBatchPlacement[]
+
+  @@index([status, createdAt(sort: Desc)])
+  @@index([status, questionDate(sort: Desc), id(sort: Desc)])
+  @@index([fileSha256])
+  @@index([uploadedById, createdAt(sort: Desc)])
+  @@index([examYear])
+  @@map("written_upload_batches")
+}
+
+model WrittenUploadBatchPlacement {
+  id            String   @id @default(uuid()) @db.Uuid
+  batchId       String   @map("batch_id") @db.Uuid
+  categoryId    String   @map("category_id") @db.Uuid
+  subcategoryId String   @map("subcategory_id") @db.Uuid
+  sortOrder     Int      @default(0) @map("sort_order")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  batch       WrittenUploadBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  category    Category           @relation("WrittenBatchPlacementCategory", fields: [categoryId], references: [id], onDelete: Cascade)
+  subcategory Category           @relation("WrittenBatchPlacementSubcategory", fields: [subcategoryId], references: [id], onDelete: Cascade)
+
+  @@unique([batchId, subcategoryId])
+  @@index([subcategoryId, batchId])
+  @@index([categoryId, batchId])
+  @@map("written_upload_batch_placements")
+}
+
+model WrittenImportRow {
+  id                 String                  @id @default(uuid()) @db.Uuid
+  batchId            String                  @map("batch_id") @db.Uuid
+  rowNumber          Int                     @map("row_number")
+  status             QuestionImportRowStatus
+  contentHash        String?                 @map("content_hash") @db.VarChar(64)
+  serial             String?                 @db.VarChar(32)
+  questionText       String                  @map("question_text")
+  modelAnswer        String?                 @map("model_answer")
+  marks              Decimal?                @db.Decimal(6, 2)
+  subjectName        String?                 @map("subject_name") @db.VarChar(120)
+  topicName          String?                 @map("topic_name") @db.VarChar(120)
+  examCategory       String?                 @map("exam_category") @db.VarChar(120)
+  examYear           String?                 @map("exam_year") @db.VarChar(32)
+  questionDate       DateTime?               @map("question_date") @db.Timestamptz(3)
+  source             String?                 @db.VarChar(240)
+  sectionTitle       String?                 @map("section_title") @db.VarChar(500)
+  errorMessage       String?                 @map("error_message") @db.VarChar(500)
+  existingQuestionId String?                 @map("existing_question_id") @db.Uuid
+  createdQuestionId  String?                 @map("created_question_id") @db.Uuid
+  createdAt          DateTime                @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  batch           WrittenUploadBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  createdQuestion WrittenQuestion?   @relation("ImportRowCreatedWrittenQuestion", fields: [createdQuestionId], references: [id], onDelete: SetNull)
+
+  @@unique([batchId, rowNumber])
+  @@index([batchId, status])
+  @@index([contentHash])
+  @@map("written_import_rows")
 }

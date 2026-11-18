@@ -44,6 +44,9 @@ export type ImportRow = {
   optionC?: string | null;
   optionD?: string | null;
   correctAnswer?: string | null;
+  /** Written bank (DEC-040). */
+  modelAnswer?: string | null;
+  marks?: string | number | null;
   difficulty?: string | null;
   subjectName?: string | null;
   topicName?: string | null;
