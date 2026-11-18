@@ -1314,6 +1314,19 @@ input:disabled {
     linear-gradient(165deg, #001a44 0%, var(--bg-inverse) 48%, #001638 100%);
 }
 
+/* Guest exam taking UI — mobile-safe chrome */
+.guest-exam-player {
+  padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 0px));
+}
+
+.guest-exam-palette {
+  max-width: 100%;
+}
+
+.guest-exam-submit {
+  animation: ya-fade-in 220ms var(--ease-out) both;
+}
+
 /* Guest exam result conversion card (DEC-039) */
 .guest-exam-cta {
   background:

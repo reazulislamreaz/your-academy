@@ -57,7 +57,7 @@ function cellText(value: ExcelJS.CellValue | undefined): string {
 
 function normalizeHeader(raw: string): string | null {
   const key = raw.normalize('NFC').trim().toLowerCase().replace(/\s+/g, ' ');
-  return HEADER_ALIASES[key.replace(/[_\-]/g, '')] ?? HEADER_ALIASES[key] ?? null;
+  return HEADER_ALIASES[key.replace(/[_-]/g, '')] ?? HEADER_ALIASES[key] ?? null;
 }
 
 function resolveCorrectAnswer(

@@ -29,7 +29,6 @@ export function GuestExamPlayer({ exam }: Props) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [confirmSubmit, setConfirmSubmit] = useState(false);
 
   const submittingRef = useRef(false);
   const answersRef = useRef(answers);
@@ -37,7 +36,6 @@ export function GuestExamPlayer({ exam }: Props) {
   const userNameRef = useRef(userName);
   userNameRef.current = userName;
 
-  // Restore in-progress attempt after refresh.
   useEffect(() => {
     const saved = loadGuestExamSession(exam.id);
     if (saved) {
@@ -50,7 +48,6 @@ export function GuestExamPlayer({ exam }: Props) {
     setHydrated(true);
   }, [exam.id, exam.questions.length]);
 
-  // Persist progress while running.
   useEffect(() => {
     if (!hydrated || !userName || !startedAtMs) return;
     saveGuestExamSession({
@@ -68,7 +65,6 @@ export function GuestExamPlayer({ exam }: Props) {
       if (!name || submittingRef.current) return;
       submittingRef.current = true;
       setSubmitting(true);
-      setConfirmSubmit(false);
       setError(null);
       try {
         const result = await submitPublicExamAttempt(exam.id, {
@@ -92,11 +88,11 @@ export function GuestExamPlayer({ exam }: Props) {
     durationInMinutes: exam.durationInMinutes,
     startedAtMs,
     onExpire: () => {
+      // Timeout may submit with unanswered items — allowed by product rule for timer end.
       void submit(true, Math.max(1, exam.durationInMinutes) * 60);
     },
   });
 
-  // If restored session is already past deadline, submit immediately.
   useEffect(() => {
     if (!hydrated || !startedAtMs || !userName || submittingRef.current) return;
     if (isExpired) {
@@ -105,10 +101,17 @@ export function GuestExamPlayer({ exam }: Props) {
   }, [exam.durationInMinutes, hydrated, isExpired, startedAtMs, submit, userName]);
 
   const question = exam.questions[currentIndex];
+  const totalQuestions = exam.questions.length;
+
   const answeredCount = useMemo(
-    () => exam.questions.filter((q) => Boolean(answers[q.id])).length,
+    () => exam.questions.filter((q) => Boolean(answers[q.id]?.trim())).length,
     [answers, exam.questions],
   );
+
+  const allAnswered = totalQuestions > 0 && answeredCount === totalQuestions;
+  const isLast = currentIndex >= totalQuestions - 1;
+  const canGoPrev = currentIndex > 0 && !submitting;
+  const canGoNext = currentIndex < totalQuestions - 1 && !submitting;
 
   const startExam = (name: string) => {
     const now = Date.now();
@@ -132,7 +135,7 @@ export function GuestExamPlayer({ exam }: Props) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 sm:py-8">
+    <div className="guest-exam-player mx-auto w-full max-w-3xl overflow-x-clip px-3 py-4 sm:px-6 sm:py-8">
       <NameEntryModal
         examTitle={exam.title}
         open={!userName}
@@ -141,50 +144,52 @@ export function GuestExamPlayer({ exam }: Props) {
         onStart={startExam}
       />
 
-      <header className="sticky top-[calc(var(--header-h,4.5rem)+0.5rem)] z-20 -mx-4 mb-2 border-b border-[var(--line)] bg-[color-mix(in_srgb,var(--bg)_92%,transparent)] px-4 py-3 backdrop-blur-md sm:-mx-0 sm:rounded-[var(--radius-lg)] sm:border sm:bg-[var(--bg-elevated)] sm:px-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-[0.65rem] font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
+      <header className="guest-exam-chrome sticky top-[calc(var(--header-h,4.5rem)+0.25rem)] z-20 mb-3 rounded-[var(--radius-lg)] border border-[var(--line)] bg-[color-mix(in_srgb,var(--bg-elevated)_94%,transparent)] px-3 py-2.5 shadow-[var(--shadow-sm)] backdrop-blur-md sm:px-4 sm:py-3">
+        <div className="flex items-start justify-between gap-2.5 sm:items-center sm:gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-[0.625rem] font-semibold tracking-[0.14em] text-[var(--muted)] uppercase sm:text-[0.65rem]">
               Live exam
             </p>
-            <h1 className="truncate font-display text-lg font-bold tracking-tight text-[var(--ink)] sm:text-xl">
+            <h1 className="mt-0.5 truncate font-display text-base font-bold tracking-tight text-[var(--ink)] sm:text-xl">
               {exam.title}
             </h1>
             {userName ? (
-              <p className="mt-0.5 text-sm text-[var(--muted-strong)]">Candidate: {userName}</p>
+              <p className="mt-0.5 truncate text-xs text-[var(--muted-strong)] sm:text-sm">
+                Candidate: {userName}
+              </p>
             ) : null}
           </div>
           <div
             className={cn(
-              'rounded-[var(--radius)] border px-3 py-2 text-center tabular-nums',
+              'shrink-0 rounded-[var(--radius)] border px-2.5 py-1.5 text-center tabular-nums sm:px-3 sm:py-2',
               remainingSeconds <= 60
                 ? 'border-[var(--danger)] bg-[var(--danger-soft)] text-[var(--danger-fg)]'
-                : 'border-[var(--line)] bg-[var(--bg-elevated)] text-[var(--ink)] sm:bg-[var(--bg-muted)]',
+                : 'border-[var(--line)] bg-[var(--bg-muted)] text-[var(--ink)]',
             )}
             aria-live="polite"
             aria-label={`Time remaining ${display}`}
           >
-            <p className="text-[0.65rem] font-semibold tracking-wide text-[var(--muted)] uppercase">
+            <p className="text-[0.6rem] font-semibold tracking-wide text-[var(--muted)] uppercase sm:text-[0.65rem]">
               Time left
             </p>
-            <p className="font-display text-2xl font-bold leading-none">{display}</p>
+            <p className="font-display text-xl font-bold leading-none sm:text-2xl">{display}</p>
           </div>
         </div>
       </header>
 
       {error ? (
-        <Alert variant="danger" className="mt-4">
+        <Alert variant="danger" className="mb-3">
           {error}
         </Alert>
       ) : null}
 
-      {exam.questions.length > 1 ? (
+      {totalQuestions > 1 ? (
         <nav
-          className="mt-4 flex flex-wrap gap-1.5"
+          className="guest-exam-palette mb-4 grid grid-cols-5 gap-1.5 min-[380px]:grid-cols-6 sm:flex sm:flex-wrap sm:gap-1.5"
           aria-label="Question navigator"
         >
           {exam.questions.map((q, idx) => {
-            const answered = Boolean(answers[q.id]);
+            const answered = Boolean(answers[q.id]?.trim());
             const active = idx === currentIndex;
             return (
               <button
@@ -193,7 +198,7 @@ export function GuestExamPlayer({ exam }: Props) {
                 disabled={submitting || !userName}
                 onClick={() => setCurrentIndex(idx)}
                 className={cn(
-                  'flex size-8 items-center justify-center rounded-[var(--radius-sm)] text-xs font-bold transition-colors',
+                  'flex h-9 min-w-0 items-center justify-center rounded-[var(--radius-sm)] text-xs font-bold transition-colors sm:size-8 sm:h-8',
                   active && 'bg-[var(--accent)] text-[var(--accent-fg)]',
                   !active && answered && 'bg-[var(--accent-soft)] text-[var(--accent)]',
                   !active && !answered && 'bg-[var(--bg-muted)] text-[var(--muted-strong)]',
@@ -209,21 +214,21 @@ export function GuestExamPlayer({ exam }: Props) {
       ) : null}
 
       {question ? (
-        <section className="mt-5">
-          <div className="flex items-center justify-between gap-3 text-sm text-[var(--muted-strong)]">
-            <span>
+        <section className="guest-exam-card rounded-[var(--radius-xl)] border border-[var(--line)] bg-[var(--bg-elevated)] p-3.5 sm:p-6">
+          <div className="flex items-center justify-between gap-2 text-xs text-[var(--muted-strong)] sm:text-sm">
+            <span className="font-medium">
               Question {currentIndex + 1} of {exam.totalQuestions}
             </span>
-            <span>
+            <span className="tabular-nums">
               Answered {answeredCount}/{exam.totalQuestions}
             </span>
           </div>
 
-          <h2 className="type-prose-title mt-4 font-reading text-lg leading-relaxed font-medium text-[var(--ink)] sm:text-xl">
+          <h2 className="type-prose-title mt-3 break-words font-reading text-[1.05rem] leading-relaxed font-medium text-[var(--ink)] sm:mt-4 sm:text-xl">
             {question.questionText}
           </h2>
 
-          <div className="mt-5 grid gap-2.5" role="radiogroup" aria-label="Options">
+          <div className="mt-4 grid gap-2.5 sm:mt-5 sm:gap-2.5" role="radiogroup" aria-label="Options">
             {question.options.map((option, idx) => {
               const selected = answers[question.id] === option;
               const label = String.fromCharCode(65 + idx);
@@ -241,23 +246,24 @@ export function GuestExamPlayer({ exam }: Props) {
                     }))
                   }
                   className={cn(
-                    'flex w-full items-start gap-3 rounded-[var(--radius)] border px-3.5 py-3 text-left transition-colors',
+                    'flex min-h-12 w-full items-start gap-3 rounded-[var(--radius)] border px-3 py-3 text-left transition-colors active:scale-[0.99] sm:min-h-0 sm:px-3.5',
                     selected
                       ? 'border-[var(--accent)] bg-[var(--accent-soft)] shadow-[0_0_0_1px_color-mix(in_srgb,var(--accent)_35%,transparent)]'
-                      : 'border-[var(--line)] bg-[var(--bg-elevated)] hover:border-[var(--accent)]/40 hover:bg-[var(--brand-wash)]',
+                      : 'border-[var(--line)] bg-[var(--bg)] hover:border-[var(--accent)]/40 hover:bg-[var(--brand-wash)]',
                   )}
                 >
                   <span
                     className={cn(
-                      'mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold',
+                      'mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-bold sm:size-7',
                       selected
                         ? 'bg-[var(--accent)] text-[var(--accent-fg)]'
                         : 'bg-[var(--bg-muted)] text-[var(--muted-strong)]',
                     )}
+                    aria-hidden
                   >
                     {label}
                   </span>
-                  <span className="type-mcq-option font-reading text-[0.95rem] leading-relaxed text-[var(--ink)]">
+                  <span className="type-mcq-option min-w-0 flex-1 break-words font-reading text-[0.9375rem] leading-relaxed text-[var(--ink)] sm:text-[0.95rem]">
                     {option}
                   </span>
                 </button>
@@ -265,72 +271,58 @@ export function GuestExamPlayer({ exam }: Props) {
             })}
           </div>
 
-          <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+          <div className="mt-5 grid grid-cols-2 gap-2.5 sm:mt-6 sm:flex sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
             <Button
               type="button"
               variant="outline"
-              disabled={currentIndex === 0 || submitting}
+              className="h-11 w-full sm:h-10 sm:w-auto"
+              disabled={!canGoPrev}
               onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
             >
               Previous
             </Button>
-            <div className="flex flex-wrap gap-2">
-              {currentIndex < exam.questions.length - 1 ? (
-                <Button
-                  type="button"
-                  disabled={submitting}
-                  onClick={() => setCurrentIndex((i) => Math.min(exam.questions.length - 1, i + 1))}
-                >
-                  Next
-                </Button>
-              ) : null}
+
+            {canGoNext ? (
               <Button
                 type="button"
-                variant={currentIndex === exam.questions.length - 1 ? 'primary' : 'outline'}
+                className="h-11 w-full sm:h-10 sm:w-auto"
+                disabled={!canGoNext}
+                onClick={() => setCurrentIndex((i) => Math.min(totalQuestions - 1, i + 1))}
+              >
+                Next
+              </Button>
+            ) : (
+              <div className="hidden sm:block" aria-hidden />
+            )}
+
+            {allAnswered ? (
+              <Button
+                type="button"
+                variant="primary"
+                className={cn(
+                  'guest-exam-submit h-11 w-full motion-fade-in sm:h-10 sm:w-auto',
+                  !isLast && 'col-span-2 sm:ml-auto',
+                  isLast && !canGoNext && 'col-span-1',
+                )}
                 disabled={!userName || submitting}
-                onClick={() => setConfirmSubmit(true)}
+                onClick={() => void submit(false, elapsedSeconds)}
               >
                 {submitting ? 'Submitting…' : 'Submit exam'}
               </Button>
-            </div>
+            ) : null}
           </div>
+
+          {!allAnswered ? (
+            <p className="mt-3 text-center text-xs text-[var(--muted)] sm:text-left">
+              Answer every question to unlock Submit ({answeredCount}/{totalQuestions}).
+            </p>
+          ) : null}
         </section>
       ) : (
-        <Alert variant="warning" className="mt-6">
+        <Alert variant="warning" className="mt-4">
           This exam has no questions yet.
         </Alert>
       )}
-
-      {confirmSubmit ? (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-4 sm:items-center">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="submit-exam-title"
-            className="w-full max-w-md rounded-[var(--radius-xl)] border border-[var(--line)] bg-[var(--bg-elevated)] p-5 shadow-[var(--shadow-lg)]"
-          >
-            <h2 id="submit-exam-title" className="font-display text-lg font-bold text-[var(--ink)]">
-              Submit exam?
-            </h2>
-            <p className="mt-2 text-sm text-[var(--muted-strong)]">
-              You have answered {answeredCount} of {exam.totalQuestions} questions. Unanswered
-              items count as wrong.
-            </p>
-            <div className="mt-5 flex flex-wrap justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setConfirmSubmit(false)}>
-                Keep practicing
-              </Button>
-              <Button
-                type="button"
-                disabled={submitting}
-                onClick={() => void submit(false, elapsedSeconds)}
-              >
-                {submitting ? 'Submitting…' : 'Confirm submit'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }
