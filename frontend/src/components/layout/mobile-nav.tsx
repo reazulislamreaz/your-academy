@@ -157,17 +157,17 @@ export function MobileNav({
                       aria-current={active ? 'page' : undefined}
                       onClick={() => setOpen(false)}
                       className={cn(
-                        'flex min-h-12 items-center gap-3 rounded-[var(--radius-lg)] px-3 py-2.5 text-[0.9375rem] font-semibold transition-colors duration-[var(--duration-fast)] ease-[var(--ease-out)]',
+                        'flex min-h-12 items-center gap-3 rounded-[var(--radius-lg)] px-3 py-2.5 text-[0.9375rem] font-semibold transition-[color,background-color,box-shadow] duration-[var(--duration-fast)] ease-[var(--ease-out)]',
                         active
-                          ? 'bg-[var(--accent-soft)] text-[var(--accent)] ring-1 ring-[var(--accent)]/20'
-                          : 'text-[var(--ink-soft)] hover:bg-[var(--brand-wash)] hover:text-[var(--ink)]',
+                          ? 'bg-[linear-gradient(135deg,color-mix(in_srgb,var(--accent)_92%,white),color-mix(in_srgb,var(--accent)_78%,var(--highlight)))] text-white shadow-[0_0_18px_-4px_color-mix(in_srgb,var(--highlight)_50%,transparent)]'
+                          : 'text-[var(--ink-soft)] hover:bg-[color-mix(in_srgb,white_60%,transparent)] hover:text-[var(--ink)] hover:shadow-[0_0_16px_-8px_color-mix(in_srgb,var(--accent)_35%,transparent)]',
                       )}
                     >
                       <span
                         className={cn(
                           'flex size-9 shrink-0 items-center justify-center rounded-[var(--radius)]',
                           active
-                            ? 'bg-[var(--accent)]/12 text-[var(--accent)]'
+                            ? 'bg-white/15 text-white'
                             : 'bg-[var(--bg-muted)] text-[var(--muted-strong)]',
                         )}
                       >
@@ -176,7 +176,7 @@ export function MobileNav({
                       <span className="min-w-0 flex-1 text-pretty">{item.label}</span>
                       {active ? (
                         <span
-                          className="size-1.5 shrink-0 rounded-full bg-[var(--highlight)]"
+                          className="size-1.5 shrink-0 rounded-full bg-white shadow-[0_0_8px_color-mix(in_srgb,var(--highlight)_70%,transparent)]"
                           aria-hidden
                         />
                       ) : null}

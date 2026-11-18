@@ -4,19 +4,27 @@ import { InlineLoader } from '@/components/loading/inline-loader';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
-  'motion-press inline-flex cursor-pointer items-center justify-center gap-2 rounded-[var(--radius)] text-sm font-semibold leading-normal transition-[background-color,color,box-shadow,opacity,transform,filter] duration-[var(--duration-fast)] ease-[var(--ease-out)] disabled:pointer-events-none disabled:opacity-50',
+  [
+    'ya-btn-sweep motion-press relative isolate inline-flex cursor-pointer items-center justify-center gap-2 overflow-hidden',
+    'rounded-[var(--radius)] text-sm font-semibold leading-normal',
+    'transition-[color,box-shadow,opacity,transform,filter,border-color] duration-[var(--duration-fast)] ease-[var(--ease-out)]',
+    'disabled:pointer-events-none disabled:opacity-50',
+  ].join(' '),
   {
     variants: {
       variant: {
         primary:
-          'bg-[var(--highlight)] text-[var(--highlight-fg)] shadow-[var(--shadow-sm)] hover:brightness-[1.06] hover:shadow-[var(--shadow)] active:brightness-95',
+          'ya-btn-sweep--primary bg-[var(--highlight)] text-[var(--highlight-fg)] shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow)] active:brightness-95',
         secondary:
-          'bg-[var(--accent)] text-[var(--accent-fg)] shadow-[var(--shadow-sm)] hover:brightness-110 hover:shadow-[var(--shadow)] active:brightness-95',
+          'ya-btn-sweep--secondary bg-[var(--accent)] text-[var(--accent-fg)] shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow)] active:brightness-95',
         outline:
-          'border border-[var(--line-strong)] bg-[var(--bg-elevated)] text-[var(--ink)] hover:border-[var(--accent)]/50 hover:bg-[var(--bg-muted)] hover:shadow-[var(--shadow-sm)]',
-        ghost: 'bg-transparent text-[var(--ink-soft)] hover:bg-[var(--bg-muted)] hover:text-[var(--ink)]',
-        danger: 'bg-[var(--danger)] text-white shadow-[var(--shadow-sm)] hover:brightness-110 hover:shadow-[var(--shadow)]',
-        soft: 'bg-[var(--highlight-soft)] text-[var(--highlight)] hover:bg-[var(--highlight-hover)]',
+          'ya-btn-sweep--outline border border-[var(--line-strong)] bg-[var(--bg-elevated)] text-[var(--ink)] hover:border-transparent hover:text-[var(--accent-fg)] hover:shadow-[var(--shadow-sm)]',
+        ghost:
+          'ya-btn-sweep--ghost bg-transparent text-[var(--ink-soft)] hover:text-[var(--ink)]',
+        danger:
+          'ya-btn-sweep--danger bg-[var(--danger)] text-white shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow)]',
+        soft:
+          'ya-btn-sweep--soft bg-[var(--highlight-soft)] text-[var(--highlight)] hover:text-[var(--highlight)]',
       },
       size: {
         /* min-height + py so Bengali matras are not clipped */
@@ -52,8 +60,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       className={cn(buttonVariants({ variant, size }), className)}
       {...props}
     >
-      {loading ? <InlineLoader /> : null}
-      {children}
+      {/* Keep label/icons above the sliding sweep layer */}
+      <span className="relative z-[1] inline-flex items-center justify-center gap-2">
+        {loading ? <InlineLoader /> : null}
+        {children}
+      </span>
     </button>
   );
 });
