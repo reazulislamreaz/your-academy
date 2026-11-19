@@ -46,9 +46,10 @@ export function validateEnv(): void {
     if (process.env.COOKIE_SECURE !== 'true') {
       throw new Error('COOKIE_SECURE must be "true" when NODE_ENV=production');
     }
-    const trialDays = Number(process.env.TRIAL_DAYS ?? 7);
-    if (trialDays !== 7) {
-      throw new Error('TRIAL_DAYS must remain 7 unless business approves a change');
+    // TRIAL_DAYS is unused for entitlement (free trials disabled). Allow 0+ for env compat.
+    const trialDays = Number(process.env.TRIAL_DAYS ?? 0);
+    if (!Number.isFinite(trialDays) || trialDays < 0) {
+      throw new Error('TRIAL_DAYS must be a non-negative number when set');
     }
     const origins = getWebOrigins();
     if (

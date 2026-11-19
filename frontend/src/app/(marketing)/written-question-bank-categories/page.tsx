@@ -7,7 +7,7 @@ export const metadata: Metadata = {
     'Browse every Written Question Bank subcategory and open filtered collections on Your Academy.',
 };
 
-export const revalidate = 60;
+export const revalidate = 30;
 
 export default function WrittenQuestionBankCategoriesPage() {
   return (

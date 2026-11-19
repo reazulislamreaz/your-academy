@@ -46,7 +46,7 @@ Docker Compose overrides `DATABASE_URL` host to `postgres` for `api` / `worker` 
 | `ACCESS_COOKIE_NAME` | no | Default `access_token` |
 | `REFRESH_COOKIE_NAME` | no | Default `refresh_token` |
 | `CSRF_COOKIE_NAME` | no | Default `csrf_token` |
-| `TRIAL_DAYS` | yes | Must be `7` unless approved |
+| `TRIAL_DAYS` | no | Unused for entitlement (free trials disabled). Prefer `0`. |
 | `SWAGGER_ENABLED` | no | Default true in dev |
 | `THROTTLE_TTL_SECONDS` | no | Rate limit window |
 | `THROTTLE_LIMIT` | no | Requests per window |

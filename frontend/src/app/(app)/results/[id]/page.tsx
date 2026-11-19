@@ -141,8 +141,8 @@ export default function ResultDetailPage() {
 
       {!data.answersVisible ? (
         <Alert variant="warning">
-          Detailed correct answers and explanations are available during an active trial or
-          subscription. Your score summary is always saved to your account.
+          Detailed correct answers and explanations are available with an active subscription.
+          Your score summary is always saved to your account.
         </Alert>
       ) : null}
 

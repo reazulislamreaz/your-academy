@@ -2,15 +2,15 @@
 
 ## Purpose
 
-Your Academy is a production-oriented, subscription-ready **MCQ EdTech platform**. Learners browse categorized multiple-choice questions, study with explanations during a free trial, save learning resources, follow educational news, and track browsing activity. Administrators operate content, users, and platform analytics.
+Your Academy is a production-oriented, subscription-ready **MCQ EdTech platform**. Learners browse categorized multiple-choice questions, save learning resources, follow educational news, and track browsing activity. Administrators operate content, users, and platform analytics. Free trials are disabled; answer privacy follows admin/subscription entitlement.
 
 ## Goals
 
 | Goal | Description |
 |------|-------------|
 | Learning access | Fast discovery of published MCQs by category, difficulty, and search |
-| Fair trial | Seven-day full access including answers and explanations |
-| Sustainable free tier | Post-trial users keep browsing content without premium answer fields |
+| Honest entitlements | No free-trial grant; answers/explanations gated until a paid plan entitles |
+| Sustainable free tier | Learners keep browsing content without premium answer fields |
 | Admin operations | Reliable publishing and moderation workflows |
 | Future monetization | Modular subscription model without shipping payments in v1 |
 | Operability | Dockerized modular monolith suitable for Ubuntu VPS deployment |

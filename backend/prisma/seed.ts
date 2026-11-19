@@ -3,10 +3,6 @@ import * as argon2 from 'argon2';
 
 const prisma = new PrismaClient();
 
-function addDays(from: Date, days: number): Date {
-  return new Date(from.getTime() + days * 24 * 60 * 60 * 1000);
-}
-
 /**
  * Bootstrap only: admin + demo learner + Premium plan.
  * Does **not** create demo categories, MCQs, or practice sets (product content
@@ -16,10 +12,9 @@ async function main() {
   const adminWhatsapp = process.env.BOOTSTRAP_ADMIN_WHATSAPP ?? '+8801000000000';
   const adminPassword = process.env.BOOTSTRAP_ADMIN_PASSWORD ?? 'ChangeMeAdmin123';
   const adminEmail = process.env.BOOTSTRAP_ADMIN_EMAIL ?? 'admin@your-academy.local';
-  const trialDays = Number(process.env.TRIAL_DAYS ?? 7);
-
+  // Free trials disabled — equal timestamps, no trial window.
   const trialStartedAt = new Date();
-  const trialEndsAt = addDays(trialStartedAt, trialDays);
+  const trialEndsAt = trialStartedAt;
   const passwordHash = await argon2.hash(adminPassword, { type: argon2.argon2id });
 
   const admin = await prisma.user.upsert({

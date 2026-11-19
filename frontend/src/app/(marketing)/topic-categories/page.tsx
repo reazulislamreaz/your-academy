@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     'Browse every topic for question analysis on Your Academy, with logos and icons.',
 };
 
-export const revalidate = 60;
+export const revalidate = 30;
 
 async function loadTopicSection() {
   try {

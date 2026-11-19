@@ -127,10 +127,6 @@ export default function AdminUserDetailPage() {
             </div>
             <dl className="divide-y divide-[var(--line)] text-sm">
               <ProfileRow label="Joined">{new Date(profile.createdAt).toLocaleString()}</ProfileRow>
-              <ProfileRow label="Trial">
-                {profile.trialActive ? 'Active' : 'Ended'} ·{' '}
-                {new Date(profile.trialEndsAt).toLocaleDateString()}
-              </ProfileRow>
               <ProfileRow label="Subscription">
                 {subscription ? subscription.plan.name : 'None (read-only)'}
               </ProfileRow>

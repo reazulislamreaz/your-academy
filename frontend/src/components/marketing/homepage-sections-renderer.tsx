@@ -21,7 +21,6 @@ import { HomepageMidSections } from '@/components/marketing/homepage-mid-section
 import { HomepageNewsStrip } from '@/components/marketing/homepage-news-strip';
 import { HomepageProductFeatures } from '@/components/marketing/homepage-product-features';
 import { HomepageSampleMcq } from '@/components/marketing/homepage-sample-mcq';
-import { HomepageTrialStrip } from '@/components/marketing/homepage-trial-strip';
 import { NewsletterBar } from '@/components/marketing/newsletter-bar';
 import { Reveal } from '@/components/motion/reveal';
 import type { PublicDocumentListItem } from '@/lib/api/public-documents';
@@ -73,9 +72,8 @@ export function HomepageSectionsRenderer({
               />
             ) : null;
           case 'trialStrip':
-            return payload.trialStrip.visible ? (
-              <HomepageTrialStrip key={entry.id} content={payload.trialStrip} />
-            ) : null;
+            // Free trials disabled — never render the promotional strip.
+            return null;
           case 'liveStats':
             return payload.liveStats.visible ? (
               <HomepageLiveStats key={entry.id} stats={liveStats} content={payload.liveStats} />

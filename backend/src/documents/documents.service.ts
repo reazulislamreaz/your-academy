@@ -206,7 +206,7 @@ export class DocumentsService {
       throw new ForbiddenException(
         createErrorResponse(
           'DOCUMENT_PREMIUM_REQUIRED',
-          'This document requires an active trial or subscription',
+          'This document requires an active subscription',
           newRequestId(),
         ),
       );
@@ -378,7 +378,7 @@ export class DocumentsService {
       throw new ForbiddenException(
         createErrorResponse(
           'DOCUMENT_PREMIUM_REQUIRED',
-          'This document requires an active trial or subscription',
+          'This document requires an active subscription',
           newRequestId(),
         ),
       );

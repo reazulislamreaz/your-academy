@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Bookmark, Search } from 'lucide-react';
 import { Suspense, useEffect, useRef, useState, type CSSProperties } from 'react';
-import { TrialStatusChip } from '@/components/access/trial-status-chip';
 import { LearnerThemeToggle } from '@/components/theme/learner-theme-toggle';
 import { useLearnerTheme } from '@/components/theme/learner-theme-provider';
 import { SearchField } from '@/components/ui/search-field';
@@ -17,7 +16,7 @@ import { UserMenu } from './user-menu';
 
 /**
  * Learner top navbar — matches Student Dashboard reference:
- * logo · trial · Saved MCQ · search · notifications · messages · profile.
+ * logo · Saved MCQ · search · notifications · messages · profile.
  */
 function AppHeaderInner() {
   const router = useRouter();
@@ -109,7 +108,6 @@ function AppHeaderInner() {
           className="lg:hidden [&_img]:h-8"
         />
         {/* Desktop brand lives in the sidebar — keep header lean */}
-        <TrialStatusChip className="hidden min-[420px]:inline-flex" />
       </div>
 
       <div className="ml-auto flex min-w-0 flex-1 items-center justify-end gap-1 sm:gap-2 md:gap-2.5">

@@ -45,6 +45,7 @@ import {
   restoreHomepageRevision,
   saveHomepageDraft,
 } from '@/lib/api/homepage';
+import { revalidateHomepageCache } from '@/lib/api/revalidate-homepage';
 import {
   assertHomepageHeroFile,
   getStorageStatus,
@@ -250,14 +251,17 @@ export function HomepageCms() {
           heroImageAssetId,
         });
       }
-      return publishHomepage();
+      await publishHomepage();
+      return revalidateHomepageCache();
     },
-    onSuccess: () => {
+    onSuccess: (cache) => {
       setDirty(false);
       setConfirmPublish(false);
       setMessage({
         tone: 'success',
-        text: 'Published. Live homepage refreshes within ~60s.',
+        text: cache.ok
+          ? 'Published. Live homepage cache cleared — reload the homepage to confirm.'
+          : `Published to the database. Cache refresh lagged (${cache.detail ?? 'unknown'}) — hard-refresh the homepage if needed.`,
       });
       void qc.invalidateQueries({ queryKey: ['admin-homepage'] });
       void qc.invalidateQueries({ queryKey: ['admin-homepage-revisions'] });

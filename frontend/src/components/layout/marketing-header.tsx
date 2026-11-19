@@ -329,7 +329,7 @@ function MarketingHeaderInner() {
                       </Button>
                     </Link>
                     <Link href="/register" className="block w-full">
-                      <Button className="w-full rounded-full">Start free trial</Button>
+                      <Button className="w-full rounded-full">Create free account</Button>
                     </Link>
                     <Link href="/preli-question-bank" className="block w-full">
                       <Button variant="ghost" className="w-full rounded-full">
@@ -367,7 +367,7 @@ function MarketingHeaderInner() {
                     </Button>
                   </Link>
                   <Link href="/register" className="block w-full">
-                    <Button className="w-full rounded-full">Start free trial</Button>
+                    <Button className="w-full rounded-full">Create free account</Button>
                   </Link>
                 </>
               ) : null

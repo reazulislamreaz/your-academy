@@ -193,7 +193,7 @@ function QuestionDetailContent() {
           description={
             data.answersVisible
               ? 'Choose an option and press Check answer to reveal the key and explanation.'
-              : 'Choose an option and press Check answer. Correct keys stay hidden after your trial ends.'
+              : 'Choose an option and press Check answer. Correct keys stay hidden unless you are entitled.'
           }
         />
       ) : null}
@@ -202,7 +202,7 @@ function QuestionDetailContent() {
         <EntitlementCallout
           variant="locked"
           title={`You selected ${selected?.label ?? 'an option'}`}
-          description="Correct answers and explanations unlock during your trial or with a future premium plan. You can keep browsing the full question bank."
+          description="Correct answers and explanations unlock with a future premium plan. You can keep browsing the full question bank."
         />
       ) : null}
 

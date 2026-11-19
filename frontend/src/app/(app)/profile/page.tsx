@@ -14,7 +14,6 @@ import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Surface } from '@/components/ui/surface';
-import { TrialCountdown } from '@/features/auth/trial-countdown';
 import { isUnauthorized, meQueryKey, useLogout, useMe } from '@/features/auth/use-auth';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import type { MeUser, UserStats } from '@/lib/api/types';
@@ -193,15 +192,11 @@ export default function ProfilePage() {
               </p>
             </div>
           </div>
-          <TrialCountdown
-            trialEndsAt={user.access.trialEndsAt}
-            isTrialActive={user.access.isTrialActive}
-          />
         </div>
         <p className="text-sm leading-relaxed text-[var(--muted-strong)]">
-          {user.access.isTrialActive
-            ? 'Answers and explanations are unlocked for the rest of your trial.'
-            : 'You can still browse and bookmark. Correct answers stay premium after trial.'}
+          {user.access.hasActiveSubscription
+            ? 'Answers and explanations are unlocked with your active membership.'
+            : 'You can browse and bookmark. Correct answers stay premium until a paid plan is available.'}
         </p>
         {user.access.hasActiveSubscription ? (
           <Alert variant="success">Active membership entitlements are on for this account.</Alert>

@@ -158,18 +158,19 @@ export default function OnboardingPage() {
             <li className="flex gap-3">
               <span className="font-display text-sm font-bold text-[var(--highlight)]">01</span>
               <div>
-                <p className="font-semibold">Access is active</p>
+                <p className="font-semibold">Your account is ready</p>
                 <p className="text-sm text-[var(--muted-strong)]">
-                  Available until {new Date(me.data.access.trialEndsAt).toLocaleString()}.
+                  Browse the bank, save bookmarks, and use practice tools from your dashboard.
                 </p>
               </div>
             </li>
             <li className="flex gap-3">
               <span className="font-display text-sm font-bold text-[var(--highlight)]">02</span>
               <div>
-                <p className="font-semibold">Practice with explanations</p>
+                <p className="font-semibold">Practice on your schedule</p>
                 <p className="text-sm text-[var(--muted-strong)]">
-                  Correct answers are shown while your access (or a future plan) is active.
+                  Timed sets and bookmarks stay available from your account. Answer keys follow
+                  entitlement rules.
                 </p>
               </div>
             </li>

@@ -4,26 +4,23 @@ Status legend: **CONFIRMED** decisions must not change without explicit approval
 
 ## 1. Product Scope
 
-Your Academy provides MCQ-centric learning with categorized questions, educational news, PDF/document resources, bookmarks, profiles, browsing-time tracking, and an admin console. The initial release supports a seven-day full-access trial and a limited free post-trial experience. Paid subscriptions are architected but not monetized in v1.
+Your Academy provides MCQ-centric learning with categorized questions, educational news, PDF/document resources, bookmarks, profiles, browsing-time tracking, and an admin console. Free trials are **disabled**. Paid subscriptions are architected but not monetized in v1.
 
 ## 2. Confirmed Rules
 
-### BR-001 — Free Trial (CONFIRMED)
+### BR-001 — Free Trial (DISABLED)
 
-- Every newly registered user receives a **seven-day** full-access trial automatically.
-- Trial starts at successful registration completion.
-- Duration is exactly seven days (server-side timestamps).
-- Users cannot manually extend the trial.
-- Trial status is calculated **dynamically** (`now < trialEndsAt`).
-- No scheduled job is required merely to recognize expiration.
+- Registration does **not** grant a free-trial window (`trialEndsAt` equals `trialStartedAt` for schema compatibility).
+- `AccessControlService.isTrialActive` always returns false — entitlement never comes from trial.
+- Answer access requires admin role or an active subscription.
 
-### BR-002 — Post-Trial Access (CONFIRMED)
+### BR-002 — Access Without Premium Entitlement (CONFIRMED)
 
-**Allowed after expiry:**
+**Allowed without answer entitlement:**
 
 - Login; homepage; browse all **published** questions; search; filter; view titles; view full question content; view MCQ options; navigate between questions; save MCQs; profile; bookmarks; browsing activity; browse educational news.
 
-**Denied after expiry:**
+**Denied without entitlement:**
 
 - View correct answers; view answer indicators; view explanations.
 

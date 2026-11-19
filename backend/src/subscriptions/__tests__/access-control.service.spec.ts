@@ -24,11 +24,12 @@ describe('AccessControlService', () => {
     prisma.userSubscription.findFirst.mockResolvedValue(null);
   });
 
-  it('grants answers during active trial', async () => {
-    await expect(service.canViewAnswers(baseUser)).resolves.toBe(true);
+  it('never grants answers from a trial window alone', async () => {
+    await expect(service.canViewAnswers(baseUser)).resolves.toBe(false);
+    expect(service.isTrialActive(baseUser)).toBe(false);
   });
 
-  it('denies answers after trial without subscription', async () => {
+  it('denies answers without subscription', async () => {
     const expired = {
       ...baseUser,
       trialEndsAt: new Date(Date.now() - 60_000),
@@ -36,7 +37,7 @@ describe('AccessControlService', () => {
     await expect(service.canViewAnswers(expired)).resolves.toBe(false);
   });
 
-  it('grants answers with active subscription after trial', async () => {
+  it('grants answers with active subscription', async () => {
     prisma.userSubscription.findFirst.mockResolvedValue({ id: 'sub1' });
     const expired = {
       ...baseUser,
@@ -51,7 +52,7 @@ describe('AccessControlService', () => {
     ).resolves.toBe(true);
   });
 
-  it('DEC-001: authenticated PDFs remain available after trial', async () => {
+  it('DEC-001: authenticated PDFs remain available without trial', async () => {
     const expired = {
       ...baseUser,
       trialEndsAt: new Date(Date.now() - 60_000),
@@ -61,17 +62,14 @@ describe('AccessControlService', () => {
     ).resolves.toBe(true);
   });
 
-  it('blocks PREMIUM PDFs after trial without subscription', async () => {
-    const expired = {
-      ...baseUser,
-      trialEndsAt: new Date(Date.now() - 60_000),
-    };
-    await expect(service.canAccessDocument(expired, DocumentVisibility.PREMIUM)).resolves.toBe(
+  it('blocks PREMIUM PDFs without subscription', async () => {
+    await expect(service.canAccessDocument(baseUser, DocumentVisibility.PREMIUM)).resolves.toBe(
       false,
     );
   });
 
-  it('allows PREMIUM PDFs during trial', async () => {
+  it('allows PREMIUM PDFs with active subscription', async () => {
+    prisma.userSubscription.findFirst.mockResolvedValue({ id: 'sub1' });
     await expect(service.canAccessDocument(baseUser, DocumentVisibility.PREMIUM)).resolves.toBe(
       true,
     );
@@ -87,4 +85,3 @@ describe('AccessControlService', () => {
     expect('explanation' in stripped).toBe(false);
   });
 });
-

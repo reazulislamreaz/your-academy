@@ -303,7 +303,7 @@ export function AdminUsersTableSkeleton({ rows = 8 }: { rows?: number }) {
         <table className="w-full min-w-[36rem] text-left text-sm">
           <thead className="bg-[var(--bg-desk)]">
             <tr>
-              {['User', 'Role', 'Status', 'Trial', 'Joined', 'Actions'].map((h) => (
+              {['User', 'Role', 'Status', 'Plan', 'Joined', 'Actions'].map((h) => (
                 <th key={h} className="px-3 py-3 sm:px-5">
                   <SkLine className="h-3 w-14" />
                 </th>

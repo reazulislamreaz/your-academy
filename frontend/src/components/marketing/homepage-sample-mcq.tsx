@@ -45,8 +45,7 @@ function McqPreviewCard({ question }: { question: PublicQuestionCard }) {
           {question.correctAnswerBn ? ` — ${question.correctAnswerBn}` : ''}
         </p>
         <p className="text-xs text-[var(--muted)]">
-          Public Preli cards show answers. After your trial, learner practice APIs omit answers unless
-          you are entitled.
+          Public Preli cards show answers. Learner practice APIs omit answers unless you are entitled.
         </p>
       </div>
     </article>

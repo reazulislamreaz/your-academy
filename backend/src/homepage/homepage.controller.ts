@@ -26,9 +26,14 @@ import { HomepageService } from './homepage.service';
 export class HomepageController {
   constructor(private readonly homepage: HomepageService) {}
 
-  /** Published homepage for marketing site (DEC-038). */
+  /**
+   * Published homepage for marketing site (DEC-038).
+   * Short shared-cache window only — Next.js owns ISR via `tags: ['homepage']`
+   * and admin publish calls `/api/revalidate/homepage` to purge immediately.
+   * Avoid long browser max-age so clients do not keep stale JSON.
+   */
   @Get('public/homepage')
-  @Header('Cache-Control', 'public, max-age=60, stale-while-revalidate=120')
+  @Header('Cache-Control', 'public, max-age=0, s-maxage=30, stale-while-revalidate=60')
   async publicHomepage() {
     return createSuccessResponse(await this.homepage.getPublishedPublic(), newRequestId());
   }

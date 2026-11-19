@@ -21,6 +21,7 @@ import {
   publishHomepage,
   saveHomepageDraft,
 } from '@/lib/api/homepage';
+import { revalidateHomepageCache } from '@/lib/api/revalidate-homepage';
 import {
   assertHomepageTileLogoFile,
   getStorageStatus,
@@ -184,14 +185,31 @@ export function useHomepageSection(section: HomepageSectionKind) {
         payload: nextPayload,
         heroImageAssetId: adminQ.data?.draft.heroImageAssetId ?? null,
       });
-      if (alsoPublish) await publishHomepage();
+      if (alsoPublish) {
+        await publishHomepage();
+        const cache = await revalidateHomepageCache();
+        return { alsoPublish: true as const, cacheOk: cache.ok, cacheDetail: cache.detail };
+      }
+      return { alsoPublish: false as const, cacheOk: true as boolean, cacheDetail: undefined as string | undefined };
     },
-    onSuccess: async (_d, alsoPublish) => {
+    onSuccess: async (result) => {
       setDirty(false);
-      setMessage({
-        tone: 'success',
-        text: alsoPublish ? 'Saved and published to the live homepage.' : 'Draft saved.',
-      });
+      if (!result.alsoPublish) {
+        setMessage({
+          tone: 'success',
+          text: 'Draft saved. Public site unchanged until you publish.',
+        });
+      } else if (result.cacheOk) {
+        setMessage({
+          tone: 'success',
+          text: 'Saved and published. Live homepage updated — reload the homepage to confirm.',
+        });
+      } else {
+        setMessage({
+          tone: 'success',
+          text: `Published to the database. Homepage cache refresh lagged (${result.cacheDetail ?? 'unknown'}) — hard-refresh the homepage in a minute if needed.`,
+        });
+      }
       await qc.invalidateQueries({ queryKey: ['admin-homepage'] });
     },
     onError: (err) => {

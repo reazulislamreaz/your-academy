@@ -74,9 +74,10 @@ export class AuthService {
       }
     }
 
-    const trialDays = Number(process.env.TRIAL_DAYS ?? 7);
+    // Free trials disabled — persist equal timestamps so schema columns stay filled
+    // without granting a trial window (AccessControlService never treats trial as active).
     const trialStartedAt = new Date();
-    const trialEndsAt = new Date(trialStartedAt.getTime() + trialDays * 24 * 60 * 60 * 1000);
+    const trialEndsAt = trialStartedAt;
     const passwordHash = await argon2.hash(dto.password, { type: argon2.argon2id });
 
     const user = await this.prisma.user.create({

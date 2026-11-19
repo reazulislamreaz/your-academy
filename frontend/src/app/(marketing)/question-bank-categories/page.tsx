@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     'Browse every target exam category in the Your Academy question bank, with logos and icons.',
 };
 
-export const revalidate = 60;
+export const revalidate = 30;
 
 async function loadCategoryTiles() {
   try {

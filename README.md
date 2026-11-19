@@ -1,6 +1,6 @@
 # Your Academy
 
-MCQ-based EdTech platform with a 7-day free trial, category browsing, bookmarks, news, analytics, and an admin dashboard.
+MCQ-based EdTech platform with category browsing, bookmarks, news, analytics, and an admin dashboard.
 
 Modular monolith: **Next.js frontend** + **NestJS backend** + **BullMQ worker** + **PostgreSQL/Redis**.
 

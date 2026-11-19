@@ -141,11 +141,7 @@ export default function AdminUsersPage() {
                       {user.whatsappNumber}
                       {user.email ? ` · ${user.email}` : ''}
                       <br />
-                      {user.subscription
-                        ? user.subscription.plan.name
-                        : user.trialActive
-                          ? 'Trial active'
-                          : 'Trial ended'}
+                      {user.subscription ? user.subscription.plan.name : 'No subscription'}
                       {' · '}
                       {user.attemptCount} MCQ · {user.practiceAttemptCount} practice
                     </>
@@ -262,10 +258,8 @@ export default function AdminUsersPage() {
                             <span className="font-medium text-[var(--ink)]">
                               {user.subscription.plan.name}
                             </span>
-                          ) : user.trialActive ? (
-                            <Badge variant="info">Trial</Badge>
                           ) : (
-                            <span className="text-[var(--muted-strong)]">Trial ended</span>
+                            <span className="text-[var(--muted-strong)]">None</span>
                           )}
                         </AdminTd>
                         <AdminTd muted className="text-xs whitespace-nowrap">

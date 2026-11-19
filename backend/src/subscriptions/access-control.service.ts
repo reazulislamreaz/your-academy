@@ -26,8 +26,14 @@ const ALWAYS_FREE: Entitlement[] = [
 export class AccessControlService {
   constructor(private readonly prisma: PrismaService) {}
 
-  isTrialActive(user: AccessUser, now = new Date()): boolean {
-    return now >= user.trialStartedAt && now < user.trialEndsAt;
+  /**
+   * Free trials are disabled product-wide. Columns remain for schema compatibility;
+   * entitlement never comes from a trial window.
+   */
+  isTrialActive(_user: AccessUser, _now = new Date()): boolean {
+    void _user;
+    void _now;
+    return false;
   }
 
   async hasActiveSubscription(userId: string, now = new Date()): Promise<boolean> {

@@ -35,7 +35,7 @@ export type HomepageBuiltinSectionId = (typeof HOMEPAGE_BUILTIN_SECTION_IDS)[num
 
 export const HOMEPAGE_SECTION_LABELS: Record<HomepageBuiltinSectionId, string> = {
   hero: 'Hero',
-  trialStrip: 'Trial strip',
+  trialStrip: 'Account strip',
   liveStats: 'Live stats',
   categories: 'Question bank categories',
   writtenCategories: 'Written bank categories',
@@ -147,10 +147,11 @@ export const homepageExtendedSectionsSchema = z.object({
       cta: ctaSchema,
     })
     .default({
-      visible: true,
-      heading: '7-day free trial on every new account',
-      body: 'Register to unlock correct answers, explanations, bookmarks, and timed practice for seven days from signup. After the trial, you can still browse questions — answers stay gated until a paid plan is available.',
-      cta: { label: 'Start free trial', href: '/register', visible: true },
+      // Free trials disabled — section stays in layout schema but hidden by default.
+      visible: false,
+      heading: 'Create your free account',
+      body: 'Register with name, WhatsApp, and password to bookmark questions, take timed practice, and use your dashboard. Browse the public Preli bank anytime.',
+      cta: { label: 'Create free account', href: '/register', visible: true },
     }),
   liveStats: z
     .object({
@@ -254,13 +255,13 @@ export const homepageExtendedSectionsSchema = z.object({
         },
         {
           step: '02',
-          title: 'Start your trial',
-          body: 'Register with name, WhatsApp, and password. Your 7-day trial begins immediately.',
+          title: 'Create your account',
+          body: 'Register with name, WhatsApp, and password to save bookmarks and use learner practice tools.',
         },
         {
           step: '03',
           title: 'Practice & track',
-          body: 'Unlock answers and explanations, take timed sets, bookmark questions, and follow progress on your dashboard.',
+          body: 'Take timed sets, bookmark questions, and follow progress on your dashboard.',
         },
       ],
     }),
@@ -276,7 +277,7 @@ export const homepageExtendedSectionsSchema = z.object({
       visible: true,
       heading: 'Your study desk, after you sign in',
       body: 'Bookmarks, attempt history, timed practice, and accuracy come from your real activity — we never show placeholder scores on this page.',
-      primaryCta: { label: 'Start free trial', href: '/register', visible: true },
+      primaryCta: { label: 'Create free account', href: '/register', visible: true },
       secondaryCta: { label: 'Sign in', href: '/login', visible: true },
     }),
   newsStrip: z
@@ -308,18 +309,12 @@ export const homepageExtendedSectionsSchema = z.object({
       body: 'Honest entitlements only. No invented student counts, success rates, or subscription prices.',
       highlights: [
         'Free to browse — Preli bank & published PDFs',
-        '7-day trial — answers & explanations after signup',
+        'Create an account — bookmarks, practice sets, and dashboard',
         'Paid plans — coming in a later release',
       ],
-      cta: { label: 'Start Your 7-Day Free Trial', href: '/register', visible: true },
+      cta: { label: 'Create free account', href: '/register', visible: true },
       faqHeading: 'Frequently asked questions',
       faqs: [
-        {
-          id: 'trial',
-          question: 'What is included in the 7-day free trial?',
-          answer:
-            'After registration, you get seven days of entitled access to correct answers, explanations, bookmarks, and timed practice. The trial is calculated from your signup timestamp on the server.',
-        },
         {
           id: 'browse',
           question: 'Can I browse questions without paying?',
@@ -327,22 +322,22 @@ export const homepageExtendedSectionsSchema = z.object({
             'Yes. The public Preli Question Bank and published newspaper PDF columns are available without login. Learner practice routes and answer privacy still follow entitlement rules.',
         },
         {
-          id: 'after',
-          question: 'What happens when the trial ends?',
+          id: 'account',
+          question: 'How do I create an account?',
           answer:
-            'You can still sign in, browse, search, and save bookmarks. Correct answers and explanations are omitted from learner APIs until a future paid plan entitles you again.',
+            'Use name, WhatsApp number, and password. Email is optional at registration and required only if you need password reset by email.',
+        },
+        {
+          id: 'answers',
+          question: 'When can I see correct answers and explanations?',
+          answer:
+            'Correct answers and explanations are omitted from learner APIs until a future paid plan entitles you. You can still browse, search, and save bookmarks after signup.',
         },
         {
           id: 'paid',
           question: 'Is there a paid subscription price today?',
           answer:
             'Paid checkout is not live in v1. Subscription tables are ready for a future release — we will not invent prices on this page.',
-        },
-        {
-          id: 'account',
-          question: 'How do I create an account?',
-          answer:
-            'Use name, WhatsApp number, and password. Email is optional at registration and required only if you need password reset by email.',
         },
       ],
     }),

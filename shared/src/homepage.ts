@@ -617,7 +617,7 @@ export function createDefaultHomepagePayload(): HomepagePayload {
       description:
         'Your Complete Preparation Partner for BCS, Bank & Government Jobs.',
       primaryCta: {
-        label: 'Start Your 7-Day Free Trial',
+        label: 'Create free account',
         href: '/register',
         visible: true,
       },
@@ -630,7 +630,7 @@ export function createDefaultHomepagePayload(): HomepagePayload {
       stats: [
         { iconKey: 'book', value: '—', label: 'Published MCQs' },
         { iconKey: 'grad', value: '—', label: 'Exam categories' },
-        { iconKey: 'trophy', value: '7 days', label: 'Free trial on signup' },
+        { iconKey: 'trophy', value: '—', label: 'Practice sets' },
       ],
       backgroundToken: 'inverse',
     },
@@ -818,7 +818,7 @@ export function createDefaultHomepagePayload(): HomepagePayload {
       heading: 'Why Your Academy?',
       points: [
         'Published Preli MCQs you can browse without logging in',
-        '7-day free trial with answers and explanations after signup',
+        'Create an account to bookmark, practice, and track progress',
         'Topic and category filters for focused practice',
         'পত্রিকার গুরুত্বপূর্ণ কলাম — published PDF columns',
         'Timed practice sets and mock-style exams when signed in',
@@ -834,8 +834,8 @@ export function createDefaultHomepagePayload(): HomepagePayload {
     },
     ctaBanner: {
       visible: true,
-      heading: 'Start your 7-day free trial',
-      body: 'Create an account to unlock answers, explanations, bookmarks, and timed practice. Browse the public Preli bank anytime.',
+      heading: 'Create your free account',
+      body: 'Register to bookmark questions, take timed practice, and follow your dashboard. Browse the public Preli bank anytime.',
       cta: { label: 'Create free account', href: '/register', visible: true },
     },
     latest: {
@@ -848,8 +848,8 @@ export function createDefaultHomepagePayload(): HomepagePayload {
     newsletter: {
       visible: true,
       title: 'Ready to practice?',
-      body: 'Register for a 7-day free trial. Email newsletters are not live yet — your account is the best way to stay on track.',
-      cta: { label: 'Start free trial', href: '/register', visible: true },
+      body: 'Create a free account to save bookmarks and practice on your dashboard. Email newsletters are not live yet.',
+      cta: { label: 'Create free account', href: '/register', visible: true },
     },
   });
 }

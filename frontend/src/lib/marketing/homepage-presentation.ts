@@ -31,7 +31,7 @@ export function liveStatsToHeroStats(
     return [
       { iconKey: 'book', value: '—', label: 'Published MCQs' },
       { iconKey: 'grad', value: '—', label: 'Exam categories' },
-      { iconKey: 'trophy', value: '7 days', label: 'Free trial on signup' },
+      { iconKey: 'trophy', value: '—', label: 'Practice sets' },
     ];
   }
   return [
@@ -47,17 +47,22 @@ export function liveStatsToHeroStats(
     },
     {
       iconKey: 'trophy',
-      value: '7 days',
-      label: 'Free trial on signup',
+      value: '—',
+      label: 'Practice sets',
     },
   ];
 }
 
+function mentionsTrial(text: string): boolean {
+  return /free\s*trial|7-?\s*day(?:\s+free)?\s*trial|7-?\s*day\s+free|start your trial|\btrial\b/i.test(
+    text,
+  );
+}
+
 /**
- * Presentation merge for the public homepage:
- * - Upgrade legacy CMS copy to the redesigned defaults
- * - Force-hide fabricated progress metrics (live counts render in HomepageLiveStats)
- * - Keep the hero brand-first (no fabricated or duplicate stat strip)
+ * Field-level legacy upgrades only — never wholesale-replace a CMS section
+ * when the admin has published intentional copy. Visibility and layout come
+ * from the published payload (normalized). Free-trial promo copy is always scrubbed.
  */
 export function presentHomepagePayload(
   payload: HomepagePayload,
@@ -65,74 +70,116 @@ export function presentHomepagePayload(
 ): HomepagePayload {
   void _liveStats;
   const defaults = createDefaultHomepagePayload();
-  const useDefaultsHero = isLegacyHomepageHero(payload.hero);
+  const useDefaultsHero =
+    isLegacyHomepageHero(payload.hero) ||
+    mentionsTrial(payload.hero.primaryCta.label) ||
+    mentionsTrial(payload.hero.description);
   const heroBase = useDefaultsHero ? defaults.hero : payload.hero;
 
   const why =
     payload.why.points.some((p) => /unlimited exam practice/i.test(p)) ||
-    payload.why.points.some((p) => /performance update/i.test(p))
+    payload.why.points.some((p) => /performance update/i.test(p)) ||
+    payload.why.points.some((p) => mentionsTrial(p))
       ? defaults.why
       : payload.why;
 
   const ctaBanner =
     /thousands of successful/i.test(payload.ctaBanner.body) ||
-    payload.ctaBanner.cta.label === 'Start Now'
+    payload.ctaBanner.cta.label === 'Start Now' ||
+    mentionsTrial(payload.ctaBanner.heading) ||
+    mentionsTrial(payload.ctaBanner.body) ||
+    mentionsTrial(payload.ctaBanner.cta.label)
       ? defaults.ctaBanner
       : payload.ctaBanner;
 
   const newsletter =
-    /aren't live yet/i.test(payload.newsletter.body) &&
-    payload.newsletter.title === 'Stay updated'
+    (/aren't live yet/i.test(payload.newsletter.body) &&
+      payload.newsletter.title === 'Stay updated') ||
+    mentionsTrial(payload.newsletter.body) ||
+    mentionsTrial(payload.newsletter.cta.label)
       ? defaults.newsletter
       : payload.newsletter;
 
   const latest =
     payload.latest.heading === 'Latest Collections' ? defaults.latest : payload.latest;
 
-  const categories =
-    payload.categories.heading === 'Our Question Bank Categories'
-      ? { ...payload.categories, heading: defaults.categories.heading, subtitle: defaults.categories.subtitle, cta: { ...payload.categories.cta, label: defaults.categories.cta.label } }
-      : payload.categories;
+  // Only swap known legacy heading/subtitle strings — keep admin tile order & rest.
+  const categories = {
+    ...payload.categories,
+    heading:
+      payload.categories.heading === 'Our Question Bank Categories'
+        ? defaults.categories.heading
+        : payload.categories.heading,
+    subtitle:
+      payload.categories.heading === 'Our Question Bank Categories'
+        ? defaults.categories.subtitle
+        : payload.categories.subtitle,
+    cta:
+      payload.categories.heading === 'Our Question Bank Categories'
+        ? { ...payload.categories.cta, label: defaults.categories.cta.label }
+        : payload.categories.cta,
+  };
 
   const legacyTopicHeadings = new Set([
     'Topic Based Question Analysis',
     'Topics-Based Question Analysis',
     'Topic-based practice',
   ]);
-  const topicsBase = legacyTopicHeadings.has(payload.topics.heading.trim())
-    ? {
-        ...payload.topics,
-        heading: defaults.topics.heading,
-        cta: { ...payload.topics.cta, label: defaults.topics.cta.label },
-      }
-    : payload.topics;
   const legacyTopicSubtitles = new Set([
     'Master Every Subject, One Topic at a Time',
     'Explore subject-wise and topic-wise questions to strengthen your knowledge and improve your exam preparation.',
   ]);
-  const topicSubtitle = topicsBase.subtitle?.trim() ?? '';
+  const topicHeading = payload.topics.heading.trim();
+  const topicSubtitle = payload.topics.subtitle?.trim() ?? '';
   const topics = {
-    ...topicsBase,
-    // Categories pattern: heading + one description only — never surface a subheading.
+    ...payload.topics,
+    heading: legacyTopicHeadings.has(topicHeading)
+      ? defaults.topics.heading
+      : payload.topics.heading,
     subheading: '',
-    subtitle:
-      !topicSubtitle || legacyTopicSubtitles.has(topicSubtitle)
-        ? defaults.topics.subtitle
-        : topicSubtitle,
+    subtitle: legacyTopicSubtitles.has(topicSubtitle)
+      ? defaults.topics.subtitle
+      : payload.topics.subtitle,
+    cta: legacyTopicHeadings.has(topicHeading)
+      ? { ...payload.topics.cta, label: defaults.topics.cta.label }
+      : payload.topics.cta,
   };
+
+  const howItWorks =
+    payload.howItWorks.steps.some((s) => mentionsTrial(s.title) || mentionsTrial(s.body)) ||
+    mentionsTrial(payload.howItWorks.cta.label)
+      ? defaults.howItWorks
+      : payload.howItWorks;
+
+  const dashboardPreview =
+    mentionsTrial(payload.dashboardPreview.primaryCta.label) ||
+    mentionsTrial(payload.dashboardPreview.body)
+      ? defaults.dashboardPreview
+      : payload.dashboardPreview;
+
+  const accessFaq =
+    payload.accessFaq.highlights.some((h) => mentionsTrial(h)) ||
+    payload.accessFaq.faqs.some((f) => mentionsTrial(f.question) || mentionsTrial(f.answer)) ||
+    mentionsTrial(payload.accessFaq.cta.label)
+      ? defaults.accessFaq
+      : payload.accessFaq;
 
   return normalizeHomepagePayload({
     ...defaults,
     ...payload,
     layout: payload.layout ?? defaults.layout,
-    trialStrip: payload.trialStrip ?? defaults.trialStrip,
+    // Free trials disabled — never show the promotional strip even if CMS has it on.
+    trialStrip: {
+      ...(payload.trialStrip ?? defaults.trialStrip),
+      visible: false,
+    },
     liveStats: payload.liveStats ?? defaults.liveStats,
     sampleMcq: payload.sampleMcq ?? defaults.sampleMcq,
     productFeatures: payload.productFeatures ?? defaults.productFeatures,
-    howItWorks: payload.howItWorks ?? defaults.howItWorks,
-    dashboardPreview: payload.dashboardPreview ?? defaults.dashboardPreview,
+    howItWorks,
+    dashboardPreview,
     newsStrip: payload.newsStrip ?? defaults.newsStrip,
-    accessFaq: payload.accessFaq ?? defaults.accessFaq,
+    accessFaq,
     customSections: payload.customSections ?? defaults.customSections,
     hero: {
       ...heroBase,

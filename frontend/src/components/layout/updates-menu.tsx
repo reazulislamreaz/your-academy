@@ -9,7 +9,7 @@ import type { NewsListItem } from '@/lib/api/types';
 import { useMe } from '@/features/auth/use-auth';
 import { cn } from '@/lib/utils';
 
-/** Lightweight updates panel — live news + account notices (no fake notification store). */
+/** Lightweight updates panel — live news (no fake notification store). */
 export function UpdatesMenu() {
   const me = useMe();
   const [open, setOpen] = useState(false);
@@ -42,9 +42,7 @@ export function UpdatesMenu() {
   if (!me.data) return null;
 
   const items = (news.data ?? []).slice(0, 5);
-  const trialActive = me.data.access.isTrialActive;
-  // Honest badge: trial ended, or there is at least one published circular.
-  const showBadge = !trialActive || items.length > 0;
+  const showBadge = items.length > 0;
 
   return (
     <div className="relative" ref={rootRef}>
@@ -74,16 +72,6 @@ export function UpdatesMenu() {
             <p className="text-xs text-[var(--muted-strong)]">News and account notices</p>
           </div>
           <ul className="max-h-80 divide-y divide-[var(--line)] overflow-y-auto">
-            <li className="px-4 py-3 text-sm">
-              <p className="font-semibold text-[var(--ink)]">
-                {trialActive ? 'Trial answers unlocked' : 'Trial ended'}
-              </p>
-              <p className="mt-0.5 text-xs leading-relaxed text-[var(--muted-strong)]">
-                {trialActive
-                  ? `Ends ${new Date(me.data.access.trialEndsAt).toLocaleString()}`
-                  : 'Correct answers stay premium; browsing stays open.'}
-              </p>
-            </li>
             {news.isLoading ? (
               <li className="px-4 py-3 text-sm text-[var(--muted-strong)]">Loading news…</li>
             ) : null}

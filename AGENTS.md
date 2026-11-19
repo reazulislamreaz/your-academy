@@ -63,9 +63,9 @@ Forbidden without approval: microservices, GraphQL, alternate ORMs, payment prov
 
 | ID | Rule |
 |----|------|
-| Trial | Exactly **7 days** from registration; server timestamps; **dynamic** expiry (`now < trialEndsAt`); no cron required to expire |
-| Post-trial allowed | Login, homepage, browse/search/filter questions, titles/content/options, save MCQs, profile, bookmarks, activity, news, **published PDFs** (DEC-001) |
-| Post-trial denied | Correct answers, indicators, explanations — **omit from API** |
+| Trial | **Disabled** — registration does not grant a free-trial window; `AccessControlService.isTrialActive` always false. Schema columns remain for compatibility. |
+| Without entitlement | Login, homepage, browse/search/filter questions, titles/content/options, save MCQs, profile, bookmarks, activity, news, **published PDFs** (DEC-001) |
+| Answers gated | Correct answers, indicators, explanations — **omit from API** unless admin or active subscription |
 | Questions CRUD | **Admin only** |
 | Question browse | Public Preli bank + homepage via `/api/v1/public/questions` (DEC-031); learner practice `/questions*` remains authenticated (DEC-003) |
 | Payments | Not in v1; keep subscription tables modular |
@@ -231,7 +231,7 @@ Forbidden without approval: microservices, GraphQL, alternate ORMs, payment prov
 
 - Catalog: `docs/17-environment-variables.md`.
 - Required for local: copy `.env.example` → `.env` (gitignored).
-- `TRIAL_DAYS` must remain `7` unless business approves change.
+- `TRIAL_DAYS` is unused for entitlement (free trials disabled); prefer `0` in `.env.example`.
 - Seed admin via `BOOTSTRAP_ADMIN_*` — change default password before real use.
 
 ---

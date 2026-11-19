@@ -13,10 +13,14 @@ export type HomepageAdminBundle = {
   published: HomepageView & { id: string; heroImageAssetId: string | null };
 };
 
-/** Server Component / RSC fetch — uses internal API origin. */
+/**
+ * Server Component / RSC fetch — uses internal API origin.
+ * Tagged so admin publish can purge via `revalidateTag('homepage')`.
+ * Keep a modest ISR window as a fallback when on-demand revalidation is skipped.
+ */
 export async function getPublicHomepage() {
   const res = await fetch(`${serverApiBase()}/public/homepage`, {
-    next: { revalidate: 60, tags: ['homepage'] },
+    next: { revalidate: 30, tags: ['homepage'] },
   });
   if (!res.ok) {
     throw new Error(`Homepage fetch failed: ${res.status}`);

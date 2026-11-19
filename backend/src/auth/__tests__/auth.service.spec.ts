@@ -70,10 +70,10 @@ describe('AuthService hardening paths', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jwt.signAsync.mockResolvedValue('access.jwt');
-    process.env.TRIAL_DAYS = '7';
+    process.env.TRIAL_DAYS = '0';
   });
 
-  it('sets trialEndsAt ~7 days from registration', async () => {
+  it('does not grant a free-trial window on registration', async () => {
     prisma.user.findUnique.mockResolvedValue(null);
     const created = {
       id: 'u1',
@@ -83,14 +83,13 @@ describe('AuthService hardening paths', () => {
       role: UserRole.USER,
       status: UserStatus.ACTIVE,
       trialStartedAt: new Date('2026-11-02T00:00:00.000Z'),
-      trialEndsAt: new Date('2026-11-09T00:00:00.000Z'),
+      trialEndsAt: new Date('2026-11-02T00:00:00.000Z'),
       passwordHash: 'hash',
     };
     prisma.user.create.mockImplementation(async ({ data }: { data: Record<string, unknown> }) => {
       const trialStartedAt = data.trialStartedAt as Date;
       const trialEndsAt = data.trialEndsAt as Date;
-      const delta = trialEndsAt.getTime() - trialStartedAt.getTime();
-      expect(delta).toBe(7 * 24 * 60 * 60 * 1000);
+      expect(trialEndsAt.getTime()).toBe(trialStartedAt.getTime());
       return { ...created, ...data, passwordHash: 'hash' };
     });
     prisma.authSession.create.mockResolvedValue({

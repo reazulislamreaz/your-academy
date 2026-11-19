@@ -14,7 +14,7 @@ Read root `AGENTS.md` first. It is the full rulebook.
 - Stack fixed: Next.js + NestJS + Prisma + PostgreSQL + Redis + BullMQ + Cloudinary
 - Flow: Controller → Service → Repository → Prisma
 - No microservices / GraphQL / alternate ORM / v1 payments without approval
-- 7-day dynamic trial; API omits answers/explanations when not entitled
+- Free trials disabled; API omits answers/explanations when not entitled (admin/subscription only)
 - Questions require auth; question CRUD admin-only
 - Auth: HTTP-only cookies + CSRF; never localStorage tokens
 - Secrets only in `.env` (gitignored); commit `.env.example` only

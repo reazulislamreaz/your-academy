@@ -137,13 +137,13 @@ export default function AdminDashboardPage() {
             <Surface elevated interactive className="flex flex-col justify-between gap-4 p-4 sm:p-5">
               <div>
                 <div className="flex items-center gap-2">
-                  <Badge variant="success">Trials</Badge>
+                  <Badge variant="success">Learners</Badge>
                   <span className="font-display text-2xl font-bold tabular-nums">
-                    {data.users.trialActive}
+                    {data.users.total}
                   </span>
                 </div>
                 <p className="mt-2 text-sm text-[var(--muted-strong)]">
-                  Learners with an active trial right now.
+                  Registered learner accounts on the platform.
                 </p>
               </div>
               <Link href="/admin/users">
@@ -155,13 +155,13 @@ export default function AdminDashboardPage() {
             <Surface elevated interactive className="flex flex-col justify-between gap-4 p-4 sm:p-5">
               <div>
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline">Expired</Badge>
+                  <Badge variant="outline">Online</Badge>
                   <span className="font-display text-2xl font-bold tabular-nums">
-                    {data.users.trialExpired}
+                    {data.users.online}
                   </span>
                 </div>
                 <p className="mt-2 text-sm text-[var(--muted-strong)]">
-                  Post-trial browsers — answers gated by entitlement.
+                  Learners with a recent heartbeat — answers gated by entitlement.
                 </p>
               </div>
               <Link href="/admin/users">
@@ -192,9 +192,9 @@ export default function AdminDashboardPage() {
             tone="teal"
           />
           <StatCard
-            label="Trial active"
-            value={data.users.trialActive}
-            hint="Answers unlocked"
+            label="New (24h)"
+            value={data.users.newRegistrations24h}
+            hint="Recent signups"
             icon={Clock3}
             tone="red"
           />

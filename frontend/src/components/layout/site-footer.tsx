@@ -18,8 +18,8 @@ export function SiteFooter() {
           <div className="max-w-sm space-y-3">
             <BrandMark inverse />
             <p className="text-sm leading-relaxed text-slate-300/85">
-              Published Preli MCQs, Written question sets, newspaper columns, and a 7-day free trial
-              for serious exam prep.
+              Published Preli MCQs, Written question sets, and newspaper columns for serious exam
+              prep.
             </p>
             <p className="text-xs text-slate-400">
               Questions?{' '}
@@ -28,7 +28,7 @@ export function SiteFooter() {
               </Link>
               {' · '}
               <Link href="/register" className="site-footer-text-link">
-                Start free trial
+                Create free account
               </Link>
             </p>
             <FooterSocialLinks />
