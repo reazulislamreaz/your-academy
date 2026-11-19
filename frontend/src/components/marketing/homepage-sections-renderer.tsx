@@ -27,8 +27,6 @@ import type { PublicDocumentListItem } from '@/lib/api/public-documents';
 import type { PublicQuestionCard } from '@/lib/api/public-questions';
 import type { PublicPlatformStats } from '@/lib/api/public-stats';
 import type { ApiResult } from '@/lib/api/client';
-import { HOMEPAGE_SUPPORTING_COPY } from '@/lib/marketing/homepage-presentation';
-
 type Props = {
   payload: HomepagePayload;
   heroImageUrl: string | null;
@@ -68,7 +66,6 @@ export function HomepageSectionsRenderer({
                 key={entry.id}
                 hero={payload.hero}
                 heroImageUrl={heroImageUrl}
-                supportingText={HOMEPAGE_SUPPORTING_COPY}
               />
             ) : null;
           case 'trialStrip':

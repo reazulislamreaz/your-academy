@@ -20,7 +20,8 @@ export type HomepageAdminBundle = {
  */
 export async function getPublicHomepage() {
   const res = await fetch(`${serverApiBase()}/public/homepage`, {
-    next: { revalidate: 30, tags: ['homepage'] },
+    // Tagged for on-demand purge after admin Publish (`revalidateTag('homepage')`).
+    next: { revalidate: 15, tags: ['homepage'] },
   });
   if (!res.ok) {
     throw new Error(`Homepage fetch failed: ${res.status}`);

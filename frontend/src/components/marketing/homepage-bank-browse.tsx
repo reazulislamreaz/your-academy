@@ -52,11 +52,14 @@ export function HomepageBankBrowseCategories({ categories }: CategoriesProps) {
   if (!categories.visible) return null;
 
   return (
-    <section className="section-pad">
+    <section className="section-pad" aria-labelledby="preli-exam-categories-heading">
       <Reveal className="marketing-container grid items-center gap-6 sm:gap-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,2.2fr)] lg:gap-10">
         <div className="space-y-3 sm:space-y-4">
           <span className="hp-mark" aria-hidden />
-          <h2 className="hp-heading text-[1.375rem] sm:text-2xl md:text-[2rem]">
+          <h2
+            id="preli-exam-categories-heading"
+            className="hp-heading text-[1.375rem] sm:text-2xl md:text-[2rem]"
+          >
             {categories.heading}
           </h2>
           <p className="hp-lede text-sm sm:text-base">{categories.subtitle}</p>
@@ -196,14 +199,19 @@ export function HomepageBankBrowseTopics({ topics }: TopicsProps) {
   if (!topics.visible) return null;
 
   return (
-    <section className="section-pad pt-0">
+    <section className="section-pad pt-0" aria-labelledby="topic-analysis-heading">
       <Reveal className="marketing-container grid items-center gap-6 sm:gap-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,2.2fr)] lg:gap-10">
         <div className="space-y-3 sm:space-y-4">
           <span className="hp-mark" aria-hidden />
-          <h2 className="hp-heading text-[1.375rem] sm:text-2xl md:text-[2rem]">
+          <h2
+            id="topic-analysis-heading"
+            className="hp-heading text-[1.375rem] sm:text-2xl md:text-[2rem]"
+          >
             {topics.heading}
           </h2>
-          <p className="hp-lede text-sm sm:text-base">{topics.subtitle}</p>
+          {topics.subtitle.trim() ? (
+            <p className="hp-lede text-sm sm:text-base">{topics.subtitle}</p>
+          ) : null}
           {topics.cta.visible ? (
             <Link href={topicsCtaHref} className="inline-flex w-full pt-1 sm:w-auto">
               <Button className="min-h-11 w-full rounded-full px-6 shadow-[0_10px_24px_-12px_rgba(227,30,36,0.45)] transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 sm:w-auto">

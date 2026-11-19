@@ -11,9 +11,11 @@ import {
 } from '@your-academy/shared';
 import {
   Copy,
+  ExternalLink,
   Eye,
   EyeOff,
   GripVertical,
+  Loader2,
   Monitor,
   Plus,
   RotateCcw,
@@ -51,6 +53,11 @@ import {
   getStorageStatus,
   uploadViaSignedRequest,
 } from '@/lib/cloudinary-upload';
+import {
+  formatHomepageSaveError,
+  validateHomepageDraft,
+  type FieldErrors,
+} from '@/lib/marketing/homepage-cms-validation';
 import { cn } from '@/lib/utils';
 
 type PreviewDevice = 'desktop' | 'tablet' | 'mobile';
@@ -80,6 +87,7 @@ export function HomepageCms() {
   const [message, setMessage] = useState<{ tone: 'success' | 'danger'; text: string } | null>(
     null,
   );
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [selectedId, setSelectedId] = useState<string>('hero');
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [confirmPublish, setConfirmPublish] = useState(false);
@@ -133,6 +141,21 @@ export function HomepageCms() {
     setPayload((prev) => normalizeHomepagePayload(updater(prev)));
     setDirty(true);
     setMessage(null);
+    setFieldErrors({});
+  };
+
+  const assertDraftValid = (): boolean => {
+    const result = validateHomepageDraft(payload);
+    if (result.ok) {
+      setFieldErrors({});
+      return true;
+    }
+    setFieldErrors(result.errors);
+    setMessage({ tone: 'danger', text: result.summary ?? 'Could not save — fix highlighted fields.' });
+    if (Object.keys(result.errors).some((k) => k.startsWith('hero.'))) {
+      setSelectedId('hero');
+    }
+    return false;
   };
 
   const reorder = (from: number, to: number) => {
@@ -234,13 +257,16 @@ export function HomepageCms() {
       setHeroImageAssetId(draft.heroImageAssetId);
       setHeroPreview(draft.heroImageUrl);
       setDirty(false);
+      setFieldErrors({});
       setMessage({
         tone: 'success',
-        text: 'Draft saved. Public site unchanged until you publish.',
+        text: 'Draft saved. Click Publish to push changes to the live homepage.',
       });
       void qc.invalidateQueries({ queryKey: ['admin-homepage'] });
     },
-    onError: (err: Error) => setMessage({ tone: 'danger', text: err.message }),
+    onError: (err: unknown) => {
+      setMessage({ tone: 'danger', text: formatHomepageSaveError(err, 'save') });
+    },
   });
 
   const publish = useMutation({
@@ -256,21 +282,32 @@ export function HomepageCms() {
     },
     onSuccess: (cache) => {
       setDirty(false);
+      setFieldErrors({});
       setConfirmPublish(false);
       setMessage({
         tone: 'success',
         text: cache.ok
-          ? 'Published. Live homepage cache cleared — reload the homepage to confirm.'
-          : `Published to the database. Cache refresh lagged (${cache.detail ?? 'unknown'}) — hard-refresh the homepage if needed.`,
+          ? 'Homepage & Hero section updated successfully! Open View live homepage to verify.'
+          : `Published to the database, but cache refresh lagged (${cache.detail ?? 'unknown'}). Hard-refresh the live homepage if needed.`,
       });
       void qc.invalidateQueries({ queryKey: ['admin-homepage'] });
       void qc.invalidateQueries({ queryKey: ['admin-homepage-revisions'] });
     },
-    onError: (err: Error) => {
+    onError: (err: unknown) => {
       setConfirmPublish(false);
-      setMessage({ tone: 'danger', text: err.message });
+      setMessage({ tone: 'danger', text: formatHomepageSaveError(err, 'publish') });
     },
   });
+
+  const saveDraft = () => {
+    if (!assertDraftValid()) return;
+    save.mutate();
+  };
+
+  const requestPublish = () => {
+    if (!assertDraftValid()) return;
+    setConfirmPublish(true);
+  };
 
   const restore = useMutation({
     mutationFn: restoreHomepage,
@@ -320,7 +357,15 @@ export function HomepageCms() {
         text: 'Hero image uploaded. Save draft, then publish to go live.',
       });
     },
-    onError: (err: Error) => setMessage({ tone: 'danger', text: err.message }),
+    onError: (err: unknown) => {
+      const detail = err instanceof Error ? err.message : 'Upload failed';
+      setMessage({
+        tone: 'danger',
+        text: detail.toLowerCase().includes('8mb')
+          ? 'Hero image failed: file size exceeds 8MB limit. Use a smaller PNG, JPG, or WebP.'
+          : `Hero image failed: ${detail}`,
+      });
+    },
   });
 
   const visibleCount = useMemo(
@@ -355,9 +400,15 @@ export function HomepageCms() {
         <PageHeader
           eyebrow="Marketing"
           title="Homepage CMS"
-          description="Reorder every homepage section, edit text/images/buttons, save drafts, preview, and publish. Live site only shows published content."
+          description="Edit every homepage section (Hero first), save a draft, then Publish so the live site updates. Draft-only saves never change youracademy.com.bd."
           actions={
             <div className="flex flex-wrap gap-2">
+              <Link href="/" target="_blank" rel="noopener noreferrer">
+                <Button type="button" size="sm" variant="outline" className="motion-press">
+                  <ExternalLink className="size-4" />
+                  View live homepage
+                </Button>
+              </Link>
               <Button
                 type="button"
                 size="sm"
@@ -373,27 +424,35 @@ export function HomepageCms() {
                 size="sm"
                 variant="secondary"
                 className="motion-press"
-                disabled={!dirty || save.isPending}
-                onClick={() => save.mutate()}
+                disabled={!dirty || save.isPending || publish.isPending}
+                onClick={saveDraft}
               >
-                <Save className="size-4" />
-                Save draft
+                {save.isPending ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Save className="size-4" />
+                )}
+                {save.isPending ? 'Saving changes…' : 'Save draft'}
               </Button>
               <Button
                 type="button"
                 size="sm"
                 className="motion-press"
-                disabled={publish.isPending}
-                onClick={() => setConfirmPublish(true)}
+                disabled={save.isPending || publish.isPending}
+                onClick={requestPublish}
               >
-                <Upload className="size-4" />
-                Publish
+                {publish.isPending ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Upload className="size-4" />
+                )}
+                {publish.isPending ? 'Publishing…' : 'Publish'}
               </Button>
               <Button
                 type="button"
                 size="sm"
                 variant="ghost"
-                disabled={restore.isPending}
+                disabled={restore.isPending || save.isPending || publish.isPending}
                 onClick={() => setConfirmRestore(true)}
               >
                 <RotateCcw className="size-4" />
@@ -407,7 +466,12 @@ export function HomepageCms() {
       {message ? (
         <Alert variant={message.tone === 'success' ? 'success' : 'danger'}>{message.text}</Alert>
       ) : null}
-      {dirty ? <Alert variant="warning">Unpublished draft changes.</Alert> : null}
+      {dirty ? (
+        <Alert variant="warning">
+          Unpublished draft changes — click Publish (not only Save draft) for the live homepage to
+          update.
+        </Alert>
+      ) : null}
 
       <p className="text-xs text-[var(--muted)]">
         {visibleCount}/{sections.length} sections visible
@@ -547,6 +611,7 @@ export function HomepageCms() {
                 <SectionEditor
                   sectionId={selected.id}
                   payload={payload}
+                  fieldErrors={fieldErrors}
                   heroPreviewUrl={heroPreviewUrl}
                   storageConfigured={Boolean(storageQ.data?.configured)}
                   uploadingHero={uploadHero.isPending}
@@ -556,6 +621,7 @@ export function HomepageCms() {
                     setHeroImageAssetId(null);
                     setHeroPreview(null);
                     setDirty(true);
+                    setFieldErrors({});
                   }}
                   onRequestRemoveCustom={() => setConfirmDeleteCustom(true)}
                   onDuplicateCustom={() => duplicateCustom(selected.id)}
@@ -693,6 +759,7 @@ function SectionVisibilityToggle({
 function SectionEditor({
   sectionId,
   payload,
+  fieldErrors,
   heroPreviewUrl,
   storageConfigured,
   uploadingHero,
@@ -704,6 +771,7 @@ function SectionEditor({
 }: {
   sectionId: string;
   payload: HomepagePayload;
+  fieldErrors: FieldErrors;
   heroPreviewUrl: string | null;
   storageConfigured: boolean;
   uploadingHero: boolean;
@@ -717,42 +785,56 @@ function SectionEditor({
     const h = payload.hero;
     return (
       <div className="space-y-4">
-        <Field label="Eyebrow">
+        <Alert variant="info">
+          Hero fields map 1:1 to the live homepage. After editing, Save draft then Publish — then use
+          View live homepage to confirm.
+        </Alert>
+        <Field label="Eyebrow / badge" error={fieldErrors['hero.eyebrow']}>
           <Input
             value={h.eyebrow}
+            aria-invalid={Boolean(fieldErrors['hero.eyebrow'])}
+            className={fieldErrors['hero.eyebrow'] ? 'border-[var(--danger)]' : undefined}
             onChange={(e) =>
               onPatch((p) => ({ ...p, hero: { ...p.hero, eyebrow: e.target.value } }))
             }
           />
         </Field>
-        <Field label="Main title (before highlight)">
+        <Field label="Main title (brand)" error={fieldErrors['hero.titleBefore']}>
           <Input
             value={h.titleBefore}
+            aria-invalid={Boolean(fieldErrors['hero.titleBefore'])}
+            className={fieldErrors['hero.titleBefore'] ? 'border-[var(--danger)]' : undefined}
             onChange={(e) =>
               onPatch((p) => ({ ...p, hero: { ...p.hero, titleBefore: e.target.value } }))
             }
           />
         </Field>
-        <Field label="Title highlight">
+        <Field label="Title highlight" error={fieldErrors['hero.titleHighlight']}>
           <Input
             value={h.titleHighlight}
+            aria-invalid={Boolean(fieldErrors['hero.titleHighlight'])}
+            className={fieldErrors['hero.titleHighlight'] ? 'border-[var(--danger)]' : undefined}
             onChange={(e) =>
               onPatch((p) => ({ ...p, hero: { ...p.hero, titleHighlight: e.target.value } }))
             }
           />
         </Field>
-        <Field label="Title (after highlight)">
+        <Field label="Side label (after title)" error={fieldErrors['hero.titleAfter']}>
           <Input
             value={h.titleAfter ?? ''}
+            aria-invalid={Boolean(fieldErrors['hero.titleAfter'])}
+            className={fieldErrors['hero.titleAfter'] ? 'border-[var(--danger)]' : undefined}
             onChange={(e) =>
               onPatch((p) => ({ ...p, hero: { ...p.hero, titleAfter: e.target.value } }))
             }
           />
         </Field>
-        <Field label="Subtitle / description">
+        <Field label="Subtitle / description" error={fieldErrors['hero.description']}>
           <Textarea
             rows={3}
             value={h.description}
+            aria-invalid={Boolean(fieldErrors['hero.description'])}
+            className={fieldErrors['hero.description'] ? 'border-[var(--danger)]' : undefined}
             onChange={(e) =>
               onPatch((p) => ({ ...p, hero: { ...p.hero, description: e.target.value } }))
             }
@@ -761,11 +843,15 @@ function SectionEditor({
         <CtaFields
           label="Primary CTA"
           cta={h.primaryCta}
+          labelError={fieldErrors['hero.primaryCta.label']}
+          hrefError={fieldErrors['hero.primaryCta.href']}
           onChange={(cta) => onPatch((p) => ({ ...p, hero: { ...p.hero, primaryCta: cta } }))}
         />
         <CtaFields
           label="Secondary CTA"
           cta={h.secondaryCta}
+          labelError={fieldErrors['hero.secondaryCta.label']}
+          hrefError={fieldErrors['hero.secondaryCta.href']}
           onChange={(cta) => onPatch((p) => ({ ...p, hero: { ...p.hero, secondaryCta: cta } }))}
         />
         <div className="space-y-2">
@@ -802,7 +888,8 @@ function SectionEditor({
           </p>
           {!storageConfigured ? (
             <p className="text-xs text-[var(--danger)]">
-              Cloudinary is not configured — hero upload is disabled.
+              Hero image failed: Cloudinary is not configured — upload is disabled until credentials
+              are set.
             </p>
           ) : null}
         </div>
@@ -878,9 +965,11 @@ function SectionEditor({
             />
           </Field>
         ) : (
-          <Field label="Subtitle">
+          <Field label="Description">
             <Textarea
               rows={3}
+              maxLength={500}
+              placeholder="Paragraph under the Topic Base Question Analysis heading"
               value={payload.topics.subtitle ?? ''}
               onChange={(e) =>
                 onPatch((p) => ({
@@ -1501,11 +1590,20 @@ function SectionEditor({
   );
 }
 
-function Field({ label, children }: { label: string; children: ReactNode }) {
+function Field({
+  label,
+  error,
+  children,
+}: {
+  label: string;
+  error?: string;
+  children: ReactNode;
+}) {
   return (
     <div className="space-y-2">
       <Label>{label}</Label>
       {children}
+      {error ? <p className="text-xs font-medium text-[var(--danger)]">{error}</p> : null}
     </div>
   );
 }
@@ -1513,25 +1611,40 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 function CtaFields({
   label,
   cta,
+  labelError,
+  hrefError,
   onChange,
 }: {
   label: string;
   cta: { label: string; href: string; visible: boolean };
+  labelError?: string;
+  hrefError?: string;
   onChange: (cta: { label: string; href: string; visible: boolean }) => void;
 }) {
   return (
-    <div className="space-y-2 rounded-[var(--radius)] border border-[var(--line)] p-3">
+    <div
+      className={cn(
+        'space-y-2 rounded-[var(--radius)] border p-3',
+        labelError || hrefError ? 'border-[var(--danger)]' : 'border-[var(--line)]',
+      )}
+    >
       <p className="text-xs font-semibold tracking-wide text-[var(--muted)] uppercase">{label}</p>
       <Input
         value={cta.label}
         placeholder="Button text"
+        aria-invalid={Boolean(labelError)}
+        className={labelError ? 'border-[var(--danger)]' : undefined}
         onChange={(e) => onChange({ ...cta, label: e.target.value })}
       />
+      {labelError ? <p className="text-xs font-medium text-[var(--danger)]">{labelError}</p> : null}
       <Input
         value={cta.href}
         placeholder="/path or https://…"
+        aria-invalid={Boolean(hrefError)}
+        className={hrefError ? 'border-[var(--danger)]' : undefined}
         onChange={(e) => onChange({ ...cta, href: e.target.value })}
       />
+      {hrefError ? <p className="text-xs font-medium text-[var(--danger)]">{hrefError}</p> : null}
       <label className="flex items-center gap-2 text-sm">
         <input
           type="checkbox"

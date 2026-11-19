@@ -28,6 +28,7 @@ import {
   sanitizeSvgFileIfNeeded,
   uploadViaSignedRequest,
 } from '@/lib/cloudinary-upload';
+import { formatHomepageSaveError } from '@/lib/marketing/homepage-cms-validation';
 import {
   isCategoryLikeSection,
   type BannerMessage,
@@ -212,10 +213,10 @@ export function useHomepageSection(section: HomepageSectionKind) {
       }
       await qc.invalidateQueries({ queryKey: ['admin-homepage'] });
     },
-    onError: (err) => {
+    onError: (err, alsoPublish) => {
       setMessage({
         tone: 'danger',
-        text: err instanceof Error ? err.message : 'Save failed',
+        text: formatHomepageSaveError(err, alsoPublish ? 'publish' : 'save'),
       });
     },
   });

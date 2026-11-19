@@ -1,5 +1,28 @@
 import ExcelJS from 'exceljs';
 
+/**
+ * Guest-exam Excel template — same Bangla columns as Preli bulk upload
+ * (`question-import` TEMPLATE_HEADERS), plus optional Explanation / ব্যাখ্যা.
+ *
+ * Columns:
+ *   প্রশ্ন নং | প্রশ্ন | পরীক্ষার নাম ও সাল | প্রশ্নের তারিখ | ক | খ | গ | ঘ | উত্তর
+ *   [| ব্যাখ্যা]
+ *
+ * Serial / exam name / date are accepted for spreadsheet compatibility and ignored
+ * at import (guest ExamQuestion only stores stem, options, answer, explanation).
+ */
+export const EXAM_TEMPLATE_HEADERS = [
+  'প্রশ্ন নং',
+  'প্রশ্ন',
+  'পরীক্ষার নাম ও সাল',
+  'প্রশ্নের তারিখ',
+  'ক',
+  'খ',
+  'গ',
+  'ঘ',
+  'উত্তর',
+] as const;
+
 export type ParsedExamQuestionRow = {
   rowNumber: number;
   questionText: string;
@@ -16,7 +39,8 @@ export type ExamParseResult = {
 const HEADER_ALIASES: Record<string, string> = {
   question: 'question',
   প্রশ্ন: 'question',
-  // Platform template
+  'প্রশ্নের বিবরণ': 'question',
+  // Platform / English template
   optiona: 'optionA',
   'option a': 'optionA',
   option_a: 'optionA',
@@ -107,7 +131,7 @@ function resolveCorrectAnswer(
   return match ?? trimmed;
 }
 
-/** Parse guest-exam workbook (Question / OptionA–D / CorrectAnswer / Explanation). */
+/** Parse guest-exam workbook (Bangla Preli template or English OptionA–D). */
 export async function parseExamWorkbook(buffer: Buffer): Promise<ExamParseResult> {
   const workbook = new ExcelJS.Workbook();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- exceljs accepts Buffer at runtime
@@ -130,7 +154,9 @@ export async function parseExamWorkbook(buffer: Buffer): Promise<ExamParseResult
     return {
       rows: [],
       errors: [
-        `Missing required columns: ${missing.join(', ')}. Expected Question, OptionA–D (or Option 1 (ক)–4 (ঘ)), CorrectAnswer, Explanation (optional).`,
+        `Missing required columns: ${missing.join(', ')}. Expected Bangla template ` +
+          `(প্রশ্ন, ক, খ, গ, ঘ, উত্তর) or English Question / OptionA–D / CorrectAnswer. ` +
+          `Explanation (ব্যাখ্যা) is optional.`,
       ],
     };
   }
@@ -187,27 +213,52 @@ export async function parseExamWorkbook(buffer: Buffer): Promise<ExamParseResult
   return { rows, errors };
 }
 
+/** Same Bangla header row + sample MCQs as Preli bulk upload (DEC-024 / DEC-039). */
 export async function buildExamTemplateBuffer(): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook();
-  const sheet = workbook.addWorksheet('Exam');
+  const sheet = workbook.addWorksheet('MCQ Questions');
+  sheet.addRow([...EXAM_TEMPLATE_HEADERS]);
+  sheet.getRow(1).font = { bold: true };
+
   sheet.addRow([
-    'Question',
-    'OptionA',
-    'OptionB',
-    'OptionC',
-    'OptionD',
-    'CorrectAnswer',
-    'Explanation',
+    '১',
+    '‘পরাগলী মহাভারত’ খ্যাত গ্রন্থের অনুবাদকের নাম কী?',
+    '৩১তম বিসিএস',
+    '2012-04-15',
+    'সঞ্জয়',
+    'কবীন্দ্র পরমেশ্বর',
+    'শ্রীকর নন্দী',
+    'কাশীরাম দাস',
+    'খ',
   ]);
   sheet.addRow([
-    'What is 2 + 2?',
-    '3',
-    '4',
-    '5',
-    '6',
-    'B',
-    'Basic arithmetic.',
+    '২',
+    'What idea does the passage present about the value of time?',
+    'বিশ্ববিদ্যালয় মঞ্জুরি কমিশন: ২০২৬',
+    '2026-01-10',
+    'Time is valuable only when used for work',
+    'Time should be measured strictly by hours and days',
+    'The value of time depends on how rich and meaningful moments are',
+    'A long life is always a meaningful one',
+    'গ',
   ]);
+  sheet.addRow([
+    '৩',
+    'সন্ধি কাকে বলে?',
+    'BCS Preliminary: 2024',
+    '18.03.2024',
+    'পরপর দুই ধ্বনির মিলন',
+    'শুধু সমাস',
+    'শুধু প্রত্যয়',
+    'শুধু উপসর্গ',
+    'ক',
+  ]);
+
+  const widths = [10, 48, 36, 14, 28, 28, 28, 28, 10];
+  sheet.columns.forEach((col, i) => {
+    col.width = widths[i] ?? 18;
+  });
+
   const buf = await workbook.xlsx.writeBuffer();
   return Buffer.from(buf);
 }

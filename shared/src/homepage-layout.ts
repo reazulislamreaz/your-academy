@@ -70,6 +70,57 @@ export function createDefaultHomepageLayout(): HomepageLayout {
   };
 }
 
+/**
+ * Keep Written bank categories immediately under Preliminary categories so the
+ * two exam-bank strips stay back-to-back on the marketing homepage.
+ */
+function pinWrittenCategoriesAfterPreli(
+  sections: HomepageLayout['sections'],
+): HomepageLayout['sections'] {
+  const catIdx = sections.findIndex((s) => s.id === 'categories');
+  const writtenIdx = sections.findIndex((s) => s.id === 'writtenCategories');
+  if (catIdx < 0 || writtenIdx < 0 || writtenIdx === catIdx + 1) return sections;
+
+  const next = [...sections];
+  const [written] = next.splice(writtenIdx, 1);
+  if (!written) return sections;
+  const newCatIdx = next.findIndex((s) => s.id === 'categories');
+  next.splice(newCatIdx + 1, 0, written);
+  return next;
+}
+
+/** Insert a missing builtin at its canonical slot (not blindly at the end). */
+function insertBuiltinAtCanonicalSlot(
+  sections: HomepageLayout['sections'],
+  id: HomepageBuiltinSectionId,
+  visible: boolean,
+): void {
+  const canonicalIdx = HOMEPAGE_BUILTIN_SECTION_IDS.indexOf(id);
+  let insertAt = sections.length;
+
+  for (let i = 0; i < sections.length; i += 1) {
+    const otherId = sections[i]!.id;
+    const otherCanonical = (HOMEPAGE_BUILTIN_SECTION_IDS as readonly string[]).indexOf(otherId);
+    if (otherCanonical >= 0 && otherCanonical < canonicalIdx) {
+      insertAt = i + 1;
+    }
+  }
+
+  if (insertAt === sections.length) {
+    for (let i = 0; i < sections.length; i += 1) {
+      const otherCanonical = (HOMEPAGE_BUILTIN_SECTION_IDS as readonly string[]).indexOf(
+        sections[i]!.id,
+      );
+      if (otherCanonical > canonicalIdx) {
+        insertAt = i;
+        break;
+      }
+    }
+  }
+
+  sections.splice(insertAt, 0, { id, visible });
+}
+
 /** Ensure every builtin section appears once; preserve custom entries; sync visibility flags. */
 export function normalizeHomepageLayout(
   layout: HomepageLayout | undefined | null,
@@ -95,13 +146,11 @@ export function normalizeHomepageLayout(
 
   for (const id of HOMEPAGE_BUILTIN_SECTION_IDS) {
     if (seen.has(id)) continue;
-    next.push({
-      id,
-      visible: visibilityHints?.[id] ?? true,
-    });
+    insertBuiltinAtCanonicalSlot(next, id, visibilityHints?.[id] ?? true);
+    seen.add(id);
   }
 
-  return { sections: next };
+  return { sections: pinWrittenCategoriesAfterPreli(next) };
 }
 
 export function isCustomLayoutSectionId(id: string): boolean {

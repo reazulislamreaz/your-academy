@@ -29,6 +29,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SearchField } from '@/components/ui/search-field';
 import { Surface } from '@/components/ui/surface';
+import { Textarea } from '@/components/ui/textarea';
 import type { AdminCategoryChild, AdminCategoryNode } from '@/features/admin/categories/types';
 import { apiFetch } from '@/lib/api/client';
 import {
@@ -438,39 +439,65 @@ export function HomepageSectionWorkspace({
       </Reveal>
 
       <Reveal delayMs={55}>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <div className="min-w-0 flex-1 sm:max-w-md">
-            <Label htmlFor="hs-heading" className="text-xs text-[var(--muted)]">
-              Section heading
-            </Label>
-            <Input
-              id="hs-heading"
-              value={sectionMeta.heading}
-              onChange={(e) => patchSectionMeta({ heading: e.target.value })}
-            />
-          </div>
-          {categoryLike ? (
+        <div className="space-y-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <div className="min-w-0 flex-1 sm:max-w-md">
-              <Label htmlFor="hs-subtitle" className="text-xs text-[var(--muted)]">
-                Section subtitle
+              <Label htmlFor="hs-heading" className="text-xs text-[var(--muted)]">
+                Section heading
               </Label>
               <Input
-                id="hs-subtitle"
+                id="hs-heading"
+                value={sectionMeta.heading}
+                onChange={(e) => patchSectionMeta({ heading: e.target.value })}
+              />
+            </div>
+            {categoryLike ? (
+              <div className="min-w-0 flex-1 sm:max-w-md">
+                <Label htmlFor="hs-subtitle" className="text-xs text-[var(--muted)]">
+                  Section subtitle
+                </Label>
+                <Input
+                  id="hs-subtitle"
+                  value={
+                    'subtitle' in sectionMeta ? String(sectionMeta.subtitle ?? '') : ''
+                  }
+                  onChange={(e) => patchSectionMeta({ subtitle: e.target.value })}
+                />
+              </div>
+            ) : null}
+            <label className="flex items-center gap-2 pb-2 text-sm text-[var(--ink)]">
+              <input
+                type="checkbox"
+                checked={sectionMeta.visible}
+                onChange={(e) => patchSectionMeta({ visible: e.target.checked })}
+              />
+              Visible on homepage
+            </label>
+          </div>
+          {!categoryLike ? (
+            <div className="max-w-2xl">
+              <Label htmlFor="hs-topics-description" className="text-xs text-[var(--muted)]">
+                Section description
+              </Label>
+              <Textarea
+                id="hs-topics-description"
+                rows={3}
+                className="mt-1"
+                placeholder="Short paragraph shown under the heading on the homepage"
                 value={
                   'subtitle' in sectionMeta ? String(sectionMeta.subtitle ?? '') : ''
                 }
-                onChange={(e) => patchSectionMeta({ subtitle: e.target.value })}
+                onChange={(e) =>
+                  patchSectionMeta({ subtitle: e.target.value, subheading: '' })
+                }
+                maxLength={500}
               />
+              <p className="mt-1 text-xs text-[var(--muted)]">
+                Matches the Exam Categories subtitle line. Leave blank to use the default
+                paragraph on the live homepage.
+              </p>
             </div>
           ) : null}
-          <label className="flex items-center gap-2 pb-2 text-sm text-[var(--ink)]">
-            <input
-              type="checkbox"
-              checked={sectionMeta.visible}
-              onChange={(e) => patchSectionMeta({ visible: e.target.checked })}
-            />
-            Visible on homepage
-          </label>
         </div>
       </Reveal>
 

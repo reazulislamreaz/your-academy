@@ -1,5 +1,9 @@
 import ExcelJS from 'exceljs';
-import { parseExamWorkbook } from '../exam-excel-parser';
+import {
+  EXAM_TEMPLATE_HEADERS,
+  buildExamTemplateBuffer,
+  parseExamWorkbook,
+} from '../exam-excel-parser';
 
 async function workbookBuffer(rows: string[][]): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
@@ -48,5 +52,43 @@ describe('parseExamWorkbook', () => {
     expect(result.rows).toHaveLength(1);
     expect(result.rows[0].correctAnswer).toBe('Dhaka');
     expect(result.rows[0].explanation).toBe('Capital city');
+  });
+
+  it('parses the current Bangla Preli template columns', async () => {
+    const buf = await workbookBuffer([
+      [...EXAM_TEMPLATE_HEADERS],
+      [
+        '১',
+        'Capital of BD?',
+        '৩১তম বিসিএস',
+        '2012-04-15',
+        'Dhaka',
+        'Chittagong',
+        'Khulna',
+        'Rajshahi',
+        'ক',
+      ],
+    ]);
+    const result = await parseExamWorkbook(buf);
+    expect(result.errors).toEqual([]);
+    expect(result.rows).toHaveLength(1);
+    expect(result.rows[0].correctAnswer).toBe('Dhaka');
+    expect(result.rows[0].options[0]).toBe('Dhaka');
+  });
+
+  it('buildExamTemplateBuffer matches current Bangla headers and is parseable', async () => {
+    const buf = await buildExamTemplateBuffer();
+    const wb = new ExcelJS.Workbook();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- exceljs Buffer load
+    await wb.xlsx.load(buf as any);
+    const sheet = wb.worksheets[0]!;
+    const headers = (sheet.getRow(1).values as Array<string | null | undefined>)
+      .slice(1)
+      .map((v) => String(v ?? ''));
+    expect(headers).toEqual([...EXAM_TEMPLATE_HEADERS]);
+
+    const parsed = await parseExamWorkbook(buf);
+    expect(parsed.errors).toEqual([]);
+    expect(parsed.rows.length).toBeGreaterThanOrEqual(3);
   });
 });

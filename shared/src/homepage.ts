@@ -505,9 +505,12 @@ const coreHomepagePayloadSchema = z.object({
   topics: z.object({
     visible: z.boolean().default(true),
     heading: mediumText,
-    /** Short tagline under the heading (mirrors categories’ supporting line hierarchy). */
+    /**
+     * Legacy short tagline (no longer rendered). Kept for older drafts;
+     * editors write the public lede into `subtitle`.
+     */
     subheading: mediumText.default(''),
-    /** Longer description under the subheading. */
+    /** Paragraph under the heading — same role as categories/writtenCategories.subtitle. */
     subtitle: mediumText.default(''),
     cta: ctaSchema,
     tiles: z.array(topicTileSchema).max(200).default([]),

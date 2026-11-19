@@ -8,7 +8,7 @@ export default function AdminTopicCategoriesPage() {
       section="topics"
       eyebrow="Homepage"
       title="Topic Based Question Analysis"
-      description="Manage homepage topics: reorder positions 1–4, keep Others fixed at #5, then save draft or publish."
+      description="Edit the section heading and description, reorder Top 1–4 topics, keep Others fixed at #5, then save draft or publish."
     />
   );
 }

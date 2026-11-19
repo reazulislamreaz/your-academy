@@ -50,7 +50,7 @@ export default function AdminExamUploadPage() {
       <PageHeader
         eyebrow="Guest exams"
         title="Upload exam from Excel"
-        description="Create a public timed exam (Quizzory-style). Accepts OptionA–D or Option 1 (ক)–4 (ঘ), plus CorrectAnswer and optional Explanation."
+        description="Create a public timed exam (Quizzory-style). Download the Bangla template (same columns as Preli bulk upload: প্রশ্ন নং, প্রশ্ন, পরীক্ষার নাম ও সাল, প্রশ্নের তারিখ, ক–ঘ, উত্তর). English OptionA–D sheets still work."
       />
 
       <AdminSection title="Create from Excel">

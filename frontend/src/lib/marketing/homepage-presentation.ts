@@ -59,10 +59,19 @@ function mentionsTrial(text: string): boolean {
   );
 }
 
+type Cta = HomepagePayload['hero']['primaryCta'];
+
+function scrubTrialCta(cta: Cta, fallbackLabel: string): Cta {
+  if (!mentionsTrial(cta.label)) return cta;
+  return { ...cta, label: fallbackLabel };
+}
+
 /**
- * Field-level legacy upgrades only — never wholesale-replace a CMS section
- * when the admin has published intentional copy. Visibility and layout come
- * from the published payload (normalized). Free-trial promo copy is always scrubbed.
+ * Presentation merge for the public homepage.
+ *
+ * Critical: never wholesale-replace the CMS hero. Admin-published eyebrow,
+ * titles, description, CTAs, and visibility must win. Only scrub known
+ * free-trial CTA labels and fabricated social-proof stats.
  */
 export function presentHomepagePayload(
   payload: HomepagePayload,
@@ -70,11 +79,24 @@ export function presentHomepagePayload(
 ): HomepagePayload {
   void _liveStats;
   const defaults = createDefaultHomepagePayload();
-  const useDefaultsHero =
-    isLegacyHomepageHero(payload.hero) ||
-    mentionsTrial(payload.hero.primaryCta.label) ||
-    mentionsTrial(payload.hero.description);
-  const heroBase = useDefaultsHero ? defaults.hero : payload.hero;
+
+  // Field-level legacy upgrades for the hero — keep admin copy intact.
+  const heroSource = payload.hero;
+  const description = LEGACY_DESCRIPTIONS.has(heroSource.description.trim())
+    ? defaults.hero.description
+    : heroSource.description;
+  const primaryCta = scrubTrialCta(
+    heroSource.primaryCta.label === 'Start Practicing'
+      ? { ...heroSource.primaryCta, label: defaults.hero.primaryCta.label }
+      : heroSource.primaryCta,
+    defaults.hero.primaryCta.label,
+  );
+  const secondaryCta = scrubTrialCta(
+    heroSource.secondaryCta,
+    defaults.hero.secondaryCta.label,
+  );
+  // Brand-first hero: live platform counts render in HomepageLiveStats below the fold.
+  const heroStats: HomepagePayload['hero']['stats'] = [];
 
   const why =
     payload.why.points.some((p) => /unlimited exam practice/i.test(p)) ||
@@ -103,7 +125,6 @@ export function presentHomepagePayload(
   const latest =
     payload.latest.heading === 'Latest Collections' ? defaults.latest : payload.latest;
 
-  // Only swap known legacy heading/subtitle strings — keep admin tile order & rest.
   const categories = {
     ...payload.categories,
     heading:
@@ -137,9 +158,11 @@ export function presentHomepagePayload(
       ? defaults.topics.heading
       : payload.topics.heading,
     subheading: '',
-    subtitle: legacyTopicSubtitles.has(topicSubtitle)
-      ? defaults.topics.subtitle
-      : payload.topics.subtitle,
+    // Empty / legacy copy → default paragraph so the section always has a lede.
+    subtitle:
+      !topicSubtitle || legacyTopicSubtitles.has(topicSubtitle)
+        ? defaults.topics.subtitle
+        : payload.topics.subtitle,
     cta: legacyTopicHeadings.has(topicHeading)
       ? { ...payload.topics.cta, label: defaults.topics.cta.label }
       : payload.topics.cta,
@@ -168,7 +191,6 @@ export function presentHomepagePayload(
     ...defaults,
     ...payload,
     layout: payload.layout ?? defaults.layout,
-    // Free trials disabled — never show the promotional strip even if CMS has it on.
     trialStrip: {
       ...(payload.trialStrip ?? defaults.trialStrip),
       visible: false,
@@ -182,9 +204,11 @@ export function presentHomepagePayload(
     accessFaq,
     customSections: payload.customSections ?? defaults.customSections,
     hero: {
-      ...heroBase,
-      // Live counts live in HomepageLiveStats (below the fold); keep hero brand-first.
-      stats: [],
+      ...heroSource,
+      description,
+      primaryCta,
+      secondaryCta,
+      stats: heroStats,
     },
     categories,
     writtenCategories: payload.writtenCategories ?? defaults.writtenCategories,
@@ -196,6 +220,3 @@ export function presentHomepagePayload(
     newsletter,
   });
 }
-
-export const HOMEPAGE_SUPPORTING_COPY =
-  'Practice thousands of MCQs, prepare with previous-year style collections, take mock tests, and track your performance — all in one platform.';

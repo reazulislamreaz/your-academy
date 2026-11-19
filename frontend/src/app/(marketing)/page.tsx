@@ -32,7 +32,7 @@ export const metadata: Metadata = {
 };
 
 /** Fallback ISR; publish triggers on-demand `revalidateTag('homepage')` + `revalidatePath('/')`. */
-export const revalidate = 30;
+export const revalidate = 15;
 
 async function loadHomepage() {
   try {

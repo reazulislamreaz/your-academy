@@ -8,18 +8,19 @@ import { HomepageIcon } from '@/lib/homepage-icon-map';
 type Props = {
   hero: HomepagePayload['hero'];
   heroImageUrl?: string | null;
-  /** Supporting sentence under the value proposition (presentation-layer only). */
-  supportingText?: string;
 };
 
-export function HomepageHero({ hero, heroImageUrl, supportingText }: Props) {
+/**
+ * Marketing hero — 100% CMS-driven (eyebrow, titles, description, CTAs, image).
+ * No hardcoded marketing copy is injected on top of published payload values.
+ */
+export function HomepageHero({ hero, heroImageUrl }: Props) {
   if (!hero.visible) return null;
 
   const imageSrc = heroImageUrl?.trim() || '/images/hero-students.jpg';
-  const brand = hero.titleBefore.trim();
+  const brand = hero.titleBefore.trim() || 'Your Academy';
   const sideLabel = (hero.titleAfter?.trim() || hero.titleHighlight.trim()).trim();
   const tagline = hero.description.trim();
-  const lede = supportingText?.trim() ?? '';
 
   return (
     <section className="hero-section relative overflow-x-hidden overflow-y-hidden bg-[var(--bg-inverse)] text-white">
@@ -69,11 +70,6 @@ export function HomepageHero({ hero, heroImageUrl, supportingText }: Props) {
                         className="absolute inset-x-3 -bottom-0.5 h-[3px] rounded-full bg-[var(--highlight)] sm:inset-x-2"
                       />
                     </span>
-                  </p>
-                ) : null}
-                {lede ? (
-                  <p className="mx-auto max-w-lg text-center text-sm leading-relaxed text-pretty text-white/75 sm:text-[0.9375rem] lg:mx-0 lg:text-left">
-                    {lede}
                   </p>
                 ) : null}
               </div>
