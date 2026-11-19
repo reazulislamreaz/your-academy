@@ -16,6 +16,7 @@ export type ExamParseResult = {
 const HEADER_ALIASES: Record<string, string> = {
   question: 'question',
   প্রশ্ন: 'question',
+  // Platform template
   optiona: 'optionA',
   'option a': 'optionA',
   option_a: 'optionA',
@@ -32,12 +33,37 @@ const HEADER_ALIASES: Record<string, string> = {
   'option d': 'optionD',
   option_d: 'optionD',
   অপশনঘ: 'optionD',
+  // 8-column bulk / Sheets format: Option 1 (ক) … Option 4 (ঘ)
+  option1: 'optionA',
+  'option 1': 'optionA',
+  'option 1 (ক)': 'optionA',
+  option1ক: 'optionA',
+  ক: 'optionA',
+  option2: 'optionB',
+  'option 2': 'optionB',
+  'option 2 (খ)': 'optionB',
+  option2খ: 'optionB',
+  খ: 'optionB',
+  option3: 'optionC',
+  'option 3': 'optionC',
+  'option 3 (গ)': 'optionC',
+  option3গ: 'optionC',
+  গ: 'optionC',
+  option4: 'optionD',
+  'option 4': 'optionD',
+  'option 4 (ঘ)': 'optionD',
+  option4ঘ: 'optionD',
+  ঘ: 'optionD',
   correctanswer: 'correctAnswer',
   'correct answer': 'correctAnswer',
   correct_answer: 'correctAnswer',
   answer: 'correctAnswer',
+  উত্তর: 'correctAnswer',
   সঠিকউত্তর: 'correctAnswer',
+  'সঠিক উত্তর': 'correctAnswer',
   explanation: 'explanation',
+  'explanation (optional)': 'explanation',
+  explanationoptional: 'explanation',
   ব্যাখ্যা: 'explanation',
 };
 
@@ -57,7 +83,13 @@ function cellText(value: ExcelJS.CellValue | undefined): string {
 
 function normalizeHeader(raw: string): string | null {
   const key = raw.normalize('NFC').trim().toLowerCase().replace(/\s+/g, ' ');
-  return HEADER_ALIASES[key.replace(/[_-]/g, '')] ?? HEADER_ALIASES[key] ?? null;
+  const compact = key.replace(/[\s_\-()]/g, '');
+  return (
+    HEADER_ALIASES[key] ??
+    HEADER_ALIASES[compact] ??
+    HEADER_ALIASES[key.replace(/[_-]/g, '')] ??
+    null
+  );
 }
 
 function resolveCorrectAnswer(
@@ -98,7 +130,7 @@ export async function parseExamWorkbook(buffer: Buffer): Promise<ExamParseResult
     return {
       rows: [],
       errors: [
-        `Missing required columns: ${missing.join(', ')}. Expected Question, OptionA, OptionB, OptionC, OptionD, CorrectAnswer, Explanation (optional).`,
+        `Missing required columns: ${missing.join(', ')}. Expected Question, OptionA–D (or Option 1 (ক)–4 (ঘ)), CorrectAnswer, Explanation (optional).`,
       ],
     };
   }

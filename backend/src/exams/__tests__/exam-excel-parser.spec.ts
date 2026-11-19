@@ -28,4 +28,25 @@ describe('parseExamWorkbook', () => {
     expect(result.rows).toHaveLength(0);
     expect(result.errors[0]).toMatch(/Missing required columns/);
   });
+
+  it('accepts 8-column Option 1 (ক)–4 (ঘ) headers and Bangla correct letters', async () => {
+    const buf = await workbookBuffer([
+      [
+        'Question Number',
+        'Question',
+        'Option 1 (ক)',
+        'Option 2 (খ)',
+        'Option 3 (গ)',
+        'Option 4 (ঘ)',
+        'Correct Answer',
+        'Explanation (Optional)',
+      ],
+      ['১', 'Capital of BD?', 'Dhaka', 'Chittagong', 'Khulna', 'Rajshahi', 'ক', 'Capital city'],
+    ]);
+    const result = await parseExamWorkbook(buf);
+    expect(result.errors).toEqual([]);
+    expect(result.rows).toHaveLength(1);
+    expect(result.rows[0].correctAnswer).toBe('Dhaka');
+    expect(result.rows[0].explanation).toBe('Capital city');
+  });
 });

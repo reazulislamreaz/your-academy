@@ -50,7 +50,7 @@ export default function AdminExamUploadPage() {
       <PageHeader
         eyebrow="Guest exams"
         title="Upload exam from Excel"
-        description="Create a public timed exam (Quizzory-style). Columns: Question, OptionA–D, CorrectAnswer, Explanation."
+        description="Create a public timed exam (Quizzory-style). Accepts OptionA–D or Option 1 (ক)–4 (ঘ), plus CorrectAnswer and optional Explanation."
       />
 
       <AdminSection title="Create from Excel">
