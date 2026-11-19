@@ -16,7 +16,6 @@ import {
   fetchPublicCategories,
   publicCategoriesQueryKey,
 } from '@/lib/api/categories';
-import type { CategoryNode } from '@/lib/api/types';
 import {
   categoryTileHref,
   dbCategoryHref,

@@ -21,7 +21,6 @@ import {
   fetchPublicCategories,
   publicCategoriesQueryKey,
 } from '@/lib/api/categories';
-import type { CategoryNode } from '@/lib/api/types';
 import {
   ALL_TOPICS_PATH,
   QUESTION_BANK_CATEGORIES_PATH,

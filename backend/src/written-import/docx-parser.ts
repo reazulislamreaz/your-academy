@@ -176,7 +176,7 @@ function extractMetaField(line: string, keys: RegExp): string {
 function normalizeExamDate(raw: string): string {
   if (!raw.trim()) return '';
   const ascii = toAsciiDigits(raw.trim())
-    .replace(/[.\-]/g, '/')
+    .replace(/[.-]/g, '/')
     .replace(/\s+/g, '');
   // DD/MM/YYYY
   const dmy = ascii.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);

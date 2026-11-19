@@ -16,7 +16,6 @@ import {
   fetchPublicCategories,
   publicCategoriesQueryKey,
 } from '@/lib/api/categories';
-import type { CategoryNode } from '@/lib/api/types';
 import { topicTileHref, topicTileTaxonomyLabel } from '@/lib/homepage-tile-links';
 
 type Props = {

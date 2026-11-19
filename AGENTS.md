@@ -21,9 +21,10 @@
 9. Write tests for auth, access control, and answer privacy.
 10. Update docs when architecture or requirements change.
 11. Verify (`build` / `lint` / `typecheck` / targeted tests) before marking done.
-12. Report incomplete work honestly.
-13. Prefer small, focused diffs; match existing style.
-14. Do not commit `.env`, secrets, dumps, or `node_modules`.
+12. **Before push to GitHub:** always check link issues (nav, CTAs, `Link`/`href`/`router` paths, API client routes, docs URLs) and fix broken or stale links in the same change set — see `.cursor/rules/link-check-before-push.mdc`.
+13. Report incomplete work honestly.
+14. Prefer small, focused diffs; match existing style.
+15. Do not commit `.env`, secrets, dumps, or `node_modules`.
 
 ---
 
@@ -262,6 +263,7 @@ Cursor rules (always apply / path-scoped): `.cursor/rules/*.mdc`.
 - [ ] Tests for critical business paths
 - [ ] Docs/`AGENTS.md` updated if behavior or architecture changed
 - [ ] Answer privacy preserved when touching questions API
+- [ ] Links checked and fixed (nav, CTAs, routes, API clients) before GitHub push
 
 ---
 

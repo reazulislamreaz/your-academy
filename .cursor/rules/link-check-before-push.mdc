@@ -1,0 +1,30 @@
+---
+description: Always verify and fix broken/stale links before GitHub push
+alwaysApply: true
+---
+
+# Link Check Before Push
+
+**Before any `git push` (or marking ship/PR ready):** always audit and fix link issues introduced or touched by the change.
+
+## What to check
+
+- Internal routes: `href`, `Link`, `router.push` / `replace`, redirects, CTA targets
+- Admin + marketing nav items match real App Router pages
+- Query/filter deep links (`categoryId`, `subcategoryId`, bank scopes) still resolve
+- API client paths under `/api/v1` match controllers (no stale endpoints)
+- Docs / README / runbook URLs that point into this repo
+- Homepage / footer / empty-state CTAs after renames or removed pages
+
+## How to verify
+
+1. Grep changed files for `href=`, `push(`, `replace(`, and hardcoded path strings
+2. Confirm each path exists under `frontend/src/app/` (or intentional external URL)
+3. Confirm scope isolation: Written links stay on Written routes; Preli on Preli
+4. Fix broken links in the same change set — do not push knowing links 404
+
+## Do not
+
+- Push with known dead nav/CTA links “to fix later”
+- Leave old paths after page moves (e.g. removed dropdown targets, renamed admin routes)
+---
