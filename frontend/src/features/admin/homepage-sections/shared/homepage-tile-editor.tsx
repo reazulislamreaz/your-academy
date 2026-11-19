@@ -15,7 +15,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { HomepageIcon } from '@/lib/homepage-icon-map';
-import type { HomepageSectionKind, HomepageSectionTile } from './types';
+import {
+  isCategoryLikeSection,
+  type HomepageSectionKind,
+  type HomepageSectionTile,
+} from './types';
 
 type CategoryOption = { id: string; name: string; isActive?: boolean };
 type ChildOption = { id: string; label: string; parentId: string };
@@ -107,7 +111,7 @@ export function HomepageTileEditor({
             />
           </div>
 
-          {section === 'categories' && 'subtitle' in draftTile ? (
+          {isCategoryLikeSection(section) && 'subtitle' in draftTile ? (
             <div className="space-y-2">
               <Label htmlFor="ht-subtitle">Subtitle (optional)</Label>
               <Input

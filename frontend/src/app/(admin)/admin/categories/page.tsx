@@ -30,11 +30,11 @@ export default function AdminCategoriesPage() {
       <PageHeader
         eyebrow="Taxonomy"
         title="Categories"
-        description="Preliminary and Written banks have separate category trees — names can overlap without colliding. Prefer Written Bank Categories in the sidebar for day-to-day Written taxonomy work."
+        description="Preliminary and Written banks have separate category trees — names can overlap without colliding. Use Written Bank Categories in the sidebar for homepage Top 4 positioning; manage Written taxonomy here under the Written tab."
         actions={
           <Link href="/admin/written-bank-categories">
             <Button type="button" variant="outline" className="cursor-pointer">
-              Written Bank Categories
+              Written homepage Top 4
             </Button>
           </Link>
         }

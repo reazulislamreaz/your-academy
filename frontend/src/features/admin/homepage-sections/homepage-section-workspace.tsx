@@ -34,19 +34,23 @@ import { apiFetch } from '@/lib/api/client';
 import {
   ALL_TOPICS_PATH,
   QUESTION_BANK_CATEGORIES_PATH,
+  WRITTEN_SUBCATEGORIES_PATH,
   dbCategoryHref,
   dbSubcategoryHref,
+  dbWrittenCategoryHref,
+  dbWrittenSubcategoryHref,
   guessHomepageIconKey,
 } from '@/lib/homepage-tile-links';
 import { cn } from '@/lib/utils';
 import { HomepagePublishControls } from './shared/homepage-publish-controls';
 import { HomepageTileEditor } from './shared/homepage-tile-editor';
 import { HomepageTopStrip } from './shared/homepage-top-strip';
-import type {
-  CategoryTile,
-  HomepageSectionKind,
-  HomepageSectionTile,
-  TopicTile,
+import {
+  isCategoryLikeSection,
+  type CategoryTile,
+  type HomepageSectionKind,
+  type HomepageSectionTile,
+  type TopicTile,
 } from './shared/types';
 import { useHomepageSection } from './shared/use-homepage-section';
 
@@ -62,8 +66,9 @@ function newTileId(): string {
 }
 
 /**
- * Unified homepage titles workspace for Question Bank Categories and
- * Topic Based Question Analysis — identical chrome, section-specific libraries.
+ * Unified homepage titles workspace for Question Bank Categories,
+ * Written Bank Categories, and Topic Based Question Analysis —
+ * identical chrome; libraries are scope-isolated (Preli vs Written).
  */
 export function HomepageSectionWorkspace({
   section,
@@ -71,7 +76,13 @@ export function HomepageSectionWorkspace({
   description,
   eyebrow = 'Homepage',
 }: Props) {
-  const noun = section === 'categories' ? 'category' : 'topic';
+  const categoryLike = isCategoryLikeSection(section);
+  const noun = categoryLike ? 'category' : 'topic';
+  const taxonomyScope = section === 'writtenCategories' ? 'WRITTEN' : 'PRELIMINARY';
+  const othersFallbackHref =
+    section === 'writtenCategories'
+      ? WRITTEN_SUBCATEGORIES_PATH
+      : QUESTION_BANK_CATEGORIES_PATH;
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -108,9 +119,9 @@ export function HomepageSectionWorkspace({
   } = useHomepageSection(section);
 
   const categoriesQ = useQuery({
-    queryKey: ['admin-categories', 'PRELIMINARY'],
+    queryKey: ['admin-categories', taxonomyScope],
     queryFn: () =>
-      apiFetch<AdminCategoryNode[]>('/admin/categories?scope=PRELIMINARY'),
+      apiFetch<AdminCategoryNode[]>(`/admin/categories?scope=${taxonomyScope}`),
     staleTime: 60_000,
     enabled: true,
   });
@@ -185,7 +196,7 @@ export function HomepageSectionWorkspace({
   }, [roots, search]);
 
   useEffect(() => {
-    if (!search.trim() || section !== 'categories') return;
+    if (!search.trim() || !categoryLike) return;
     setExpanded((prev) => {
       const next = { ...prev };
       for (const root of catalogRoots) {
@@ -193,7 +204,7 @@ export function HomepageSectionWorkspace({
       }
       return next;
     });
-  }, [catalogRoots, search, section]);
+  }, [catalogRoots, categoryLike, search]);
 
   const topicLibrary = useMemo(() => {
     const needle = search.trim().toLocaleLowerCase('bn');
@@ -245,7 +256,10 @@ export function HomepageSectionWorkspace({
             iconKey: guessHomepageIconKey(child.name),
             categoryId: root.id,
             subcategoryId: child.id,
-            fallbackHref: dbSubcategoryHref(root.id, child.id),
+            fallbackHref:
+              section === 'writtenCategories'
+                ? dbWrittenSubcategoryHref(root.id, child.id)
+                : dbSubcategoryHref(root.id, child.id),
             visible: true,
             logoAssetId: null,
             logoUrl: null,
@@ -257,7 +271,10 @@ export function HomepageSectionWorkspace({
             iconKey: guessHomepageIconKey(root.name),
             categoryId: root.id,
             subcategoryId: null,
-            fallbackHref: dbCategoryHref(root.id),
+            fallbackHref:
+              section === 'writtenCategories'
+                ? dbWrittenCategoryHref(root.id)
+                : dbCategoryHref(root.id),
             visible: true,
             logoAssetId: null,
             logoUrl: null,
@@ -277,8 +294,8 @@ export function HomepageSectionWorkspace({
       next,
       linked.id,
       () =>
-        section === 'categories'
-          ? createDefaultOthersCategoryTile(QUESTION_BANK_CATEGORIES_PATH)
+        categoryLike
+          ? createDefaultOthersCategoryTile(othersFallbackHref)
           : createDefaultOthersTopicTile(ALL_TOPICS_PATH),
       insertAt,
     );
@@ -399,7 +416,7 @@ export function HomepageSectionWorkspace({
             </span>{' '}
             editable + Others #{HOMEPAGE_SECTION_PREVIEW_LIMIT}
           </span>
-          {section === 'categories' ? (
+          {categoryLike ? (
             <>
               <span>
                 <span className="tabular-nums text-[var(--ink)]">{roots.length}</span> categories
@@ -432,7 +449,7 @@ export function HomepageSectionWorkspace({
               onChange={(e) => patchSectionMeta({ heading: e.target.value })}
             />
           </div>
-          {section === 'categories' ? (
+          {categoryLike ? (
             <div className="min-w-0 flex-1 sm:max-w-md">
               <Label htmlFor="hs-subtitle" className="text-xs text-[var(--muted)]">
                 Section subtitle
@@ -476,11 +493,11 @@ export function HomepageSectionWorkspace({
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
                 <h2 className="font-display text-base font-bold text-[var(--ink)]">
-                  {section === 'categories' ? 'All titles & subcategories' : 'Topic library'}
+                  {categoryLike ? 'All titles & subcategories' : 'Topic library'}
                 </h2>
                 <p className="mt-0.5 text-sm text-[var(--muted)]">
-                  {section === 'categories'
-                    ? `Promote any category or subcategory into positions 1–${HOMEPAGE_EDITABLE_PREVIEW_SLOTS}.`
+                  {categoryLike
+                    ? `Promote any ${section === 'writtenCategories' ? 'Written ' : ''}category or subcategory into positions 1–${HOMEPAGE_EDITABLE_PREVIEW_SLOTS}.`
                     : `Add topics manually, then promote into positions 1–${HOMEPAGE_EDITABLE_PREVIEW_SLOTS}.`}
                 </p>
               </div>
@@ -490,12 +507,12 @@ export function HomepageSectionWorkspace({
                   value={search}
                   onChange={setSearch}
                   placeholder={
-                    section === 'categories'
+                    categoryLike
                       ? 'Search titles or subcategories…'
                       : 'Search topics…'
                   }
                   aria-label={
-                    section === 'categories'
+                    categoryLike
                       ? 'Search titles or subcategories'
                       : 'Search topics'
                   }
@@ -503,7 +520,7 @@ export function HomepageSectionWorkspace({
               </div>
             </div>
 
-            {section === 'categories' ? (
+            {categoryLike ? (
               <>
                 {restTiles.length > 0 ? (
                   <RemainingTilesList

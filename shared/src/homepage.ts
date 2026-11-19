@@ -368,7 +368,7 @@ export function moveHomepageTopTileToPosition<T extends HomepageTileLike>(
   return reorderHomepageTopTiles(tiles, from, to, createOthers);
 }
 
-/** Apply Others normalization to both homepage sections. */
+/** Apply Others normalization to Preli categories, Written categories, and topics. */
 export function normalizeHomepagePayloadTiles(payload: HomepagePayload): HomepagePayload {
   return {
     ...payload,
@@ -377,6 +377,16 @@ export function normalizeHomepagePayloadTiles(payload: HomepagePayload): Homepag
       tiles: normalizeHomepageSectionTiles(
         payload.categories.tiles,
         () => createDefaultOthersCategoryTile(payload.categories.cta.href || '/question-bank-categories'),
+      ),
+    },
+    writtenCategories: {
+      ...payload.writtenCategories,
+      tiles: normalizeHomepageSectionTiles(
+        payload.writtenCategories.tiles,
+        () =>
+          createDefaultOthersCategoryTile(
+            payload.writtenCategories.cta.href || '/written-question-bank-categories',
+          ),
       ),
     },
     topics: {
@@ -417,6 +427,81 @@ const coreHomepagePayloadSchema = z.object({
     cta: ctaSchema,
     tiles: z.array(categoryTileSchema).max(200).default([]),
   }),
+  /**
+   * Written Question Bank homepage strip — isolated from Preliminary `categories`
+   * (same Top 1–4 + locked #5 Others shape). Default fills legacy payloads that
+   * predate this section so draft/publish parse keeps working.
+   */
+  writtenCategories: z
+    .object({
+      visible: z.boolean().default(true),
+      heading: mediumText,
+      subtitle: mediumText,
+      cta: ctaSchema,
+      tiles: z.array(categoryTileSchema).max(200).default([]),
+    })
+    .default({
+      visible: true,
+      heading: 'Written exam categories',
+      subtitle: 'Browse the Written bank by the exams you are preparing for',
+      cta: {
+        label: 'View all categories',
+        href: '/written-question-bank-categories',
+        visible: true,
+      },
+      tiles: [
+        {
+          id: 'wrt-bcs',
+          displayTitle: 'BCS Written',
+          subtitle: 'Written Exams',
+          iconKey: 'bcs',
+          categoryId: null,
+          subcategoryId: null,
+          fallbackHref: '/written-question-bank?q=BCS',
+          visible: true,
+        },
+        {
+          id: 'wrt-bank',
+          displayTitle: 'Bank Written',
+          subtitle: 'Written Exams',
+          iconKey: 'bank',
+          categoryId: null,
+          subcategoryId: null,
+          fallbackHref: '/written-question-bank?q=Bank',
+          visible: true,
+        },
+        {
+          id: 'wrt-gov',
+          displayTitle: 'Government Jobs',
+          subtitle: 'Written Exams',
+          iconKey: 'gov',
+          categoryId: null,
+          subcategoryId: null,
+          fallbackHref: '/written-question-bank?q=Government',
+          visible: true,
+        },
+        {
+          id: 'wrt-ntrca',
+          displayTitle: 'Primary & NTRCA',
+          subtitle: 'Written Exams',
+          iconKey: 'grad',
+          categoryId: null,
+          subcategoryId: null,
+          fallbackHref: '/written-question-bank?q=NTRCA',
+          visible: true,
+        },
+        {
+          id: HOMEPAGE_OTHERS_TILE_ID,
+          displayTitle: HOMEPAGE_OTHERS_DISPLAY_TITLE,
+          subtitle: '',
+          iconKey: 'gear',
+          categoryId: null,
+          subcategoryId: null,
+          fallbackHref: '/written-question-bank-categories',
+          visible: true,
+        },
+      ],
+    }),
   topics: z.object({
     visible: z.boolean().default(true),
     heading: mediumText,
@@ -471,6 +556,7 @@ export function normalizeHomepagePayload(payload: HomepagePayload): HomepagePayl
   const visibilityHints: Partial<Record<HomepageBuiltinSectionId, boolean>> = {
     hero: withTiles.hero.visible,
     categories: withTiles.categories.visible,
+    writtenCategories: withTiles.writtenCategories.visible,
     topics: withTiles.topics.visible,
     why: withTiles.why.visible,
     ctaBanner: withTiles.ctaBanner.visible,
@@ -496,6 +582,10 @@ export function normalizeHomepagePayload(payload: HomepagePayload): HomepagePayl
     layout,
     hero: { ...withTiles.hero, visible: vis('hero') },
     categories: { ...withTiles.categories, visible: vis('categories') },
+    writtenCategories: {
+      ...withTiles.writtenCategories,
+      visible: vis('writtenCategories'),
+    },
     topics: { ...withTiles.topics, visible: vis('topics') },
     why: { ...withTiles.why, visible: vis('why') },
     ctaBanner: { ...withTiles.ctaBanner, visible: vis('ctaBanner') },
@@ -593,6 +683,68 @@ export function createDefaultHomepagePayload(): HomepagePayload {
           iconKey: 'gear',
           categoryId: null,
           fallbackHref: '/question-bank-categories',
+          visible: true,
+        },
+      ],
+    },
+    writtenCategories: {
+      visible: true,
+      heading: 'Written exam categories',
+      subtitle: 'Browse the Written bank by the exams you are preparing for',
+      cta: {
+        label: 'View all categories',
+        href: '/written-question-bank-categories',
+        visible: true,
+      },
+      tiles: [
+        {
+          id: 'wrt-bcs',
+          displayTitle: 'BCS Written',
+          subtitle: 'Written Exams',
+          iconKey: 'bcs',
+          categoryId: null,
+          subcategoryId: null,
+          fallbackHref: '/written-question-bank?q=BCS',
+          visible: true,
+        },
+        {
+          id: 'wrt-bank',
+          displayTitle: 'Bank Written',
+          subtitle: 'Written Exams',
+          iconKey: 'bank',
+          categoryId: null,
+          subcategoryId: null,
+          fallbackHref: '/written-question-bank?q=Bank',
+          visible: true,
+        },
+        {
+          id: 'wrt-gov',
+          displayTitle: 'Government Jobs',
+          subtitle: 'Written Exams',
+          iconKey: 'gov',
+          categoryId: null,
+          subcategoryId: null,
+          fallbackHref: '/written-question-bank?q=Government',
+          visible: true,
+        },
+        {
+          id: 'wrt-ntrca',
+          displayTitle: 'Primary & NTRCA',
+          subtitle: 'Written Exams',
+          iconKey: 'grad',
+          categoryId: null,
+          subcategoryId: null,
+          fallbackHref: '/written-question-bank?q=NTRCA',
+          visible: true,
+        },
+        {
+          id: HOMEPAGE_OTHERS_TILE_ID,
+          displayTitle: HOMEPAGE_OTHERS_DISPLAY_TITLE,
+          subtitle: '',
+          iconKey: 'gear',
+          categoryId: null,
+          subcategoryId: null,
+          fallbackHref: '/written-question-bank-categories',
           visible: true,
         },
       ],

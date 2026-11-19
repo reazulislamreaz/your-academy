@@ -412,7 +412,11 @@ export function HomepageCms() {
           : ' · Not yet published'}
         {' · '}
         <Link className="underline-offset-2 hover:underline" href="/admin/question-bank-categories">
-          Category tiles
+          Preli category tiles
+        </Link>
+        {' · '}
+        <Link className="underline-offset-2 hover:underline" href="/admin/written-bank-categories">
+          Written category tiles
         </Link>
         {' · '}
         <Link className="underline-offset-2 hover:underline" href="/admin/topic-categories">
@@ -802,31 +806,70 @@ function SectionEditor({
     );
   }
 
-  if (sectionId === 'categories' || sectionId === 'topics') {
-    const block = sectionId === 'categories' ? payload.categories : payload.topics;
+  if (
+    sectionId === 'categories' ||
+    sectionId === 'writtenCategories' ||
+    sectionId === 'topics'
+  ) {
+    const block =
+      sectionId === 'categories'
+        ? payload.categories
+        : sectionId === 'writtenCategories'
+          ? payload.writtenCategories
+          : payload.topics;
+    const dedicatedPageLabel =
+      sectionId === 'categories'
+        ? 'Question Bank Categories'
+        : sectionId === 'writtenCategories'
+          ? 'Written Bank Categories'
+          : 'Topic';
     return (
       <div className="space-y-4">
         <Field label="Heading">
           <Input
             value={block.heading}
             onChange={(e) =>
-              onPatch((p) =>
-                sectionId === 'categories'
-                  ? { ...p, categories: { ...p.categories, heading: e.target.value } }
-                  : { ...p, topics: { ...p.topics, heading: e.target.value } },
-              )
+              onPatch((p) => {
+                if (sectionId === 'categories') {
+                  return { ...p, categories: { ...p.categories, heading: e.target.value } };
+                }
+                if (sectionId === 'writtenCategories') {
+                  return {
+                    ...p,
+                    writtenCategories: {
+                      ...p.writtenCategories,
+                      heading: e.target.value,
+                    },
+                  };
+                }
+                return { ...p, topics: { ...p.topics, heading: e.target.value } };
+              })
             }
           />
         </Field>
-        {sectionId === 'categories' ? (
+        {sectionId === 'categories' || sectionId === 'writtenCategories' ? (
           <Field label="Subtitle">
             <Input
-              value={payload.categories.subtitle}
+              value={
+                sectionId === 'categories'
+                  ? payload.categories.subtitle
+                  : payload.writtenCategories.subtitle
+              }
               onChange={(e) =>
-                onPatch((p) => ({
-                  ...p,
-                  categories: { ...p.categories, subtitle: e.target.value },
-                }))
+                onPatch((p) =>
+                  sectionId === 'categories'
+                    ? {
+                        ...p,
+                        categories: { ...p.categories, subtitle: e.target.value },
+                      }
+                    : {
+                        ...p,
+                        writtenCategories: {
+                          ...p.writtenCategories,
+                          subtitle: e.target.value,
+                        },
+                      },
+                )
               }
             />
           </Field>
@@ -848,16 +891,20 @@ function SectionEditor({
           label="Section CTA"
           cta={block.cta}
           onChange={(cta) =>
-            onPatch((p) =>
-              sectionId === 'categories'
-                ? { ...p, categories: { ...p.categories, cta } }
-                : { ...p, topics: { ...p.topics, cta } },
-            )
+            onPatch((p) => {
+              if (sectionId === 'categories') {
+                return { ...p, categories: { ...p.categories, cta } };
+              }
+              if (sectionId === 'writtenCategories') {
+                return { ...p, writtenCategories: { ...p.writtenCategories, cta } };
+              }
+              return { ...p, topics: { ...p.topics, cta } };
+            })
           }
         />
         <Alert variant="warning">
-          Tile logos, Top 4 order, and Others are managed on the dedicated{' '}
-          {sectionId === 'categories' ? 'Question Bank Categories' : 'Topic'} page.
+          Tile logos, Top 4 order, and Others are managed on the dedicated {dedicatedPageLabel}{' '}
+          page.
         </Alert>
       </div>
     );

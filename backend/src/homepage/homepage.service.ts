@@ -273,25 +273,33 @@ export class HomepageService {
   /** Persist without resolved delivery URLs (those are read-only enrichments). */
   private parsePayloadForPersist(raw: unknown): HomepagePayload {
     const payload = normalizeHomepagePayload(this.parsePayload(raw));
+    const stripLogoUrl = <
+      T extends {
+        logoUrl?: string | null;
+        logoWidth?: number | null;
+        logoHeight?: number | null;
+      },
+    >(
+      t: T,
+    ) => ({
+      ...t,
+      logoUrl: undefined,
+      logoWidth: t.logoWidth ?? undefined,
+      logoHeight: t.logoHeight ?? undefined,
+    });
     return {
       ...payload,
       categories: {
         ...payload.categories,
-        tiles: payload.categories.tiles.map((t) => ({
-          ...t,
-          logoUrl: undefined,
-          logoWidth: t.logoWidth ?? undefined,
-          logoHeight: t.logoHeight ?? undefined,
-        })),
+        tiles: payload.categories.tiles.map(stripLogoUrl),
+      },
+      writtenCategories: {
+        ...payload.writtenCategories,
+        tiles: payload.writtenCategories.tiles.map(stripLogoUrl),
       },
       topics: {
         ...payload.topics,
-        tiles: payload.topics.tiles.map((t) => ({
-          ...t,
-          logoUrl: undefined,
-          logoWidth: t.logoWidth ?? undefined,
-          logoHeight: t.logoHeight ?? undefined,
-        })),
+        tiles: payload.topics.tiles.map(stripLogoUrl),
       },
     };
   }
@@ -299,6 +307,7 @@ export class HomepageService {
   private async assertTileLogoAssets(payload: HomepagePayload) {
     const ids = [
       ...payload.categories.tiles.map((t) => t.logoAssetId),
+      ...payload.writtenCategories.tiles.map((t) => t.logoAssetId),
       ...payload.topics.tiles.map((t) => t.logoAssetId),
     ].filter((id): id is string => Boolean(id));
     if (!ids.length) return;
@@ -338,6 +347,7 @@ export class HomepageService {
   private async enrichTileLogos(payload: HomepagePayload): Promise<HomepagePayload> {
     const ids = [
       ...payload.categories.tiles.map((t) => t.logoAssetId),
+      ...payload.writtenCategories.tiles.map((t) => t.logoAssetId),
       ...payload.topics.tiles.map((t) => t.logoAssetId),
     ].filter((id): id is string => Boolean(id));
     if (!ids.length) return payload;
@@ -373,6 +383,10 @@ export class HomepageService {
       categories: {
         ...payload.categories,
         tiles: payload.categories.tiles.map(mapTile),
+      },
+      writtenCategories: {
+        ...payload.writtenCategories,
+        tiles: payload.writtenCategories.tiles.map(mapTile),
       },
       topics: {
         ...payload.topics,

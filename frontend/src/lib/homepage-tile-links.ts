@@ -15,6 +15,7 @@ export function writtenSubcategoryHref(subcategoryId: string, categoryId?: strin
 }
 
 type CategoryTile = HomepagePayload['categories']['tiles'][number];
+type WrittenCategoryTile = HomepagePayload['writtenCategories']['tiles'][number];
 type TopicTile = HomepagePayload['topics']['tiles'][number];
 
 export function categoryTileHref(tile: CategoryTile): string {
@@ -26,6 +27,20 @@ export function categoryTileHref(tile: CategoryTile): string {
   }
   if (tile.subcategoryId) {
     return `/preli-question-bank?subcategoryId=${encodeURIComponent(tile.subcategoryId)}`;
+  }
+  return tile.fallbackHref;
+}
+
+/** Written CMS tile → Written Question Bank (never Preli). */
+export function writtenCategoryTileHref(tile: WrittenCategoryTile): string {
+  if (tile.categoryId && tile.subcategoryId) {
+    return writtenSubcategoryHref(tile.subcategoryId, tile.categoryId);
+  }
+  if (tile.categoryId) {
+    return `/written-question-bank?categoryId=${encodeURIComponent(tile.categoryId)}`;
+  }
+  if (tile.subcategoryId) {
+    return writtenSubcategoryHref(tile.subcategoryId);
   }
   return tile.fallbackHref;
 }
@@ -84,6 +99,14 @@ export function dbCategoryHref(categoryId: string): string {
 
 export function dbSubcategoryHref(categoryId: string, subcategoryId: string): string {
   return `/preli-question-bank?categoryId=${encodeURIComponent(categoryId)}&subcategoryId=${encodeURIComponent(subcategoryId)}`;
+}
+
+export function dbWrittenCategoryHref(categoryId: string): string {
+  return `/written-question-bank?categoryId=${encodeURIComponent(categoryId)}`;
+}
+
+export function dbWrittenSubcategoryHref(categoryId: string, subcategoryId: string): string {
+  return writtenSubcategoryHref(subcategoryId, categoryId);
 }
 
 /** Best-effort icon when a DB category has no matching homepage tile logo. */

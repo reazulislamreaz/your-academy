@@ -27,7 +27,12 @@ import {
   sanitizeSvgFileIfNeeded,
   uploadViaSignedRequest,
 } from '@/lib/cloudinary-upload';
-import type { BannerMessage, HomepageSectionKind, HomepageSectionTile } from './types';
+import {
+  isCategoryLikeSection,
+  type BannerMessage,
+  type HomepageSectionKind,
+  type HomepageSectionTile,
+} from './types';
 
 function createOthers(section: HomepageSectionKind, payload: HomepagePayload) {
   if (section === 'categories') {
@@ -36,12 +41,20 @@ function createOthers(section: HomepageSectionKind, payload: HomepagePayload) {
         payload.categories.cta.href || '/question-bank-categories',
       );
   }
+  if (section === 'writtenCategories') {
+    return () =>
+      createDefaultOthersCategoryTile(
+        payload.writtenCategories.cta.href || '/written-question-bank-categories',
+      );
+  }
   return () =>
     createDefaultOthersTopicTile(payload.topics.cta.href || '/topic-categories');
 }
 
 function readTiles(section: HomepageSectionKind, payload: HomepagePayload): HomepageSectionTile[] {
-  return section === 'categories' ? payload.categories.tiles : payload.topics.tiles;
+  if (section === 'categories') return payload.categories.tiles;
+  if (section === 'writtenCategories') return payload.writtenCategories.tiles;
+  return payload.topics.tiles;
 }
 
 function writeTiles(
@@ -58,6 +71,15 @@ function writeTiles(
       },
     };
   }
+  if (section === 'writtenCategories') {
+    return {
+      ...payload,
+      writtenCategories: {
+        ...payload.writtenCategories,
+        tiles: tiles as HomepagePayload['writtenCategories']['tiles'],
+      },
+    };
+  }
   return {
     ...payload,
     topics: {
@@ -67,7 +89,13 @@ function writeTiles(
   };
 }
 
-/** Shared draft/publish/normalize/top-4 logic for both homepage section pages. */
+function readSectionMeta(section: HomepageSectionKind, payload: HomepagePayload) {
+  if (section === 'categories') return payload.categories;
+  if (section === 'writtenCategories') return payload.writtenCategories;
+  return payload.topics;
+}
+
+/** Shared draft/publish/normalize/top-4 logic for homepage section pages. */
 export function useHomepageSection(section: HomepageSectionKind) {
   const qc = useQueryClient();
   const [payload, setPayload] = useState<HomepagePayload>(createDefaultHomepagePayload);
@@ -101,7 +129,7 @@ export function useHomepageSection(section: HomepageSectionKind) {
   }, [adminQ.data, section]);
 
   const tiles = readTiles(section, payload);
-  const sectionMeta = section === 'categories' ? payload.categories : payload.topics;
+  const sectionMeta = readSectionMeta(section, payload);
   const othersFactory = createOthers(section, payload);
 
   const { top: topTiles, others: othersTile, rest: restTiles } = useMemo(
@@ -122,11 +150,12 @@ export function useHomepageSection(section: HomepageSectionKind) {
     subheading?: string;
   }) => {
     setPayload((prev) => {
-      if (section === 'categories') {
+      if (isCategoryLikeSection(section)) {
+        const key = section;
         return {
           ...prev,
-          categories: {
-            ...prev.categories,
+          [key]: {
+            ...prev[key],
             ...(patch.heading !== undefined ? { heading: patch.heading } : {}),
             ...(patch.visible !== undefined ? { visible: patch.visible } : {}),
             ...(patch.subtitle !== undefined ? { subtitle: patch.subtitle } : {}),

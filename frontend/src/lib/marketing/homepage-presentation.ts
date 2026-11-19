@@ -140,6 +140,7 @@ export function presentHomepagePayload(
       stats: [],
     },
     categories,
+    writtenCategories: payload.writtenCategories ?? defaults.writtenCategories,
     topics,
     why,
     progress: { ...defaults.progress, visible: false },

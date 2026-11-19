@@ -1,4 +1,3 @@
-import { Fragment } from 'react';
 import type { HomepagePayload } from '@your-academy/shared';
 import {
   customSectionIdFromLayoutId,
@@ -6,10 +5,12 @@ import {
   normalizeHomepageLayout,
 } from '@your-academy/shared';
 import { HomepageAccessFaq } from '@/components/marketing/homepage-access-faq';
-import { HomepageBankBrowseCategories } from '@/components/marketing/homepage-bank-browse';
-import { HomepageBankBrowseTopics } from '@/components/marketing/homepage-bank-browse';
+import {
+  HomepageBankBrowseCategories,
+  HomepageBankBrowseTopics,
+  HomepageBankBrowseWrittenCategories,
+} from '@/components/marketing/homepage-bank-browse';
 import { HomepageCustomSection } from '@/components/marketing/homepage-custom-section';
-import { HomepageWrittenSubcategories } from '@/components/marketing/homepage-written-subcategories';
 import { HomepageDashboardPreview } from '@/components/marketing/homepage-dashboard-preview';
 import { HomepageFinalCta } from '@/components/marketing/homepage-final-cta';
 import { HomepageHero } from '@/components/marketing/homepage-hero';
@@ -80,15 +81,19 @@ export function HomepageSectionsRenderer({
               <HomepageLiveStats key={entry.id} stats={liveStats} content={payload.liveStats} />
             ) : null;
           case 'categories':
-            return (
-              <Fragment key={entry.id}>
-                {payload.categories.visible ? (
-                  <HomepageBankBrowseCategories categories={payload.categories} />
-                ) : null}
-                {/* Written strip always follows Target exam categories; live WRITTEN taxonomy only. */}
-                <HomepageWrittenSubcategories />
-              </Fragment>
-            );
+            return payload.categories.visible ? (
+              <HomepageBankBrowseCategories
+                key={entry.id}
+                categories={payload.categories}
+              />
+            ) : null;
+          case 'writtenCategories':
+            return payload.writtenCategories.visible ? (
+              <HomepageBankBrowseWrittenCategories
+                key={entry.id}
+                writtenCategories={payload.writtenCategories}
+              />
+            ) : null;
           case 'topics':
             return payload.topics.visible ? (
               <HomepageBankBrowseTopics key={entry.id} topics={payload.topics} />
