@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, ArrowRight, Check, Download, FileSpreadsheet, Sparkles } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Download, FileSpreadsheet, FileText, Sparkles } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { PageHeader } from '@/components/layout/page-header';
 import { Alert } from '@/components/ui/alert';
@@ -26,10 +26,15 @@ import { cn } from '@/lib/utils';
 import { AdminPage } from '@/components/admin/admin-page';
 
 const STEPS = [
-  { id: 1, title: 'Select file', hint: 'Excel or CSV' },
+  { id: 1, title: 'Select file', hint: 'Excel, CSV, or Word' },
   { id: 2, title: 'Configure', hint: 'Collection details' },
   { id: 3, title: 'Validate', hint: 'Upload & check' },
 ] as const;
+
+const WRITTEN_ACCEPT =
+  '.xlsx,.csv,.docx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/csv';
+const WRITTEN_ACCEPT_HINT =
+  'Only .xlsx, .csv, and .docx are supported. Convert legacy .doc to .docx first.';
 
 const TEMPLATE_COLUMNS = [
   'প্রশ্ন নং',
@@ -119,9 +124,10 @@ export default function NewQuestionImportPage() {
     },
   });
 
+  const isDocx = Boolean(file?.name.toLowerCase().endsWith('.docx'));
   const canContinueStep1 = Boolean(file);
   const canContinueStep2 = Boolean(
-    displayName.trim() && categoryName.trim() && questionDate.trim(),
+    displayName.trim() && categoryName.trim() && (questionDate.trim() || isDocx),
   );
 
   return (
@@ -129,7 +135,7 @@ export default function NewQuestionImportPage() {
       <PageHeader
         eyebrow="Written Question Bank"
         title="New written collection"
-        description="Follow the steps to upload, configure, and validate your Excel file."
+        description="Upload .xlsx, .csv, or .docx, configure placements, then preview and confirm before import."
         actions={
           <Link href="/admin/written-question-imports">
             <Button type="button" variant="outline" className="cursor-pointer">
@@ -184,24 +190,32 @@ export default function NewQuestionImportPage() {
             <div>
               <h2 className="font-display text-lg font-bold">Select file</h2>
               <p className="text-sm leading-relaxed text-[var(--muted-strong)]">
-                Upload the Written Question Bank template as `.xlsx`, `.csv`, or `.docx` (table with the
-                same headers). Model answers (`মডেল উত্তর`) are optional — blank answers import as
-                drafts. Serial numbers (`প্রশ্ন নং`) and sheet preamble rows are kept.
+                Prefer Excel for large banks. Word (`.docx`) also accepts real exam papers (header +
+                `০১।` prompts with `ক)–ঙ)` / `a)–e)` sub-lines). Model answers optional — blank →
+                draft. Legacy `.doc` is not supported.
               </p>
             </div>
-            <a href={adminDownloadUrl('/admin/written-question-imports/template')}>
-              <Button type="button" variant="outline" className="cursor-pointer">
-                <Download className="size-4" />
-                Download template
-              </Button>
-            </a>
+            <div className="flex flex-wrap gap-2">
+              <a href={adminDownloadUrl('/admin/written-question-imports/template')}>
+                <Button type="button" variant="outline" className="cursor-pointer">
+                  <Download className="size-4" />
+                  Excel template
+                </Button>
+              </a>
+              <a href={adminDownloadUrl('/admin/written-question-imports/template?format=docx')}>
+                <Button type="button" variant="outline" className="cursor-pointer">
+                  <FileText className="size-4" />
+                  Word (.docx) sample
+                </Button>
+              </a>
+            </div>
           </div>
 
           <FileDropzone
             file={file}
             onFileChange={setFile}
-            accept=".xlsx,.csv,.docx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/csv"
-            acceptHint="Only .xlsx, .csv, and .docx files are supported."
+            accept={WRITTEN_ACCEPT}
+            acceptHint={WRITTEN_ACCEPT_HINT}
             dropTitle="Drag & drop your written question file here"
             dropHint="or click to browse · .xlsx / .csv / .docx · up to 15MB"
           />
@@ -222,12 +236,49 @@ export default function NewQuestionImportPage() {
               ))}
             </div>
             <p className="mt-3 text-xs leading-relaxed text-[var(--muted-strong)]">
-              First-column title rows above the header become the set preamble. Mid-sheet section
-              headers are shown between questions. The{' '}
-              <span className="font-medium">মডেল উত্তর</span> column may be blank — those rows import
-              as drafts until an answer is added. Category + multi-subcategory placements are set in
-              the next step.
+              Excel/CSV: first-column title rows above the header become the set preamble. Mid-sheet
+              section headers are shown between questions. Category + placements are set next.
             </p>
+          </div>
+
+          <div className="rounded-[12px] border border-[var(--line)] bg-[var(--bg-desk)] p-4">
+            <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-[var(--ink)]">
+              <FileText className="size-4 text-[var(--highlight)]" />
+              Word (.docx) structuring
+            </p>
+            <ul className="space-y-2 text-xs leading-relaxed text-[var(--muted-strong)]">
+              <li>
+                <span className="font-semibold text-[var(--ink-soft)]">Real exam papers:</span>{' '}
+                header (authority, post,{' '}
+                <code className="text-[var(--ink)]">সময়; পরীক্ষার তারিখ; পূর্ণমান</code>) then
+                numbered prompts (<code className="text-[var(--ink)]">০১।</code> /{' '}
+                <code className="text-[var(--ink)]">1.</code>). Sub-lines{' '}
+                <code className="text-[var(--ink)]">ক)–ঙ)</code> /{' '}
+                <code className="text-[var(--ink)]">a)–e)</code> stay under the parent question.
+                Unicode math (<code className="text-[var(--ink)]">x² ÷ × –</code>) is preserved.
+                Answers are not required.
+              </li>
+              <li>
+                <span className="font-semibold text-[var(--ink-soft)]">Template table:</span> same
+                six Excel headers in a Word table; leave{' '}
+                <span className="font-medium">মডেল উত্তর</span> blank when unknown.
+              </li>
+              <li>
+                <span className="font-semibold text-[var(--ink-soft)]">Labeled blocks:</span>{' '}
+                separated by a blank line or <code className="text-[var(--ink)]">---</code> with{' '}
+                <code className="text-[var(--ink)]">প্রশ্ন নং:</code> /{' '}
+                <code className="text-[var(--ink)]">প্রশ্ন:</code> /{' '}
+                <code className="text-[var(--ink)]">নম্বর:</code> /{' '}
+                <code className="text-[var(--ink)]">মডেল উত্তর:</code> (optional{' '}
+                <code className="text-[var(--ink)]">উত্তর:</code> /{' '}
+                <code className="text-[var(--ink)]">ব্যাখ্যা:</code>).
+              </li>
+              <li>
+                <span className="font-semibold text-[var(--ink-soft)]">Not supported:</span> binary{' '}
+                <code className="text-[var(--ink)]">.doc</code>. Save/Download as{' '}
+                <code className="text-[var(--ink)]">.docx</code> first (no server-side conversion).
+              </li>
+            </ul>
           </div>
 
           <div className="flex justify-end">
@@ -266,17 +317,20 @@ export default function NewQuestionImportPage() {
               />
             </Field>
             <Field>
-              <Label htmlFor="question-date">Question date</Label>
+              <Label htmlFor="question-date">
+                Question date{isDocx ? ' (optional for exam .docx)' : ''}
+              </Label>
               <Input
                 id="question-date"
                 type="date"
                 value={questionDate}
                 onChange={(e) => setQuestionDate(e.target.value)}
-                required
+                required={!isDocx}
               />
               <p className="mt-1.5 text-xs text-[var(--muted-strong)]">
-                Default for every row missing <span className="font-medium">প্রশ্নের তারিখ</span> in
-                Excel. Per-row dates in the file override this.
+                Default when rows omit <span className="font-medium">প্রশ্নের তারিখ</span>. Exam
+                `.docx` files usually carry <span className="font-medium">পরীক্ষার তারিখ</span> in
+                the header (or `YYYY-MM-DD` in the filename) — leave blank to auto-fill.
               </p>
             </Field>
 
@@ -448,6 +502,10 @@ export default function NewQuestionImportPage() {
             onFileChange={setFile}
             disabled={upload.isPending}
             progress={progress}
+            accept={WRITTEN_ACCEPT}
+            acceptHint={WRITTEN_ACCEPT_HINT}
+            dropTitle="Confirm the file to upload"
+            dropHint="or replace · .xlsx / .csv / .docx · up to 15MB"
           />
 
           <div className="flex flex-wrap justify-between gap-2">

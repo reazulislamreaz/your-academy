@@ -267,6 +267,30 @@ function QuestionImportDetailContent() {
         ))}
       </div>
 
+      {data.sheetPreamble || data.description ? (
+        <Surface className="space-y-2 p-4 sm:p-5">
+          <p className="text-xs font-semibold tracking-wide text-[var(--muted-strong)] uppercase">
+            Exam metadata (from file)
+          </p>
+          {data.sheetPreamble ? (
+            <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-[var(--ink)]">
+              {data.sheetPreamble}
+            </pre>
+          ) : null}
+          {data.description ? (
+            <p className="text-sm text-[var(--ink-soft)]">{data.description}</p>
+          ) : null}
+          {data.questionDate ? (
+            <p className="text-xs text-[var(--muted-strong)]">
+              Applied question date:{' '}
+              <span className="font-medium text-[var(--ink)]">
+                {new Date(data.questionDate).toLocaleDateString()}
+              </span>
+            </p>
+          ) : null}
+        </Surface>
+      ) : null}
+
       <Surface className="space-y-4 p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
@@ -526,7 +550,7 @@ function QuestionImportDetailContent() {
                     {row.rowNumber}
                   </td>
                   <td className="px-3 py-3">
-                    <p className="line-clamp-4 max-w-md text-sm leading-relaxed font-medium text-[var(--ink)]">
+                    <p className="line-clamp-6 max-w-md whitespace-pre-wrap text-sm leading-relaxed font-medium text-[var(--ink)]">
                       {row.questionText}
                     </p>
                     {row.errorMessage ? (

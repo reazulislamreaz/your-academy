@@ -231,11 +231,11 @@ Duplicate file (`409 DUPLICATE_FILE`) when the same SHA-256 was already **comple
 
 ### 2.5b Written Question Bank imports (DEC-040)
 
-Parallel to Preli bulk upload. Template columns: `প্রশ্ন নং | প্রশ্ন | পরীক্ষার নাম ও সাল | প্রশ্নের তারিখ | নম্বর | মডেল উত্তর`. Accepts `.xlsx` / `.csv` / `.docx` (table).
+Parallel to Preli bulk upload. Template columns: `প্রশ্ন নং | প্রশ্ন | পরীক্ষার নাম ও সাল | প্রশ্নের তারিখ | নম্বর | মডেল উত্তর`. Accepts `.xlsx` / `.csv` / `.docx` (Word template table, **real exam papers** with `০১।` + `ক)–ঙ)` sub-lines, or labeled blocks). Legacy `.doc` rejected (`LEGACY_DOC_NOT_SUPPORTED`). Exam-paper uploads may omit form `questionDate` when the file header/filename supplies it.
 
 | Method | Path | Description | Auth | Roles |
 |--------|------|-------------|------|-------|
-| GET | `/admin/written-question-imports/template` | Download written `.xlsx` template | User | ADMIN |
+| GET | `/admin/written-question-imports/template` | Download written `.xlsx` template (`?format=docx` for sample Word guide) | User | ADMIN |
 | GET/POST/PATCH/DELETE | `/admin/written-question-imports…` | Same lifecycle as `/admin/question-imports` (list, upload, rows, confirm, file, report, export, archive, delete) | User | ADMIN |
 
 ---

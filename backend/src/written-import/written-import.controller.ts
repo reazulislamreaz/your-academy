@@ -38,16 +38,28 @@ export class WrittenImportController {
   constructor(private readonly imports: WrittenImportService) {}
 
   @Get('template')
-  async template(@Res() res: Response) {
-    const buffer = await this.imports.getTemplateBuffer();
-    res.setHeader(
-      'Content-Type',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    );
-    res.setHeader(
-      'Content-Disposition',
-      'attachment; filename="your-academy-written-question-template.xlsx"',
-    );
+  async template(@Query('format') format: string | undefined, @Res() res: Response) {
+    const wantDocx = (format ?? '').toLowerCase() === 'docx';
+    const buffer = await this.imports.getTemplateBuffer(wantDocx ? 'docx' : 'xlsx');
+    if (wantDocx) {
+      res.setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      );
+      res.setHeader(
+        'Content-Disposition',
+        'attachment; filename="your-academy-written-question-template.docx"',
+      );
+    } else {
+      res.setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      );
+      res.setHeader(
+        'Content-Disposition',
+        'attachment; filename="your-academy-written-question-template.xlsx"',
+      );
+    }
     res.send(buffer);
   }
 

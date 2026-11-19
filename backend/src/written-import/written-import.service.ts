@@ -25,6 +25,7 @@ import {
   parseQuestionDate,
   toIsoDateString,
 } from '../question-import/question-date.util';
+import { toAsciiDigits } from '../question-import/excel-parser';
 import { hashFileBuffer, slugifyBatchCode } from '../question-import/question-normalize';
 import {
   buildWrittenImportReportBuffer,
@@ -34,6 +35,7 @@ import {
   parseWrittenWorkbook,
   WRITTEN_TEMPLATE_HEADERS,
 } from './excel-parser';
+import { buildWrittenDocxTemplateBuffer } from './docx-template';
 
 const MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
 const MAX_ROWS = 5000;
@@ -62,7 +64,8 @@ export class WrittenImportService {
     return root;
   }
 
-  async getTemplateBuffer(): Promise<Buffer> {
+  async getTemplateBuffer(format: 'xlsx' | 'docx' = 'xlsx'): Promise<Buffer> {
+    if (format === 'docx') return buildWrittenDocxTemplateBuffer();
     return buildWrittenTemplateBuffer();
   }
 
@@ -379,6 +382,15 @@ export class WrittenImportService {
 
     const originalFilename = file.originalname || 'written-questions.xlsx';
     const lower = originalFilename.toLowerCase();
+    if (lower.endsWith('.doc') && !lower.endsWith('.docx')) {
+      throw new BadRequestException(
+        createErrorResponse(
+          'LEGACY_DOC_NOT_SUPPORTED',
+          'Legacy .doc (Word 97–2003) is not supported. Open the file in Word or Google Docs and Save/Download as .docx, then upload again.',
+          newRequestId(),
+        ),
+      );
+    }
     if (
       !lower.endsWith('.xlsx') &&
       !lower.endsWith('.xls') &&
@@ -388,7 +400,7 @@ export class WrittenImportService {
       throw new BadRequestException(
         createErrorResponse(
           'INVALID_FILE_TYPE',
-          'Only .xlsx, .xls, .csv, and .docx are supported',
+          'Only .xlsx, .csv, and .docx are supported (legacy .doc / .xls are not)',
           newRequestId(),
         ),
       );
@@ -419,7 +431,8 @@ export class WrittenImportService {
       select: { id: true, batchCode: true, displayName: true, status: true },
     });
 
-    const displayName =
+    // displayName finalized after parse when examMeta can enrich the title
+    let displayName =
       input.displayName?.trim() ||
       originalFilename.replace(/\.(xlsx|xls|csv|docx)$/i, '').slice(0, 200) ||
       'Written upload';
@@ -437,11 +450,29 @@ export class WrittenImportService {
     try {
       workbook = await parseWrittenWorkbook(file.buffer, originalFilename, file.mimetype || '');
     } catch (err) {
+      if (err instanceof Error && err.message === 'LEGACY_DOC_NOT_SUPPORTED') {
+        throw new BadRequestException(
+          createErrorResponse(
+            'LEGACY_DOC_NOT_SUPPORTED',
+            'Legacy .doc is not supported. Convert to .docx (Word: File → Save As → Word Document; Google Docs: Download → Microsoft Word).',
+            newRequestId(),
+          ),
+        );
+      }
+      if (err instanceof Error && err.message === 'INVALID_DOCX') {
+        throw new BadRequestException(
+          createErrorResponse(
+            'INVALID_DOCX',
+            'Could not read this Word file. Use a valid .docx (OOXML) export — not a renamed .doc or corrupt zip.',
+            newRequestId(),
+          ),
+        );
+      }
       if (err instanceof Error && err.message === 'MISSING_HEADERS') {
         throw new BadRequestException(
           createErrorResponse(
             'INVALID_TEMPLATE',
-            `Missing required headers. Expected columns: ${WRITTEN_TEMPLATE_HEADERS.join(' | ')}`,
+            `Could not find written questions. Supported .docx layouts: (1) Excel-style Word table with ${WRITTEN_TEMPLATE_HEADERS.join(' | ')}; (2) real exam paper with header + numbered prompts like ০১। / 1. and optional ক)–ঙ) / a)–e) sub-lines; (3) labeled blocks (প্রশ্ন নং / প্রশ্ন / নম্বর / মডেল উত্তর).`,
             newRequestId(),
           ),
         );
@@ -450,7 +481,9 @@ export class WrittenImportService {
     }
 
     const parsed = workbook.rows;
-    const sheetPreamble = workbook.preamble.slice(0, 4000) || null;
+    const examMeta = workbook.examMeta;
+    const sheetPreamble =
+      (examMeta?.rawHeader || workbook.preamble).slice(0, 4000) || null;
     if (!parsed.length) {
       throw new BadRequestException(
         createErrorResponse('EMPTY_FILE', 'No question rows found in the file', newRequestId()),
@@ -460,6 +493,10 @@ export class WrittenImportService {
       throw new BadRequestException(
         createErrorResponse('TOO_MANY_ROWS', `Maximum ${MAX_ROWS} rows per upload`, newRequestId()),
       );
+    }
+
+    if (!input.displayName?.trim() && examMeta?.examTitle) {
+      displayName = [examMeta.examTitle, examMeta.postName].filter(Boolean).join(' — ').slice(0, 200);
     }
 
     const batchId = randomUUID();
@@ -472,7 +509,10 @@ export class WrittenImportService {
     const categoryIndex = await this.buildCategoryIndex();
     const collectionSubject = input.subjectHint?.trim() || '';
     const collectionTopic = input.topicHint?.trim() || '';
-    const collectionExam = input.examCategoryHint?.trim() || '';
+    const collectionExam =
+      input.examCategoryHint?.trim() ||
+      [examMeta?.examTitle, examMeta?.postName].filter(Boolean).join(' — ').slice(0, 120) ||
+      '';
     const sheetHasCategory = parsed.some((row) => Boolean(row.subject?.trim()));
     if (!collectionSubject && !sheetHasCategory) {
       throw new BadRequestException(
@@ -545,7 +585,15 @@ export class WrittenImportService {
     }
 
     const resolvedTopicHint = placementRows[0]?.name?.trim() || collectionTopic || '';
-    const defaultQuestionDate = parseQuestionDate(input.questionDate ?? null);
+    const filenameDate = (() => {
+      const m = toAsciiDigits(originalFilename).match(/(\d{4})[./-](\d{1,2})[./-](\d{1,2})/);
+      if (!m) return null;
+      return parseQuestionDate(`${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`);
+    })();
+    const defaultQuestionDate =
+      parseQuestionDate(input.questionDate ?? null) ??
+      (examMeta?.examDate ? parseQuestionDate(examMeta.examDate) : null) ??
+      filenameDate;
     const yearCounts = new Map<string, number>();
     for (const row of parsed) {
       const y = row.examYear?.trim() || parseQuestionDate(row.questionDate)?.examYear;
@@ -671,13 +719,23 @@ export class WrittenImportService {
       });
     }
 
+    const autoDescription = examMeta
+      ? [
+          examMeta.duration ? `সময়: ${examMeta.duration}` : null,
+          examMeta.examDate ? `তারিখ: ${examMeta.examDate}` : null,
+          examMeta.totalMarks ? `পূর্ণমান: ${examMeta.totalMarks}` : null,
+        ]
+          .filter(Boolean)
+          .join(' · ')
+      : '';
+
     await this.prisma.$transaction(async (tx) => {
       await tx.writtenUploadBatch.create({
         data: {
           id: batchId,
           batchCode,
           displayName,
-          description: input.description?.trim() || null,
+          description: input.description?.trim() || autoDescription || null,
           originalFilename,
           mimeType: file.mimetype || 'application/octet-stream',
           fileSha256,
