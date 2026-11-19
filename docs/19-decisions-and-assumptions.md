@@ -21,6 +21,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | DEC-018 | Published news publicly readable (marketing `/news`) | SUPERSEDED in part by DEC-032 |
 | DEC-031 | Public Preli Question Bank (no login) | CONFIRMED |
 | DEC-040 | Public Written Question Bank (parallel domain + admin upload) | CONFIRMED |
+| DEC-041 | Scoped categories PRELIMINARY vs WRITTEN | CONFIRMED |
 | DEC-032 | Admin PUBLIC documents on পত্রিকার গুরুত্বপূর্ণ কলাম | CONFIRMED |
 | DEC-033 | In-app PDF viewer; no download UI; API byte proxy | CONFIRMED |
 | DEC-034 | Excel serial/preamble/sections + multi-subcategory placements + year chips | CONFIRMED |
@@ -87,6 +88,15 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Decision | **Yes.** Parallel Prisma domain (`WrittenQuestion`, `WrittenUploadBatch`, placements, import rows) — do not overload MCQ `Question` tables. Admin Excel/CSV/`.docx` upload under `/admin/written-question-imports`. DOCX (OOXML only; reject legacy `.doc`): (1) template Word table, (2) **real exam papers** — header authority/post/`সময়; পরীক্ষার তারিখ; পূর্ণমান` (often in a 1-col table) + `০১।`/`1.` stems with `ক)–ঙ)`/`a)–e)` sub-lines grouped under the parent; answers optional; Unicode math preserved; auto-fill `questionDate`/`examYear`/`sheetPreamble` from header or `YYYY-MM-DD` filename, (3) labeled blocks. Sample via `GET …/template?format=docx`. No server-side `.doc` conversion. Public written-set APIs + marketing bank unchanged. Publish when model answer present; blank → DRAFT. Max 8 placements. |
 | Impact | WrittenImportModule, `docx-parser` exam-paper mode, admin Written upload/preview, migration `20261118190000_written_question_bank` |
 | Status | **CONFIRMED** (product request 2026-11-18; exam-paper DOCX 2026-11-19) |
+
+### DEC-041 — Scoped categories (Preliminary vs Written)
+
+| Field | Value |
+|-------|-------|
+| Question | Should Preliminary and Written Question Banks share one category tree, or isolate taxonomies? |
+| Decision | **Isolate via `Category.scope` enum `PRELIMINARY \| WRITTEN`.** Unique `(scope, slug)`; names unique per scope+parent. Public `GET /categories` defaults to PRELIMINARY; `?scope=WRITTEN` for Written. Admin `/admin/categories` tabbed UI. Written uploads/quick-create use WRITTEN only; Preli Excel imports use PRELIMINARY. Migration clones any trees already linked to written questions into WRITTEN and remaps FKs. Cross-scope parent moves rejected. |
+| Impact | Prisma migration `20261119100000_category_scope_written_preli`, CategoriesModule, WrittenImport/QuestionImport indexes, admin Taxonomy tabs, Written upload dropdowns |
+| Status | **CONFIRMED** (product request 2026-11-19) |
 
 ### DEC-034 — Excel serial, sheet preamble/sections, multi-placement, year filter
 

@@ -19,6 +19,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { newRequestId } from '../common/request-id';
 import { CategoriesService } from './categories.service';
+import { parseCategoryScope } from './category-scope';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 
@@ -26,17 +27,26 @@ import { UpdateCategoryDto } from './dto/update-category.dto';
 export class CategoriesController {
   constructor(private readonly categories: CategoriesService) {}
 
-  /** Public: active category tree for marketing + filters (question content remains auth-gated). */
+  /**
+   * Public: active category tree for marketing + filters.
+   * Default scope=PRELIMINARY (Preli bank). Pass `?scope=WRITTEN` for Written bank filters.
+   */
   @Get('categories')
-  async list() {
-    return createSuccessResponse(await this.categories.listActive(), newRequestId());
+  async list(@Query('scope') scope?: string) {
+    return createSuccessResponse(
+      await this.categories.listActive(parseCategoryScope(scope)),
+      newRequestId(),
+    );
   }
 
   @Get('admin/categories')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  async listAdmin() {
-    return createSuccessResponse(await this.categories.listAdmin(), newRequestId());
+  async listAdmin(@Query('scope') scope?: string) {
+    return createSuccessResponse(
+      await this.categories.listAdmin(parseCategoryScope(scope)),
+      newRequestId(),
+    );
   }
 
   @Post('admin/categories')

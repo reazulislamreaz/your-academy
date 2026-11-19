@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import type { CategoryNode } from '@/lib/api/types';
-import type { CategoryRecord } from './types';
+import type { CategoryRecord, CategoryScope } from './types';
 
 function upsertRootCategory(list: CategoryNode[] | undefined, created: CategoryRecord): CategoryNode[] {
   const current = list ?? [];
@@ -55,11 +55,14 @@ function upsertChildCategory(
 type QuickCreateCategoryButtonProps = {
   onCreated: (category: CategoryRecord) => void;
   disabled?: boolean;
+  /** Bank scope for the new root category (DEC-041). */
+  scope?: CategoryScope;
 };
 
 export function QuickCreateCategoryButton({
   onCreated,
   disabled,
+  scope = 'PRELIMINARY',
 }: QuickCreateCategoryButtonProps) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -70,11 +73,16 @@ export function QuickCreateCategoryButton({
     mutationFn: () =>
       apiFetch<CategoryRecord>('/admin/categories', {
         method: 'POST',
-        body: JSON.stringify({ name: name.trim(), isActive: true }),
+        body: JSON.stringify({ name: name.trim(), scope, isActive: true }),
       }),
     onSuccess: (created) => {
+      qc.setQueryData<CategoryNode[]>(['categories', scope], (prev) =>
+        upsertRootCategory(prev, created),
+      );
       qc.setQueryData<CategoryNode[]>(['categories'], (prev) => upsertRootCategory(prev, created));
+      void qc.invalidateQueries({ queryKey: ['categories', scope] });
       void qc.invalidateQueries({ queryKey: ['categories'] });
+      void qc.invalidateQueries({ queryKey: ['admin-categories', scope] });
       void qc.invalidateQueries({ queryKey: ['admin-categories'] });
       setOpen(false);
       setName('');
@@ -105,8 +113,12 @@ export function QuickCreateCategoryButton({
       </Button>
       <FormDialog
         open={open}
-        title="New category"
-        description="Created categories appear immediately in this dropdown."
+        title={scope === 'WRITTEN' ? 'New Written category' : 'New category'}
+        description={
+          scope === 'WRITTEN'
+            ? 'Added to the Written Question Bank taxonomy only.'
+            : 'Created categories appear immediately in this dropdown.'
+        }
         confirmLabel="Create"
         pending={create.isPending}
         error={error}
@@ -138,6 +150,8 @@ type QuickCreateSubcategoryButtonProps = {
   parentName?: string;
   onCreated: (subcategory: CategoryRecord) => void;
   disabled?: boolean;
+  /** Inherited from parent; sent so the API validates scope consistently. */
+  scope?: CategoryScope;
 };
 
 export function QuickCreateSubcategoryButton({
@@ -145,6 +159,7 @@ export function QuickCreateSubcategoryButton({
   parentName,
   onCreated,
   disabled,
+  scope = 'PRELIMINARY',
 }: QuickCreateSubcategoryButtonProps) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -159,17 +174,23 @@ export function QuickCreateSubcategoryButton({
         body: JSON.stringify({
           name: name.trim(),
           parentId,
+          scope,
           isActive: true,
         }),
       });
     },
     onSuccess: (created) => {
       if (parentId) {
+        qc.setQueryData<CategoryNode[]>(['categories', scope], (prev) =>
+          upsertChildCategory(prev, parentId, created),
+        );
         qc.setQueryData<CategoryNode[]>(['categories'], (prev) =>
           upsertChildCategory(prev, parentId, created),
         );
       }
+      void qc.invalidateQueries({ queryKey: ['categories', scope] });
       void qc.invalidateQueries({ queryKey: ['categories'] });
+      void qc.invalidateQueries({ queryKey: ['admin-categories', scope] });
       void qc.invalidateQueries({ queryKey: ['admin-categories'] });
       setOpen(false);
       setName('');
@@ -200,7 +221,7 @@ export function QuickCreateSubcategoryButton({
       </Button>
       <FormDialog
         open={open}
-        title="New subcategory"
+        title={scope === 'WRITTEN' ? 'New Written subcategory' : 'New subcategory'}
         description={
           parentName
             ? `Will be added under “${parentName}”.`

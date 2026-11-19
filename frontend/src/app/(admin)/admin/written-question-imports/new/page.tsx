@@ -61,8 +61,8 @@ export default function NewQuestionImportPage() {
   const [error, setError] = useState<string | null>(null);
 
   const categories = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => apiFetch<CategoryNode[]>('/categories'),
+    queryKey: ['categories', 'WRITTEN'],
+    queryFn: () => apiFetch<CategoryNode[]>('/categories?scope=WRITTEN'),
   });
 
   const selectedCategory = useMemo(
@@ -335,7 +335,7 @@ export default function NewQuestionImportPage() {
             </Field>
 
             <Field>
-              <Label htmlFor="category">Category</Label>
+              <Label htmlFor="category">Written category</Label>
               <div className="flex gap-2">
                 <Select
                   id="category"
@@ -349,8 +349,8 @@ export default function NewQuestionImportPage() {
                 >
                   <option value="">
                     {(categories.data ?? []).length === 0
-                      ? 'No categories yet — create one'
-                      : 'Select category…'}
+                      ? 'No Written categories yet — create one'
+                      : 'Select Written category…'}
                   </option>
                   {(categories.data ?? []).map((c) => (
                     <option key={c.id} value={c.name}>
@@ -359,6 +359,7 @@ export default function NewQuestionImportPage() {
                   ))}
                 </Select>
                 <QuickCreateCategoryButton
+                  scope="WRITTEN"
                   onCreated={(created) => {
                     setCategoryName(created.name);
                     setPlacementSubcategoryIds([]);
@@ -369,12 +370,13 @@ export default function NewQuestionImportPage() {
 
             <Field>
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                <Label>Subcategory placements (up to {MAX_PLACEMENTS})</Label>
+                <Label>Written subcategory placements (up to {MAX_PLACEMENTS})</Label>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-medium text-[var(--muted-strong)]">
                     {placementSubcategoryIds.length}/{MAX_PLACEMENTS} selected
                   </span>
                   <QuickCreateSubcategoryButton
+                    scope="WRITTEN"
                     parentId={selectedCategory?.id ?? null}
                     parentName={selectedCategory?.name}
                     onCreated={(created) => {
@@ -389,11 +391,11 @@ export default function NewQuestionImportPage() {
 
               {!selectedCategory ? (
                 <p className="rounded-[12px] border border-dashed border-[var(--line)] bg-[var(--bg-desk)] px-4 py-6 text-sm text-[var(--muted-strong)]">
-                  Select a category first to choose placement subcategories.
+                  Select a Written category first to choose placement subcategories.
                 </p>
               ) : selectedCategory.children.length === 0 ? (
                 <p className="rounded-[12px] border border-dashed border-[var(--line)] bg-[var(--bg-desk)] px-4 py-6 text-sm text-[var(--muted-strong)]">
-                  No subcategories yet — create one with the + button.
+                  No Written subcategories yet — create one with the + button.
                 </p>
               ) : (
                 <ul className="grid gap-2 sm:grid-cols-2">

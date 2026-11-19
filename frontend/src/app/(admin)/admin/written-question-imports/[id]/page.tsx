@@ -56,8 +56,8 @@ function QuestionImportDetailContent() {
   });
 
   const categories = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => apiFetch<CategoryNode[]>('/categories'),
+    queryKey: ['categories', 'WRITTEN'],
+    queryFn: () => apiFetch<CategoryNode[]>('/categories?scope=WRITTEN'),
   });
 
   const selectedCategory = useMemo(
@@ -363,7 +363,7 @@ function QuestionImportDetailContent() {
               />
             </Field>
             <Field>
-              <Label htmlFor="edit-category">Category</Label>
+              <Label htmlFor="edit-category">Written category</Label>
               <div className="flex gap-2">
                 <Select
                   id="edit-category"
@@ -374,7 +374,7 @@ function QuestionImportDetailContent() {
                     setTopicHint('');
                   }}
                 >
-                  <option value="">Select category…</option>
+                  <option value="">Select Written category…</option>
                   {(categories.data ?? []).map((c) => (
                     <option key={c.id} value={c.name}>
                       {c.name}
@@ -382,6 +382,7 @@ function QuestionImportDetailContent() {
                   ))}
                 </Select>
                 <QuickCreateCategoryButton
+                  scope="WRITTEN"
                   onCreated={(created) => {
                     setSubjectHint(created.name);
                     setTopicHint('');
@@ -390,7 +391,7 @@ function QuestionImportDetailContent() {
               </div>
             </Field>
             <Field>
-              <Label htmlFor="edit-subcategory">Subcategory (Optional)</Label>
+              <Label htmlFor="edit-subcategory">Written subcategory (Optional)</Label>
               <div className="flex gap-2">
                 <Select
                   id="edit-subcategory"
@@ -403,8 +404,8 @@ function QuestionImportDetailContent() {
                     {selectedCategory
                       ? selectedCategory.children.length
                         ? 'None'
-                        : 'No subcategories'
-                      : 'Select a category first…'}
+                        : 'No Written subcategories'
+                      : 'Select a Written category first…'}
                   </option>
                   {(selectedCategory?.children ?? []).map((t) => (
                     <option key={t.id} value={t.name}>
@@ -413,6 +414,7 @@ function QuestionImportDetailContent() {
                   ))}
                 </Select>
                 <QuickCreateSubcategoryButton
+                  scope="WRITTEN"
                   parentId={selectedCategory?.id ?? null}
                   parentName={selectedCategory?.name}
                   onCreated={(created) => {

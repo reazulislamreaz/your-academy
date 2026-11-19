@@ -842,6 +842,7 @@ export class QuestionImportService {
                   name: row.topicName.slice(0, 100),
                   slug: `${slug}-${randomUUID().slice(0, 6)}`,
                   parentId: subject.id,
+                  scope: 'PRELIMINARY',
                   isActive: true,
                   sortOrder: 99,
                 },
@@ -1103,8 +1104,8 @@ export class QuestionImportService {
 
   private async buildCategoryIndex() {
     const roots = await this.prisma.category.findMany({
-      where: { parentId: null, isActive: true },
-      include: { children: { where: { isActive: true } } },
+      where: { parentId: null, isActive: true, scope: 'PRELIMINARY' },
+      include: { children: { where: { isActive: true, scope: 'PRELIMINARY' } } },
     });
     const rootsByName = new Map<string, { id: string; slug: string; name: string }>();
     const topicsByParentAndName = new Map<string, string>();

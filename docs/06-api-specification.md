@@ -125,9 +125,11 @@ Profile picture: separate upload after auth or multipart field if approved.
 
 ### 2.3 Categories
 
+Scoped taxonomies (DEC-041): `PRELIMINARY` (default) vs `WRITTEN`. Unique `(scope, slug)`.
+
 | Method | Endpoint | Description | Auth | Role |
 |--------|----------|-------------|------|------|
-| GET | `/categories` | Active tree/list (names only; public for marketing/filters) | Public | — |
+| GET | `/categories` | Active tree (`?scope=PRELIMINARY\|WRITTEN`; default PRELIMINARY) | Public | — |
 | GET | `/public/stats` | Published counts (questions/categories/news/documents) | Public | — |
 | GET | `/public/documents` | Published `PUBLIC` documents for পত্রিকার গুরুত্বপূর্ণ কলাম (`cursor`, `limit`, `q`) | Public | — |
 | GET | `/public/documents/:id` | Public document metadata + `view.available` (no storage URLs) | Public | — |
@@ -149,9 +151,9 @@ Profile picture: separate upload after auth or multipart field if approved.
 | POST | `/admin/homepage/restore` | Copy published → draft (discard unpublished draft edits) | User | ADMIN |
 | GET | `/admin/homepage/revisions` | List recent homepage revision summaries (`?limit=`) | User | ADMIN |
 | POST | `/admin/homepage/revisions/:id/restore` | Load revision payload into draft | User | ADMIN |
-| GET | `/admin/categories` | Admin tree including inactive + usage counts | User | ADMIN |
-| POST | `/admin/categories` | Create category or subcategory (`parentId`); slug optional (auto) | User | ADMIN |
-| PATCH | `/admin/categories/:id` | Update name/description/status/parent | User | ADMIN |
+| GET | `/admin/categories` | Admin tree including inactive + usage counts (`?scope=`) | User | ADMIN |
+| POST | `/admin/categories` | Create category/subcategory (`parentId`, `scope`); slug optional (auto); child inherits parent scope | User | ADMIN |
+| PATCH | `/admin/categories/:id` | Update name/description/status/parent (no cross-scope moves) | User | ADMIN |
 | POST | `/admin/categories/:id/activate` | Set active | User | ADMIN |
 | POST | `/admin/categories/:id/deactivate` | Soft-hide from public dropdowns | User | ADMIN |
 | DELETE | `/admin/categories/:id` | Soft-deactivate; `?hard=true` permanent delete only when unused | User | ADMIN |

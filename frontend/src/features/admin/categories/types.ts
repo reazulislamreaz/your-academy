@@ -1,3 +1,5 @@
+export type CategoryScope = 'PRELIMINARY' | 'WRITTEN';
+
 export type AdminCategoryChild = {
   id: string;
   name: string;
@@ -6,6 +8,7 @@ export type AdminCategoryChild = {
   isActive: boolean;
   sortOrder: number;
   parentId?: string | null;
+  scope?: CategoryScope;
   questionCount: number;
   practiceSetCount: number;
   documentCount: number;
@@ -20,6 +23,7 @@ export type AdminCategoryNode = {
   description?: string | null;
   isActive: boolean;
   sortOrder: number;
+  scope?: CategoryScope;
   subcategoryCount: number;
   questionCount: number;
   practiceSetCount: number;
@@ -35,6 +39,7 @@ export type CategoryRecord = {
   slug: string;
   description?: string | null;
   parentId?: string | null;
+  scope?: CategoryScope;
   isActive: boolean;
   sortOrder: number;
 };

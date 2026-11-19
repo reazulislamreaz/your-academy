@@ -38,6 +38,7 @@ import type {
   AdminCategoryChild,
   AdminCategoryNode,
   CategoryRecord,
+  CategoryScope,
 } from './types';
 
 type StatusFilter = 'all' | 'active' | 'inactive';
@@ -59,6 +60,8 @@ type Props = {
   headerExtra?: ReactNode;
   /** Hide outer AdminPage wrapper when embedded in a tabbed host. */
   embedded?: boolean;
+  /** Preliminary vs Written bank taxonomy (DEC-041). */
+  scope?: CategoryScope;
 };
 
 const PAGE_SIZES: PageSize[] = [10, 20, 50, 100];
@@ -73,6 +76,7 @@ export function CategoryTaxonomyManager({
   eyebrow = 'Taxonomy',
   headerExtra,
   embedded,
+  scope = 'PRELIMINARY',
 }: Props) {
   const qc = useQueryClient();
   const [q, setQ] = useState('');
@@ -87,8 +91,9 @@ export function CategoryTaxonomyManager({
   const [pageSize, setPageSize] = useState<PageSize>(20);
 
   const categories = useQuery({
-    queryKey: ['admin-categories'],
-    queryFn: () => apiFetch<AdminCategoryNode[]>('/admin/categories'),
+    queryKey: ['admin-categories', scope],
+    queryFn: () =>
+      apiFetch<AdminCategoryNode[]>(`/admin/categories?scope=${encodeURIComponent(scope)}`),
   });
 
   // Always expand all roots once data arrives (and when searching, keep matches open).
@@ -159,7 +164,9 @@ export function CategoryTaxonomyManager({
   const pageRoots = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   const invalidate = () => {
+    void qc.invalidateQueries({ queryKey: ['admin-categories', scope] });
     void qc.invalidateQueries({ queryKey: ['admin-categories'] });
+    void qc.invalidateQueries({ queryKey: ['categories', scope] });
     void qc.invalidateQueries({ queryKey: ['categories'] });
   };
 
@@ -189,6 +196,7 @@ export function CategoryTaxonomyManager({
           name: values.name,
           description: values.description,
           parentId: values.parentId || dialog.parentId || undefined,
+          scope,
           isActive: values.isActive,
         }),
       });

@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { CategoryScope, Prisma } from '@prisma/client';
 import { createErrorResponse } from '@your-academy/shared';
 import { randomUUID } from 'crypto';
 import { AuditService } from '../audit/audit.service';
@@ -21,14 +21,14 @@ export class CategoriesService {
     private readonly audit: AuditService,
   ) {}
 
-  /** Public/learner tree: active roots + active children only. */
-  async listActive() {
+  /** Public/learner tree: active roots + active children for one bank scope. */
+  async listActive(scope: CategoryScope = CategoryScope.PRELIMINARY) {
     const roots = await this.prisma.category.findMany({
-      where: { parentId: null, isActive: true },
+      where: { parentId: null, isActive: true, scope },
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       include: {
         children: {
-          where: { isActive: true },
+          where: { isActive: true, scope },
           orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
           select: {
             id: true,
@@ -37,6 +37,7 @@ export class CategoriesService {
             description: true,
             isActive: true,
             sortOrder: true,
+            scope: true,
           },
         },
       },
@@ -48,22 +49,25 @@ export class CategoriesService {
       description: root.description,
       isActive: root.isActive,
       sortOrder: root.sortOrder,
+      scope: root.scope,
       children: root.children,
     }));
   }
 
-  /** Admin tree: all roots/children with usage counts. */
-  async listAdmin() {
+  /** Admin tree: all roots/children with usage counts for one bank scope. */
+  async listAdmin(scope: CategoryScope = CategoryScope.PRELIMINARY) {
     const roots = await this.prisma.category.findMany({
-      where: { parentId: null },
+      where: { parentId: null, scope },
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       include: {
         children: {
+          where: { scope },
           orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
           include: {
             _count: {
               select: {
                 subQuestions: true,
+                writtenSubQuestions: true,
                 practiceSetTopics: true,
                 documents: true,
               },
@@ -74,6 +78,7 @@ export class CategoriesService {
           select: {
             children: true,
             questions: true,
+            writtenQuestions: true,
             practiceSets: true,
             documents: true,
           },
@@ -88,10 +93,12 @@ export class CategoriesService {
       description: root.description,
       isActive: root.isActive,
       sortOrder: root.sortOrder,
+      scope: root.scope,
       createdAt: root.createdAt,
       updatedAt: root.updatedAt,
       subcategoryCount: root._count.children,
-      questionCount: root._count.questions,
+      questionCount:
+        scope === CategoryScope.WRITTEN ? root._count.writtenQuestions : root._count.questions,
       practiceSetCount: root._count.practiceSets,
       documentCount: root._count.documents,
       children: root.children.map((child) => ({
@@ -102,9 +109,13 @@ export class CategoriesService {
         isActive: child.isActive,
         sortOrder: child.sortOrder,
         parentId: child.parentId,
+        scope: child.scope,
         createdAt: child.createdAt,
         updatedAt: child.updatedAt,
-        questionCount: child._count.subQuestions,
+        questionCount:
+          scope === CategoryScope.WRITTEN
+            ? child._count.writtenSubQuestions
+            : child._count.subQuestions,
         practiceSetCount: child._count.practiceSetTopics,
         documentCount: child._count.documents,
       })),
@@ -120,6 +131,7 @@ export class CategoriesService {
     }
 
     let parentId: string | null | undefined = dto.parentId;
+    let scope: CategoryScope = dto.scope ?? CategoryScope.PRELIMINARY;
     if (parentId) {
       const parent = await this.prisma.category.findUnique({ where: { id: parentId } });
       if (!parent) {
@@ -136,13 +148,24 @@ export class CategoriesService {
           ),
         );
       }
+      scope = parent.scope;
+      if (dto.scope && dto.scope !== parent.scope) {
+        throw new BadRequestException(
+          createErrorResponse(
+            'SCOPE_MISMATCH',
+            'Subcategory scope must match its parent category',
+            newRequestId(),
+          ),
+        );
+      }
     } else {
       parentId = null;
     }
 
-    await this.assertUniqueName(name, parentId);
+    await this.assertUniqueName(name, parentId, scope);
 
     const slug = await this.ensureUniqueSlug(
+      scope,
       dto.slug?.trim() ? dto.slug.trim().toLowerCase() : slugifyCategoryName(name),
     );
 
@@ -153,6 +176,7 @@ export class CategoriesService {
           slug,
           description: dto.description?.trim() || null,
           parentId,
+          scope,
           sortOrder: dto.sortOrder ?? 0,
           isActive: dto.isActive ?? true,
         },
@@ -160,7 +184,7 @@ export class CategoriesService {
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
         throw new ConflictException(
-          createErrorResponse('SLUG_EXISTS', 'Category slug already exists', newRequestId()),
+          createErrorResponse('SLUG_EXISTS', 'Category slug already exists in this bank', newRequestId()),
         );
       }
       throw err;
@@ -202,7 +226,15 @@ export class CategoriesService {
             ),
           );
         }
-        // Root with children cannot become a subcategory.
+        if (parent.scope !== existing.scope) {
+          throw new BadRequestException(
+            createErrorResponse(
+              'SCOPE_MISMATCH',
+              'Cannot move a category across Preliminary / Written banks',
+              newRequestId(),
+            ),
+          );
+        }
         if (!existing.parentId) {
           const childCount = await this.prisma.category.count({ where: { parentId: id } });
           if (childCount > 0) {
@@ -223,7 +255,7 @@ export class CategoriesService {
 
     const nextName = dto.name?.trim() ?? existing.name;
     if (dto.name !== undefined || dto.parentId !== undefined) {
-      await this.assertUniqueName(nextName, nextParentId, id);
+      await this.assertUniqueName(nextName, nextParentId, existing.scope, id);
     }
 
     try {
@@ -243,7 +275,7 @@ export class CategoriesService {
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
         throw new ConflictException(
-          createErrorResponse('SLUG_EXISTS', 'Category slug already exists', newRequestId()),
+          createErrorResponse('SLUG_EXISTS', 'Category slug already exists in this bank', newRequestId()),
         );
       }
       throw err;
@@ -272,10 +304,6 @@ export class CategoriesService {
     return updated;
   }
 
-  /**
-   * Soft-delete by default (deactivate). Hard delete only when unused by
-   * questions, documents, practice sets, or child categories.
-   */
   async remove(id: string, actorUserId?: string, hard = false) {
     const existing = await this.prisma.category.findUnique({ where: { id } });
     if (!existing) {
@@ -293,6 +321,8 @@ export class CategoriesService {
       usage.children > 0 ||
       usage.questions > 0 ||
       usage.subQuestions > 0 ||
+      usage.writtenQuestions > 0 ||
+      usage.writtenSubQuestions > 0 ||
       usage.documents > 0 ||
       usage.practiceSets > 0 ||
       usage.practiceSetTopics > 0
@@ -313,28 +343,53 @@ export class CategoriesService {
       action: 'CATEGORY_DELETE',
       entityType: 'category',
       entityId: id,
-      metadata: { name: existing.name, parentId: existing.parentId },
+      metadata: { name: existing.name, parentId: existing.parentId, scope: existing.scope },
     });
     return { id, deleted: true };
   }
 
   private async usageCounts(id: string) {
-    const [children, questions, subQuestions, documents, practiceSets, practiceSetTopics] =
-      await Promise.all([
-        this.prisma.category.count({ where: { parentId: id } }),
-        this.prisma.question.count({ where: { categoryId: id, deletedAt: null } }),
-        this.prisma.question.count({ where: { subcategoryId: id, deletedAt: null } }),
-        this.prisma.document.count({ where: { categoryId: id, deletedAt: null } }),
-        this.prisma.practiceSet.count({ where: { categoryId: id } }),
-        this.prisma.practiceSet.count({ where: { subcategoryId: id } }),
-      ]);
-    return { children, questions, subQuestions, documents, practiceSets, practiceSetTopics };
+    const [
+      children,
+      questions,
+      subQuestions,
+      writtenQuestions,
+      writtenSubQuestions,
+      documents,
+      practiceSets,
+      practiceSetTopics,
+    ] = await Promise.all([
+      this.prisma.category.count({ where: { parentId: id } }),
+      this.prisma.question.count({ where: { categoryId: id, deletedAt: null } }),
+      this.prisma.question.count({ where: { subcategoryId: id, deletedAt: null } }),
+      this.prisma.writtenQuestion.count({ where: { categoryId: id, deletedAt: null } }),
+      this.prisma.writtenQuestion.count({ where: { subcategoryId: id, deletedAt: null } }),
+      this.prisma.document.count({ where: { categoryId: id, deletedAt: null } }),
+      this.prisma.practiceSet.count({ where: { categoryId: id } }),
+      this.prisma.practiceSet.count({ where: { subcategoryId: id } }),
+    ]);
+    return {
+      children,
+      questions,
+      subQuestions,
+      writtenQuestions,
+      writtenSubQuestions,
+      documents,
+      practiceSets,
+      practiceSetTopics,
+    };
   }
 
-  private async assertUniqueName(name: string, parentId: string | null, excludeId?: string) {
+  private async assertUniqueName(
+    name: string,
+    parentId: string | null,
+    scope: CategoryScope,
+    excludeId?: string,
+  ) {
     const siblings = await this.prisma.category.findMany({
       where: {
         parentId,
+        scope,
         ...(excludeId ? { id: { not: excludeId } } : {}),
       },
       select: { id: true, name: true },
@@ -346,18 +401,18 @@ export class CategoriesService {
           'NAME_EXISTS',
           parentId
             ? 'A subcategory with this name already exists under the selected category'
-            : 'A category with this name already exists',
+            : 'A category with this name already exists in this bank',
           newRequestId(),
         ),
       );
     }
   }
 
-  private async ensureUniqueSlug(base: string): Promise<string> {
+  private async ensureUniqueSlug(scope: CategoryScope, base: string): Promise<string> {
     let slug = base.slice(0, 140) || `category-${randomUUID().slice(0, 8)}`;
     for (let i = 0; i < 8; i += 1) {
       const taken = await this.prisma.category.findUnique({
-        where: { slug },
+        where: { scope_slug: { scope, slug } },
         select: { id: true },
       });
       if (!taken) return slug;

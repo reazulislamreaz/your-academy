@@ -92,7 +92,7 @@ export class PublicService {
         where: { status: QuestionStatus.PUBLISHED, deletedAt: null },
       }),
       this.prisma.category.count({
-        where: { isActive: true, parentId: null },
+        where: { isActive: true, parentId: null, scope: 'PRELIMINARY' },
       }),
       this.prisma.news.count({
         where: { isPublished: true, deletedAt: null },

@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  CategoryScope,
   Prisma,
   QuestionImportRowStatus,
   QuestionStatus,
@@ -338,8 +339,8 @@ export class WrittenImportService {
 
   private async buildCategoryIndex() {
     const categories = await this.prisma.category.findMany({
-      where: { isActive: true },
-      select: { id: true, name: true, slug: true, parentId: true },
+      where: { isActive: true, scope: CategoryScope.WRITTEN },
+      select: { id: true, name: true, slug: true, parentId: true, scope: true },
     });
     const rootsByName = new Map<string, { id: string; name: string; slug: string }>();
     const topicsByParentAndName = new Map<string, string>();
@@ -563,14 +564,19 @@ export class WrittenImportService {
     if (rootCategory && placementIdSet.length) {
       for (let i = 0; i < placementIdSet.length; i += 1) {
         const sub = await this.prisma.category.findFirst({
-          where: { id: placementIdSet[i], parentId: rootCategory.id, isActive: true },
+          where: {
+            id: placementIdSet[i],
+            parentId: rootCategory.id,
+            isActive: true,
+            scope: CategoryScope.WRITTEN,
+          },
           select: { id: true, name: true },
         });
         if (!sub) {
           throw new BadRequestException(
             createErrorResponse(
               'SUBCATEGORY_INVALID',
-              'Each placement must be an active subcategory of the selected category',
+              'Each placement must be an active Written-bank subcategory of the selected Written category',
               newRequestId(),
             ),
           );
@@ -850,6 +856,7 @@ export class WrittenImportService {
                   name: row.topicName.slice(0, 100),
                   slug: `${slug}-${randomUUID().slice(0, 6)}`,
                   parentId: subject.id,
+                  scope: CategoryScope.WRITTEN,
                   isActive: true,
                   sortOrder: 99,
                 },

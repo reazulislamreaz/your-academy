@@ -108,8 +108,9 @@ export function HomepageSectionWorkspace({
   } = useHomepageSection(section);
 
   const categoriesQ = useQuery({
-    queryKey: ['admin-categories'],
-    queryFn: () => apiFetch<AdminCategoryNode[]>('/admin/categories'),
+    queryKey: ['admin-categories', 'PRELIMINARY'],
+    queryFn: () =>
+      apiFetch<AdminCategoryNode[]>('/admin/categories?scope=PRELIMINARY'),
     staleTime: 60_000,
     enabled: true,
   });

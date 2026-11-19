@@ -1,15 +1,19 @@
+export type CategoryScope = 'PRELIMINARY' | 'WRITTEN';
+
 export type CategoryNode = {
   id: string;
   name: string;
   slug: string;
   description?: string | null;
   isActive?: boolean;
+  scope?: CategoryScope;
   children: Array<{
     id: string;
     name: string;
     slug: string;
     description?: string | null;
     isActive?: boolean;
+    scope?: CategoryScope;
   }>;
 };
 

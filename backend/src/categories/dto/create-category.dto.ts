@@ -1,5 +1,7 @@
+import { CategoryScope } from '@prisma/client';
 import {
   IsBoolean,
+  IsEnum,
   IsInt,
   IsOptional,
   IsString,
@@ -29,6 +31,11 @@ export class CreateCategoryDto {
   @IsOptional()
   @IsUUID()
   parentId?: string;
+
+  /** Bank taxonomy scope. Inherited from parent when creating a subcategory. */
+  @IsOptional()
+  @IsEnum(CategoryScope)
+  scope?: CategoryScope;
 
   @IsOptional()
   @IsInt()
