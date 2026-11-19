@@ -10,12 +10,15 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { SearchField } from '@/components/ui/search-field';
 import { Select } from '@/components/ui/select';
-import { apiFetch } from '@/lib/api/client';
+import {
+  fetchPublicCategories,
+  flattenSubcategories,
+  publicCategoriesQueryKey,
+} from '@/lib/api/categories';
 import {
   listPublicQuestionSetYears,
   listPublicQuestionSets,
 } from '@/lib/api/public-questions';
-import type { CategoryNode } from '@/lib/api/types';
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import { cn } from '@/lib/utils';
 
@@ -93,8 +96,8 @@ export function PublicQuestionBank({ className }: Props) {
   ]);
 
   const categories = useQuery({
-    queryKey: ['categories', 'public'],
-    queryFn: () => apiFetch<CategoryNode[]>('/categories', { skipRefresh: true }),
+    queryKey: publicCategoriesQueryKey('PRELIMINARY'),
+    queryFn: () => fetchPublicCategories('PRELIMINARY'),
     staleTime: 60_000,
   });
 
@@ -104,24 +107,11 @@ export function PublicQuestionBank({ className }: Props) {
     staleTime: 60_000,
   });
 
-  /** Flat subcategory list (category dropdown removed; search covers category names). */
-  const subcategoryOptions = useMemo(() => {
-    const roots = categories.data ?? [];
-    const items: Array<{ id: string; name: string; label: string; parentId: string }> = [];
-    for (const root of roots) {
-      for (const child of root.children ?? []) {
-        items.push({
-          id: child.id,
-          name: child.name,
-          label: `${root.name} · ${child.name}`,
-          parentId: root.id,
-        });
-      }
-    }
-    return items.sort((a, b) =>
-      a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }),
-    );
-  }, [categories.data]);
+  /** Flat Preliminary subcategory list only (Written taxonomy never included). */
+  const subcategoryOptions = useMemo(
+    () => flattenSubcategories(categories.data ?? []),
+    [categories.data],
+  );
 
   const selectedSubcategory = useMemo(
     () => subcategoryOptions.find((s) => s.id === appliedSubcategoryId) ?? null,

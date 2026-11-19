@@ -1,5 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Difficulty, Prisma, QuestionStatus, QuestionUploadStatus } from '@prisma/client';
+import {
+  CategoryScope,
+  Difficulty,
+  Prisma,
+  QuestionStatus,
+  QuestionUploadStatus,
+} from '@prisma/client';
 import { createErrorResponse } from '@your-academy/shared';
 import { newRequestId } from '../common/request-id';
 import { PrismaService } from '../database/prisma.service';
@@ -86,6 +92,46 @@ export type PublicWrittenQuestionCard = {
 export class PublicService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /**
+   * Ensure filter IDs belong to the requested bank scope.
+   * Wrong-scope IDs resolve to an empty filter (no cross-bank leakage).
+   */
+  private async resolveScopedTaxonomyFilter(
+    scope: CategoryScope,
+    categoryId?: string,
+    subcategoryId?: string,
+  ): Promise<{ categoryId?: string; subcategoryId?: string; empty: boolean }> {
+    if (subcategoryId) {
+      const sub = await this.prisma.category.findFirst({
+        where: {
+          id: subcategoryId,
+          scope,
+          parentId: { not: null },
+          isActive: true,
+        },
+        select: { id: true, parentId: true },
+      });
+      if (!sub?.parentId) return { empty: true };
+      if (categoryId && categoryId !== sub.parentId) {
+        const parentOk = await this.prisma.category.findFirst({
+          where: { id: categoryId, scope, parentId: null, isActive: true },
+          select: { id: true },
+        });
+        if (!parentOk || parentOk.id !== sub.parentId) return { empty: true };
+      }
+      return { empty: false, subcategoryId: sub.id, categoryId: sub.parentId };
+    }
+    if (categoryId) {
+      const cat = await this.prisma.category.findFirst({
+        where: { id: categoryId, scope, parentId: null, isActive: true },
+        select: { id: true },
+      });
+      if (!cat) return { empty: true };
+      return { empty: false, categoryId: cat.id };
+    }
+    return { empty: false };
+  }
+
   async stats() {
     const [questions, categories, news, documents, questionSets] = await Promise.all([
       this.prisma.question.count({
@@ -169,9 +215,17 @@ export class PublicService {
   }) {
     const limit = Math.min(Math.max(params.limit ?? 20, 1), 100);
     const q = params.q?.trim();
-    const categoryId = params.categoryId?.trim() || undefined;
-    const subcategoryId = params.subcategoryId?.trim() || undefined;
     const year = params.year?.trim() || undefined;
+    const scoped = await this.resolveScopedTaxonomyFilter(
+      CategoryScope.PRELIMINARY,
+      params.categoryId?.trim() || undefined,
+      params.subcategoryId?.trim() || undefined,
+    );
+    if (scoped.empty) {
+      return { items: [], nextCursor: null as string | null, total: 0 };
+    }
+    const categoryId = scoped.categoryId;
+    const subcategoryId = scoped.subcategoryId;
 
     const liveQuestion: Prisma.QuestionWhereInput = {
       status: QuestionStatus.PUBLISHED,
@@ -762,9 +816,17 @@ export class PublicService {
   }) {
     const limit = Math.min(Math.max(params.limit ?? 20, 1), 100);
     const q = params.q?.trim();
-    const categoryId = params.categoryId?.trim() || undefined;
-    const subcategoryId = params.subcategoryId?.trim() || undefined;
     const year = params.year?.trim() || undefined;
+    const scoped = await this.resolveScopedTaxonomyFilter(
+      CategoryScope.WRITTEN,
+      params.categoryId?.trim() || undefined,
+      params.subcategoryId?.trim() || undefined,
+    );
+    if (scoped.empty) {
+      return { items: [], nextCursor: null as string | null, total: 0 };
+    }
+    const categoryId = scoped.categoryId;
+    const subcategoryId = scoped.subcategoryId;
 
     const liveQuestion: Prisma.WrittenQuestionWhereInput = {
       status: QuestionStatus.PUBLISHED,

@@ -136,11 +136,11 @@ Scoped taxonomies (DEC-041): `PRELIMINARY` (default) vs `WRITTEN`. Unique `(scop
 | GET | `/public/documents/:id/file` | PDF bytes proxy for in-app viewer (`Content-Disposition: inline`; no attachment) | Public | — |
 | GET | `/documents/:id/file` | Authenticated in-app PDF bytes (inline; no signed download URL) | User | — |
 | GET | `/public/questions` | Published MCQ cards (options + correct answer), `createdAt DESC`, cursor pagination + filters (`q`, `categoryId`, `subcategoryId`, `examTag`, `difficulty`, `uploadBatchId`) | Public | — |
-| GET | `/public/question-sets` | Upload-based Question Sets (completed/archived batches with published MCQs), newest first; filters: `q` (title + category/subcategory names + hints), `categoryId`, `subcategoryId` (placements), `year` | Public | — |
+| GET | `/public/question-sets` | Upload-based Question Sets (completed/archived batches with published MCQs), newest first; filters: `q`, `categoryId`, `subcategoryId`, `year` — taxonomy IDs must be `PRELIMINARY` scope or the filter returns empty | Public | — |
 | GET | `/public/question-sets/years` | Distinct exam years for Preli bank year chips | Public | — |
 | GET | `/public/question-sets/:id` | Question Set metadata (`sheetPreamble`, `examYear`, `placements`) | Public | — |
 | GET | `/public/question-sets/:id/questions` | MCQs in a set in original upload `rowNumber` order (`sourceSerial`, `sectionTitle`; no category badge under stem) | Public | — |
-| GET | `/public/written-question-sets` | Written Question Sets (DEC-040); same filters as Preli sets | Public | — |
+| GET | `/public/written-question-sets` | Written Question Sets (DEC-040); same filters as Preli — taxonomy IDs must be `WRITTEN` scope | Public | — |
 | GET | `/public/written-question-sets/years` | Distinct years for Written bank year filter | Public | — |
 | GET | `/public/written-question-sets/:id` | Written set metadata | Public | — |
 | GET | `/public/written-question-sets/:id/questions` | Written questions in upload order (modelAnswer, marks) | Public | — |

@@ -887,7 +887,10 @@ export class WrittenImportService {
               `Batch ${batchId.slice(0, 8)}`,
             ].filter(Boolean);
 
-            const publishNow = Boolean(row.modelAnswer?.trim());
+            // Written exam papers often ship without model answers. Valid imported
+            // rows must still appear on the public Written bank (unlike Preli MCQs,
+            // where a correct option is required before publish).
+            const publishNow = Boolean(row.questionText?.trim());
             const title = (row.questionText.trim() || '(blank)').slice(0, 200);
             const created = await tx.writtenQuestion.create({
               data: {

@@ -76,8 +76,8 @@ export default function QuestionImportsHubPage() {
   });
 
   const categories = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => apiFetch<CategoryNode[]>('/categories'),
+    queryKey: ['categories', 'WRITTEN'],
+    queryFn: () => apiFetch<CategoryNode[]>('/categories?scope=WRITTEN'),
   });
 
   const filterKey = useMemo(

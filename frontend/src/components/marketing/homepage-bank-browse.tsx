@@ -17,7 +17,10 @@ import {
   HomepageOthersTile,
   HomepageTileCard,
 } from '@/components/marketing/homepage-tile-card';
-import { apiFetch } from '@/lib/api/client';
+import {
+  fetchPublicCategories,
+  publicCategoriesQueryKey,
+} from '@/lib/api/categories';
 import type { CategoryNode } from '@/lib/api/types';
 import {
   ALL_TOPICS_PATH,
@@ -90,8 +93,8 @@ export function HomepageBankBrowseCategories({ categories }: CategoriesProps) {
 
 export function HomepageBankBrowseTopics({ topics }: TopicsProps) {
   const categoryTree = useQuery({
-    queryKey: ['categories', 'public'],
-    queryFn: () => apiFetch<CategoryNode[]>('/categories', { skipRefresh: true }),
+    queryKey: publicCategoriesQueryKey('PRELIMINARY'),
+    queryFn: () => fetchPublicCategories('PRELIMINARY'),
     staleTime: 60_000,
   });
   const roots = categoryTree.data ?? [];

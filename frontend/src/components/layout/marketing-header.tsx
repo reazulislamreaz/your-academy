@@ -15,6 +15,7 @@ import Link from 'next/link';
 import { BrandMark } from './brand-mark';
 import { MobileNav } from './mobile-nav';
 import { UserMenu } from './user-menu';
+import { MarketingBankNavItem } from './marketing-bank-nav';
 import {
   marketingNavItems,
   resolveActiveMarketingNavId,
@@ -166,15 +167,26 @@ function MarketingNavLinks({ activeId }: { activeId: string | null }) {
       />
       {marketingNavItems.map((item) => {
         const active = activeId === item.id;
+        const setRef = (node: HTMLAnchorElement | null) => {
+          if (node) itemRefs.current.set(item.id, node);
+          else itemRefs.current.delete(item.id);
+        };
+        if (item.id === 'preli' || item.id === 'written') {
+          return (
+            <MarketingBankNavItem
+              key={item.id}
+              bank={item.id}
+              active={active}
+              linkRef={setRef}
+            />
+          );
+        }
         return (
           <Link
             key={item.id}
             href={item.href}
             aria-current={active ? 'page' : undefined}
-            ref={(node) => {
-              if (node) itemRefs.current.set(item.id, node);
-              else itemRefs.current.delete(item.id);
-            }}
+            ref={setRef}
             className="marketing-nav-link"
           >
             {item.label}

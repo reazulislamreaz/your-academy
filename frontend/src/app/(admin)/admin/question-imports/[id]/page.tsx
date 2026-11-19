@@ -56,8 +56,8 @@ function QuestionImportDetailContent() {
   });
 
   const categories = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => apiFetch<CategoryNode[]>('/categories'),
+    queryKey: ['categories', 'PRELIMINARY'],
+    queryFn: () => apiFetch<CategoryNode[]>('/categories?scope=PRELIMINARY'),
   });
 
   const selectedCategory = useMemo(

@@ -15,9 +15,9 @@ export default function WrittenQuestionBankPage() {
   return (
     <MarketingPage>
       <PageHeader
-        eyebrow="Practice"
+        eyebrow="Written practice"
         title="Written Question Bank"
-        description="Descriptive and written exam collections with model answers — organized like the Preli bank."
+        description="Browse published Written exam collections — filter by category, subcategory, and year, then open a set to review questions and model answers."
       />
       <Suspense
         fallback={

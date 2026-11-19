@@ -12,7 +12,10 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SearchField } from '@/components/ui/search-field';
 import { SkeletonRegion } from '@/components/ui/skeleton';
-import { apiFetch } from '@/lib/api/client';
+import {
+  fetchPublicCategories,
+  publicCategoriesQueryKey,
+} from '@/lib/api/categories';
 import type { CategoryNode } from '@/lib/api/types';
 import { topicTileHref, topicTileTaxonomyLabel } from '@/lib/homepage-tile-links';
 
@@ -45,8 +48,8 @@ export function AllTopicsDirectory({
   );
 
   const tree = useQuery({
-    queryKey: ['categories', 'public'],
-    queryFn: () => apiFetch<CategoryNode[]>('/categories', { skipRefresh: true }),
+    queryKey: publicCategoriesQueryKey('PRELIMINARY'),
+    queryFn: () => fetchPublicCategories('PRELIMINARY'),
     staleTime: 60_000,
     enabled: visibleTiles.length > 0,
   });
