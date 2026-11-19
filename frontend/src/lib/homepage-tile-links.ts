@@ -3,6 +3,16 @@ import type { CategoryNode } from '@/lib/api/types';
 
 export const QUESTION_BANK_CATEGORIES_PATH = '/question-bank-categories';
 export const ALL_TOPICS_PATH = '/topic-categories';
+/** Full Written subcategory directory (homepage Others / View all). */
+export const WRITTEN_SUBCATEGORIES_PATH = '/written-question-bank-categories';
+
+/** Written bank filter by subcategory (scope enforced by the bank page + API). */
+export function writtenSubcategoryHref(subcategoryId: string, categoryId?: string): string {
+  const sp = new URLSearchParams();
+  if (categoryId) sp.set('categoryId', categoryId);
+  sp.set('subcategoryId', subcategoryId);
+  return `/written-question-bank?${sp.toString()}`;
+}
 
 type CategoryTile = HomepagePayload['categories']['tiles'][number];
 type TopicTile = HomepagePayload['topics']['tiles'][number];

@@ -42,7 +42,6 @@ const TEMPLATE_COLUMNS = [
   'পরীক্ষার নাম ও সাল',
   'প্রশ্নের তারিখ',
   'নম্বর',
-  'মডেল উত্তর',
 ];
 
 /** One Excel can appear under up to 8 subcategories (homepage / Preli bank slots). */
@@ -191,8 +190,7 @@ export default function NewQuestionImportPage() {
               <h2 className="font-display text-lg font-bold">Select file</h2>
               <p className="text-sm leading-relaxed text-[var(--muted-strong)]">
                 Prefer Excel for large banks. Word (`.docx`) also accepts real exam papers (header +
-                `০১।` prompts with `ক)–ঙ)` / `a)–e)` sub-lines). Model answers optional — blank →
-                draft. Legacy `.doc` is not supported.
+                `০১।` prompts with `ক)–ঙ)` / `a)–e)` sub-lines). Legacy `.doc` is not supported.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -256,22 +254,18 @@ export default function NewQuestionImportPage() {
                 <code className="text-[var(--ink)]">ক)–ঙ)</code> /{' '}
                 <code className="text-[var(--ink)]">a)–e)</code> stay under the parent question.
                 Unicode math (<code className="text-[var(--ink)]">x² ÷ × –</code>) is preserved.
-                Answers are not required.
               </li>
               <li>
                 <span className="font-semibold text-[var(--ink-soft)]">Template table:</span> same
-                six Excel headers in a Word table; leave{' '}
-                <span className="font-medium">মডেল উত্তর</span> blank when unknown.
+                Excel headers in a Word table (question text, marks, subject, topic, and related
+                columns).
               </li>
               <li>
                 <span className="font-semibold text-[var(--ink-soft)]">Labeled blocks:</span>{' '}
                 separated by a blank line or <code className="text-[var(--ink)]">---</code> with{' '}
                 <code className="text-[var(--ink)]">প্রশ্ন নং:</code> /{' '}
                 <code className="text-[var(--ink)]">প্রশ্ন:</code> /{' '}
-                <code className="text-[var(--ink)]">নম্বর:</code> /{' '}
-                <code className="text-[var(--ink)]">মডেল উত্তর:</code> (optional{' '}
-                <code className="text-[var(--ink)]">উত্তর:</code> /{' '}
-                <code className="text-[var(--ink)]">ব্যাখ্যা:</code>).
+                <code className="text-[var(--ink)]">নম্বর:</code>.
               </li>
               <li>
                 <span className="font-semibold text-[var(--ink-soft)]">Not supported:</span> binary{' '}

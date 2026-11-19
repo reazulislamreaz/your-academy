@@ -192,7 +192,7 @@ export default function QuestionImportsHubPage() {
       <PageHeader
         eyebrow="Content"
         title="Written Question Bank"
-        description="Import written questions from the Excel/Word template (.xlsx/.csv/.docx), validate rows, and publish model-answer sets into the public Written Question Bank."
+        description="Import written questions from the Excel/Word template (.xlsx/.csv/.docx), validate rows, and publish sets into the public Written Question Bank."
         actions={
           <div className="flex flex-wrap gap-2">
             <a href={adminDownloadUrl('/admin/written-question-imports/template')}>

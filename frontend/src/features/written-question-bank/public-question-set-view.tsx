@@ -3,22 +3,17 @@
 import Link from 'next/link';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
-import { useState } from 'react';
 import { ListCardSkeleton, LoadError } from '@/components/loading';
 import { GoForExamCta } from '@/components/marketing/go-for-exam-cta';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
-import { SearchField } from '@/components/ui/search-field';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PublicWrittenCard } from '@/components/marketing/public-written-card';
 import {
   getPublicWrittenQuestionSet,
   listPublicWrittenSetQuestions,
 } from '@/lib/api/written-questions';
-import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
-import { AnswerVisibilityToggle } from './answer-visibility-toggle';
 import { ExamInfoCard } from './exam-info-card';
-import { useAnswerVisibility } from './use-answer-visibility';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -27,29 +22,23 @@ type Props = {
 };
 
 export function WrittenQuestionSetView({ setId, className }: Props) {
-  const [qInput, setQInput] = useState('');
-  const q = useDebouncedValue(qInput.trim(), 350);
-  const visibility = useAnswerVisibility();
-
   const setQry = useQuery({
     queryKey: ['public-written-question-set', setId],
     queryFn: () => getPublicWrittenQuestionSet(setId),
   });
 
   const list = useInfiniteQuery({
-    queryKey: ['public-written-set-questions', setId, q],
+    queryKey: ['public-written-set-questions', setId],
     initialPageParam: undefined as string | undefined,
     queryFn: ({ pageParam }) =>
       listPublicWrittenSetQuestions(setId, {
         cursor: pageParam,
         limit: 20,
-        q: q || undefined,
       }),
     getNextPageParam: (last) => last.pagination?.nextCursor ?? undefined,
   });
 
   const items = list.data?.pages.flatMap((p) => p.data) ?? [];
-  const individualMode = visibility.mode === 'hide-all';
 
   return (
     <div className={cn('space-y-6', className)}>
@@ -88,22 +77,8 @@ export function WrittenQuestionSetView({ setId, className }: Props) {
         </header>
       ) : null}
 
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <AnswerVisibilityToggle mode={visibility.mode} onChange={visibility.setMode} />
-        <SearchField
-          value={qInput}
-          onChange={setQInput}
-          placeholder="Search in this set…"
-          aria-label="Search in this set"
-          className="min-w-0 flex-1 lg:max-w-md"
-        />
-      </div>
-
       {list.isLoading ? (
-        <ListCardSkeleton
-          rows={3}
-          rowClassName="min-h-56 py-6"
-        />
+        <ListCardSkeleton rows={3} rowClassName="min-h-32 py-6" />
       ) : null}
 
       {list.isError ? (
@@ -116,8 +91,8 @@ export function WrittenQuestionSetView({ setId, className }: Props) {
       {!list.isLoading && !list.isError && items.length === 0 ? (
         <EmptyState
           align="center"
-          title="No matching questions"
-          description="No questions match your search in this set."
+          title="No questions yet"
+          description="This written set has no published questions."
         />
       ) : null}
 
@@ -135,12 +110,7 @@ export function WrittenQuestionSetView({ setId, className }: Props) {
                   </p>
                 </div>
               ) : null}
-              <PublicWrittenCard
-                question={item}
-                answerVisible={visibility.isAnswerVisible(item.id)}
-                allowIndividualToggle={individualMode}
-                onToggleAnswer={() => visibility.toggleQuestion(item.id)}
-              />
+              <PublicWrittenCard question={item} />
             </li>
           );
         })}

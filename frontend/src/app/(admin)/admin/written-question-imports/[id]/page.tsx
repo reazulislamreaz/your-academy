@@ -450,8 +450,8 @@ function QuestionImportDetailContent() {
             </h3>
             <p className="mt-1 text-sm leading-relaxed text-[var(--ink-soft)]">
               Import {data.validCount} valid question{data.validCount === 1 ? '' : 's'}. Duplicate
-              stems, blank question text, and missing answers are allowed (unanswered rows import as
-              draft). Only genuinely invalid rows are skipped — they never stop the rest of the batch.
+              stems and blank question text are allowed. Only genuinely invalid rows are skipped —
+              they never stop the rest of the batch.
             </p>
             {importProgress != null ? (
               <div className="mt-3">
@@ -497,9 +497,8 @@ function QuestionImportDetailContent() {
           <div>
             <h2 className="font-display text-base font-bold">Question preview</h2>
             <p className="text-sm text-[var(--muted-strong)]">
-              Row-level validation with options. Missing answers are allowed — unanswered rows stay
-              Valid and import as draft. Only unparseable non-empty answers or missing options are
-              Invalid.
+              Row-level validation for written stems, marks, and taxonomy. Only unparseable rows are
+              marked Invalid.
             </p>
           </div>
           <Select
@@ -530,7 +529,6 @@ function QuestionImportDetailContent() {
                 <th className="px-3 py-3">Question</th>
                 <th className="px-3 py-3">Date</th>
                 <th className="px-3 py-3">Marks</th>
-                <th className="px-3 py-3">Model answer</th>
                 <th className="px-3 py-3">Subject</th>
                 <th className="px-3 py-3">Status</th>
               </tr>
@@ -594,11 +592,6 @@ function QuestionImportDetailContent() {
                   </td>
                   <td className="px-3 py-3 text-sm font-semibold tabular-nums text-[var(--ink)]">
                     {row.marks != null && row.marks !== '' ? String(row.marks) : '—'}
-                  </td>
-                  <td className="px-3 py-3 text-sm leading-relaxed text-[var(--ink)]">
-                    <p className="line-clamp-4 max-w-md whitespace-pre-wrap">
-                      {row.modelAnswer?.trim() ? row.modelAnswer : '—'}
-                    </p>
                   </td>
                   <td className="px-3 py-3 text-sm text-[var(--ink-soft)]">
                     <p className="font-medium">{row.subjectName ?? '—'}</p>

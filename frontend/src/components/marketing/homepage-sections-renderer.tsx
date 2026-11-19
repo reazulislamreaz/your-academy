@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import type { HomepagePayload } from '@your-academy/shared';
 import {
   customSectionIdFromLayoutId,
@@ -8,6 +9,7 @@ import { HomepageAccessFaq } from '@/components/marketing/homepage-access-faq';
 import { HomepageBankBrowseCategories } from '@/components/marketing/homepage-bank-browse';
 import { HomepageBankBrowseTopics } from '@/components/marketing/homepage-bank-browse';
 import { HomepageCustomSection } from '@/components/marketing/homepage-custom-section';
+import { HomepageWrittenSubcategories } from '@/components/marketing/homepage-written-subcategories';
 import { HomepageDashboardPreview } from '@/components/marketing/homepage-dashboard-preview';
 import { HomepageFinalCta } from '@/components/marketing/homepage-final-cta';
 import { HomepageHero } from '@/components/marketing/homepage-hero';
@@ -78,9 +80,15 @@ export function HomepageSectionsRenderer({
               <HomepageLiveStats key={entry.id} stats={liveStats} content={payload.liveStats} />
             ) : null;
           case 'categories':
-            return payload.categories.visible ? (
-              <HomepageBankBrowseCategories key={entry.id} categories={payload.categories} />
-            ) : null;
+            return (
+              <Fragment key={entry.id}>
+                {payload.categories.visible ? (
+                  <HomepageBankBrowseCategories categories={payload.categories} />
+                ) : null}
+                {/* Written strip always follows Target exam categories; live WRITTEN taxonomy only. */}
+                <HomepageWrittenSubcategories />
+              </Fragment>
+            );
           case 'topics':
             return payload.topics.visible ? (
               <HomepageBankBrowseTopics key={entry.id} topics={payload.topics} />

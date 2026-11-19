@@ -27,7 +27,7 @@ type Props = {
 };
 
 const filterControlClass =
-  'relative z-10 min-h-12 min-w-0 cursor-pointer rounded-full border-[var(--line)] bg-[var(--bg-muted)] px-4 py-2 leading-normal shadow-none transition-[border-color,background-color,color] duration-150 hover:border-[var(--line-strong)]';
+  'relative z-10 min-h-12 min-w-0 cursor-pointer rounded-full border-[var(--line)] bg-[var(--bg-muted)] px-4 py-2 leading-normal shadow-none transition-[border-color,background-color,color] duration-150 hover:border-[var(--line-strong)] focus:border-[var(--accent)]';
 
 function buildBankHref(
   pathname: string,
@@ -53,7 +53,8 @@ export function WrittenQuestionBank({ className }: Props) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // URL is the source of truth for applied filters (category/topic links, back/forward, refresh).
+  // URL is the source of truth (navbar subcategory/category links, back/forward, refresh).
+  // Category filter UI is intentionally omitted — subcategory + year only (same as Preli).
   const appliedQ = searchParams.get('q') ?? '';
   const appliedCategoryId = searchParams.get('categoryId') ?? '';
   const appliedSubcategoryId = searchParams.get('subcategoryId') ?? '';
@@ -63,13 +64,11 @@ export function WrittenQuestionBank({ className }: Props) {
   const debouncedQ = useDebouncedValue(qInput.trim(), 350);
   const skipSearchUrlWrite = useRef(false);
 
-  // Keep the search box aligned when navigation changes `q` (or clears it).
   useEffect(() => {
     skipSearchUrlWrite.current = true;
     setQInput(appliedQ);
   }, [appliedQ]);
 
-  // Debounced search → URL (preserve category / subcategory / year).
   useEffect(() => {
     if (skipSearchUrlWrite.current) {
       skipSearchUrlWrite.current = false;
@@ -107,18 +106,10 @@ export function WrittenQuestionBank({ className }: Props) {
     staleTime: 60_000,
   });
 
-  const roots = categories.data ?? [];
-
   /** Flat Written subcategory list only (Preliminary taxonomy never included). */
-  const subcategoryOptions = useMemo(() => {
-    const all = flattenSubcategories(roots);
-    if (!appliedCategoryId) return all;
-    return all.filter((s) => s.parentId === appliedCategoryId);
-  }, [roots, appliedCategoryId]);
-
-  const selectedCategory = useMemo(
-    () => roots.find((r) => r.id === appliedCategoryId) ?? null,
-    [roots, appliedCategoryId],
+  const subcategoryOptions = useMemo(
+    () => flattenSubcategories(categories.data ?? []),
+    [categories.data],
   );
 
   const selectedSubcategory = useMemo(
@@ -133,39 +124,12 @@ export function WrittenQuestionBank({ className }: Props) {
     );
   }, [yearsQ.data]);
 
-  // Drop invalid category once catalog loads.
-  useEffect(() => {
-    if (categories.isLoading || categories.isError) return;
-    if (appliedCategoryId && roots.length > 0 && !selectedCategory) {
-      router.replace(
-        buildBankHref(pathname, {
-          q: appliedQ || undefined,
-          subcategoryId: appliedSubcategoryId || undefined,
-          year: appliedYear || undefined,
-        }),
-        { scroll: false },
-      );
-    }
-  }, [
-    categories.isLoading,
-    categories.isError,
-    appliedCategoryId,
-    roots.length,
-    selectedCategory,
-    appliedQ,
-    appliedSubcategoryId,
-    appliedYear,
-    pathname,
-    router,
-  ]);
-
   // Drop invalid subcategory once catalog loads (keeps shareable URLs honest).
   useEffect(() => {
     if (categories.isLoading || categories.isError) return;
     if (
       appliedSubcategoryId &&
-      subcategoryOptions.length >= 0 &&
-      roots.length > 0 &&
+      subcategoryOptions.length > 0 &&
       !selectedSubcategory
     ) {
       router.replace(
@@ -186,7 +150,6 @@ export function WrittenQuestionBank({ className }: Props) {
     appliedQ,
     appliedCategoryId,
     appliedYear,
-    roots.length,
     pathname,
     router,
   ]);
@@ -260,14 +223,6 @@ export function WrittenQuestionBank({ className }: Props) {
     router.replace(pathname, { scroll: false });
   };
 
-  const filterSummary = [
-    selectedCategory?.name,
-    selectedSubcategory?.name,
-    appliedYear || null,
-  ]
-    .filter(Boolean)
-    .join(' · ');
-
   return (
     <div className={cn('space-y-5', className)}>
       <GoForExamCta />
@@ -278,8 +233,8 @@ export function WrittenQuestionBank({ className }: Props) {
             <SearchField
               value={qInput}
               onChange={setQInput}
-              placeholder="Search Written collections by title, category, or subcategory…"
-              aria-label="Search Written collections by title, category, or subcategory"
+              placeholder="Search Written collections by title or subcategory…"
+              aria-label="Search Written collections by title or subcategory"
               variant="pill"
               className="relative z-10 min-w-0 flex-1"
               onClear={() => {
@@ -293,38 +248,6 @@ export function WrittenQuestionBank({ className }: Props) {
             />
 
             <div className="relative z-10 flex w-full flex-wrap items-center gap-2 lg:w-auto lg:shrink-0">
-              <label htmlFor="written-category" className="sr-only">
-                Filter by category
-              </label>
-              <Select
-                id="written-category"
-                value={appliedCategoryId}
-                onChange={(e) => {
-                  const categoryId = e.target.value;
-                  replaceFilters({
-                    q: appliedQ || undefined,
-                    categoryId: categoryId || undefined,
-                    // Changing root clears a subcategory that may belong to another parent.
-                    year: appliedYear || undefined,
-                  });
-                }}
-                disabled={categories.isLoading}
-                className={cn(
-                  filterControlClass,
-                  'flex-1 sm:min-w-[11rem] lg:w-[14rem] lg:flex-none',
-                  appliedCategoryId &&
-                    'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]',
-                )}
-                aria-label="Filter by Written category"
-              >
-                <option value="">All Categories</option>
-                {roots.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name}
-                  </option>
-                ))}
-              </Select>
-
               <label htmlFor="written-subcategory" className="sr-only">
                 Filter by subcategory
               </label>
@@ -333,10 +256,9 @@ export function WrittenQuestionBank({ className }: Props) {
                 value={appliedSubcategoryId}
                 onChange={(e) => {
                   const subcategoryId = e.target.value;
-                  const parentId = subcategoryOptions.find((s) => s.id === subcategoryId)?.parentId;
                   replaceFilters({
                     q: appliedQ || undefined,
-                    categoryId: parentId || appliedCategoryId || undefined,
+                    // Subcategory alone is enough — backend resolves WRITTEN scope + parent.
                     subcategoryId: subcategoryId || undefined,
                     year: appliedYear || undefined,
                   });
@@ -353,7 +275,7 @@ export function WrittenQuestionBank({ className }: Props) {
                 <option value="">All Subcategories</option>
                 {subcategoryOptions.map((s) => (
                   <option key={s.id} value={s.id}>
-                    {appliedCategoryId ? s.name : s.label}
+                    {s.label}
                   </option>
                 ))}
               </Select>
@@ -409,7 +331,8 @@ export function WrittenQuestionBank({ className }: Props) {
               {list.isFetching && !list.isFetchingNextPage
                 ? 'Updating…'
                 : `${total} collection${total === 1 ? '' : 's'}`}
-              {filterSummary ? ` · ${filterSummary}` : ''}
+              {selectedSubcategory ? ` · ${selectedSubcategory.name}` : ''}
+              {appliedYear ? ` · ${appliedYear}` : ''}
             </p>
           ) : null}
         </div>
@@ -430,7 +353,7 @@ export function WrittenQuestionBank({ className }: Props) {
           title={hasFilters ? 'No matching collections' : 'No collections yet'}
           description={
             hasFilters
-              ? 'Try a different search, category, subcategory, or year.'
+              ? 'Try a different search, subcategory, or year.'
               : 'Published Written uploads will appear here.'
           }
         />
