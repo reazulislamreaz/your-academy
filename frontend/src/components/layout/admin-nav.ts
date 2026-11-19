@@ -8,6 +8,7 @@ import {
   Home,
   LayoutDashboard,
   LayoutGrid,
+  Layers,
   MessageCircle,
   Newspaper,
   PenLine,
@@ -55,6 +56,12 @@ export const adminNavItems: AdminNavItem[] = [
     icon: LayoutGrid,
   },
   {
+    href: '/admin/written-bank-categories',
+    label: 'Written Bank Categories',
+    shortLabel: 'Written cats',
+    icon: Layers,
+  },
+  {
     href: '/admin/topic-categories',
     label: 'Topic categories',
     shortLabel: 'Topics',
@@ -87,6 +94,7 @@ export const adminNavGroups: AdminNavGroup[] = [
         '/admin/practice-attempts',
         '/admin/categories',
         '/admin/question-bank-categories',
+        '/admin/written-bank-categories',
         '/admin/topic-categories',
         '/admin/homepage',
         '/admin/news',

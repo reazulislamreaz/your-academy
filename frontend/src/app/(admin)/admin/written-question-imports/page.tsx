@@ -195,6 +195,11 @@ export default function QuestionImportsHubPage() {
         description="Import written questions from the Excel/Word template (.xlsx/.csv/.docx), validate rows, and publish sets into the public Written Question Bank."
         actions={
           <div className="flex flex-wrap gap-2">
+            <Link href="/admin/written-bank-categories">
+              <Button type="button" variant="outline" className="cursor-pointer">
+                Written categories
+              </Button>
+            </Link>
             <a href={adminDownloadUrl('/admin/written-question-imports/template')}>
               <Button type="button" variant="outline" className="cursor-pointer">
                 <Download className="size-4" />

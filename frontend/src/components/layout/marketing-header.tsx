@@ -15,7 +15,6 @@ import Link from 'next/link';
 import { BrandMark } from './brand-mark';
 import { MobileNav } from './mobile-nav';
 import { UserMenu } from './user-menu';
-import { MarketingBankNavItem } from './marketing-bank-nav';
 import {
   marketingNavItems,
   resolveActiveMarketingNavId,
@@ -171,16 +170,6 @@ function MarketingNavLinks({ activeId }: { activeId: string | null }) {
           if (node) itemRefs.current.set(item.id, node);
           else itemRefs.current.delete(item.id);
         };
-        if (item.id === 'preli' || item.id === 'written') {
-          return (
-            <MarketingBankNavItem
-              key={item.id}
-              bank={item.id}
-              active={active}
-              linkRef={setRef}
-            />
-          );
-        }
         return (
           <Link
             key={item.id}
@@ -264,8 +253,15 @@ function MarketingHeaderInner() {
 
   return (
     <header
-      className="marketing-nav-bar sticky top-0 z-30 pt-[env(safe-area-inset-top,0px)]"
-      style={{ '--header-h': '64px' } as CSSProperties}
+      className="marketing-nav-bar sticky top-0 z-30 shrink-0 pt-[env(safe-area-inset-top,0px)]"
+      style={
+        {
+          '--header-h': '64px',
+          // Used by MarketingShell main min-height so short pages keep footer below the fold.
+          '--marketing-header-offset':
+            'calc(4.5rem + env(safe-area-inset-top, 0px))',
+        } as CSSProperties
+      }
       data-marketing-menubar
     >
       <div className="marketing-nav-shell mx-auto h-14 max-w-[var(--marketing-content-max)] px-3 sm:h-16 sm:px-6">
@@ -388,8 +384,14 @@ export function MarketingHeader() {
     <Suspense
       fallback={
         <header
-          className="marketing-nav-bar sticky top-0 z-30"
-          style={{ '--header-h': '64px' } as CSSProperties}
+          className="marketing-nav-bar sticky top-0 z-30 shrink-0"
+          style={
+            {
+              '--header-h': '64px',
+              '--marketing-header-offset':
+                'calc(4.5rem + env(safe-area-inset-top, 0px))',
+            } as CSSProperties
+          }
         >
           <div className="marketing-nav-shell mx-auto h-16 max-w-[var(--marketing-content-max)] px-3 sm:px-6">
             <BrandMark markOnly className="shrink-0 [&_img]:h-8" priority />

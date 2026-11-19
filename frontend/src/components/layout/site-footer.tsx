@@ -10,7 +10,7 @@ import { marketingNavItems } from './marketing-nav';
  */
 export function SiteFooter() {
   return (
-    <footer id="contact" className="site-footer mt-auto text-white">
+    <footer id="contact" className="site-footer mt-auto shrink-0 text-white">
       <div aria-hidden className="site-footer-glow pointer-events-none absolute inset-0" />
 
       <div className="marketing-container relative px-4 py-10 sm:px-6 sm:py-12">

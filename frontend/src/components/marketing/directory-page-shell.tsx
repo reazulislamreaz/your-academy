@@ -25,8 +25,8 @@ export function DirectoryPageShell({
   const crumb = breadcrumbLabel ?? heading;
 
   return (
-    <div className="homepage-shell min-h-[70vh]">
-      <div className="marketing-container space-y-8 py-10 sm:py-14">
+    <div className="homepage-shell flex min-h-0 w-full flex-1 flex-col">
+      <div className="marketing-container w-full flex-1 space-y-8 py-10 sm:py-14">
         <Reveal className="space-y-4">
           <nav aria-label="Breadcrumb" className="space-y-3">
             <ol className="flex flex-wrap items-center gap-1.5 text-sm text-[var(--muted-strong)]">

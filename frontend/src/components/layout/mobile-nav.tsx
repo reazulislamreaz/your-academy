@@ -15,7 +15,6 @@ import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useBodyScrollLock } from '@/lib/hooks/use-body-scroll-lock';
-import { MarketingBankMobileSection } from './marketing-bank-nav';
 import {
   HamburgerIcon,
   MobileDrawerBackdrop,
@@ -144,18 +143,6 @@ export function MobileNav({
                   Pages
                 </p>
                 {items.map((item) => {
-                  if (item.id === 'preli' || item.id === 'written') {
-                    const bankActive =
-                      activeId != null ? item.id === activeId : isActive(pathname, item);
-                    return (
-                      <MarketingBankMobileSection
-                        key={item.id}
-                        bank={item.id}
-                        active={bankActive}
-                        onNavigate={() => setOpen(false)}
-                      />
-                    );
-                  }
                   const Icon = resolveIcon(item);
                   const active =
                     activeId != null

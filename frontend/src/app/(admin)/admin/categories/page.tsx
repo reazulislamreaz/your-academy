@@ -1,8 +1,10 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { AdminPage } from '@/components/admin/admin-page';
 import { PageHeader } from '@/components/layout/page-header';
+import { Button } from '@/components/ui/button';
 import { CategoryTaxonomyManager } from '@/features/admin/categories/category-taxonomy-manager';
 import type { CategoryScope } from '@/features/admin/categories/types';
 import { cn } from '@/lib/utils';
@@ -28,7 +30,14 @@ export default function AdminCategoriesPage() {
       <PageHeader
         eyebrow="Taxonomy"
         title="Categories"
-        description="Preliminary and Written banks have separate category trees — names can overlap without colliding."
+        description="Preliminary and Written banks have separate category trees — names can overlap without colliding. Prefer Written Bank Categories in the sidebar for day-to-day Written taxonomy work."
+        actions={
+          <Link href="/admin/written-bank-categories">
+            <Button type="button" variant="outline" className="cursor-pointer">
+              Written Bank Categories
+            </Button>
+          </Link>
+        }
       />
 
       <div

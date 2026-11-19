@@ -21,9 +21,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html
       lang="bn"
       data-scroll-behavior="smooth"
-      className={fontVariableClassName}
+      className={`h-full ${fontVariableClassName}`}
     >
-      <body className="min-h-screen font-sans antialiased">
+      <body className="flex min-h-dvh flex-col font-sans antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>

@@ -20,6 +20,7 @@ function AdminRouteBodySkeleton({ pathname }: { pathname: string }) {
   if (pathname.startsWith('/admin/dashboard')) return <AdminDashboardPageSkeleton />;
   if (
     pathname.startsWith('/admin/question-bank-categories') ||
+    pathname.startsWith('/admin/written-bank-categories') ||
     pathname.startsWith('/admin/topic-categories') ||
     pathname.startsWith('/admin/categories') ||
     pathname.startsWith('/admin/homepage')

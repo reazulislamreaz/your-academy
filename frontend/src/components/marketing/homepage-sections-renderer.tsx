@@ -50,7 +50,7 @@ export function HomepageSectionsRenderer({
   const layout = normalizeHomepageLayout(payload.layout);
 
   return (
-    <div className="homepage-shell">
+    <div className="homepage-shell flex w-full flex-1 flex-col">
       {layout.sections.map((entry) => {
         if (!entry.visible) return null;
 

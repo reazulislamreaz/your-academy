@@ -167,6 +167,7 @@ export function CategoryTaxonomyManager({
     void qc.invalidateQueries({ queryKey: ['admin-categories', scope] });
     void qc.invalidateQueries({ queryKey: ['admin-categories'] });
     void qc.invalidateQueries({ queryKey: ['categories', scope] });
+    void qc.invalidateQueries({ queryKey: ['categories', 'public', scope] });
     void qc.invalidateQueries({ queryKey: ['categories'] });
   };
 
