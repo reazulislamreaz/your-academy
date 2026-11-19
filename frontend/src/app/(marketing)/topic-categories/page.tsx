@@ -12,26 +12,26 @@ export const metadata: Metadata = {
 export const revalidate = 30;
 
 async function loadTopicSection() {
+  const defaults = createDefaultHomepagePayload().topics;
   try {
     const home = await getPublicHomepage();
     const sectionHeading =
-      home.payload.topics.heading?.trim() || 'Topic Base Question Analysis';
+      home.payload.topics.heading?.trim() || defaults.heading;
+    const subtitle =
+      home.payload.topics.subtitle?.trim() || defaults.subtitle;
     return {
       heading: 'All Topics',
       breadcrumbLabel: sectionHeading,
-      subtitle:
-        home.payload.topics.subtitle ||
-        'Explore every topic available for question analysis and practice.',
+      subtitle,
       // Full published CMS catalog — homepage only previews Top 4 + Others.
       tiles: home.payload.topics.tiles,
     };
   } catch {
-    const fallback = createDefaultHomepagePayload().topics;
     return {
       heading: 'All Topics',
-      breadcrumbLabel: fallback.heading,
-      subtitle: fallback.subtitle,
-      tiles: fallback.tiles,
+      breadcrumbLabel: defaults.heading,
+      subtitle: defaults.subtitle,
+      tiles: defaults.tiles,
     };
   }
 }
