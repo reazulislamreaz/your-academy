@@ -21,6 +21,14 @@ export class TopicImportService {
     return buildTopicTemplateBuffer();
   }
 
+  private readonly batchInclude = {
+    category: { select: { id: true, name: true } },
+    subcategory: { select: { id: true, name: true, iconKey: true } },
+    childCategory: { select: { id: true, name: true, iconKey: true } },
+    uploadedBy: { select: { id: true, name: true } },
+    _count: { select: { questions: true } },
+  } as const;
+
   private mapBatchSummary(batch: {
     id: string;
     batchCode: string;
@@ -32,6 +40,7 @@ export class TopicImportService {
     createdAt: Date;
     category: { id: string; name: string };
     subcategory: { id: string; name: string; iconKey: string | null };
+    childCategory: { id: string; name: string; iconKey: string | null } | null;
     uploadedBy: { id: string; name: string };
     _count: { questions: number };
   }) {
@@ -43,6 +52,7 @@ export class TopicImportService {
       status: batch.status,
       category: batch.category,
       subcategory: batch.subcategory,
+      childCategory: batch.childCategory,
       totalRows: batch.totalRows,
       importedCount: batch.importedCount,
       questionCount: batch._count.questions,
@@ -55,12 +65,7 @@ export class TopicImportService {
     const rows = await this.prisma.topicUploadBatch.findMany({
       orderBy: { createdAt: 'desc' },
       take: Math.min(Math.max(limit, 1), 100),
-      include: {
-        category: { select: { id: true, name: true } },
-        subcategory: { select: { id: true, name: true, iconKey: true } },
-        uploadedBy: { select: { id: true, name: true } },
-        _count: { select: { questions: true } },
-      },
+      include: this.batchInclude,
     });
     return rows.map((row) => this.mapBatchSummary(row));
   }
@@ -75,12 +80,7 @@ export class TopicImportService {
       this.prisma.topicUploadBatch.findMany({
         orderBy: { createdAt: 'desc' },
         take: 6,
-        include: {
-          category: { select: { id: true, name: true } },
-          subcategory: { select: { id: true, name: true, iconKey: true } },
-          uploadedBy: { select: { id: true, name: true } },
-          _count: { select: { questions: true } },
-        },
+        include: this.batchInclude,
       }),
     ]);
     return {
@@ -97,6 +97,7 @@ export class TopicImportService {
     file: Express.Multer.File;
     categoryId: string;
     subcategoryId: string;
+    childCategoryId?: string | null;
     displayName?: string;
     uploadedById: string;
   }) {
@@ -145,10 +146,33 @@ export class TopicImportService {
       throw new BadRequestException(
         createErrorResponse(
           'INVALID_SUBCATEGORY',
-          'Select an active subcategory under the chosen Topic category',
+          'Select an active Sub Category under the chosen Topic category',
           newRequestId(),
         ),
       );
+    }
+
+    let childCategoryId: string | null = null;
+    const requestedChild = input.childCategoryId?.trim() || null;
+    if (requestedChild) {
+      const child = await this.prisma.category.findFirst({
+        where: {
+          id: requestedChild,
+          scope: CategoryScope.TOPIC,
+          parentId: subcategory.id,
+          isActive: true,
+        },
+      });
+      if (!child) {
+        throw new BadRequestException(
+          createErrorResponse(
+            'INVALID_CHILD_CATEGORY',
+            'Select an active Child Category under the chosen Sub Category',
+            newRequestId(),
+          ),
+        );
+      }
+      childCategoryId = child.id;
     }
 
     const parsed = await parseTopicWorkbook(input.file.buffer);
@@ -168,6 +192,7 @@ export class TopicImportService {
           fileSha256,
           categoryId: category.id,
           subcategoryId: subcategory.id,
+          childCategoryId,
           status: 'COMPLETED',
           totalRows: parsed.rows.length,
           importedCount: parsed.rows.length,
@@ -177,6 +202,7 @@ export class TopicImportService {
             create: parsed.rows.map((row, index) => ({
               categoryId: category.id,
               subcategoryId: subcategory.id,
+              childCategoryId,
               sourceSerial: row.sourceSerial,
               questionText: row.questionText,
               examLabel: row.examLabel,
@@ -191,23 +217,14 @@ export class TopicImportService {
             })),
           },
         },
-        include: {
-          category: { select: { id: true, name: true } },
-          subcategory: { select: { id: true, name: true, iconKey: true } },
-          _count: { select: { questions: true } },
-        },
+        include: this.batchInclude,
       });
       return created;
     });
 
     const withUploader = await this.prisma.topicUploadBatch.findUniqueOrThrow({
       where: { id: batch.id },
-      include: {
-        category: { select: { id: true, name: true } },
-        subcategory: { select: { id: true, name: true, iconKey: true } },
-        uploadedBy: { select: { id: true, name: true } },
-        _count: { select: { questions: true } },
-      },
+      include: this.batchInclude,
     });
     return this.mapBatchSummary(withUploader);
   }
@@ -215,12 +232,7 @@ export class TopicImportService {
   async getBatch(id: string) {
     const batch = await this.prisma.topicUploadBatch.findUnique({
       where: { id },
-      include: {
-        category: { select: { id: true, name: true } },
-        subcategory: { select: { id: true, name: true, iconKey: true } },
-        uploadedBy: { select: { id: true, name: true } },
-        _count: { select: { questions: true } },
-      },
+      include: this.batchInclude,
     });
     if (!batch) {
       throw new NotFoundException(

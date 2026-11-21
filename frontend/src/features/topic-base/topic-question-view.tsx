@@ -78,7 +78,12 @@ export function TopicQuestionView({ subcategoryId, className }: Props) {
             {meta.data.name}
           </h1>
           <p className="text-sm text-[var(--muted-strong)]">
-            {meta.data.category.name}
+            {[
+              meta.data.category.name,
+              meta.data.level === 'child' ? meta.data.subcategory?.name : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
             {meta.data.questionCount ? ` · ${meta.data.questionCount} questions` : null}
           </p>
           {meta.data.description ? (

@@ -57,6 +57,7 @@ export default function NewTopicQuestionImportPage() {
   const [displayName, setDisplayName] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [subcategoryId, setSubcategoryId] = useState('');
+  const [childCategoryId, setChildCategoryId] = useState('');
   const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -75,19 +76,33 @@ export default function NewTopicQuestionImportPage() {
     [selectedCategory, subcategoryId],
   );
 
+  const childOptions = selectedSubcategory?.children ?? [];
+  const selectedChild = useMemo(
+    () => childOptions.find((c) => c.id === childCategoryId),
+    [childOptions, childCategoryId],
+  );
+
   const upload = useMutation({
     mutationFn: async () => {
       if (!file) throw new ApiError('FILE_REQUIRED', 'Choose a file first', 400);
       if (!displayName.trim()) throw new ApiError('TITLE_REQUIRED', 'Title is required', 400);
       if (!categoryId) throw new ApiError('CATEGORY_REQUIRED', 'Category is required', 400);
       if (!subcategoryId) {
-        throw new ApiError('SUBCATEGORY_REQUIRED', 'Subcategory is required', 400);
+        throw new ApiError('SUBCATEGORY_REQUIRED', 'Sub Category is required', 400);
+      }
+      if (childOptions.length > 0 && !childCategoryId) {
+        throw new ApiError(
+          'CHILD_CATEGORY_REQUIRED',
+          'Select a Child Category under this Sub Category',
+          400,
+        );
       }
       setProgress(20);
       const result = await uploadTopicQuestions({
         file,
         categoryId,
         subcategoryId,
+        childCategoryId: childCategoryId || null,
         displayName: displayName.trim(),
       });
       setProgress(100);
@@ -113,7 +128,12 @@ export default function NewTopicQuestionImportPage() {
   });
 
   const canContinueStep1 = Boolean(file);
-  const canContinueStep2 = Boolean(displayName.trim() && categoryId && subcategoryId);
+  const canContinueStep2 = Boolean(
+    displayName.trim() &&
+      categoryId &&
+      subcategoryId &&
+      (childOptions.length === 0 || childCategoryId),
+  );
 
   return (
     <AdminPage className="mx-auto max-w-4xl">
@@ -238,7 +258,8 @@ export default function NewTopicQuestionImportPage() {
           <div>
             <h2 className="font-display text-lg font-bold">Configure collection</h2>
             <p className="text-sm leading-relaxed text-[var(--muted-strong)]">
-              Title and Topic Base category / subcategory apply to this upload.
+              Cascading Topic Base hierarchy: Category → Sub Category → Child Category (optional when
+              the Sub Category has no children yet).
             </p>
           </div>
 
@@ -255,7 +276,7 @@ export default function NewTopicQuestionImportPage() {
             </Field>
 
             <Field>
-              <Label htmlFor="category">Topic category</Label>
+              <Label htmlFor="category">1 · Category</Label>
               <div className="flex gap-2">
                 <Select
                   id="category"
@@ -264,6 +285,7 @@ export default function NewTopicQuestionImportPage() {
                   onChange={(e) => {
                     setCategoryId(e.target.value);
                     setSubcategoryId('');
+                    setChildCategoryId('');
                   }}
                   required
                 >
@@ -283,6 +305,7 @@ export default function NewTopicQuestionImportPage() {
                   onCreated={(created) => {
                     setCategoryId(created.id);
                     setSubcategoryId('');
+                    setChildCategoryId('');
                   }}
                 />
               </div>
@@ -290,31 +313,72 @@ export default function NewTopicQuestionImportPage() {
 
             <Field>
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                <Label htmlFor="subcategory">Subcategory / topic</Label>
+                <Label htmlFor="subcategory">2 · Sub Category</Label>
                 <QuickCreateSubcategoryButton
                   scope="TOPIC"
                   parentId={selectedCategory?.id ?? null}
                   parentName={selectedCategory?.name}
-                  onCreated={(created) => setSubcategoryId(created.id)}
+                  onCreated={(created) => {
+                    setSubcategoryId(created.id);
+                    setChildCategoryId('');
+                  }}
                 />
               </div>
               {!selectedCategory ? (
                 <p className="rounded-[12px] border border-dashed border-[var(--line)] bg-[var(--bg-desk)] px-4 py-6 text-sm text-[var(--muted-strong)]">
-                  Select a category first to choose a subcategory.
+                  Select a Category first.
                 </p>
               ) : (selectedCategory.children ?? []).length === 0 ? (
                 <p className="rounded-[12px] border border-dashed border-[var(--line)] bg-[var(--bg-desk)] px-4 py-6 text-sm text-[var(--muted-strong)]">
-                  No subcategories yet — create one with the + button.
+                  No Sub Categories yet — create one with the + button.
                 </p>
               ) : (
                 <Select
                   id="subcategory"
                   value={subcategoryId}
-                  onChange={(e) => setSubcategoryId(e.target.value)}
+                  onChange={(e) => {
+                    setSubcategoryId(e.target.value);
+                    setChildCategoryId('');
+                  }}
                   required
                 >
-                  <option value="">Select subcategory…</option>
+                  <option value="">Select Sub Category…</option>
                   {selectedCategory.children.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            </Field>
+
+            <Field>
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <Label htmlFor="child-category">3 · Child Category</Label>
+                <QuickCreateSubcategoryButton
+                  scope="TOPIC"
+                  parentId={selectedSubcategory?.id ?? null}
+                  parentName={selectedSubcategory?.name}
+                  onCreated={(created) => setChildCategoryId(created.id)}
+                />
+              </div>
+              {!selectedSubcategory ? (
+                <p className="rounded-[12px] border border-dashed border-[var(--line)] bg-[var(--bg-desk)] px-4 py-6 text-sm text-[var(--muted-strong)]">
+                  Select a Sub Category first.
+                </p>
+              ) : childOptions.length === 0 ? (
+                <p className="rounded-[12px] border border-dashed border-[var(--line)] bg-[var(--bg-desk)] px-4 py-6 text-sm text-[var(--muted-strong)]">
+                  No Child Categories yet — upload can proceed without one, or create one with +.
+                </p>
+              ) : (
+                <Select
+                  id="child-category"
+                  value={childCategoryId}
+                  onChange={(e) => setChildCategoryId(e.target.value)}
+                  required
+                >
+                  <option value="">Select Child Category…</option>
+                  {childOptions.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
                     </option>
@@ -370,8 +434,14 @@ export default function NewTopicQuestionImportPage() {
               <p className="text-sm text-[var(--ink-soft)]">{selectedCategory?.name ?? '—'}</p>
             </div>
             <div>
-              <p className="text-xs font-semibold text-[var(--muted-strong)]">Subcategory</p>
+              <p className="text-xs font-semibold text-[var(--muted-strong)]">Sub Category</p>
               <p className="text-sm text-[var(--ink-soft)]">{selectedSubcategory?.name ?? '—'}</p>
+            </div>
+            <div className="sm:col-span-2">
+              <p className="text-xs font-semibold text-[var(--muted-strong)]">Child Category</p>
+              <p className="text-sm text-[var(--ink-soft)]">
+                {selectedChild?.name ?? (childOptions.length === 0 ? 'None (optional)' : '—')}
+              </p>
             </div>
           </div>
 
@@ -402,6 +472,7 @@ export default function NewTopicQuestionImportPage() {
                 !displayName.trim() ||
                 !categoryId ||
                 !subcategoryId ||
+                (childOptions.length > 0 && !childCategoryId) ||
                 upload.isPending
               }
               onClick={() => {

@@ -13,6 +13,9 @@ export type AdminCategoryChild = {
   questionCount: number;
   practiceSetCount: number;
   documentCount: number;
+  childCategoryCount?: number;
+  /** Topic Base Level-3 nodes (Child Category). */
+  children?: AdminCategoryChild[];
   createdAt?: string;
   updatedAt?: string;
 };

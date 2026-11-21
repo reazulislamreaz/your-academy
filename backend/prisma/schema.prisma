@@ -275,8 +275,10 @@ model Category {
   writtenSubQuestions WrittenQuestion[] @relation("WrittenQuestionSubcategory")
   topicQuestions      TopicQuestion[] @relation("TopicQuestionCategory")
   topicSubQuestions   TopicQuestion[] @relation("TopicQuestionSubcategory")
+  topicChildQuestions TopicQuestion[] @relation("TopicQuestionChildCategory")
   topicBatchesAsCategory    TopicUploadBatch[] @relation("TopicBatchCategory")
   topicBatchesAsSubcategory TopicUploadBatch[] @relation("TopicBatchSubcategory")
+  topicBatchesAsChildCategory TopicUploadBatch[] @relation("TopicBatchChildCategory")
   documents        Document[]
   attempts         QuestionAttempt[]
   practiceSets     PracticeSet[]  @relation("PracticeSetCategory")
@@ -1193,6 +1195,8 @@ model TopicUploadBatch {
   fileSha256       String             @map("file_sha256") @db.VarChar(64)
   categoryId       String             @map("category_id") @db.Uuid
   subcategoryId    String             @map("subcategory_id") @db.Uuid
+  /// Optional Level-3 Topic child category (DEC-042 three-level hierarchy).
+  childCategoryId  String?            @map("child_category_id") @db.Uuid
   status           QuestionUploadStatus @default(COMPLETED)
   totalRows        Int                @default(0) @map("total_rows")
   importedCount    Int                @default(0) @map("imported_count")
@@ -1201,45 +1205,51 @@ model TopicUploadBatch {
   createdAt        DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt        DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  uploadedBy  User           @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
-  category    Category       @relation("TopicBatchCategory", fields: [categoryId], references: [id], onDelete: Restrict)
-  subcategory Category       @relation("TopicBatchSubcategory", fields: [subcategoryId], references: [id], onDelete: Restrict)
-  questions   TopicQuestion[]
+  uploadedBy    User           @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+  category      Category       @relation("TopicBatchCategory", fields: [categoryId], references: [id], onDelete: Restrict)
+  subcategory   Category       @relation("TopicBatchSubcategory", fields: [subcategoryId], references: [id], onDelete: Restrict)
+  childCategory Category?      @relation("TopicBatchChildCategory", fields: [childCategoryId], references: [id], onDelete: Restrict)
+  questions     TopicQuestion[]
 
   @@index([status, createdAt(sort: Desc)])
   @@index([categoryId, subcategoryId])
+  @@index([childCategoryId])
   @@index([uploadedById, createdAt(sort: Desc)])
   @@map("topic_upload_batches")
 }
 
 /// Topic Base MCQ (8-column Excel). Always imported; duplicates / soft gaps allowed.
 model TopicQuestion {
-  id            String           @id @default(uuid()) @db.Uuid
-  batchId       String           @map("batch_id") @db.Uuid
-  categoryId    String           @map("category_id") @db.Uuid
-  subcategoryId String           @map("subcategory_id") @db.Uuid
-  sourceSerial  String?          @map("source_serial") @db.VarChar(32)
-  questionText  String           @map("question_text")
+  id               String           @id @default(uuid()) @db.Uuid
+  batchId          String           @map("batch_id") @db.Uuid
+  categoryId       String           @map("category_id") @db.Uuid
+  subcategoryId    String           @map("subcategory_id") @db.Uuid
+  /// Optional Level-3 Topic child category.
+  childCategoryId  String?          @map("child_category_id") @db.Uuid
+  sourceSerial     String?          @map("source_serial") @db.VarChar(32)
+  questionText     String           @map("question_text")
   /// Excel `পরীক্ষার নাম ও সাল`.
-  examLabel     String?          @map("exam_label") @db.VarChar(240)
-  optionA       String           @default("") @map("option_a")
-  optionB       String           @default("") @map("option_b")
-  optionC       String           @default("") @map("option_c")
-  optionD       String           @default("") @map("option_d")
+  examLabel        String?          @map("exam_label") @db.VarChar(240)
+  optionA          String           @default("") @map("option_a")
+  optionB          String           @default("") @map("option_b")
+  optionC          String           @default("") @map("option_c")
+  optionD          String           @default("") @map("option_d")
   /// Normalized key a|b|c|d when parseable; null when blank/unrecognized (still imported).
-  correctKey    String?          @map("correct_key") @db.VarChar(1)
+  correctKey       String?          @map("correct_key") @db.VarChar(1)
   /// Resolved option text for correctKey (nullable).
-  correctAnswer String?          @map("correct_answer")
-  sortOrder     Int              @default(0) @map("sort_order")
-  rowNumber     Int              @map("row_number")
-  createdAt     DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt     DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+  correctAnswer    String?          @map("correct_answer")
+  sortOrder        Int              @default(0) @map("sort_order")
+  rowNumber        Int              @map("row_number")
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  batch       TopicUploadBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
-  category    Category         @relation("TopicQuestionCategory", fields: [categoryId], references: [id], onDelete: Restrict)
-  subcategory Category         @relation("TopicQuestionSubcategory", fields: [subcategoryId], references: [id], onDelete: Restrict)
+  batch         TopicUploadBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  category      Category         @relation("TopicQuestionCategory", fields: [categoryId], references: [id], onDelete: Restrict)
+  subcategory   Category         @relation("TopicQuestionSubcategory", fields: [subcategoryId], references: [id], onDelete: Restrict)
+  childCategory Category?        @relation("TopicQuestionChildCategory", fields: [childCategoryId], references: [id], onDelete: Restrict)
 
   @@index([subcategoryId, sortOrder, id])
+  @@index([childCategoryId, sortOrder, id])
   @@index([categoryId, subcategoryId])
   @@index([batchId, rowNumber])
   @@map("topic_questions")

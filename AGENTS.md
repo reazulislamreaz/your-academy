@@ -173,7 +173,7 @@ Forbidden without approval: microservices, GraphQL, alternate ORMs, payment prov
 - Match `docs/05-database-design.md`.
 - Indexes for list/filter/navigation patterns.
 - Partial unique: one correct option per question; one ACTIVE browsing session per user.
-- Category depth max 2; no self-parent.
+- Category depth max 2 for Preli/Written; Topic Base allows depth 3 (Category → Sub → Child); no self-parent.
 - Publish requires ≥2 options and exactly one correct (service validation).
 - Deterministic prev/next: `publishedAt DESC, id DESC` within filters (DEC-008).
 

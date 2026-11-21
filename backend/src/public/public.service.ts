@@ -1112,7 +1112,7 @@ export class PublicService {
     return { items, nextCursor, total };
   }
 
-  /** Topic Base subcategory directory with question counts (DEC-042). */
+  /** Topic Base directory: Category → Sub Category → Child Category (DEC-042). */
   async listTopicDirectory() {
     const roots = await this.prisma.category.findMany({
       where: { parentId: null, isActive: true, scope: CategoryScope.TOPIC },
@@ -1123,6 +1123,13 @@ export class PublicService {
           orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
           include: {
             _count: { select: { topicSubQuestions: true } },
+            children: {
+              where: { isActive: true, scope: CategoryScope.TOPIC },
+              orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+              include: {
+                _count: { select: { topicChildQuestions: true } },
+              },
+            },
           },
         },
       },
@@ -1145,36 +1152,99 @@ export class PublicService {
         questionCount: child._count.topicSubQuestions,
         parentId: root.id,
         parentName: root.name,
+        children: child.children.map((g) => ({
+          id: g.id,
+          name: g.name,
+          slug: g.slug,
+          description: g.description,
+          iconKey: g.iconKey,
+          sortOrder: g.sortOrder,
+          questionCount: g._count.topicChildQuestions,
+          parentId: child.id,
+          parentName: child.name,
+        })),
       })),
     }));
   }
 
-  async getTopicSubcategory(subcategoryId: string) {
-    const sub = await this.prisma.category.findFirst({
+  /**
+   * Resolve a Topic node by id — Level 2 (Sub Category) or Level 3 (Child Category).
+   * Questions for L3 filter by childCategoryId; L2 by subcategoryId (all descendants).
+   */
+  async getTopicSubcategory(topicNodeId: string) {
+    const node = await this.prisma.category.findFirst({
       where: {
-        id: subcategoryId,
+        id: topicNodeId,
         scope: CategoryScope.TOPIC,
         parentId: { not: null },
         isActive: true,
       },
       include: {
-        parent: { select: { id: true, name: true, slug: true, iconKey: true } },
-        _count: { select: { topicSubQuestions: true } },
+        parent: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            iconKey: true,
+            parentId: true,
+            parent: { select: { id: true, name: true, slug: true, iconKey: true } },
+          },
+        },
+        _count: {
+          select: { topicSubQuestions: true, topicChildQuestions: true },
+        },
       },
     });
-    if (!sub || !sub.parent) {
+    if (!node || !node.parent) {
       throw new NotFoundException(
         createErrorResponse('TOPIC_NOT_FOUND', 'Topic not found', newRequestId()),
       );
     }
+
+    const isChildCategory = Boolean(node.parent.parentId);
+    if (isChildCategory) {
+      const subcategory = node.parent;
+      const category = node.parent.parent;
+      if (!category) {
+        throw new NotFoundException(
+          createErrorResponse('TOPIC_NOT_FOUND', 'Topic not found', newRequestId()),
+        );
+      }
+      return {
+        id: node.id,
+        name: node.name,
+        slug: node.slug,
+        description: node.description,
+        iconKey: node.iconKey,
+        level: 'child' as const,
+        questionCount: node._count.topicChildQuestions,
+        category: { id: category.id, name: category.name, slug: category.slug, iconKey: category.iconKey },
+        subcategory: {
+          id: subcategory.id,
+          name: subcategory.name,
+          slug: subcategory.slug,
+          iconKey: subcategory.iconKey,
+        },
+        childCategory: { id: node.id, name: node.name, slug: node.slug, iconKey: node.iconKey },
+      };
+    }
+
     return {
-      id: sub.id,
-      name: sub.name,
-      slug: sub.slug,
-      description: sub.description,
-      iconKey: sub.iconKey,
-      questionCount: sub._count.topicSubQuestions,
-      category: sub.parent,
+      id: node.id,
+      name: node.name,
+      slug: node.slug,
+      description: node.description,
+      iconKey: node.iconKey,
+      level: 'subcategory' as const,
+      questionCount: node._count.topicSubQuestions,
+      category: {
+        id: node.parent.id,
+        name: node.parent.name,
+        slug: node.parent.slug,
+        iconKey: node.parent.iconKey,
+      },
+      subcategory: { id: node.id, name: node.name, slug: node.slug, iconKey: node.iconKey },
+      childCategory: null,
     };
   }
 
@@ -1184,10 +1254,12 @@ export class PublicService {
     limit: number;
     q?: string;
   }) {
-    await this.getTopicSubcategory(params.subcategoryId);
+    const meta = await this.getTopicSubcategory(params.subcategoryId);
 
     const where: Prisma.TopicQuestionWhereInput = {
-      subcategoryId: params.subcategoryId,
+      ...(meta.level === 'child'
+        ? { childCategoryId: meta.id }
+        : { subcategoryId: meta.id }),
       ...(params.q?.trim()
         ? {
             OR: [
@@ -1214,6 +1286,7 @@ export class PublicService {
       include: {
         category: { select: { id: true, name: true, slug: true } },
         subcategory: { select: { id: true, name: true, slug: true, iconKey: true } },
+        childCategory: { select: { id: true, name: true, slug: true, iconKey: true } },
       },
     });
 
@@ -1248,6 +1321,13 @@ export class PublicService {
               id: q.subcategory.id,
               name: q.subcategory.name,
               slug: q.subcategory.slug,
+            }
+          : null,
+        childCategory: q.childCategory
+          ? {
+              id: q.childCategory.id,
+              name: q.childCategory.name,
+              slug: q.childCategory.slug,
             }
           : null,
         options,

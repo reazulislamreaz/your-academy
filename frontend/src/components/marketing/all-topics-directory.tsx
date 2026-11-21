@@ -43,15 +43,32 @@ export function AllTopicsDirectory({
   const items = useMemo(
     () =>
       roots.flatMap((root) =>
-        (root.children ?? []).map((child) => ({
-          id: child.id,
-          displayTitle: child.name,
-          subtitle: root.name,
-          iconKey: (child.iconKey ||
-            root.iconKey ||
-            guessHomepageIconKey(child.name)) as HomepageIconKey,
-          href: topicBaseHref(child.id),
-        })),
+        (root.children ?? []).flatMap((sub) => {
+          const grandchildren = sub.children ?? [];
+          if (grandchildren.length > 0) {
+            return grandchildren.map((child) => ({
+              id: child.id,
+              displayTitle: child.name,
+              subtitle: `${root.name} · ${sub.name}`,
+              iconKey: (child.iconKey ||
+                sub.iconKey ||
+                root.iconKey ||
+                guessHomepageIconKey(child.name)) as HomepageIconKey,
+              href: topicBaseHref(child.id),
+            }));
+          }
+          return [
+            {
+              id: sub.id,
+              displayTitle: sub.name,
+              subtitle: root.name,
+              iconKey: (sub.iconKey ||
+                root.iconKey ||
+                guessHomepageIconKey(sub.name)) as HomepageIconKey,
+              href: topicBaseHref(sub.id),
+            },
+          ];
+        }),
       ),
     [roots],
   );

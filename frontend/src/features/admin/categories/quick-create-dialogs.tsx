@@ -33,22 +33,39 @@ function upsertChildCategory(
   parentId: string,
   created: CategoryRecord,
 ): CategoryNode[] {
+  const leaf = {
+    id: created.id,
+    name: created.name,
+    slug: created.slug,
+    description: created.description,
+    isActive: created.isActive,
+    children: [] as CategoryNode['children'],
+  };
   return (list ?? []).map((root) => {
-    if (root.id !== parentId) return root;
-    if (root.children.some((c) => c.id === created.id)) return root;
-    return {
-      ...root,
-      children: [
-        ...root.children,
-        {
-          id: created.id,
-          name: created.name,
-          slug: created.slug,
-          description: created.description,
-          isActive: created.isActive,
-        },
-      ].sort((a, b) => a.name.localeCompare(b.name, 'bn')),
-    };
+    // Level-2 under a Category root.
+    if (root.id === parentId) {
+      if (root.children.some((c) => c.id === created.id)) return root;
+      return {
+        ...root,
+        children: [...root.children, leaf].sort((a, b) => a.name.localeCompare(b.name, 'bn')),
+      };
+    }
+    // Level-3 Child Category under a Sub Category.
+    if ((root.children ?? []).some((c) => c.id === parentId)) {
+      return {
+        ...root,
+        children: root.children.map((sub) => {
+          if (sub.id !== parentId) return sub;
+          const existing = sub.children ?? [];
+          if (existing.some((c) => c.id === created.id)) return sub;
+          return {
+            ...sub,
+            children: [...existing, leaf].sort((a, b) => a.name.localeCompare(b.name, 'bn')),
+          };
+        }),
+      };
+    }
+    return root;
   });
 }
 

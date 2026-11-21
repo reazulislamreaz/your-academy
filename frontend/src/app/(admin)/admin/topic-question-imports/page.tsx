@@ -418,6 +418,7 @@ export default function TopicQuestionImportsHubPage() {
                           <p className="font-medium">{item.category.name}</p>
                           <p className="text-xs text-[var(--muted-strong)]">
                             {item.subcategory.name}
+                            {item.childCategory?.name ? ` · ${item.childCategory.name}` : ''}
                           </p>
                         </AdminTd>
                         <AdminTd className="align-top tabular-nums text-[var(--ink-soft)]">

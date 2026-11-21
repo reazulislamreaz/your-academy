@@ -2,6 +2,19 @@ import { apiFetch, apiFetchResult } from '@/lib/api/client';
 import { apiUploadForm } from '@/lib/api/upload';
 import type { PublicQuestionCard } from '@/lib/api/public-questions';
 
+export type TopicDirectoryChild = {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  iconKey?: string | null;
+  sortOrder: number;
+  questionCount: number;
+  parentId: string;
+  parentName: string;
+  children?: TopicDirectoryChild[];
+};
+
 export type TopicDirectoryRoot = {
   id: string;
   name: string;
@@ -9,17 +22,7 @@ export type TopicDirectoryRoot = {
   description?: string | null;
   iconKey?: string | null;
   sortOrder: number;
-  children: Array<{
-    id: string;
-    name: string;
-    slug: string;
-    description?: string | null;
-    iconKey?: string | null;
-    sortOrder: number;
-    questionCount: number;
-    parentId: string;
-    parentName: string;
-  }>;
+  children: TopicDirectoryChild[];
 };
 
 export type TopicSubcategoryDetail = {
@@ -28,8 +31,11 @@ export type TopicSubcategoryDetail = {
   slug: string;
   description?: string | null;
   iconKey?: string | null;
+  level?: 'subcategory' | 'child';
   questionCount: number;
   category: { id: string; name: string; slug: string; iconKey?: string | null };
+  subcategory?: { id: string; name: string; slug: string; iconKey?: string | null };
+  childCategory?: { id: string; name: string; slug: string; iconKey?: string | null } | null;
 };
 
 export type TopicQuestionCard = PublicQuestionCard & {
@@ -44,6 +50,7 @@ export type TopicUploadBatchSummary = {
   status: string;
   category: { id: string; name: string };
   subcategory: { id: string; name: string; iconKey?: string | null };
+  childCategory?: { id: string; name: string; iconKey?: string | null } | null;
   totalRows: number;
   importedCount: number;
   questionCount?: number;
@@ -96,12 +103,14 @@ export async function uploadTopicQuestions(input: {
   file: File;
   categoryId: string;
   subcategoryId: string;
+  childCategoryId?: string | null;
   displayName?: string;
 }) {
   const form = new FormData();
   form.append('file', input.file);
   form.append('categoryId', input.categoryId);
   form.append('subcategoryId', input.subcategoryId);
+  if (input.childCategoryId) form.append('childCategoryId', input.childCategoryId);
   if (input.displayName?.trim()) form.append('displayName', input.displayName.trim());
   const res = await apiUploadForm<TopicUploadBatchSummary>(
     '/admin/topic-question-imports/upload',

@@ -71,12 +71,14 @@ export class TopicImportController {
     @UploadedFile() file: Express.Multer.File,
     @Body('categoryId') categoryId?: string,
     @Body('subcategoryId') subcategoryId?: string,
+    @Body('childCategoryId') childCategoryId?: string,
     @Body('displayName') displayName?: string,
   ) {
     const data = await this.imports.upload({
       file,
       categoryId: categoryId ?? '',
       subcategoryId: subcategoryId ?? '',
+      childCategoryId: childCategoryId || null,
       displayName,
       uploadedById: user.userId,
     });

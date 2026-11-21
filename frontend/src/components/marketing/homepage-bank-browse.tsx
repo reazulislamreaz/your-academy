@@ -185,18 +185,35 @@ export function HomepageBankBrowseTopics({ topics }: TopicsProps) {
     queryFn: () => fetchPublicCategories('TOPIC'),
     staleTime: 60_000,
   });
-  // Live TOPIC taxonomy only (DEC-042) — never fall back to CMS demo tiles.
+  // Live TOPIC taxonomy only (DEC-042) — prefer Child Category leaves when present.
   const roots = topicTree.data ?? [];
   const liveTopics = roots.flatMap((root) =>
-    (root.children ?? []).map((child) => ({
-      id: child.id,
-      displayTitle: child.name,
-      subtitle: root.name,
-      iconKey: (child.iconKey ||
-        root.iconKey ||
-        guessHomepageIconKey(child.name)) as HomepagePayload['topics']['tiles'][number]['iconKey'],
-      href: topicBaseHref(child.id),
-    })),
+    (root.children ?? []).flatMap((sub) => {
+      const grandchildren = sub.children ?? [];
+      if (grandchildren.length > 0) {
+        return grandchildren.map((child) => ({
+          id: child.id,
+          displayTitle: child.name,
+          subtitle: `${root.name} · ${sub.name}`,
+          iconKey: (child.iconKey ||
+            sub.iconKey ||
+            root.iconKey ||
+            guessHomepageIconKey(child.name)) as HomepagePayload['topics']['tiles'][number]['iconKey'],
+          href: topicBaseHref(child.id),
+        }));
+      }
+      return [
+        {
+          id: sub.id,
+          displayTitle: sub.name,
+          subtitle: root.name,
+          iconKey: (sub.iconKey ||
+            root.iconKey ||
+            guessHomepageIconKey(sub.name)) as HomepagePayload['topics']['tiles'][number]['iconKey'],
+          href: topicBaseHref(sub.id),
+        },
+      ];
+    }),
   );
   const previewTopics = liveTopics.slice(0, HOMEPAGE_EDITABLE_PREVIEW_SLOTS);
   const topicSplit = splitHomepageSectionTiles(topics.tiles);

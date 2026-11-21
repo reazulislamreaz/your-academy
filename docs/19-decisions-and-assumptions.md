@@ -104,9 +104,9 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Field | Value |
 |-------|-------|
 | Question | Should Topic Base Question Analysis be a dedicated bank (taxonomy + Excel upload + public topic pages), separate from Preli/Written, without changing the marketing navbar? |
-| Decision | **Yes.** Add `CategoryScope.TOPIC` + optional `Category.iconKey`. Topic Base is **fully separate** from Preli/Written (no shared content-kind / question-type coupling). Admin Taxonomy gains a **Topics** tab (CRUD + icons + sortOrder reorder). Admin upload wizard at `/admin/topic-question-imports/new` accepts **8-column** Excel `প্রশ্ন নং \| প্রশ্ন \| পরীক্ষার নাম ও সাল \| ক \| খ \| গ \| ঘ \| উত্তর`; **no duplicate blocking and no row-rejection validation** — all non-empty rows import. Persist `TopicUploadBatch` + `TopicQuestion`. Public `/topic-base/:subcategoryId` mirrors Preli set layout; `/topic-categories` + homepage **Topic Base Question Analysis** section show **live TOPIC subcategories only** (icons + `sortOrder`; no CMS/demo tile fallback). Homepage CMS topics strip is section chrome (heading/visibility) only. Marketing navbar unchanged. |
-| Impact | Migration `20261121120000_topic_base_question_analysis`, TopicImportModule, public topic APIs, admin upload/taxonomy UI, homepage topics wiring |
-| Status | **CONFIRMED** (product request 2026-11-21) |
+| Decision | **Yes.** Add `CategoryScope.TOPIC` + optional `Category.iconKey`. Topic Base is **fully separate** from Preli/Written (no shared content-kind / question-type coupling). Admin Taxonomy gains a **Topics** tab (CRUD + icons + sortOrder reorder) with **3-level** tree: Category → Sub Category → Child Category. Admin upload wizard at `/admin/topic-question-imports/new` accepts **8-column** Excel; cascading selectors pass `categoryId` + `subcategoryId` + optional `childCategoryId`; **no duplicate blocking and no row-rejection validation**. Persist `TopicUploadBatch` + `TopicQuestion` (optional `childCategoryId`). Public `/topic-base/:id` resolves L2 or L3 nodes; `/topic-categories` + homepage show live TOPIC leaves (prefer Child Category when present). Marketing navbar unchanged. |
+| Impact | Migrations `20261121120000_topic_base_question_analysis`, `20261121140000_topic_three_level_hierarchy`; TopicImportModule; public topic APIs; admin upload/taxonomy UI; homepage topics wiring |
+| Status | **CONFIRMED** (product request 2026-11-21; 3-level hierarchy 2026-11-21) |
 
 ### DEC-034 — Excel serial, sheet preamble/sections, multi-placement, year filter
 
@@ -151,10 +151,10 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Field | Value |
 |-------|-------|
 | Question | Only two levels? |
-| Current assumption | **Exactly two levels** (root + child) |
-| Recommended option | Enforce in service |
-| Impact | CategoriesModule |
-| Status | **PROPOSED** |
+| Current assumption | **Preli / Written:** exactly two levels (root + child). **Topic Base (DEC-042):** up to **three** levels — Category → Sub Category → Child Category — enforced in `CategoriesService` (`maxDepthForScope`). |
+| Recommended option | Enforce in service (scope-aware) |
+| Impact | CategoriesModule, TopicImportModule, public Topic Base pages |
+| Status | **CONFIRMED** for Topic Base depth-3 (product request 2026-11-21); Preli/Written remain depth-2 |
 
 ### DEC-008 — Previous/next ordering
 

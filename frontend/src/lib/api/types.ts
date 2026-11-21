@@ -1,5 +1,18 @@
 export type CategoryScope = 'PRELIMINARY' | 'WRITTEN' | 'TOPIC';
 
+export type CategoryLeaf = {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  isActive?: boolean;
+  scope?: CategoryScope;
+  iconKey?: string | null;
+  sortOrder?: number;
+  questionCount?: number;
+  children?: CategoryLeaf[];
+};
+
 export type CategoryNode = {
   id: string;
   name: string;
@@ -9,17 +22,7 @@ export type CategoryNode = {
   scope?: CategoryScope;
   iconKey?: string | null;
   sortOrder?: number;
-  children: Array<{
-    id: string;
-    name: string;
-    slug: string;
-    description?: string | null;
-    isActive?: boolean;
-    scope?: CategoryScope;
-    iconKey?: string | null;
-    sortOrder?: number;
-    questionCount?: number;
-  }>;
+  children: CategoryLeaf[];
 };
 
 export type PublicStats = {

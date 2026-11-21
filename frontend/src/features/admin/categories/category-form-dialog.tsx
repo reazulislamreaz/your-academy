@@ -23,6 +23,11 @@ type CategoryFormDialogProps = {
   error?: string | null;
   /** Show icon picker (Topic Base taxonomy). */
   allowIcon?: boolean;
+  /**
+   * Topic Base: parent select lists Category + Sub Category so admins can
+   * create Level-3 Child Categories under a Sub Category.
+   */
+  allowNestedParents?: boolean;
   onClose: () => void;
   onSubmit: (values: {
     name: string;
@@ -42,6 +47,7 @@ export function CategoryFormDialog({
   pending,
   error,
   allowIcon = false,
+  allowNestedParents = false,
   onClose,
   onSubmit,
 }: CategoryFormDialogProps) {
@@ -72,14 +78,35 @@ export function CategoryFormDialog({
   }, [open, initial, mode, defaultParentId]);
 
   const isChild = mode === 'create-child' || (mode === 'edit' && Boolean(initial?.parentId));
+  const parentIsSubcategory = Boolean(
+    allowNestedParents &&
+      parentId &&
+      roots.some((r) => (r.children ?? []).some((c) => c.id === parentId)),
+  );
   const title =
     mode === 'edit'
       ? isChild
-        ? 'Edit subcategory'
+        ? parentIsSubcategory ||
+          roots.some((r) => (r.children ?? []).some((c) => c.id === initial?.parentId))
+          ? 'Edit child category'
+          : 'Edit subcategory'
         : 'Edit category'
       : mode === 'create-child'
-        ? 'Add subcategory'
+        ? parentIsSubcategory
+          ? 'Add child category'
+          : 'Add subcategory'
         : 'Create category';
+
+  const parentOptions = allowNestedParents
+    ? roots.flatMap((r) => [
+        { id: r.id, label: r.name, inactive: !r.isActive },
+        ...(r.children ?? []).map((c) => ({
+          id: c.id,
+          label: `${r.name} · ${c.name}`,
+          inactive: !c.isActive,
+        })),
+      ])
+    : roots.map((r) => ({ id: r.id, label: r.name, inactive: !r.isActive }));
 
   return (
     <FormDialog
@@ -87,7 +114,9 @@ export function CategoryFormDialog({
       title={title}
       description={
         mode === 'create-child'
-          ? 'Subcategories belong to one parent category.'
+          ? allowNestedParents
+            ? 'Pick a Category (Level 2) or Sub Category (Level 3 Child Category).'
+            : 'Subcategories belong to one parent category.'
           : mode === 'create-root'
             ? 'Categories group questions and collections.'
             : isChild
@@ -111,20 +140,20 @@ export function CategoryFormDialog({
     >
       {isChild ? (
         <Field>
-          <Label htmlFor="cat-parent">Parent category</Label>
+          <Label htmlFor="cat-parent">Parent</Label>
           <Select
             id="cat-parent"
             value={parentId}
             onChange={(e) => setParentId(e.target.value)}
             required
           >
-            <option value="">Select category…</option>
-            {roots
-              .filter((r) => r.id !== initial?.id)
-              .map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.name}
-                  {!r.isActive ? ' (inactive)' : ''}
+            <option value="">Select parent…</option>
+            {parentOptions
+              .filter((p) => p.id !== initial?.id)
+              .map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.label}
+                  {p.inactive ? ' (inactive)' : ''}
                 </option>
               ))}
           </Select>
@@ -132,7 +161,13 @@ export function CategoryFormDialog({
       ) : null}
 
       <Field>
-        <Label htmlFor="cat-name">{isChild ? 'Subcategory name' : 'Category name'}</Label>
+        <Label htmlFor="cat-name">
+          {isChild
+            ? parentIsSubcategory
+              ? 'Child category name'
+              : 'Subcategory name'
+            : 'Category name'}
+        </Label>
         <Input
           id="cat-name"
           value={name}

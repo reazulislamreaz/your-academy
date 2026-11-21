@@ -50,16 +50,42 @@ describe('CategoriesService', () => {
     });
   });
 
-  it('rejects subcategory under another subcategory', async () => {
-    prisma.category.findUnique.mockResolvedValue({
-      id: 'child',
-      parentId: 'root',
-      name: 'Topic',
-      scope: CategoryScope.PRELIMINARY,
-    });
+  it('rejects subcategory under another subcategory for Preliminary', async () => {
+    prisma.category.findUnique
+      .mockResolvedValueOnce({
+        id: 'child',
+        parentId: 'root',
+        name: 'Topic',
+        scope: CategoryScope.PRELIMINARY,
+      })
+      .mockResolvedValueOnce({ parentId: 'root' });
     await expect(service.create({ name: 'Deep', parentId: 'child' })).rejects.toBeInstanceOf(
       BadRequestException,
     );
+  });
+
+  it('allows Topic Base child category under a subcategory (depth 3)', async () => {
+    prisma.category.findUnique
+      .mockResolvedValueOnce({
+        id: 'sub',
+        parentId: 'root',
+        name: 'Grammar',
+        scope: CategoryScope.TOPIC,
+      })
+      .mockResolvedValueOnce({ parentId: 'root' })
+      .mockResolvedValueOnce({ parentId: null });
+    prisma.category.findMany.mockResolvedValue([]);
+    prisma.category.create.mockImplementation(async ({ data }: { data: Record<string, unknown> }) => ({
+      id: 'child',
+      ...data,
+    }));
+
+    const created = await service.create({ name: 'Charyapada', parentId: 'sub' });
+    expect(created).toMatchObject({
+      name: 'Charyapada',
+      parentId: 'sub',
+      scope: CategoryScope.TOPIC,
+    });
   });
 
   it('rejects scope mismatch and inherits parent Written scope', async () => {

@@ -196,6 +196,13 @@ export function CategoryTaxonomyManager({
             siblings = (root.children ?? []).map((c) => ({ id: c.id }));
             break;
           }
+          for (const sub of root.children ?? []) {
+            if ((sub.children ?? []).some((c) => c.id === id)) {
+              siblings = (sub.children ?? []).map((c) => ({ id: c.id }));
+              break;
+            }
+          }
+          if (siblings.length) break;
         }
       }
       const index = siblings.findIndex((s) => s.id === id);
@@ -712,6 +719,7 @@ export function CategoryTaxonomyManager({
                               key={child.id}
                               child={child}
                               allowReorder={scope === 'TOPIC'}
+                              allowChildCategories={scope === 'TOPIC'}
                               canMoveUp={childIndex > 0}
                               canMoveDown={childIndex < root.children.length - 1}
                               reorderPending={reorder.isPending}
@@ -721,50 +729,26 @@ export function CategoryTaxonomyManager({
                               onMoveDown={() =>
                                 reorder.mutate({ id: child.id, direction: 'down' })
                               }
-                              onEdit={() =>
-                                openEdit({
-                                  id: child.id,
-                                  name: child.name,
-                                  slug: child.slug,
-                                  description: child.description,
-                                  isActive: child.isActive,
-                                  sortOrder: child.sortOrder,
-                                  iconKey: child.iconKey,
-                                  parentId: root.id,
-                                })
+                              onAddChild={() => openCreateChild(child.id)}
+                              onReorderChild={(id, direction) =>
+                                reorder.mutate({ id, direction })
                               }
-                              onToggle={() =>
+                              onEdit={(target) => openEdit(target)}
+                              onToggle={(target) =>
                                 setDialog({
                                   kind: 'confirm',
-                                  action: child.isActive ? 'deactivate' : 'activate',
-                                  target: {
-                                    id: child.id,
-                                    name: child.name,
-                                    slug: child.slug,
-                                    description: child.description,
-                                    isActive: child.isActive,
-                                    sortOrder: child.sortOrder,
-                                    parentId: root.id,
-                                    isChild: true,
-                                  },
+                                  action: target.isActive ? 'deactivate' : 'activate',
+                                  target: { ...target, isChild: true },
                                 })
                               }
-                              onDelete={() =>
+                              onDelete={(target) =>
                                 setDialog({
                                   kind: 'confirm',
                                   action: 'delete',
-                                  target: {
-                                    id: child.id,
-                                    name: child.name,
-                                    slug: child.slug,
-                                    description: child.description,
-                                    isActive: child.isActive,
-                                    sortOrder: child.sortOrder,
-                                    parentId: root.id,
-                                    isChild: true,
-                                  },
+                                  target: { ...target, isChild: true },
                                 })
                               }
+                              rootId={root.id}
                             />
                           ))}
                         </ul>
@@ -813,6 +797,7 @@ export function CategoryTaxonomyManager({
         initial={dialog?.kind === 'form' ? dialog.target : null}
         defaultParentId={dialog?.kind === 'form' ? dialog.parentId : undefined}
         allowIcon={scope === 'TOPIC'}
+        allowNestedParents={scope === 'TOPIC'}
         pending={save.isPending}
         error={formError}
         onClose={() => {
@@ -871,92 +856,223 @@ export function CategoryTaxonomyManager({
 
 function SubcategoryRow({
   child,
+  rootId,
   allowReorder,
+  allowChildCategories,
   canMoveUp,
   canMoveDown,
   reorderPending,
   onMoveUp,
   onMoveDown,
+  onAddChild,
+  onReorderChild,
   onEdit,
   onToggle,
   onDelete,
 }: {
   child: AdminCategoryChild;
+  rootId: string;
   allowReorder?: boolean;
+  allowChildCategories?: boolean;
   canMoveUp?: boolean;
   canMoveDown?: boolean;
   reorderPending?: boolean;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
-  onEdit: () => void;
-  onToggle: () => void;
-  onDelete: () => void;
+  onAddChild?: () => void;
+  onReorderChild?: (id: string, direction: 'up' | 'down') => void;
+  onEdit: (target: CategoryRecord) => void;
+  onToggle: (target: CategoryRecord) => void;
+  onDelete: (target: CategoryRecord) => void;
 }) {
+  const grandchildren = child.children ?? [];
+  const toRecord = (node: AdminCategoryChild, parentId: string): CategoryRecord => ({
+    id: node.id,
+    name: node.name,
+    slug: node.slug,
+    description: node.description,
+    isActive: node.isActive,
+    sortOrder: node.sortOrder,
+    iconKey: node.iconKey,
+    parentId,
+  });
+
   return (
-    <li className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] px-3 py-2.5">
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <p className="truncate text-sm font-semibold text-[var(--ink)]">{child.name}</p>
-          <Badge variant={child.isActive ? 'success' : 'outline'}>
-            {child.isActive ? 'Active' : 'Inactive'}
-          </Badge>
-        </div>
-        <p className="mt-0.5 text-xs text-[var(--muted)]">
-          {child.questionCount} question{child.questionCount === 1 ? '' : 's'}
-        </p>
-      </div>
-      <AdminRowActions
-        className="w-full justify-start sm:w-auto sm:justify-end [&_button]:min-h-10 sm:[&_button]:min-h-0"
-        primary={
-          <>
-            {allowReorder ? (
-              <>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  className="cursor-pointer"
-                  disabled={reorderPending || !canMoveUp}
-                  aria-label={`Move ${child.name} up`}
-                  onClick={onMoveUp}
-                >
-                  <ArrowUp className="size-3.5" />
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  className="cursor-pointer"
-                  disabled={reorderPending || !canMoveDown}
-                  aria-label={`Move ${child.name} down`}
-                  onClick={onMoveDown}
-                >
-                  <ArrowDown className="size-3.5" />
-                </Button>
-              </>
+    <li className="space-y-2 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] px-3 py-2.5">
+      <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="truncate text-sm font-semibold text-[var(--ink)]">{child.name}</p>
+            <Badge variant={child.isActive ? 'success' : 'outline'}>
+              {child.isActive ? 'Active' : 'Inactive'}
+            </Badge>
+            {allowChildCategories ? (
+              <Badge variant="outline">Sub Category</Badge>
             ) : null}
-            <Button type="button" size="sm" variant="ghost" className="cursor-pointer" onClick={onEdit}>
-              <Pencil className="size-3.5" />
-              Edit
-            </Button>
-          </>
-        }
-      >
-        <Button type="button" size="sm" variant="ghost" className="cursor-pointer" onClick={onToggle}>
-          <Power className="size-3.5" />
-          {child.isActive ? 'Deactivate' : 'Activate'}
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="ghost"
-          className="cursor-pointer text-[var(--danger)]"
-          onClick={onDelete}
+          </div>
+          <p className="mt-0.5 text-xs text-[var(--muted)]">
+            {child.questionCount} question{child.questionCount === 1 ? '' : 's'}
+            {allowChildCategories
+              ? ` · ${grandchildren.length} child categor${grandchildren.length === 1 ? 'y' : 'ies'}`
+              : null}
+          </p>
+        </div>
+        <AdminRowActions
+          className="w-full justify-start sm:w-auto sm:justify-end [&_button]:min-h-10 sm:[&_button]:min-h-0"
+          primary={
+            <>
+              {allowReorder ? (
+                <>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="cursor-pointer"
+                    disabled={reorderPending || !canMoveUp}
+                    aria-label={`Move ${child.name} up`}
+                    onClick={onMoveUp}
+                  >
+                    <ArrowUp className="size-3.5" />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="cursor-pointer"
+                    disabled={reorderPending || !canMoveDown}
+                    aria-label={`Move ${child.name} down`}
+                    onClick={onMoveDown}
+                  >
+                    <ArrowDown className="size-3.5" />
+                  </Button>
+                </>
+              ) : null}
+              {allowChildCategories ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="cursor-pointer"
+                  onClick={onAddChild}
+                >
+                  <Plus className="size-3.5" />
+                  Child
+                </Button>
+              ) : null}
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="cursor-pointer"
+                onClick={() => onEdit(toRecord(child, rootId))}
+              >
+                <Pencil className="size-3.5" />
+                Edit
+              </Button>
+            </>
+          }
         >
-          <Trash2 className="size-3.5" />
-          Delete
-        </Button>
-      </AdminRowActions>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            className="cursor-pointer"
+            onClick={() => onToggle(toRecord(child, rootId))}
+          >
+            <Power className="size-3.5" />
+            {child.isActive ? 'Deactivate' : 'Activate'}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            className="cursor-pointer text-[var(--danger)]"
+            onClick={() => onDelete(toRecord(child, rootId))}
+          >
+            <Trash2 className="size-3.5" />
+            Delete
+          </Button>
+        </AdminRowActions>
+      </div>
+
+      {allowChildCategories && grandchildren.length > 0 ? (
+        <ul className="ml-2 space-y-1.5 border-l border-[var(--line)] pl-3">
+          {grandchildren.map((g, gIndex) => (
+            <li
+              key={g.id}
+              className="flex flex-wrap items-center justify-between gap-2 rounded-[var(--radius-sm)] bg-[var(--bg-desk)] px-2.5 py-2"
+            >
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="truncate text-sm font-medium text-[var(--ink)]">{g.name}</p>
+                  <Badge variant={g.isActive ? 'success' : 'outline'}>
+                    {g.isActive ? 'Active' : 'Inactive'}
+                  </Badge>
+                  <Badge variant="outline">Child</Badge>
+                </div>
+                <p className="text-xs text-[var(--muted)]">
+                  {g.questionCount} question{g.questionCount === 1 ? '' : 's'}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {allowReorder ? (
+                  <>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="cursor-pointer"
+                      disabled={reorderPending || gIndex <= 0}
+                      aria-label={`Move ${g.name} up`}
+                      onClick={() => onReorderChild?.(g.id, 'up')}
+                    >
+                      <ArrowUp className="size-3.5" />
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="cursor-pointer"
+                      disabled={reorderPending || gIndex >= grandchildren.length - 1}
+                      aria-label={`Move ${g.name} down`}
+                      onClick={() => onReorderChild?.(g.id, 'down')}
+                    >
+                      <ArrowDown className="size-3.5" />
+                    </Button>
+                  </>
+                ) : null}
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="cursor-pointer"
+                  onClick={() => onEdit(toRecord(g, child.id))}
+                >
+                  <Pencil className="size-3.5" />
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="cursor-pointer"
+                  onClick={() => onToggle(toRecord(g, child.id))}
+                >
+                  <Power className="size-3.5" />
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="cursor-pointer text-[var(--danger)]"
+                  onClick={() => onDelete(toRecord(g, child.id))}
+                >
+                  <Trash2 className="size-3.5" />
+                </Button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : null}
     </li>
   );
 }

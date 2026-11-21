@@ -21,7 +21,35 @@ export class CategoriesService {
     private readonly audit: AuditService,
   ) {}
 
-  /** Public/learner tree: active roots + active children for one bank scope. */
+  /**
+   * Max depth for a bank. Preli/Written stay at 2 (DEC-007).
+   * Topic Base allows Category → Sub Category → Child Category (depth 3).
+   */
+  private maxDepthForScope(scope: CategoryScope): number {
+    return scope === CategoryScope.TOPIC ? 3 : 2;
+  }
+
+  /** Depth of a node (1 = root). Walks up to 3 parents. */
+  private async depthOf(categoryId: string): Promise<number> {
+    let depth = 1;
+    let currentId: string | null = categoryId;
+    const seen = new Set<string>();
+    while (currentId) {
+      if (seen.has(currentId)) break;
+      seen.add(currentId);
+      const row: { parentId: string | null } | null = await this.prisma.category.findUnique({
+        where: { id: currentId },
+        select: { parentId: true },
+      });
+      if (!row?.parentId) break;
+      depth += 1;
+      currentId = row.parentId;
+      if (depth > 4) break;
+    }
+    return depth;
+  }
+
+  /** Public/learner tree: active roots + active children (+ Topic L3 nested). */
   async listActive(scope: CategoryScope = CategoryScope.PRELIMINARY) {
     const roots = await this.prisma.category.findMany({
       where: { parentId: null, isActive: true, scope },
@@ -30,16 +58,20 @@ export class CategoriesService {
         children: {
           where: { isActive: true, scope },
           orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            description: true,
-            isActive: true,
-            sortOrder: true,
-            scope: true,
-            iconKey: true,
-            _count: { select: { topicSubQuestions: true } },
+          include: {
+            _count: {
+              select: {
+                topicSubQuestions: true,
+                topicChildQuestions: true,
+              },
+            },
+            children: {
+              where: { isActive: true, scope },
+              orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+              include: {
+                _count: { select: { topicChildQuestions: true } },
+              },
+            },
           },
         },
       },
@@ -63,6 +95,20 @@ export class CategoriesService {
         scope: child.scope,
         iconKey: child.iconKey,
         questionCount: child._count.topicSubQuestions,
+        children:
+          scope === CategoryScope.TOPIC
+            ? child.children.map((g) => ({
+                id: g.id,
+                name: g.name,
+                slug: g.slug,
+                description: g.description,
+                isActive: g.isActive,
+                sortOrder: g.sortOrder,
+                scope: g.scope,
+                iconKey: g.iconKey,
+                questionCount: g._count.topicChildQuestions,
+              }))
+            : [],
       })),
     }));
   }
@@ -79,11 +125,26 @@ export class CategoriesService {
           include: {
             _count: {
               select: {
+                children: true,
                 subQuestions: true,
                 writtenSubQuestions: true,
                 topicSubQuestions: true,
+                topicChildQuestions: true,
                 practiceSetTopics: true,
                 documents: true,
+              },
+            },
+            children: {
+              where: { scope },
+              orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+              include: {
+                _count: {
+                  select: {
+                    topicChildQuestions: true,
+                    practiceSetTopics: true,
+                    documents: true,
+                  },
+                },
               },
             },
           },
@@ -154,6 +215,26 @@ export class CategoriesService {
         questionCount: childQuestionCount(child),
         practiceSetCount: child._count.practiceSetTopics,
         documentCount: child._count.documents,
+        childCategoryCount: child._count.children,
+        children:
+          scope === CategoryScope.TOPIC
+            ? child.children.map((g) => ({
+                id: g.id,
+                name: g.name,
+                slug: g.slug,
+                description: g.description,
+                isActive: g.isActive,
+                sortOrder: g.sortOrder,
+                parentId: g.parentId,
+                scope: g.scope,
+                iconKey: g.iconKey,
+                createdAt: g.createdAt,
+                updatedAt: g.updatedAt,
+                questionCount: g._count.topicChildQuestions,
+                practiceSetCount: g._count.practiceSetTopics,
+                documentCount: g._count.documents,
+              }))
+            : [],
       })),
     }));
   }
@@ -175,21 +256,26 @@ export class CategoriesService {
           createErrorResponse('CATEGORY_NOT_FOUND', 'Parent category not found', newRequestId()),
         );
       }
-      if (parent.parentId) {
-        throw new BadRequestException(
-          createErrorResponse(
-            'INVALID_HIERARCHY',
-            'Only two category levels are allowed',
-            newRequestId(),
-          ),
-        );
-      }
       scope = parent.scope;
       if (dto.scope && dto.scope !== parent.scope) {
         throw new BadRequestException(
           createErrorResponse(
             'SCOPE_MISMATCH',
             'Subcategory scope must match its parent category',
+            newRequestId(),
+          ),
+        );
+      }
+      const parentDepth = await this.depthOf(parent.id);
+      const nextDepth = parentDepth + 1;
+      const maxDepth = this.maxDepthForScope(scope);
+      if (nextDepth > maxDepth) {
+        throw new BadRequestException(
+          createErrorResponse(
+            'INVALID_HIERARCHY',
+            scope === CategoryScope.TOPIC
+              ? 'Topic Base allows at most three levels (Category → Sub Category → Child Category)'
+              : 'Only two category levels are allowed',
             newRequestId(),
           ),
         );
@@ -264,15 +350,6 @@ export class CategoriesService {
             createErrorResponse('CATEGORY_NOT_FOUND', 'Parent category not found', newRequestId()),
           );
         }
-        if (parent.parentId) {
-          throw new BadRequestException(
-            createErrorResponse(
-              'INVALID_HIERARCHY',
-              'Only two category levels are allowed',
-              newRequestId(),
-            ),
-          );
-        }
         if (parent.scope !== existing.scope) {
           throw new BadRequestException(
             createErrorResponse(
@@ -282,9 +359,36 @@ export class CategoriesService {
             ),
           );
         }
+        const parentDepth = await this.depthOf(parent.id);
+        const nextDepth = parentDepth + 1;
+        const maxDepth = this.maxDepthForScope(existing.scope);
+        if (nextDepth > maxDepth) {
+          throw new BadRequestException(
+            createErrorResponse(
+              'INVALID_HIERARCHY',
+              existing.scope === CategoryScope.TOPIC
+                ? 'Topic Base allows at most three levels (Category → Sub Category → Child Category)'
+                : 'Only two category levels are allowed',
+              newRequestId(),
+            ),
+          );
+        }
+        // Moving a node that already has children must keep the subtree within max depth.
+        const existingChildDepth = await this.prisma.category.count({
+          where: { parentId: id },
+        });
+        if (existingChildDepth > 0 && nextDepth + 1 > maxDepth) {
+          throw new BadRequestException(
+            createErrorResponse(
+              'INVALID_HIERARCHY',
+              'Move or remove nested categories before nesting this category deeper',
+              newRequestId(),
+            ),
+          );
+        }
         if (!existing.parentId) {
           const childCount = await this.prisma.category.count({ where: { parentId: id } });
-          if (childCount > 0) {
+          if (childCount > 0 && nextDepth > 1) {
             throw new BadRequestException(
               createErrorResponse(
                 'INVALID_HIERARCHY',
