@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Res,
   UploadedFile,
   UseGuards,
@@ -20,6 +21,7 @@ import { CsrfGuard } from '../common/guards/csrf.guard';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { newRequestId } from '../common/request-id';
+import { UpdateExamGuideDto } from './dto/update-exam-guide.dto';
 import { ExamsService } from './exams.service';
 
 @Controller('api/v1/admin/exams')
@@ -45,6 +47,23 @@ export class AdminExamsController {
   @Get()
   async list() {
     return createSuccessResponse(await this.exams.listAdmin(), newRequestId());
+  }
+
+  @Get('guide')
+  async getGuide() {
+    return createSuccessResponse(await this.exams.getGuide(), newRequestId());
+  }
+
+  @Put('guide')
+  @UseGuards(CsrfGuard)
+  async updateGuide(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: UpdateExamGuideDto,
+  ) {
+    return createSuccessResponse(
+      await this.exams.updateGuide(dto, user.userId),
+      newRequestId(),
+    );
   }
 
   @Post('upload')

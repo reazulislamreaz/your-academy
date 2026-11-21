@@ -11,6 +11,7 @@ import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { ModelTestGuideEditor } from '@/features/admin/model-tests/model-test-guide-editor';
 import { FileDropzone } from '@/features/admin/question-imports/file-dropzone';
 import { ApiError } from '@/lib/api/client';
 import {
@@ -89,7 +90,14 @@ export default function AdminModelTestUploadPage() {
 
   return (
     <AdminPage>
-      <PageHeader title="Model Test" description="Upload Excel · assign category · publish." />
+      <PageHeader
+        title="Model Test"
+        description="Upload Excel · assign category · edit listing guide · publish."
+      />
+
+      <AdminSection title="Listing guide">
+        <ModelTestGuideEditor />
+      </AdminSection>
 
       <AdminSection title="Upload">
         <AdminFormPanel title="New Model Test">

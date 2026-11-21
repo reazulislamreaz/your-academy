@@ -3,6 +3,8 @@ import type {
   AdminModelTestUploadResult,
   ModelTestAttemptResult,
   ModelTestCategoryRef,
+  ModelTestGuideConfig,
+  ModelTestGuideItem,
   ModelTestSubmitResult,
   PublicModelTestDetail,
   PublicModelTestListItem,
@@ -35,6 +37,27 @@ export function listPublicModelTestYears(): Promise<number[]> {
 export function listPublicModelTestCategories(): Promise<ModelTestCategoryRef[]> {
   return apiFetch<ModelTestCategoryRef[]>('/public/model-tests/meta/categories', {
     skipRefresh: true,
+  });
+}
+
+export function getPublicModelTestGuide(): Promise<ModelTestGuideConfig> {
+  return apiFetch<ModelTestGuideConfig>('/public/model-tests/meta/guide', {
+    skipRefresh: true,
+  });
+}
+
+export function getAdminModelTestGuide(): Promise<ModelTestGuideConfig> {
+  return apiFetch<ModelTestGuideConfig>('/admin/model-tests/guide');
+}
+
+export function updateAdminModelTestGuide(body: {
+  title: string;
+  items: ModelTestGuideItem[];
+}): Promise<ModelTestGuideConfig> {
+  return apiFetch<ModelTestGuideConfig>('/admin/model-tests/guide', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
   });
 }
 

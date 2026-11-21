@@ -26,6 +26,11 @@ export class PublicExamsController {
     );
   }
 
+  @Get('meta/guide')
+  async guide() {
+    return createSuccessResponse(await this.exams.getGuide(), newRequestId());
+  }
+
   @Get('attempts/:attemptId')
   async attemptResult(@Param('attemptId') attemptId: string) {
     return createSuccessResponse(await this.exams.getAttemptResult(attemptId), newRequestId());

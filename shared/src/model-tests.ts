@@ -122,3 +122,41 @@ export type AdminModelTestListItem = {
   createdAt: string;
   _count: { attempts: number };
 };
+
+/** `/model-test` sidebar guide item (UTF-8 Bengali supported). */
+export type ModelTestGuideItem = {
+  id: string;
+  text: string;
+};
+
+/** Public + admin payload for the listing sidebar guide (DEC-043). */
+export type ModelTestGuideConfig = {
+  title: string;
+  items: ModelTestGuideItem[];
+  updatedAt: string | null;
+};
+
+export const DEFAULT_MODEL_TEST_GUIDE_TITLE = 'মডেল টেস্ট কীভাবে দিবেন';
+
+export const DEFAULT_MODEL_TEST_GUIDE_ITEMS: ModelTestGuideItem[] = [
+  {
+    id: 'mt-guide-1',
+    text: 'খুঁজুন / ফিল্টার করে একটি মডেল টেস্ট বেছে নিন।',
+  },
+  {
+    id: 'mt-guide-2',
+    text: 'নাম দিয়ে শুরু — টাইমার চলবে।',
+  },
+  {
+    id: 'mt-guide-3',
+    text: 'এক পৃষ্ঠায় ক–ঘ উত্তর মার্ক করুন।',
+  },
+  {
+    id: 'mt-guide-4',
+    text: 'স্কিপ থাকলে সাবমিটের আগে নিশ্চিতকরণ আসবে।',
+  },
+  {
+    id: 'mt-guide-5',
+    text: 'ফলাফলে স্কোর ও সঠিক/ভুল দেখুন।',
+  },
+];

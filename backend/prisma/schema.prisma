@@ -195,6 +195,8 @@ model User {
   createdPracticeSets PracticeSet[]       @relation("PracticeSetCreator")
   createdExams        Exam[]              @relation("ExamCreator")
   createdModelTests   ModelTest[]         @relation("ModelTestCreator")
+  modelTestGuideUpdates ModelTestGuideConfig[] @relation("ModelTestGuideUpdater")
+  examGuideUpdates      ExamGuideConfig[]      @relation("ExamGuideUpdater")
   questionUploadBatches QuestionUploadBatch[]
   writtenUploadBatches  WrittenUploadBatch[]
   topicUploadBatches    TopicUploadBatch[]
@@ -699,6 +701,20 @@ model Exam {
   @@map("exams")
 }
 
+/// Singleton CMS for `/exams` (Quiz) sidebar guide — DEC-044.
+model ExamGuideConfig {
+  id          String   @id @db.VarChar(32)
+  title       String   @db.VarChar(200)
+  /// Ordered steps: `[{ id: string, text: string }]`.
+  items       Json
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById String?  @map("updated_by_id") @db.Uuid
+
+  updatedBy User? @relation("ExamGuideUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@map("exam_guide_configs")
+}
+
 /// Guest-exam MCQ row. Named ExamQuestion so it does not collide with bank `Question` (DEC-039).
 model ExamQuestion {
   id            String  @id @default(uuid()) @db.Uuid
@@ -811,6 +827,20 @@ model ModelTestAttempt {
 
   @@index([modelTestId, submittedAt(sort: Desc)])
   @@map("model_test_attempts")
+}
+
+/// Singleton CMS for `/model-test` sidebar guide ("মডেল টেস্ট কীভাবে দিবেন") — DEC-043.
+model ModelTestGuideConfig {
+  id          String   @id @db.VarChar(32)
+  title       String   @db.VarChar(200)
+  /// Ordered steps: `[{ id: string, text: string }]`.
+  items       Json
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  updatedById String?  @map("updated_by_id") @db.Uuid
+
+  updatedBy User? @relation("ModelTestGuideUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@map("model_test_guide_configs")
 }
 
 /// Timed or untimed practice packs: daily quiz, subject quiz, model test, etc. (DEC-023).

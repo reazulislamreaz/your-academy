@@ -11,6 +11,7 @@ import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { ExamGuideEditor } from '@/features/admin/exams/exam-guide-editor';
 import { FileDropzone } from '@/features/admin/question-imports/file-dropzone';
 import { ApiError } from '@/lib/api/client';
 import { listAdminExams, uploadAdminExam } from '@/lib/api/exams';
@@ -63,10 +64,13 @@ export default function AdminExamUploadPage() {
   return (
     <AdminPage>
       <PageHeader
-        eyebrow="Guest exams"
-        title="Upload exam from Excel"
-        description="Create a public timed exam. Use the 7-column spreadsheet: প্রশ্ন নং, প্রশ্ন, ক, খ, গ, ঘ, উত্তর. Put a, b, c, or d in উত্তর (case-insensitive; ক–ঘ also accepted)."
+        title="Quiz"
+        description="Upload Excel · edit listing guide · publish."
       />
+
+      <AdminSection title="Listing guide">
+        <ExamGuideEditor />
+      </AdminSection>
 
       <AdminSection title="Spreadsheet format">
         <AdminFormPanel title="Required columns">

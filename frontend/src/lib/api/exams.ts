@@ -1,6 +1,8 @@
 import type {
   AdminExamUploadResult,
   ExamAttemptResult,
+  ExamGuideConfig,
+  ExamGuideItem,
   ExamSubmitResult,
   PublicExamDetail,
   PublicExamListItem,
@@ -19,6 +21,27 @@ export function listPublicExams(params?: {
   sp.set('limit', String(params?.limit ?? 12));
   return apiFetchResult<PublicExamListItem[]>(`/public/exams?${sp.toString()}`, {
     skipRefresh: true,
+  });
+}
+
+export function getPublicExamGuide(): Promise<ExamGuideConfig> {
+  return apiFetch<ExamGuideConfig>('/public/exams/meta/guide', {
+    skipRefresh: true,
+  });
+}
+
+export function getAdminExamGuide(): Promise<ExamGuideConfig> {
+  return apiFetch<ExamGuideConfig>('/admin/exams/guide');
+}
+
+export function updateAdminExamGuide(body: {
+  title: string;
+  items: ExamGuideItem[];
+}): Promise<ExamGuideConfig> {
+  return apiFetch<ExamGuideConfig>('/admin/exams/guide', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
   });
 }
 

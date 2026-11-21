@@ -92,3 +92,41 @@ export type AdminExamUploadResult = {
     sortOrder: number;
   }>;
 };
+
+/** `/exams` (Quiz) sidebar guide item (UTF-8 Bengali supported). */
+export type ExamGuideItem = {
+  id: string;
+  text: string;
+};
+
+/** Public + admin payload for the Quiz listing sidebar guide (DEC-044). */
+export type ExamGuideConfig = {
+  title: string;
+  items: ExamGuideItem[];
+  updatedAt: string | null;
+};
+
+export const DEFAULT_EXAM_GUIDE_TITLE = 'কুইজ কীভাবে দিবেন';
+
+export const DEFAULT_EXAM_GUIDE_ITEMS: ExamGuideItem[] = [
+  {
+    id: 'quiz-guide-1',
+    text: 'খুঁজুন / সার্চ করে একটি কুইজ বেছে নিন।',
+  },
+  {
+    id: 'quiz-guide-2',
+    text: 'নাম দিয়ে শুরু — টাইমার চলবে।',
+  },
+  {
+    id: 'quiz-guide-3',
+    text: 'এক পৃষ্ঠায় ক–ঘ উত্তর মার্ক করুন।',
+  },
+  {
+    id: 'quiz-guide-4',
+    text: 'স্কিপ থাকলে সাবমিটের আগে নিশ্চিতকরণ আসবে।',
+  },
+  {
+    id: 'quiz-guide-5',
+    text: 'ফলাফলে স্কোর ও সঠিক/ভুল দেখুন।',
+  },
+];

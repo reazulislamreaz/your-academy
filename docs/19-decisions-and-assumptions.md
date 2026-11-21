@@ -40,6 +40,8 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | DEC-039 | Public guest timed exams (Quizzory-style) | CONFIRMED |
 | DEC-040 | Public guest Model Tests (parallel to DEC-039) | CONFIRMED |
 | DEC-042 | Topic Base Question Analysis (taxonomy + 8-col upload + public pages) | CONFIRMED |
+| DEC-043 | Model Test listing guide CMS (sidebar “কীভাবে দিবেন”) | CONFIRMED |
+| DEC-044 | Quiz listing guide CMS (sidebar “কুইজ কীভাবে দিবেন”) | CONFIRMED |
 
 ---
 
@@ -446,6 +448,24 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Question | Should Model Tests be a dedicated guest timed-exam product (admin Excel upload, public listing, single-page timer sheet, unanswered confirm, results + guest register CTA) without changing DEC-039 Quiz/Guest Exam? |
 | Decision | **Yes.** Add isolated `ModelTest` / `ModelTestQuestion` / `ModelTestAttempt` tables and `ModelTestsModule`. Admin `/admin/model-tests/upload`. Public `/model-test` (listing/search/year filter), take `/model-test/[id]`, result `/model-test/[id]/result/[attemptId]`. Marketing **Exams** nav is a dropdown: Model Test → `/model-test`, Quiz → `/exams` (unchanged). Excel parser scans for header row with `প্রশ্ন নং` + `প্রশ্ন` (preamble title/date rows OK); 7 columns; `উত্তর` = `a`–`d` or `ক`–`ঘ`. Incomplete submit shows Skip & Submit / Go Back. Guest result shows register CTA. Authenticated learner `/model-tests` PracticeSet route remains separate. |
 | Impact | Migration `20261121160000_model_tests`, ModelTestsModule, marketing `/model-test*`, admin upload, Exams dropdown |
+| Status | **CONFIRMED** (product request 2026-11-21) |
+
+### DEC-043 — Model Test listing guide CMS
+
+| Field | Value |
+|-------|-------|
+| Question | Should the `/model-test` sidebar block “মডেল টেস্ট কীভাবে দিবেন” (title + ordered steps) be editable from the Admin Dashboard instead of hardcoded frontend copy? |
+| Decision | **Yes.** Singleton `ModelTestGuideConfig` (`id = default`) stores `title` + ordered JSON `items[{ id, text }]` (UTF-8 Bengali). Seeded with the original Bangla steps. Public `GET /api/v1/public/model-tests/meta/guide`; admin `GET`/`PUT /api/v1/admin/model-tests/guide` (CSRF). Admin editor lives on `/admin/model-tests/upload` under **Listing guide** (edit title, add/edit/reorder/delete steps, Save). After save, Next `POST /api/revalidate/model-test` runs `revalidateTag('model-test-guide')` + `revalidatePath('/model-test')`. Empty step list hides the numbered list but keeps the title. Hardcoded defaults are seed/fallback only — never overwrite a saved admin row. |
+| Impact | Migration `20261121180000_model_test_guide_config`, ModelTestsService guide methods, admin guide editor, dynamic `/model-test` sidebar |
+| Status | **CONFIRMED** (product request 2026-11-21) |
+
+### DEC-044 — Quiz listing guide CMS
+
+| Field | Value |
+|-------|-------|
+| Question | Should the `/exams` (Quiz) listing match Model Test layout and expose an editable “কুইজ কীভাবে দিবেন” sidebar guide from Admin? |
+| Decision | **Yes.** Mirror DEC-043 with singleton `ExamGuideConfig`. Public `GET /api/v1/public/exams/meta/guide`; admin `GET`/`PUT /api/v1/admin/exams/guide`. Admin editor on `/admin/exams/upload` under **Listing guide**. After save, Next `POST /api/revalidate/exams` revalidates `/exams`. Quiz listing UI aligns with Model Test (full-width grid + sticky guide; remove filler eyebrow/subtitle/card descriptions). |
+| Impact | Migration `20261121190000_exam_guide_config`, ExamsService guide methods, admin guide editor, dynamic `/exams` sidebar |
 | Status | **CONFIRMED** (product request 2026-11-21) |
 
 ### Deferred / NEEDS APPROVAL (explicitly out of Phase 1)

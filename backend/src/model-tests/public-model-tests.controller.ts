@@ -48,6 +48,11 @@ export class PublicModelTestsController {
     );
   }
 
+  @Get('meta/guide')
+  async guide() {
+    return createSuccessResponse(await this.modelTests.getGuide(), newRequestId());
+  }
+
   @Get('attempts/:attemptId')
   async attemptResult(@Param('attemptId') attemptId: string) {
     return createSuccessResponse(

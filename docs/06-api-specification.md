@@ -278,10 +278,13 @@ Admin Excel template (7 columns): `প্রশ্ন নং | প্রশ্�
 | Method | Endpoint | Description | Auth | Role |
 |--------|----------|-------------|------|------|
 | GET | `/public/exams` | Published exams (`q`, `cursor`, `limit`; `createdAt DESC`) | Public | — |
+| GET | `/public/exams/meta/guide` | Quiz listing sidebar guide (`title` + ordered `items`) | Public | — |
 | GET | `/public/exams/:idOrSlug` | Exam + questions (no correct answers / explanations) | Public | — |
 | POST | `/public/exams/:idOrSlug/attempts` | Submit answers (`userName`, `userAnswers`, optional `elapsedSeconds`/`timedOut`); scores server-side | Public | — |
 | GET | `/public/exams/attempts/:attemptId` | Result + full answer sheet (correct + explanation) | Public | — |
 | GET | `/admin/exams` | Admin list | User | ADMIN |
+| GET | `/admin/exams/guide` | Quiz listing sidebar guide config | User | ADMIN |
+| PUT | `/admin/exams/guide` | Replace guide title + ordered steps | User | ADMIN |
 | GET | `/admin/exams/template` | 7-column Excel template download | User | ADMIN |
 | POST | `/admin/exams/upload` | Multipart create (`title`, `description`, `durationInMinutes`, `.xlsx` file) | User | ADMIN |
 
@@ -294,12 +297,15 @@ Parallel to guest exams. Header row may follow title/date preamble rows. Same 7-
 | GET | `/public/model-tests` | Published list (`q`, `year`, `categoryId`, `cursor`, `limit`) | Public | — |
 | GET | `/public/model-tests/meta/years` | Distinct published years for filters | Public | — |
 | GET | `/public/model-tests/meta/categories` | Categories with ≥1 published Model Test | Public | — |
+| GET | `/public/model-tests/meta/guide` | Listing sidebar guide (`title` + ordered `items`) | Public | — |
 | GET | `/public/model-tests/:idOrSlug` | Detail + questions (no answers) | Public | — |
 | POST | `/public/model-tests/:idOrSlug/attempts` | Submit answers; scores server-side | Public | — |
 | GET | `/public/model-tests/attempts/:attemptId` | Result + answer sheet | Public | — |
 | GET | `/admin/model-tests` | Admin list | User | ADMIN |
 | GET | `/admin/model-tests/categories` | All Model Test categories | User | ADMIN |
 | POST | `/admin/model-tests/categories` | Create category (`name`) | User | ADMIN |
+| GET | `/admin/model-tests/guide` | Listing sidebar guide config | User | ADMIN |
+| PUT | `/admin/model-tests/guide` | Replace guide title + ordered steps | User | ADMIN |
 | GET | `/admin/model-tests/template` | 7-column Excel template (with sample preamble) | User | ADMIN |
 | POST | `/admin/model-tests/upload` | Multipart create (`categoryId` optional) | User | ADMIN |
 | PATCH | `/admin/model-tests/:id` | Update meta / publish flag | User | ADMIN |

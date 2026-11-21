@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Res,
   UploadedFile,
   UseGuards,
@@ -23,6 +24,7 @@ import { CsrfGuard } from '../common/guards/csrf.guard';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { newRequestId } from '../common/request-id';
+import { UpdateModelTestGuideDto } from './dto/update-model-test-guide.dto';
 import { ModelTestsService } from './model-tests.service';
 
 @Controller('api/v1/admin/model-tests')
@@ -53,6 +55,23 @@ export class AdminModelTestsController {
   @Get('categories')
   async listCategories() {
     return createSuccessResponse(await this.modelTests.listCategories(), newRequestId());
+  }
+
+  @Get('guide')
+  async getGuide() {
+    return createSuccessResponse(await this.modelTests.getGuide(), newRequestId());
+  }
+
+  @Put('guide')
+  @UseGuards(CsrfGuard)
+  async updateGuide(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: UpdateModelTestGuideDto,
+  ) {
+    return createSuccessResponse(
+      await this.modelTests.updateGuide(dto, user.userId),
+      newRequestId(),
+    );
   }
 
   @Post('categories')

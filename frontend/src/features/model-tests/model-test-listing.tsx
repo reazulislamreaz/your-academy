@@ -4,11 +4,18 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { Clock3, ListChecks } from 'lucide-react';
+import {
+  DEFAULT_MODEL_TEST_GUIDE_ITEMS,
+  DEFAULT_MODEL_TEST_GUIDE_TITLE,
+  type ModelTestGuideConfig,
+} from '@your-academy/shared';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { SearchField } from '@/components/ui/search-field';
+import { Select } from '@/components/ui/select';
 import {
+  getPublicModelTestGuide,
   listPublicModelTestCategories,
   listPublicModelTests,
   listPublicModelTestYears,
@@ -16,15 +23,10 @@ import {
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import { cn } from '@/lib/utils';
 
-const PAGE_SIZE = 12;
+const filterSelectClass =
+  'h-10 min-h-10 border-[var(--line)] bg-[var(--bg-muted)] px-3.5 leading-normal shadow-none transition-[border-color,background-color,color] duration-150 hover:border-[var(--line-strong)] focus:border-[var(--accent)] focus:bg-[var(--bg-elevated)]';
 
-const OVERVIEW_STEPS = [
-  'খুঁজুন / ফিল্টার করে একটি মডেল টেস্ট বেছে নিন।',
-  'নাম দিয়ে শুরু — টাইমার চলবে।',
-  'এক পৃষ্ঠায় ক–ঘ উত্তর মার্ক করুন।',
-  'স্কিপ থাকলে সাবমিটের আগে নিশ্চিতকরণ আসবে।',
-  'ফলাফলে স্কোর ও সঠিক/ভুল দেখুন।',
-] as const;
+const PAGE_SIZE = 12;
 
 export function ModelTestListing() {
   const [q, setQ] = useState('');
@@ -43,6 +45,12 @@ export function ModelTestListing() {
   const categories = useQuery({
     queryKey: ['public-model-test-categories'],
     queryFn: listPublicModelTestCategories,
+  });
+
+  const guide = useQuery({
+    queryKey: ['public-model-test-guide'],
+    queryFn: getPublicModelTestGuide,
+    staleTime: 60_000,
   });
 
   const list = useInfiniteQuery({
@@ -67,73 +75,89 @@ export function ModelTestListing() {
   const yearOptions = useMemo(() => years.data ?? [], [years.data]);
   const categoryOptions = useMemo(() => categories.data ?? [], [categories.data]);
   const items = list.data?.pages.flatMap((p) => p.data) ?? [];
+  const guideConfig = resolveGuide(guide.data);
 
   return (
-    <div className="marketing-container overflow-x-clip px-3 py-7 sm:px-6 sm:py-10">
-      <header className="mx-auto max-w-3xl px-1 text-center">
+    <div className="marketing-container w-full overflow-x-clip py-7 sm:py-10">
+      <header className="min-w-0">
         <h1 className="font-display text-[1.75rem] font-bold tracking-tight text-[var(--ink)] sm:text-3xl">
           Model Test
         </h1>
       </header>
 
-      <div className="mx-auto mt-6 grid max-w-6xl gap-4 lg:mt-8 lg:grid-cols-[minmax(0,1fr)_16.5rem] lg:items-start lg:gap-5">
-        <div className="min-w-0 space-y-3.5">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-            <div className="min-w-0 flex-1">
-              <Label htmlFor="mt-search" className="sr-only">
-                Search
-              </Label>
-              <Input
+      <div className="mt-6 grid w-full gap-4 lg:mt-8 lg:grid-cols-[minmax(0,1fr)_17.5rem] lg:items-start lg:gap-6 xl:grid-cols-[minmax(0,1fr)_18.5rem]">
+        <div className="min-w-0 space-y-4">
+          <div
+            className={cn(
+              'rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)]',
+              'p-3 shadow-[var(--shadow-sm)] sm:p-3.5',
+            )}
+          >
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+              <SearchField
                 id="mt-search"
                 value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="Search…"
+                onChange={setQ}
+                placeholder="Search model tests…"
+                aria-label="Search model tests"
                 autoComplete="off"
-                className="h-9"
+                className="min-w-0 flex-1"
               />
-            </div>
-            <div className="grid grid-cols-2 gap-2 sm:flex sm:w-auto">
-              <div className="min-w-0 sm:w-40">
+
+              <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:shrink-0">
                 <Label htmlFor="mt-category" className="sr-only">
-                  Category
+                  Filter by category
                 </Label>
-                <select
+                <Select
                   id="mt-category"
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
-                  className="h-9 w-full rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] px-2 text-sm text-[var(--ink)]"
+                  disabled={categories.isLoading}
+                  className={cn(
+                    filterSelectClass,
+                    'flex-1 sm:min-w-[12rem] lg:w-[15rem] lg:flex-none',
+                    categoryId &&
+                      'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]',
+                  )}
+                  aria-label="Filter by category"
                 >
-                  <option value="">All categories</option>
+                  <option value="">All Categories</option>
                   {categoryOptions.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
                     </option>
                   ))}
-                </select>
-              </div>
-              <div className="min-w-0 sm:w-28">
+                </Select>
+
                 <Label htmlFor="mt-year" className="sr-only">
-                  Year
+                  Filter by year
                 </Label>
-                <select
+                <Select
                   id="mt-year"
                   value={year}
                   onChange={(e) => setYear(e.target.value)}
-                  className="h-9 w-full rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] px-2 text-sm text-[var(--ink)]"
+                  disabled={years.isLoading}
+                  className={cn(
+                    filterSelectClass,
+                    'flex-1 sm:min-w-[9rem] lg:w-[11rem] lg:flex-none',
+                    year &&
+                      'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]',
+                  )}
+                  aria-label="Filter by year"
                 >
-                  <option value="">Year</option>
+                  <option value="">All Years</option>
                   {yearOptions.map((y) => (
                     <option key={y} value={String(y)}>
                       {y}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
             </div>
           </div>
 
-          <aside className="rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] p-3 lg:hidden">
-            <BanglaOverview />
+          <aside className="rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] p-3.5 shadow-[var(--shadow-sm)] lg:hidden">
+            <BanglaOverview guide={guideConfig} />
           </aside>
 
           {list.isLoading ? (
@@ -142,13 +166,13 @@ export function ModelTestListing() {
             <EmptyState align="center" title="No model tests found" />
           ) : (
             <>
-              <ul className="grid gap-2 sm:grid-cols-2">
+              <ul className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
                 {items.map((item) => (
                   <li key={item.id}>
                     <article
                       className={cn(
                         'flex h-full flex-col rounded-[var(--radius-lg)] border border-[var(--line)]',
-                        'bg-[var(--bg-elevated)] p-2.5 shadow-[var(--shadow-sm)] transition-colors',
+                        'bg-[var(--bg-elevated)] p-3 shadow-[var(--shadow-sm)] transition-colors',
                         'hover:border-[color-mix(in_srgb,var(--accent)_42%,var(--line))]',
                       )}
                     >
@@ -161,12 +185,12 @@ export function ModelTestListing() {
                         </Link>
                         <div className="flex shrink-0 flex-col items-end gap-1">
                           {item.category ? (
-                            <span className="rounded bg-[var(--accent-soft)] px-1.5 py-0.5 text-[0.6rem] font-semibold text-[var(--accent)]">
+                            <span className="rounded-[var(--radius-sm)] bg-[var(--accent-soft)] px-1.5 py-0.5 text-[0.6rem] font-semibold text-[var(--accent)]">
                               {item.category.name}
                             </span>
                           ) : null}
                           {item.examYear ? (
-                            <span className="rounded bg-[var(--bg-muted)] px-1.5 py-0.5 text-[0.6rem] font-semibold tabular-nums text-[var(--muted-strong)]">
+                            <span className="rounded-[var(--radius-sm)] bg-[var(--bg-muted)] px-1.5 py-0.5 text-[0.6rem] font-semibold tabular-nums text-[var(--muted-strong)]">
                               {item.examYear}
                             </span>
                           ) : null}
@@ -182,9 +206,9 @@ export function ModelTestListing() {
                           {item.totalQuestions} Q
                         </span>
                       </div>
-                      <div className="mt-auto pt-2">
+                      <div className="mt-auto pt-2.5">
                         <Link href={`/model-test/${item.slug}`} className="block">
-                          <Button size="sm" className="h-7 w-full text-[0.7rem] sm:w-auto sm:px-3">
+                          <Button size="sm" className="h-8 w-full text-xs sm:w-auto sm:px-3.5">
                             Start
                           </Button>
                         </Link>
@@ -199,7 +223,7 @@ export function ModelTestListing() {
                   <Button
                     type="button"
                     variant="outline"
-                    className="h-8 text-xs"
+                    className="h-9"
                     disabled={list.isFetchingNextPage}
                     onClick={() => void list.fetchNextPage()}
                   >
@@ -211,9 +235,9 @@ export function ModelTestListing() {
           )}
         </div>
 
-        <aside className="hidden lg:sticky lg:top-[calc(var(--header-h,4.5rem)+0.75rem)] lg:block">
+        <aside className="hidden min-w-0 lg:sticky lg:top-[calc(var(--header-h,4.5rem)+0.75rem)] lg:block">
           <div className="rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] p-3.5 shadow-[var(--shadow-sm)]">
-            <BanglaOverview />
+            <BanglaOverview guide={guideConfig} />
           </div>
         </aside>
       </div>
@@ -221,25 +245,45 @@ export function ModelTestListing() {
   );
 }
 
-function BanglaOverview() {
+function resolveGuide(data: ModelTestGuideConfig | undefined): ModelTestGuideConfig {
+  if (!data) {
+    return {
+      title: DEFAULT_MODEL_TEST_GUIDE_TITLE,
+      items: DEFAULT_MODEL_TEST_GUIDE_ITEMS.map((item) => ({ ...item })),
+      updatedAt: null,
+    };
+  }
+  return {
+    title: data.title.trim() || DEFAULT_MODEL_TEST_GUIDE_TITLE,
+    // Saved admin config wins — including an intentionally empty steps list.
+    items: Array.isArray(data.items) ? data.items : [],
+    updatedAt: data.updatedAt,
+  };
+}
+
+function BanglaOverview({ guide }: { guide: ModelTestGuideConfig }) {
+  const steps = guide.items.filter((item) => item.text.trim().length > 0);
+
   return (
     <div className="space-y-2">
       <h2 className="font-display text-[0.9375rem] font-bold tracking-tight text-[var(--ink)]">
-        মডেল টেস্ট কীভাবে দিবেন
+        {guide.title}
       </h2>
-      <ol className="space-y-1.5 text-[0.75rem] leading-relaxed text-[var(--muted-strong)]">
-        {OVERVIEW_STEPS.map((step, i) => (
-          <li key={i} className="flex gap-1.5">
-            <span
-              className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[0.6rem] font-bold text-[var(--accent)]"
-              aria-hidden
-            >
-              {i + 1}
-            </span>
-            <span>{step}</span>
-          </li>
-        ))}
-      </ol>
+      {steps.length === 0 ? null : (
+        <ol className="space-y-1.5 text-[0.75rem] leading-relaxed text-[var(--muted-strong)]">
+          {steps.map((step, i) => (
+            <li key={step.id || `step-${i}`} className="flex gap-1.5">
+              <span
+                className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[0.6rem] font-bold text-[var(--accent)]"
+                aria-hidden
+              >
+                {i + 1}
+              </span>
+              <span>{step.text}</span>
+            </li>
+          ))}
+        </ol>
+      )}
     </div>
   );
 }

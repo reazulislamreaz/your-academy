@@ -4,20 +4,42 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { createErrorResponse } from '@your-academy/shared';
+import {
+  DEFAULT_EXAM_GUIDE_ITEMS,
+  DEFAULT_EXAM_GUIDE_TITLE,
+  createErrorResponse,
+  type ExamGuideConfig,
+  type ExamGuideItem,
+} from '@your-academy/shared';
 import { PrismaService } from '../database/prisma.service';
 import { newRequestId } from '../common/request-id';
 import { paginateById, parseLimit } from '../common/pagination';
 import { buildExamTemplateBuffer, parseExamWorkbook } from './exam-excel-parser';
 import { slugifyExamTitle } from './exam-slug';
 import type { SubmitExamAttemptDto } from './dto/submit-exam-attempt.dto';
+import type { UpdateExamGuideDto } from './dto/update-exam-guide.dto';
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+const GUIDE_SINGLETON_ID = 'default';
+
 function asStringOptions(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.map((v) => String(v));
+}
+
+function normalizeGuideItems(raw: unknown): ExamGuideItem[] {
+  if (!Array.isArray(raw)) return [];
+  const out: ExamGuideItem[] = [];
+  for (const entry of raw) {
+    if (!entry || typeof entry !== 'object') continue;
+    const id = String((entry as { id?: unknown }).id ?? '').trim();
+    const text = String((entry as { text?: unknown }).text ?? '').trim();
+    if (!id || !text) continue;
+    out.push({ id: id.slice(0, 64), text: text.slice(0, 500) });
+  }
+  return out;
 }
 
 @Injectable()
@@ -364,6 +386,96 @@ export class ExamsService {
         _count: { select: { attempts: true } },
       },
     });
+  }
+
+  /** Public + admin: Quiz listing sidebar guide. Seeds defaults when missing. */
+  async getGuide(): Promise<ExamGuideConfig> {
+    const row = await this.prisma.examGuideConfig.findUnique({
+      where: { id: GUIDE_SINGLETON_ID },
+    });
+    if (!row) {
+      const seeded = await this.prisma.examGuideConfig.create({
+        data: {
+          id: GUIDE_SINGLETON_ID,
+          title: DEFAULT_EXAM_GUIDE_TITLE,
+          items: DEFAULT_EXAM_GUIDE_ITEMS as unknown as Prisma.InputJsonValue,
+        },
+      });
+      return {
+        title: seeded.title,
+        items: normalizeGuideItems(seeded.items),
+        updatedAt: seeded.updatedAt.toISOString(),
+      };
+    }
+    return {
+      title: row.title.trim() || DEFAULT_EXAM_GUIDE_TITLE,
+      items: normalizeGuideItems(row.items),
+      updatedAt: row.updatedAt.toISOString(),
+    };
+  }
+
+  async updateGuide(
+    dto: UpdateExamGuideDto,
+    updatedById?: string,
+  ): Promise<ExamGuideConfig> {
+    const title = dto.title.trim();
+    if (!title) {
+      throw new BadRequestException(
+        createErrorResponse(
+          'GUIDE_TITLE_REQUIRED',
+          'Guide title is required',
+          newRequestId(),
+        ),
+      );
+    }
+
+    const seen = new Set<string>();
+    const items: ExamGuideItem[] = [];
+    for (const raw of dto.items ?? []) {
+      const id = String(raw.id ?? '').trim().slice(0, 64);
+      const text = String(raw.text ?? '').trim().slice(0, 500);
+      if (!id || !text) {
+        throw new BadRequestException(
+          createErrorResponse(
+            'GUIDE_ITEM_INVALID',
+            'Each guide step needs a non-empty id and text',
+            newRequestId(),
+          ),
+        );
+      }
+      if (seen.has(id)) {
+        throw new BadRequestException(
+          createErrorResponse(
+            'GUIDE_ITEM_DUPLICATE',
+            'Guide step ids must be unique',
+            newRequestId(),
+          ),
+        );
+      }
+      seen.add(id);
+      items.push({ id, text });
+    }
+
+    const row = await this.prisma.examGuideConfig.upsert({
+      where: { id: GUIDE_SINGLETON_ID },
+      create: {
+        id: GUIDE_SINGLETON_ID,
+        title,
+        items: items as unknown as Prisma.InputJsonValue,
+        updatedById: updatedById ?? null,
+      },
+      update: {
+        title,
+        items: items as unknown as Prisma.InputJsonValue,
+        updatedById: updatedById ?? null,
+      },
+    });
+
+    return {
+      title: row.title,
+      items: normalizeGuideItems(row.items),
+      updatedAt: row.updatedAt.toISOString(),
+    };
   }
 
   private async findPublished(idOrSlug: string) {
