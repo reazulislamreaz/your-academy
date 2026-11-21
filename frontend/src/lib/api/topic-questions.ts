@@ -31,10 +31,11 @@ export type TopicSubcategoryDetail = {
   slug: string;
   description?: string | null;
   iconKey?: string | null;
-  level?: 'subcategory' | 'child';
+  level?: 'category' | 'subcategory' | 'child';
   questionCount: number;
+  folderCount?: number;
   category: { id: string; name: string; slug: string; iconKey?: string | null };
-  subcategory?: { id: string; name: string; slug: string; iconKey?: string | null };
+  subcategory?: { id: string; name: string; slug: string; iconKey?: string | null } | null;
   childCategory?: { id: string; name: string; slug: string; iconKey?: string | null } | null;
 };
 

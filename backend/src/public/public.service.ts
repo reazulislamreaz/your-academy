@@ -1168,15 +1168,14 @@ export class PublicService {
   }
 
   /**
-   * Resolve a Topic node by id — Level 2 (Sub Category) or Level 3 (Child Category).
-   * Questions for L3 filter by childCategoryId; L2 by subcategoryId (all descendants).
+   * Resolve a Topic node by id — Level 1 (Category), Level 2 (Sub), or Level 3 (Child).
+   * Questions: L1 by categoryId (all nested), L2 by subcategoryId, L3 by childCategoryId.
    */
   async getTopicSubcategory(topicNodeId: string) {
     const node = await this.prisma.category.findFirst({
       where: {
         id: topicNodeId,
         scope: CategoryScope.TOPIC,
-        parentId: { not: null },
         isActive: true,
       },
       include: {
@@ -1191,11 +1190,44 @@ export class PublicService {
           },
         },
         _count: {
-          select: { topicSubQuestions: true, topicChildQuestions: true },
+          select: {
+            topicQuestions: true,
+            topicSubQuestions: true,
+            topicChildQuestions: true,
+            children: true,
+          },
         },
       },
     });
-    if (!node || !node.parent) {
+    if (!node) {
+      throw new NotFoundException(
+        createErrorResponse('TOPIC_NOT_FOUND', 'Topic not found', newRequestId()),
+      );
+    }
+
+    // Level 1 — root Category
+    if (!node.parentId) {
+      return {
+        id: node.id,
+        name: node.name,
+        slug: node.slug,
+        description: node.description,
+        iconKey: node.iconKey,
+        level: 'category' as const,
+        questionCount: node._count.topicQuestions,
+        folderCount: node._count.children,
+        category: {
+          id: node.id,
+          name: node.name,
+          slug: node.slug,
+          iconKey: node.iconKey,
+        },
+        subcategory: null,
+        childCategory: null,
+      };
+    }
+
+    if (!node.parent) {
       throw new NotFoundException(
         createErrorResponse('TOPIC_NOT_FOUND', 'Topic not found', newRequestId()),
       );
@@ -1218,14 +1250,25 @@ export class PublicService {
         iconKey: node.iconKey,
         level: 'child' as const,
         questionCount: node._count.topicChildQuestions,
-        category: { id: category.id, name: category.name, slug: category.slug, iconKey: category.iconKey },
+        folderCount: 0,
+        category: {
+          id: category.id,
+          name: category.name,
+          slug: category.slug,
+          iconKey: category.iconKey,
+        },
         subcategory: {
           id: subcategory.id,
           name: subcategory.name,
           slug: subcategory.slug,
           iconKey: subcategory.iconKey,
         },
-        childCategory: { id: node.id, name: node.name, slug: node.slug, iconKey: node.iconKey },
+        childCategory: {
+          id: node.id,
+          name: node.name,
+          slug: node.slug,
+          iconKey: node.iconKey,
+        },
       };
     }
 
@@ -1237,6 +1280,7 @@ export class PublicService {
       iconKey: node.iconKey,
       level: 'subcategory' as const,
       questionCount: node._count.topicSubQuestions,
+      folderCount: node._count.children,
       category: {
         id: node.parent.id,
         name: node.parent.name,
@@ -1256,10 +1300,21 @@ export class PublicService {
   }) {
     const meta = await this.getTopicSubcategory(params.subcategoryId);
 
+    // Folder selection includes nested Topic questions under that node.
+    const scopeWhere: Prisma.TopicQuestionWhereInput =
+      meta.level === 'category'
+        ? { categoryId: meta.id }
+        : meta.level === 'child'
+          ? { childCategoryId: meta.id }
+          : {
+              OR: [
+                { subcategoryId: meta.id },
+                { childCategory: { parentId: meta.id, scope: CategoryScope.TOPIC } },
+              ],
+            };
+
     const where: Prisma.TopicQuestionWhereInput = {
-      ...(meta.level === 'child'
-        ? { childCategoryId: meta.id }
-        : { subcategoryId: meta.id }),
+      ...scopeWhere,
       ...(params.q?.trim()
         ? {
             OR: [

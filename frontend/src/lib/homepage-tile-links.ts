@@ -3,9 +3,24 @@ import type { CategoryNode } from '@/lib/api/types';
 
 export const QUESTION_BANK_CATEGORIES_PATH = '/question-bank-categories';
 export const ALL_TOPICS_PATH = '/topic-categories';
-/** Dedicated Topic Base question page for one subcategory. */
-export function topicBaseHref(subcategoryId: string): string {
-  return `/topic-base/${encodeURIComponent(subcategoryId)}`;
+
+/** Folder explorer deep-link: Category → Sub → Child on `/topic-categories`. */
+export function topicExplorerHref(opts?: {
+  categoryId?: string | null;
+  subcategoryId?: string | null;
+  childCategoryId?: string | null;
+}): string {
+  const sp = new URLSearchParams();
+  if (opts?.categoryId) sp.set('categoryId', opts.categoryId);
+  if (opts?.subcategoryId) sp.set('subcategoryId', opts.subcategoryId);
+  if (opts?.childCategoryId) sp.set('childCategoryId', opts.childCategoryId);
+  const q = sp.toString();
+  return q ? `${ALL_TOPICS_PATH}?${q}` : ALL_TOPICS_PATH;
+}
+
+/** Dedicated Topic Base question page for one taxonomy node (L1–L3). */
+export function topicBaseHref(topicNodeId: string): string {
+  return `/topic-base/${encodeURIComponent(topicNodeId)}`;
 }
 /** Full Written subcategory directory (homepage Others / View all). */
 export const WRITTEN_SUBCATEGORIES_PATH = '/written-question-bank-categories';

@@ -27,7 +27,7 @@ import {
   WRITTEN_SUBCATEGORIES_PATH,
   categoryTileHref,
   guessHomepageIconKey,
-  topicBaseHref,
+  topicExplorerHref,
   writtenCategoryTileHref,
 } from '@/lib/homepage-tile-links';
 
@@ -185,37 +185,19 @@ export function HomepageBankBrowseTopics({ topics }: TopicsProps) {
     queryFn: () => fetchPublicCategories('TOPIC'),
     staleTime: 60_000,
   });
-  // Live TOPIC taxonomy only (DEC-042) — prefer Child Category leaves when present.
+  // Live TOPIC root Categories only (Top 4 + Others → folder explorer).
   const roots = topicTree.data ?? [];
-  const liveTopics = roots.flatMap((root) =>
-    (root.children ?? []).flatMap((sub) => {
-      const grandchildren = sub.children ?? [];
-      if (grandchildren.length > 0) {
-        return grandchildren.map((child) => ({
-          id: child.id,
-          displayTitle: child.name,
-          subtitle: `${root.name} · ${sub.name}`,
-          iconKey: (child.iconKey ||
-            sub.iconKey ||
-            root.iconKey ||
-            guessHomepageIconKey(child.name)) as HomepagePayload['topics']['tiles'][number]['iconKey'],
-          href: topicBaseHref(child.id),
-        }));
-      }
-      return [
-        {
-          id: sub.id,
-          displayTitle: sub.name,
-          subtitle: root.name,
-          iconKey: (sub.iconKey ||
-            root.iconKey ||
-            guessHomepageIconKey(sub.name)) as HomepagePayload['topics']['tiles'][number]['iconKey'],
-          href: topicBaseHref(sub.id),
-        },
-      ];
-    }),
-  );
-  const previewTopics = liveTopics.slice(0, HOMEPAGE_EDITABLE_PREVIEW_SLOTS);
+  const previewTopics = roots.slice(0, HOMEPAGE_EDITABLE_PREVIEW_SLOTS).map((root) => ({
+    id: root.id,
+    displayTitle: root.name,
+    subtitle:
+      (root.children?.length ?? 0) > 0
+        ? `${root.children!.length} subcategor${root.children!.length === 1 ? 'y' : 'ies'}`
+        : 'Browse topics',
+    iconKey: (root.iconKey ||
+      guessHomepageIconKey(root.name)) as HomepagePayload['topics']['tiles'][number]['iconKey'],
+    href: topicExplorerHref({ categoryId: root.id }),
+  }));
   const topicSplit = splitHomepageSectionTiles(topics.tiles);
   const topicsOthers =
     topicSplit.others ?? createDefaultOthersTopicTile(ALL_TOPICS_PATH);
@@ -254,8 +236,8 @@ export function HomepageBankBrowseTopics({ topics }: TopicsProps) {
         ) : previewTopics.length === 0 ? (
           <div className="space-y-3">
             <p className="rounded-[var(--radius-lg)] border border-dashed border-[var(--line)] bg-[var(--bg-elevated)] px-4 py-5 text-center text-sm text-[var(--muted-strong)] sm:px-5 sm:py-6">
-              No topics yet. Admins add Topic Base categories and subcategories under Taxonomy →
-              Topics — use Others to open the full directory anytime.
+              No topic categories yet. Admins add Topic Base categories under Taxonomy → Topics —
+              use Others to open the folder explorer anytime.
             </p>
             <ul className="motion-stagger grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-3 xl:grid-cols-6 lg:gap-4">
               <li>

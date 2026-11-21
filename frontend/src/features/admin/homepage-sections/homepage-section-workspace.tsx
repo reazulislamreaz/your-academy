@@ -49,7 +49,6 @@ import { HomepageTileEditor } from './shared/homepage-tile-editor';
 import { HomepageTopStrip } from './shared/homepage-top-strip';
 import {
   isCategoryLikeSection,
-  type CategoryTile,
   type HomepageSectionKind,
   type HomepageSectionTile,
   type TopicTile,

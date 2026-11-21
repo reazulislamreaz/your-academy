@@ -21,9 +21,17 @@ import { cn } from '@/lib/utils';
 type Props = {
   subcategoryId: string;
   className?: string;
+  /** When embedded in the folder explorer, skip duplicate chrome. */
+  embed?: boolean;
+  backHref?: string;
 };
 
-export function TopicQuestionView({ subcategoryId, className }: Props) {
+export function TopicQuestionView({
+  subcategoryId,
+  className,
+  embed = false,
+  backHref = ALL_TOPICS_PATH,
+}: Props) {
   const [qInput, setQInput] = useState('');
   const q = useDebouncedValue(qInput.trim(), 350);
   const visibility = useAnswerVisibility();
@@ -48,48 +56,65 @@ export function TopicQuestionView({ subcategoryId, className }: Props) {
   const items = list.data?.pages.flatMap((p) => p.data) ?? [];
   const individualMode = visibility.mode === 'hide-all';
 
+  const pathLabel = meta.data
+    ? [
+        meta.data.level !== 'category' ? meta.data.category.name : null,
+        meta.data.level === 'child' ? meta.data.subcategory?.name : null,
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    : '';
+
   return (
     <div className={cn('space-y-6', className)}>
-      <div className="flex flex-wrap items-center gap-3">
-        <Link
-          href={ALL_TOPICS_PATH}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--muted-strong)] hover:text-[var(--highlight)]"
-        >
-          <ArrowLeft className="size-4" aria-hidden />
-          All topics
-        </Link>
-      </div>
+      {!embed ? (
+        <>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              href={backHref}
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--muted-strong)] hover:text-[var(--highlight)]"
+            >
+              <ArrowLeft className="size-4" aria-hidden />
+              All topics
+            </Link>
+          </div>
 
-      <GoForExamCta compact />
+          <GoForExamCta compact />
 
-      {meta.isLoading ? (
-        <div className="space-y-3 rounded-[1rem] border border-[var(--line)] bg-[var(--bg-elevated)] px-5 py-5 shadow-[var(--shadow-sm)]">
-          <Skeleton className="h-3 w-24" />
-          <Skeleton className="h-8 w-2/3 max-w-lg" />
-        </div>
-      ) : null}
-      {meta.isError ? <LoadError message="Topic not found." /> : null}
-      {meta.data ? (
-        <header className="space-y-3 border-b border-[var(--line)] pb-5">
-          <p className="text-[0.6875rem] font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
-            Topic Base Question Analysis
-          </p>
-          <h1 className="font-display text-[clamp(1.5rem,3vw,2rem)] font-bold tracking-tight text-[var(--ink)]">
-            {meta.data.name}
-          </h1>
-          <p className="text-sm text-[var(--muted-strong)]">
-            {[
-              meta.data.category.name,
-              meta.data.level === 'child' ? meta.data.subcategory?.name : null,
-            ]
-              .filter(Boolean)
-              .join(' · ')}
-            {meta.data.questionCount ? ` · ${meta.data.questionCount} questions` : null}
-          </p>
-          {meta.data.description ? (
-            <p className="text-sm text-[var(--muted-strong)]">{meta.data.description}</p>
+          {meta.isLoading ? (
+            <div className="space-y-3 rounded-[1rem] border border-[var(--line)] bg-[var(--bg-elevated)] px-5 py-5 shadow-[var(--shadow-sm)]">
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-8 w-2/3 max-w-lg" />
+            </div>
           ) : null}
-        </header>
+          {meta.isError ? <LoadError message="Topic not found." /> : null}
+          {meta.data ? (
+            <header className="space-y-3 border-b border-[var(--line)] pb-5">
+              <p className="text-[0.6875rem] font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
+                Topic Base Question Analysis
+              </p>
+              <h1 className="font-display text-[clamp(1.5rem,3vw,2rem)] font-bold tracking-tight text-[var(--ink)]">
+                {meta.data.name}
+              </h1>
+              <p className="text-sm text-[var(--muted-strong)]">
+                {[pathLabel, meta.data.questionCount ? `${meta.data.questionCount} questions` : null]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </p>
+              {meta.data.description ? (
+                <p className="text-sm text-[var(--muted-strong)]">{meta.data.description}</p>
+              ) : null}
+            </header>
+          ) : null}
+        </>
+      ) : meta.isError ? (
+        <LoadError message="Topic not found." />
+      ) : meta.data ? (
+        <p className="text-sm text-[var(--muted-strong)]">
+          {[pathLabel, meta.data.questionCount ? `${meta.data.questionCount} questions` : null]
+            .filter(Boolean)
+            .join(' · ') || 'Topic Base questions for this folder.'}
+        </p>
       ) : null}
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">

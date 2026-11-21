@@ -249,12 +249,14 @@ Separate TOPIC taxonomy + MCQ bank. Excel template (8 columns): `প্রশ্
 | Method | Endpoint | Description | Auth | Role |
 |--------|----------|-------------|------|------|
 | GET | `/categories?scope=TOPIC` | Topic category tree (includes `iconKey`) | Public | — |
-| GET | `/public/topic-directory` | Topic roots + subcategory question counts | Public | — |
-| GET | `/public/topic-subcategories/:id` | Topic subcategory meta | Public | — |
-| GET | `/public/topic-subcategories/:id/questions` | Cursor-paginated topic MCQs (`q`) | Public | — |
+| GET | `/public/topic-directory` | Topic roots + nested Sub/Child folders | Public | — |
+| GET | `/public/topic-subcategories/:id` | Topic folder meta for L1 Category, L2 Sub, or L3 Child (`level`) | Public | — |
+| GET | `/public/topic-subcategories/:id/questions` | Cursor-paginated topic MCQs for that folder (L1/L2 include nested; `q`) | Public | — |
 | GET | `/admin/topic-question-imports` | Recent topic batches | User | ADMIN |
 | GET | `/admin/topic-question-imports/template` | 8-column Excel template | User | ADMIN |
-| POST | `/admin/topic-question-imports/upload` | Multipart import (`file`, `categoryId`, `subcategoryId`, optional `displayName`) | User | ADMIN |
+| POST | `/admin/topic-question-imports/upload` | Multipart import (`file`, `categoryId`, `subcategoryId`, optional `childCategoryId`, `displayName`) | User | ADMIN |
+
+Marketing UI: homepage Topic Base shows Top 4 root Categories + Others → `/topic-categories` folder explorer (`?categoryId&subcategoryId&childCategoryId`).
 
 ### 2.5c Public guest exams (DEC-039)
 
