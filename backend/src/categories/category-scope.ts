@@ -8,6 +8,7 @@ export function parseCategoryScope(
 ): CategoryScope {
   const v = (raw ?? '').trim().toUpperCase();
   if (v === CategoryScope.WRITTEN) return CategoryScope.WRITTEN;
+  if (v === CategoryScope.TOPIC) return CategoryScope.TOPIC;
   if (v === CategoryScope.PRELIMINARY) return CategoryScope.PRELIMINARY;
   return fallback;
 }

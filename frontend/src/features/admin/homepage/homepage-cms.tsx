@@ -171,14 +171,31 @@ export function HomepageCms() {
   };
 
   const toggleVisible = (id: string) => {
-    patch((prev) => ({
-      ...prev,
-      layout: {
+    patch((prev) => {
+      const current = prev.layout.sections.find((s) => s.id === id);
+      const nextVisible = !(current?.visible ?? true);
+      const nextLayout = {
         sections: prev.layout.sections.map((s) =>
-          s.id === id ? { ...s, visible: !s.visible } : s,
+          s.id === id ? { ...s, visible: nextVisible } : s,
         ),
-      },
-    }));
+      };
+      // Keep builtin section `.visible` in sync with layout (layout is source of truth).
+      const sectionKey = id as keyof HomepagePayload;
+      const section = prev[sectionKey];
+      if (
+        section &&
+        typeof section === 'object' &&
+        'visible' in section &&
+        !id.startsWith('custom:')
+      ) {
+        return {
+          ...prev,
+          layout: nextLayout,
+          [sectionKey]: { ...section, visible: nextVisible },
+        };
+      }
+      return { ...prev, layout: nextLayout };
+    });
   };
 
   const addCustom = () => {

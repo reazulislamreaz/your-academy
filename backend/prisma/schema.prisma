@@ -39,6 +39,8 @@ enum Difficulty {
 enum CategoryScope {
   PRELIMINARY
   WRITTEN
+  /// Topic Base Question Analysis taxonomy (DEC-042).
+  TOPIC
 }
 
 enum DocumentVisibility {
@@ -194,6 +196,7 @@ model User {
   createdExams        Exam[]              @relation("ExamCreator")
   questionUploadBatches QuestionUploadBatch[]
   writtenUploadBatches  WrittenUploadBatch[]
+  topicUploadBatches    TopicUploadBatch[]
   browsingSessions    BrowsingSession[]
   subscriptions       UserSubscription[]
   createdNews         News[]              @relation("NewsCreator")
@@ -255,8 +258,10 @@ model Category {
   slug        String        @db.VarChar(140)
   description String?
   parentId    String?       @map("parent_id") @db.Uuid
-  /// PRELIMINARY = Preli/MCQ bank; WRITTEN = Written Question Bank (DEC-041).
+  /// PRELIMINARY = Preli/MCQ bank; WRITTEN = Written Question Bank; TOPIC = Topic Base (DEC-041/042).
   scope       CategoryScope @default(PRELIMINARY)
+  /// Optional homepage / directory icon key (HomepageIconKey), mainly for TOPIC subcategories.
+  iconKey     String?       @map("icon_key") @db.VarChar(40)
   isActive    Boolean       @default(true) @map("is_active")
   sortOrder   Int           @default(0) @map("sort_order")
   createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -268,6 +273,10 @@ model Category {
   subQuestions     Question[]     @relation("QuestionSubcategory")
   writtenQuestions WrittenQuestion[] @relation("WrittenQuestionCategory")
   writtenSubQuestions WrittenQuestion[] @relation("WrittenQuestionSubcategory")
+  topicQuestions      TopicQuestion[] @relation("TopicQuestionCategory")
+  topicSubQuestions   TopicQuestion[] @relation("TopicQuestionSubcategory")
+  topicBatchesAsCategory    TopicUploadBatch[] @relation("TopicBatchCategory")
+  topicBatchesAsSubcategory TopicUploadBatch[] @relation("TopicBatchSubcategory")
   documents        Document[]
   attempts         QuestionAttempt[]
   practiceSets     PracticeSet[]  @relation("PracticeSetCategory")
@@ -1173,4 +1182,65 @@ model WrittenImportRow {
   @@index([batchId, status])
   @@index([contentHash])
   @@map("written_import_rows")
+}
+
+/// Topic Base Question Analysis upload batch (DEC-042). One-shot import; no row rejection.
+model TopicUploadBatch {
+  id               String             @id @default(uuid()) @db.Uuid
+  batchCode        String             @unique @map("batch_code") @db.VarChar(80)
+  displayName      String             @map("display_name") @db.VarChar(200)
+  originalFilename String             @map("original_filename") @db.VarChar(255)
+  fileSha256       String             @map("file_sha256") @db.VarChar(64)
+  categoryId       String             @map("category_id") @db.Uuid
+  subcategoryId    String             @map("subcategory_id") @db.Uuid
+  status           QuestionUploadStatus @default(COMPLETED)
+  totalRows        Int                @default(0) @map("total_rows")
+  importedCount    Int                @default(0) @map("imported_count")
+  uploadedById     String             @map("uploaded_by_id") @db.Uuid
+  importedAt       DateTime?          @map("imported_at") @db.Timestamptz(3)
+  createdAt        DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  uploadedBy  User           @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+  category    Category       @relation("TopicBatchCategory", fields: [categoryId], references: [id], onDelete: Restrict)
+  subcategory Category       @relation("TopicBatchSubcategory", fields: [subcategoryId], references: [id], onDelete: Restrict)
+  questions   TopicQuestion[]
+
+  @@index([status, createdAt(sort: Desc)])
+  @@index([categoryId, subcategoryId])
+  @@index([uploadedById, createdAt(sort: Desc)])
+  @@map("topic_upload_batches")
+}
+
+/// Topic Base MCQ (8-column Excel). Always imported; duplicates / soft gaps allowed.
+model TopicQuestion {
+  id            String           @id @default(uuid()) @db.Uuid
+  batchId       String           @map("batch_id") @db.Uuid
+  categoryId    String           @map("category_id") @db.Uuid
+  subcategoryId String           @map("subcategory_id") @db.Uuid
+  sourceSerial  String?          @map("source_serial") @db.VarChar(32)
+  questionText  String           @map("question_text")
+  /// Excel `পরীক্ষার নাম ও সাল`.
+  examLabel     String?          @map("exam_label") @db.VarChar(240)
+  optionA       String           @default("") @map("option_a")
+  optionB       String           @default("") @map("option_b")
+  optionC       String           @default("") @map("option_c")
+  optionD       String           @default("") @map("option_d")
+  /// Normalized key a|b|c|d when parseable; null when blank/unrecognized (still imported).
+  correctKey    String?          @map("correct_key") @db.VarChar(1)
+  /// Resolved option text for correctKey (nullable).
+  correctAnswer String?          @map("correct_answer")
+  sortOrder     Int              @default(0) @map("sort_order")
+  rowNumber     Int              @map("row_number")
+  createdAt     DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  batch       TopicUploadBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  category    Category         @relation("TopicQuestionCategory", fields: [categoryId], references: [id], onDelete: Restrict)
+  subcategory Category         @relation("TopicQuestionSubcategory", fields: [subcategoryId], references: [id], onDelete: Restrict)
+
+  @@index([subcategoryId, sortOrder, id])
+  @@index([categoryId, subcategoryId])
+  @@index([batchId, rowNumber])
+  @@map("topic_questions")
 }

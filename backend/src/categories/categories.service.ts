@@ -38,6 +38,8 @@ export class CategoriesService {
             isActive: true,
             sortOrder: true,
             scope: true,
+            iconKey: true,
+            _count: { select: { topicSubQuestions: true } },
           },
         },
       },
@@ -50,7 +52,18 @@ export class CategoriesService {
       isActive: root.isActive,
       sortOrder: root.sortOrder,
       scope: root.scope,
-      children: root.children,
+      iconKey: root.iconKey,
+      children: root.children.map((child) => ({
+        id: child.id,
+        name: child.name,
+        slug: child.slug,
+        description: child.description,
+        isActive: child.isActive,
+        sortOrder: child.sortOrder,
+        scope: child.scope,
+        iconKey: child.iconKey,
+        questionCount: child._count.topicSubQuestions,
+      })),
     }));
   }
 
@@ -68,6 +81,7 @@ export class CategoriesService {
               select: {
                 subQuestions: true,
                 writtenSubQuestions: true,
+                topicSubQuestions: true,
                 practiceSetTopics: true,
                 documents: true,
               },
@@ -79,12 +93,36 @@ export class CategoriesService {
             children: true,
             questions: true,
             writtenQuestions: true,
+            topicQuestions: true,
             practiceSets: true,
             documents: true,
           },
         },
       },
     });
+
+    const rootQuestionCount = (root: {
+      _count: {
+        questions: number;
+        writtenQuestions: number;
+        topicQuestions: number;
+      };
+    }) => {
+      if (scope === CategoryScope.WRITTEN) return root._count.writtenQuestions;
+      if (scope === CategoryScope.TOPIC) return root._count.topicQuestions;
+      return root._count.questions;
+    };
+    const childQuestionCount = (child: {
+      _count: {
+        subQuestions: number;
+        writtenSubQuestions: number;
+        topicSubQuestions: number;
+      };
+    }) => {
+      if (scope === CategoryScope.WRITTEN) return child._count.writtenSubQuestions;
+      if (scope === CategoryScope.TOPIC) return child._count.topicSubQuestions;
+      return child._count.subQuestions;
+    };
 
     return roots.map((root) => ({
       id: root.id,
@@ -94,11 +132,11 @@ export class CategoriesService {
       isActive: root.isActive,
       sortOrder: root.sortOrder,
       scope: root.scope,
+      iconKey: root.iconKey,
       createdAt: root.createdAt,
       updatedAt: root.updatedAt,
       subcategoryCount: root._count.children,
-      questionCount:
-        scope === CategoryScope.WRITTEN ? root._count.writtenQuestions : root._count.questions,
+      questionCount: rootQuestionCount(root),
       practiceSetCount: root._count.practiceSets,
       documentCount: root._count.documents,
       children: root.children.map((child) => ({
@@ -110,12 +148,10 @@ export class CategoriesService {
         sortOrder: child.sortOrder,
         parentId: child.parentId,
         scope: child.scope,
+        iconKey: child.iconKey,
         createdAt: child.createdAt,
         updatedAt: child.updatedAt,
-        questionCount:
-          scope === CategoryScope.WRITTEN
-            ? child._count.writtenSubQuestions
-            : child._count.subQuestions,
+        questionCount: childQuestionCount(child),
         practiceSetCount: child._count.practiceSetTopics,
         documentCount: child._count.documents,
       })),
@@ -169,6 +205,16 @@ export class CategoriesService {
       dto.slug?.trim() ? dto.slug.trim().toLowerCase() : slugifyCategoryName(name),
     );
 
+    // Append to the end of the sibling list unless the client sets sortOrder.
+    let sortOrder = dto.sortOrder;
+    if (sortOrder === undefined) {
+      const agg = await this.prisma.category.aggregate({
+        where: { parentId, scope },
+        _max: { sortOrder: true },
+      });
+      sortOrder = (agg._max.sortOrder ?? -1) + 1;
+    }
+
     try {
       return await this.prisma.category.create({
         data: {
@@ -177,7 +223,8 @@ export class CategoriesService {
           description: dto.description?.trim() || null,
           parentId,
           scope,
-          sortOrder: dto.sortOrder ?? 0,
+          iconKey: dto.iconKey?.trim() || null,
+          sortOrder,
           isActive: dto.isActive ?? true,
         },
       });
@@ -230,7 +277,7 @@ export class CategoriesService {
           throw new BadRequestException(
             createErrorResponse(
               'SCOPE_MISMATCH',
-              'Cannot move a category across Preliminary / Written banks',
+              'Cannot move a category across Preliminary / Written / Topic banks',
               newRequestId(),
             ),
           );
@@ -270,6 +317,9 @@ export class CategoriesService {
           ...(dto.parentId !== undefined ? { parentId: nextParentId } : {}),
           ...(dto.sortOrder !== undefined ? { sortOrder: dto.sortOrder } : {}),
           ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
+          ...(dto.iconKey !== undefined
+            ? { iconKey: dto.iconKey?.trim() || null }
+            : {}),
         },
       });
     } catch (err) {

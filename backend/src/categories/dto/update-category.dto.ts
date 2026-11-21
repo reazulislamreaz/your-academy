@@ -39,4 +39,10 @@ export class UpdateCategoryDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  /** Homepage icon key (TOPIC taxonomy). Pass null to clear. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  iconKey?: string | null;
 }

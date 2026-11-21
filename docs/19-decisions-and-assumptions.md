@@ -38,6 +38,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | DEC-029 | Real-time support messaging (Socket.IO) | CONFIRMED |
 | DEC-030 | Role-exclusive dashboard routing (ADMIN vs learner) | CONFIRMED |
 | DEC-039 | Public guest timed exams (Quizzory-style) | CONFIRMED |
+| DEC-042 | Topic Base Question Analysis (taxonomy + 8-col upload + public pages) | CONFIRMED |
 
 ---
 
@@ -97,6 +98,15 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Decision | **Isolate via `Category.scope` enum `PRELIMINARY \| WRITTEN`.** Unique `(scope, slug)`; names unique per scope+parent. Public `GET /categories` defaults to PRELIMINARY; `?scope=WRITTEN` for Written. Admin `/admin/categories` tabbed UI. Written uploads/quick-create use WRITTEN only; Preli Excel imports use PRELIMINARY. Migration clones any trees already linked to written questions into WRITTEN and remaps FKs. Cross-scope parent moves rejected. |
 | Impact | Prisma migration `20261119100000_category_scope_written_preli`, CategoriesModule, WrittenImport/QuestionImport indexes, admin Taxonomy tabs, Written upload dropdowns |
 | Status | **CONFIRMED** (product request 2026-11-19) |
+
+### DEC-042 — Topic Base Question Analysis
+
+| Field | Value |
+|-------|-------|
+| Question | Should Topic Base Question Analysis be a dedicated bank (taxonomy + Excel upload + public topic pages), separate from Preli/Written, without changing the marketing navbar? |
+| Decision | **Yes.** Add `CategoryScope.TOPIC` + optional `Category.iconKey`. Topic Base is **fully separate** from Preli/Written (no shared content-kind / question-type coupling). Admin Taxonomy gains a **Topics** tab (CRUD + icons + sortOrder reorder). Admin upload wizard at `/admin/topic-question-imports/new` accepts **8-column** Excel `প্রশ্ন নং \| প্রশ্ন \| পরীক্ষার নাম ও সাল \| ক \| খ \| গ \| ঘ \| উত্তর`; **no duplicate blocking and no row-rejection validation** — all non-empty rows import. Persist `TopicUploadBatch` + `TopicQuestion`. Public `/topic-base/:subcategoryId` mirrors Preli set layout; `/topic-categories` + homepage **Topic Base Question Analysis** section show **live TOPIC subcategories only** (icons + `sortOrder`; no CMS/demo tile fallback). Homepage CMS topics strip is section chrome (heading/visibility) only. Marketing navbar unchanged. |
+| Impact | Migration `20261121120000_topic_base_question_analysis`, TopicImportModule, public topic APIs, admin upload/taxonomy UI, homepage topics wiring |
+| Status | **CONFIRMED** (product request 2026-11-21) |
 
 ### DEC-034 — Excel serial, sheet preamble/sections, multi-placement, year filter
 

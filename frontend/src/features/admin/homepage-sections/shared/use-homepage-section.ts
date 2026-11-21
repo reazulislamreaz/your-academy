@@ -152,10 +152,21 @@ export function useHomepageSection(section: HomepageSectionKind) {
     subheading?: string;
   }) => {
     setPayload((prev) => {
+      // Layout entry.visible is the CMS source of truth — keep it in sync.
+      const layout =
+        patch.visible === undefined
+          ? prev.layout
+          : {
+              sections: prev.layout.sections.map((s) =>
+                s.id === section ? { ...s, visible: patch.visible! } : s,
+              ),
+            };
+
       if (isCategoryLikeSection(section)) {
         const key = section;
         return {
           ...prev,
+          layout,
           [key]: {
             ...prev[key],
             ...(patch.heading !== undefined ? { heading: patch.heading } : {}),
@@ -166,6 +177,7 @@ export function useHomepageSection(section: HomepageSectionKind) {
       }
       return {
         ...prev,
+        layout,
         topics: {
           ...prev.topics,
           ...(patch.heading !== undefined ? { heading: patch.heading } : {}),

@@ -39,12 +39,26 @@ const DEFAULT_FETCH_TIMEOUT_MS = 30_000;
 async function parseJson<T>(res: Response): Promise<ApiEnvelope<T>> {
   const text = await res.text();
   if (!text) {
-    throw new ApiError('EMPTY_RESPONSE', 'Empty response from API', res.status);
+    throw new ApiError(
+      'EMPTY_RESPONSE',
+      res.status >= 500
+        ? 'API returned an empty error response — the backend may be restarting. Retry in a moment.'
+        : 'Empty response from API',
+      res.status,
+    );
   }
   try {
     return JSON.parse(text) as ApiEnvelope<T>;
   } catch {
-    throw new ApiError('INVALID_JSON', 'API returned non-JSON response', res.status);
+    const hint =
+      res.status === 413
+        ? 'Request body too large'
+        : res.status === 502 || res.status === 504
+          ? 'API gateway / proxy error — backend may be down or restarting'
+          : res.status >= 500
+            ? 'Backend returned a non-JSON error page'
+            : 'API returned non-JSON response';
+    throw new ApiError('INVALID_JSON', `${hint} (HTTP ${res.status})`, res.status);
   }
 }
 

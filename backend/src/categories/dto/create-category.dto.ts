@@ -44,4 +44,10 @@ export class CreateCategoryDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  /** Homepage icon key (TOPIC taxonomy). */
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  iconKey?: string | null;
 }

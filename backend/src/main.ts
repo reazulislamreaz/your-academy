@@ -1,5 +1,6 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
@@ -8,8 +9,11 @@ import { getWebOrigins, validateEnv } from './config/env';
 async function bootstrap() {
   validateEnv();
 
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.enableShutdownHooks();
+  // Homepage CMS drafts (tiles + logo metadata) can exceed Express's default ~100kb.
+  app.useBodyParser('json', { limit: '2mb' });
+  app.useBodyParser('urlencoded', { limit: '2mb', extended: true });
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
   app.use(cookieParser());
   app.useGlobalPipes(

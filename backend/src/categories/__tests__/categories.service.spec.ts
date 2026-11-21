@@ -11,6 +11,7 @@ describe('CategoriesService', () => {
       update: jest.fn(),
       delete: jest.fn(),
       count: jest.fn(),
+      aggregate: jest.fn(),
     },
     question: { count: jest.fn() },
     writtenQuestion: { count: jest.fn() },
@@ -22,6 +23,7 @@ describe('CategoriesService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    prisma.category.aggregate.mockResolvedValue({ _max: { sortOrder: null } });
     service = new CategoriesService(prisma as never, audit as never);
   });
 

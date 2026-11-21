@@ -2,13 +2,10 @@
 
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import type { HomepagePayload } from '@your-academy/shared';
-import { isHomepageOthersTile } from '@your-academy/shared';
-import { Reveal } from '@/components/motion/reveal';
+import type { HomepageIconKey } from '@your-academy/shared';
 import { DirectoryPageShell } from '@/components/marketing/directory-page-shell';
 import { DirectoryTileGridSkeleton } from '@/components/marketing/directory-tile-grid-skeleton';
 import { HomepageTileCard } from '@/components/marketing/homepage-tile-card';
-import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SearchField } from '@/components/ui/search-field';
 import { SkeletonRegion } from '@/components/ui/skeleton';
@@ -16,54 +13,56 @@ import {
   fetchPublicCategories,
   publicCategoriesQueryKey,
 } from '@/lib/api/categories';
-import { topicTileHref, topicTileTaxonomyLabel } from '@/lib/homepage-tile-links';
+import { guessHomepageIconKey, topicBaseHref } from '@/lib/homepage-tile-links';
 
 type Props = {
   heading?: string;
   subtitle?: string;
   breadcrumbLabel?: string;
-  /** Full published CMS topic catalog (Top 4 + library — not Others-only). */
-  tiles: HomepagePayload['topics']['tiles'];
 };
 
 /**
- * Full topic catalog — same card chrome as the homepage Topics section,
- * showing every curated topic including the Top 4 homepage preview.
- * Linked from homepage Others → `/topic-categories`.
+ * Full topic catalog from live TOPIC taxonomy (DEC-042).
+ * Linked from homepage Others → `/topic-categories`. No CMS/demo fallbacks.
  */
 export function AllTopicsDirectory({
   heading = 'All Topics',
   subtitle = 'Browse every topic available for question analysis.',
   breadcrumbLabel = 'Topic Base Question Analysis',
-  tiles,
 }: Props) {
   const [query, setQuery] = useState('');
   const q = query.trim().toLowerCase();
 
-  // Preserve CMS order: Top 4 first, then library tiles after Others.
-  const visibleTiles = useMemo(
-    () => tiles.filter((t) => t.visible && !isHomepageOthersTile(t)),
-    [tiles],
-  );
-
   const tree = useQuery({
-    queryKey: publicCategoriesQueryKey('PRELIMINARY'),
-    queryFn: () => fetchPublicCategories('PRELIMINARY'),
+    queryKey: publicCategoriesQueryKey('TOPIC'),
+    queryFn: () => fetchPublicCategories('TOPIC'),
     staleTime: 60_000,
-    enabled: visibleTiles.length > 0,
   });
 
   const roots = tree.data ?? [];
+  const items = useMemo(
+    () =>
+      roots.flatMap((root) =>
+        (root.children ?? []).map((child) => ({
+          id: child.id,
+          displayTitle: child.name,
+          subtitle: root.name,
+          iconKey: (child.iconKey ||
+            root.iconKey ||
+            guessHomepageIconKey(child.name)) as HomepageIconKey,
+          href: topicBaseHref(child.id),
+        })),
+      ),
+    [roots],
+  );
 
   const filtered = useMemo(() => {
-    if (!q) return visibleTiles;
-    return visibleTiles.filter((tile) => {
-      const taxonomy = topicTileTaxonomyLabel(tile, roots)?.toLowerCase() ?? '';
-      return tile.displayTitle.toLowerCase().includes(q) || taxonomy.includes(q);
+    if (!q) return items;
+    return items.filter((tile) => {
+      const sub = (tile.subtitle ?? '').toLowerCase();
+      return tile.displayTitle.toLowerCase().includes(q) || sub.includes(q);
     });
-  }, [visibleTiles, q, roots]);
-
-  const loadingHrefs = tree.isLoading && visibleTiles.length > 0;
+  }, [items, q]);
 
   return (
     <DirectoryPageShell
@@ -72,11 +71,21 @@ export function AllTopicsDirectory({
       breadcrumbLabel={breadcrumbLabel}
       backLabel="Back to homepage"
     >
-      {visibleTiles.length === 0 ? (
+      {tree.isLoading ? (
+        <SkeletonRegion loading label="Loading topics" fallback={<DirectoryTileGridSkeleton count={12} />}>
+          <span className="sr-only">Loading</span>
+        </SkeletonRegion>
+      ) : tree.isError ? (
+        <EmptyState
+          align="center"
+          title="Couldn’t load topics"
+          description="Please refresh and try again."
+        />
+      ) : items.length === 0 ? (
         <EmptyState
           align="center"
           title="No topics yet"
-          description="Only topics added by an admin in Topic Base Question Analysis appear here."
+          description="Admins create Topic Base categories under Taxonomy → Topics, then upload questions."
         />
       ) : (
         <div className="space-y-6">
@@ -89,46 +98,26 @@ export function AllTopicsDirectory({
             className="max-w-md"
           />
 
-          <SkeletonRegion
-            loading={loadingHrefs}
-            label="Loading topics"
-            fallback={<DirectoryTileGridSkeleton count={12} />}
-          >
-            {tree.isError ? (
-              <EmptyState
-                align="center"
-                title="Couldn’t load topics"
-                description="Topic links need the category tree. Check your connection and try again."
-                action={
-                  <Button type="button" variant="secondary" onClick={() => void tree.refetch()}>
-                    Retry
-                  </Button>
-                }
-              />
-            ) : filtered.length === 0 ? (
-              <EmptyState
-                align="center"
-                title="No matches"
-                description="Try a different search term."
-              />
-            ) : (
-              <Reveal>
-                <ul className="motion-stagger grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 lg:gap-4 xl:grid-cols-6">
-                  {filtered.map((tile) => (
-                    <li key={tile.id}>
-                      <HomepageTileCard
-                        href={topicTileHref(tile, roots)}
-                        title={tile.displayTitle}
-                        subtitle={topicTileTaxonomyLabel(tile, roots)}
-                        iconKey={tile.iconKey}
-                        logoUrl={tile.logoUrl}
-                      />
-                    </li>
-                  ))}
-                </ul>
-              </Reveal>
-            )}
-          </SkeletonRegion>
+          {filtered.length === 0 ? (
+            <EmptyState
+              align="center"
+              title="No matching topics"
+              description="Try a different search."
+            />
+          ) : (
+            <ul className="motion-stagger grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 lg:gap-4">
+              {filtered.map((tile) => (
+                <li key={tile.id}>
+                  <HomepageTileCard
+                    href={tile.href}
+                    title={tile.displayTitle}
+                    subtitle={tile.subtitle}
+                    iconKey={tile.iconKey}
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
     </DirectoryPageShell>

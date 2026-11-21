@@ -116,6 +116,9 @@ export function formatHomepageSaveError(err: unknown, action: 'save' | 'publish'
     if (err.code === 'REQUEST_TIMEOUT' || err.status === 408) {
       return `Failed to ${verb}: the request timed out. Try again.`;
     }
+    if (err.code === 'INVALID_JSON' || err.code === 'EMPTY_RESPONSE') {
+      return `Failed to ${verb}: ${err.message}. If the API was just restarted, wait a few seconds and try again.`;
+    }
     if (err.status >= 500) {
       return `Failed to ${verb}: server error (${err.code}). Try again or check API logs.`;
     }

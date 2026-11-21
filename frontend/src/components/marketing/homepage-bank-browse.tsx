@@ -26,8 +26,8 @@ import {
   QUESTION_BANK_CATEGORIES_PATH,
   WRITTEN_SUBCATEGORIES_PATH,
   categoryTileHref,
-  topicTileHref,
-  topicTileTaxonomyLabel,
+  guessHomepageIconKey,
+  topicBaseHref,
   writtenCategoryTileHref,
 } from '@/lib/homepage-tile-links';
 
@@ -180,19 +180,28 @@ export function HomepageBankBrowseWrittenCategories({
 }
 
 export function HomepageBankBrowseTopics({ topics }: TopicsProps) {
-  const categoryTree = useQuery({
-    queryKey: publicCategoriesQueryKey('PRELIMINARY'),
-    queryFn: () => fetchPublicCategories('PRELIMINARY'),
+  const topicTree = useQuery({
+    queryKey: publicCategoriesQueryKey('TOPIC'),
+    queryFn: () => fetchPublicCategories('TOPIC'),
     staleTime: 60_000,
   });
-  const roots = categoryTree.data ?? [];
+  // Live TOPIC taxonomy only (DEC-042) — never fall back to CMS demo tiles.
+  const roots = topicTree.data ?? [];
+  const liveTopics = roots.flatMap((root) =>
+    (root.children ?? []).map((child) => ({
+      id: child.id,
+      displayTitle: child.name,
+      subtitle: root.name,
+      iconKey: (child.iconKey ||
+        root.iconKey ||
+        guessHomepageIconKey(child.name)) as HomepagePayload['topics']['tiles'][number]['iconKey'],
+      href: topicBaseHref(child.id),
+    })),
+  );
+  const previewTopics = liveTopics.slice(0, HOMEPAGE_EDITABLE_PREVIEW_SLOTS);
   const topicSplit = splitHomepageSectionTiles(topics.tiles);
-  const previewTopics = topicSplit.top
-    .filter((t) => t.visible && !isHomepageOthersTile(t))
-    .slice(0, HOMEPAGE_EDITABLE_PREVIEW_SLOTS);
   const topicsOthers =
     topicSplit.others ?? createDefaultOthersTopicTile(ALL_TOPICS_PATH);
-  // View all / Others always open the dedicated full topics page.
   const topicsCtaHref = ALL_TOPICS_PATH;
   const topicsOthersHref = ALL_TOPICS_PATH;
 
@@ -221,11 +230,15 @@ export function HomepageBankBrowseTopics({ topics }: TopicsProps) {
             </Link>
           ) : null}
         </div>
-        {previewTopics.length === 0 ? (
+        {topicTree.isLoading ? (
+          <p className="rounded-[var(--radius-lg)] border border-dashed border-[var(--line)] bg-[var(--bg-elevated)] px-4 py-5 text-center text-sm text-[var(--muted-strong)] sm:px-5 sm:py-6">
+            Loading topics…
+          </p>
+        ) : previewTopics.length === 0 ? (
           <div className="space-y-3">
             <p className="rounded-[var(--radius-lg)] border border-dashed border-[var(--line)] bg-[var(--bg-elevated)] px-4 py-5 text-center text-sm text-[var(--muted-strong)] sm:px-5 sm:py-6">
-              No topics published yet. Admins add homepage topics in Topic Base Question Analysis —
-              use Others to browse all topics anytime.
+              No topics yet. Admins add Topic Base categories and subcategories under Taxonomy →
+              Topics — use Others to open the full directory anytime.
             </p>
             <ul className="motion-stagger grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-3 xl:grid-cols-6 lg:gap-4">
               <li>
@@ -243,11 +256,10 @@ export function HomepageBankBrowseTopics({ topics }: TopicsProps) {
             {previewTopics.map((tile) => (
               <li key={tile.id}>
                 <HomepageTileCard
-                  href={topicTileHref(tile, roots)}
+                  href={tile.href}
                   title={tile.displayTitle}
-                  subtitle={topicTileTaxonomyLabel(tile, roots)}
+                  subtitle={tile.subtitle}
                   iconKey={tile.iconKey}
-                  logoUrl={tile.logoUrl}
                 />
               </li>
             ))}

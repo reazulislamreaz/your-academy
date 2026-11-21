@@ -3,6 +3,10 @@ import type { CategoryNode } from '@/lib/api/types';
 
 export const QUESTION_BANK_CATEGORIES_PATH = '/question-bank-categories';
 export const ALL_TOPICS_PATH = '/topic-categories';
+/** Dedicated Topic Base question page for one subcategory. */
+export function topicBaseHref(subcategoryId: string): string {
+  return `/topic-base/${encodeURIComponent(subcategoryId)}`;
+}
 /** Full Written subcategory directory (homepage Others / View all). */
 export const WRITTEN_SUBCATEGORIES_PATH = '/written-question-bank-categories';
 
@@ -46,20 +50,24 @@ export function writtenCategoryTileHref(tile: WrittenCategoryTile): string {
 }
 
 export function topicTileHref(tile: TopicTile, roots: CategoryNode[]): string {
-  if (tile.categoryId && tile.subcategoryId) {
-    return `/preli-question-bank?categoryId=${encodeURIComponent(tile.categoryId)}&subcategoryId=${encodeURIComponent(tile.subcategoryId)}`;
-  }
-  if (tile.categoryId) {
-    return `/preli-question-bank?categoryId=${encodeURIComponent(tile.categoryId)}`;
-  }
   if (tile.subcategoryId) {
+    // Prefer Topic Base pages when the linked subcategory exists in TOPIC taxonomy.
     for (const root of roots) {
       if ((root.children ?? []).some((c) => c.id === tile.subcategoryId)) {
-        return `/preli-question-bank?categoryId=${encodeURIComponent(root.id)}&subcategoryId=${encodeURIComponent(tile.subcategoryId)}`;
+        return topicBaseHref(tile.subcategoryId);
+      }
+    }
+    return topicBaseHref(tile.subcategoryId);
+  }
+  if (tile.categoryId) {
+    for (const root of roots) {
+      if (root.id === tile.categoryId) {
+        const first = root.children?.[0];
+        if (first) return topicBaseHref(first.id);
       }
     }
   }
-  return tile.fallbackHref;
+  return tile.fallbackHref || ALL_TOPICS_PATH;
 }
 
 /** Resolve Category · Subcategory labels for a CMS topic tile (for homepage cards). */

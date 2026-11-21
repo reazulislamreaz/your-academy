@@ -1,4 +1,4 @@
-export type CategoryScope = 'PRELIMINARY' | 'WRITTEN';
+export type CategoryScope = 'PRELIMINARY' | 'WRITTEN' | 'TOPIC';
 
 export type CategoryNode = {
   id: string;
@@ -7,6 +7,8 @@ export type CategoryNode = {
   description?: string | null;
   isActive?: boolean;
   scope?: CategoryScope;
+  iconKey?: string | null;
+  sortOrder?: number;
   children: Array<{
     id: string;
     name: string;
@@ -14,6 +16,9 @@ export type CategoryNode = {
     description?: string | null;
     isActive?: boolean;
     scope?: CategoryScope;
+    iconKey?: string | null;
+    sortOrder?: number;
+    questionCount?: number;
   }>;
 };
 

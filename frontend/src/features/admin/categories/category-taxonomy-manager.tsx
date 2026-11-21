@@ -2,6 +2,8 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  ArrowDown,
+  ArrowUp,
   ChevronDown,
   ChevronRight,
   FolderTree,
@@ -30,6 +32,7 @@ import { Select } from '@/components/ui/select';
 import { Surface } from '@/components/ui/surface';
 import { AdminCategoriesPageSkeleton } from '@/components/skeletons';
 import { ApiError, apiFetch } from '@/lib/api/client';
+import { revalidateHomepageCache } from '@/lib/api/revalidate-homepage';
 import {
   CategoryFormDialog,
   type CategoryFormMode,
@@ -60,7 +63,7 @@ type Props = {
   headerExtra?: ReactNode;
   /** Hide outer AdminPage wrapper when embedded in a tabbed host. */
   embedded?: boolean;
-  /** Preliminary vs Written bank taxonomy (DEC-041). */
+  /** Preliminary / Written / Topic bank taxonomy (DEC-041/042). */
   scope?: CategoryScope;
 };
 
@@ -169,7 +172,62 @@ export function CategoryTaxonomyManager({
     void qc.invalidateQueries({ queryKey: ['categories', scope] });
     void qc.invalidateQueries({ queryKey: ['categories', 'public', scope] });
     void qc.invalidateQueries({ queryKey: ['categories'] });
+    // Topic Base homepage + /topic-categories read live TOPIC taxonomy (ISR).
+    if (scope === 'TOPIC') {
+      void revalidateHomepageCache();
+    }
   };
+
+  const reorder = useMutation({
+    mutationFn: async ({
+      id,
+      direction,
+    }: {
+      id: string;
+      direction: 'up' | 'down';
+    }) => {
+      const roots = categories.data ?? [];
+      let siblings: Array<{ id: string }> = [];
+      if (roots.some((r) => r.id === id)) {
+        siblings = roots.map((r) => ({ id: r.id }));
+      } else {
+        for (const root of roots) {
+          if ((root.children ?? []).some((c) => c.id === id)) {
+            siblings = (root.children ?? []).map((c) => ({ id: c.id }));
+            break;
+          }
+        }
+      }
+      const index = siblings.findIndex((s) => s.id === id);
+      const swapWith = direction === 'up' ? index - 1 : index + 1;
+      if (index < 0 || swapWith < 0 || swapWith >= siblings.length) {
+        return;
+      }
+      const next = [...siblings];
+      const tmp = next[index]!;
+      next[index] = next[swapWith]!;
+      next[swapWith] = tmp;
+      // Renumber so ties (all sortOrder 0) still produce a stable display order.
+      await Promise.all(
+        next.map((item, sortOrder) =>
+          apiFetch(`/admin/categories/${item.id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ sortOrder }),
+          }),
+        ),
+      );
+    },
+    onSuccess: () => {
+      setBanner({ tone: 'success', text: 'Order updated' });
+      invalidate();
+    },
+    onError: (err) => {
+      setBanner({
+        tone: 'danger',
+        text: err instanceof ApiError ? err.message : 'Could not update order',
+      });
+    },
+  });
 
   const save = useMutation({
     mutationFn: async (values: {
@@ -177,6 +235,7 @@ export function CategoryTaxonomyManager({
       description?: string;
       parentId?: string;
       isActive: boolean;
+      iconKey?: string | null;
     }) => {
       if (!dialog || dialog.kind !== 'form') throw new Error('No form open');
       if (dialog.mode === 'edit' && dialog.target) {
@@ -188,6 +247,7 @@ export function CategoryTaxonomyManager({
             description: values.description ?? null,
             isActive: values.isActive,
             ...(isChild && values.parentId ? { parentId: values.parentId } : {}),
+            ...(scope === 'TOPIC' ? { iconKey: values.iconKey ?? null } : {}),
           }),
         });
       }
@@ -199,6 +259,7 @@ export function CategoryTaxonomyManager({
           parentId: values.parentId || dialog.parentId || undefined,
           scope,
           isActive: values.isActive,
+          ...(scope === 'TOPIC' ? { iconKey: values.iconKey ?? 'book' } : {}),
         }),
       });
     },
@@ -504,6 +565,44 @@ export function CategoryTaxonomyManager({
                       className="w-full justify-start sm:w-auto sm:justify-end [&_button]:min-h-10 sm:[&_button]:min-h-0"
                       primary={
                         <>
+                          {scope === 'TOPIC' ? (
+                            <>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                className="cursor-pointer"
+                                disabled={
+                                  reorder.isPending ||
+                                  (categories.data ?? []).findIndex((r) => r.id === root.id) <=
+                                    0
+                                }
+                                aria-label={`Move ${root.name} up`}
+                                onClick={() =>
+                                  reorder.mutate({ id: root.id, direction: 'up' })
+                                }
+                              >
+                                <ArrowUp className="size-3.5" />
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                className="cursor-pointer"
+                                disabled={
+                                  reorder.isPending ||
+                                  (categories.data ?? []).findIndex((r) => r.id === root.id) >=
+                                    (categories.data ?? []).length - 1
+                                }
+                                aria-label={`Move ${root.name} down`}
+                                onClick={() =>
+                                  reorder.mutate({ id: root.id, direction: 'down' })
+                                }
+                              >
+                                <ArrowDown className="size-3.5" />
+                              </Button>
+                            </>
+                          ) : null}
                           <Button
                             type="button"
                             size="sm"
@@ -527,6 +626,7 @@ export function CategoryTaxonomyManager({
                                 description: root.description,
                                 isActive: root.isActive,
                                 sortOrder: root.sortOrder,
+                                iconKey: root.iconKey,
                                 parentId: null,
                               })
                             }
@@ -607,10 +707,20 @@ export function CategoryTaxonomyManager({
                         </p>
                       ) : (
                         <ul className="space-y-2">
-                          {root.children.map((child) => (
+                          {root.children.map((child, childIndex) => (
                             <SubcategoryRow
                               key={child.id}
                               child={child}
+                              allowReorder={scope === 'TOPIC'}
+                              canMoveUp={childIndex > 0}
+                              canMoveDown={childIndex < root.children.length - 1}
+                              reorderPending={reorder.isPending}
+                              onMoveUp={() =>
+                                reorder.mutate({ id: child.id, direction: 'up' })
+                              }
+                              onMoveDown={() =>
+                                reorder.mutate({ id: child.id, direction: 'down' })
+                              }
                               onEdit={() =>
                                 openEdit({
                                   id: child.id,
@@ -619,6 +729,7 @@ export function CategoryTaxonomyManager({
                                   description: child.description,
                                   isActive: child.isActive,
                                   sortOrder: child.sortOrder,
+                                  iconKey: child.iconKey,
                                   parentId: root.id,
                                 })
                               }
@@ -701,6 +812,7 @@ export function CategoryTaxonomyManager({
         roots={categories.data ?? []}
         initial={dialog?.kind === 'form' ? dialog.target : null}
         defaultParentId={dialog?.kind === 'form' ? dialog.parentId : undefined}
+        allowIcon={scope === 'TOPIC'}
         pending={save.isPending}
         error={formError}
         onClose={() => {
@@ -759,11 +871,23 @@ export function CategoryTaxonomyManager({
 
 function SubcategoryRow({
   child,
+  allowReorder,
+  canMoveUp,
+  canMoveDown,
+  reorderPending,
+  onMoveUp,
+  onMoveDown,
   onEdit,
   onToggle,
   onDelete,
 }: {
   child: AdminCategoryChild;
+  allowReorder?: boolean;
+  canMoveUp?: boolean;
+  canMoveDown?: boolean;
+  reorderPending?: boolean;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
   onEdit: () => void;
   onToggle: () => void;
   onDelete: () => void;
@@ -784,10 +908,38 @@ function SubcategoryRow({
       <AdminRowActions
         className="w-full justify-start sm:w-auto sm:justify-end [&_button]:min-h-10 sm:[&_button]:min-h-0"
         primary={
-          <Button type="button" size="sm" variant="ghost" className="cursor-pointer" onClick={onEdit}>
-            <Pencil className="size-3.5" />
-            Edit
-          </Button>
+          <>
+            {allowReorder ? (
+              <>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="cursor-pointer"
+                  disabled={reorderPending || !canMoveUp}
+                  aria-label={`Move ${child.name} up`}
+                  onClick={onMoveUp}
+                >
+                  <ArrowUp className="size-3.5" />
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="cursor-pointer"
+                  disabled={reorderPending || !canMoveDown}
+                  aria-label={`Move ${child.name} down`}
+                  onClick={onMoveDown}
+                >
+                  <ArrowDown className="size-3.5" />
+                </Button>
+              </>
+            ) : null}
+            <Button type="button" size="sm" variant="ghost" className="cursor-pointer" onClick={onEdit}>
+              <Pencil className="size-3.5" />
+              Edit
+            </Button>
+          </>
         }
       >
         <Button type="button" size="sm" variant="ghost" className="cursor-pointer" onClick={onToggle}>

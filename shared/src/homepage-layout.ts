@@ -121,7 +121,13 @@ function insertBuiltinAtCanonicalSlot(
   sections.splice(insertAt, 0, { id, visible });
 }
 
-/** Ensure every builtin section appears once; preserve custom entries; sync visibility flags. */
+/**
+ * Ensure every builtin section appears once; preserve custom entries.
+ *
+ * Layout `entry.visible` is the source of truth for existing rows (CMS
+ * "Show this section on the homepage" toggle). `visibilityHints` only seed
+ * *missing* builtins when hydrating legacy payloads that predate `layout`.
+ */
 export function normalizeHomepageLayout(
   layout: HomepageLayout | undefined | null,
   visibilityHints?: Partial<Record<HomepageBuiltinSectionId, boolean>>,
@@ -134,13 +140,9 @@ export function normalizeHomepageLayout(
     const id = entry.id.trim();
     if (!id || seen.has(id)) continue;
     seen.add(id);
-    const hint =
-      (HOMEPAGE_BUILTIN_SECTION_IDS as readonly string[]).includes(id) && visibilityHints
-        ? visibilityHints[id as HomepageBuiltinSectionId]
-        : undefined;
     next.push({
       id,
-      visible: hint !== undefined ? hint : entry.visible,
+      visible: entry.visible,
     });
   }
 
@@ -252,7 +254,7 @@ export const homepageExtendedSectionsSchema = z.object({
         {
           id: 'topics',
           title: 'Topic-based practice',
-          body: 'Jump into Bangla, English, Math, GK, ICT, and more from curated topic tiles.',
+          body: 'Browse Topic Base subjects from the live Topics taxonomy — icons and order match Taxonomy → Topics.',
           href: '/topic-categories',
           cta: 'View topics',
           iconKey: 'clipboard',

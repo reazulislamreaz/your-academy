@@ -41,6 +41,7 @@ import {
   dbWrittenCategoryHref,
   dbWrittenSubcategoryHref,
   guessHomepageIconKey,
+  topicBaseHref,
 } from '@/lib/homepage-tile-links';
 import { cn } from '@/lib/utils';
 import { HomepagePublishControls } from './shared/homepage-publish-controls';
@@ -79,11 +80,20 @@ export function HomepageSectionWorkspace({
 }: Props) {
   const categoryLike = isCategoryLikeSection(section);
   const noun = categoryLike ? 'category' : 'topic';
-  const taxonomyScope = section === 'writtenCategories' ? 'WRITTEN' : 'PRELIMINARY';
+  const taxonomyScope =
+    section === 'writtenCategories'
+      ? 'WRITTEN'
+      : section === 'topics'
+        ? 'TOPIC'
+        : 'PRELIMINARY';
+  /** Topics library uses the same taxonomy promote UI; live homepage still reads TOPIC DB order. */
+  const showTaxonomyLibrary = categoryLike || section === 'topics';
   const othersFallbackHref =
     section === 'writtenCategories'
       ? WRITTEN_SUBCATEGORIES_PATH
-      : QUESTION_BANK_CATEGORIES_PATH;
+      : section === 'topics'
+        ? ALL_TOPICS_PATH
+        : QUESTION_BANK_CATEGORIES_PATH;
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -197,7 +207,7 @@ export function HomepageSectionWorkspace({
   }, [roots, search]);
 
   useEffect(() => {
-    if (!search.trim() || !categoryLike) return;
+    if (!search.trim() || !showTaxonomyLibrary) return;
     setExpanded((prev) => {
       const next = { ...prev };
       for (const root of catalogRoots) {
@@ -205,7 +215,7 @@ export function HomepageSectionWorkspace({
       }
       return next;
     });
-  }, [catalogRoots, categoryLike, search]);
+  }, [catalogRoots, showTaxonomyLibrary, search]);
 
   const topicLibrary = useMemo(() => {
     const needle = search.trim().toLocaleLowerCase('bn');
@@ -249,18 +259,21 @@ export function HomepageSectionWorkspace({
     let linked = findLinked({ categoryId, subcategoryId });
 
     if (!linked) {
-      const created: CategoryTile = child
+      const iconKey = guessHomepageIconKey(child?.name ?? root.name);
+      const created: HomepageSectionTile = child
         ? {
             id: newTileId(),
             displayTitle: child.name,
             subtitle: root.name,
-            iconKey: guessHomepageIconKey(child.name),
+            iconKey: (child.iconKey as typeof iconKey) || iconKey,
             categoryId: root.id,
             subcategoryId: child.id,
             fallbackHref:
-              section === 'writtenCategories'
-                ? dbWrittenSubcategoryHref(root.id, child.id)
-                : dbSubcategoryHref(root.id, child.id),
+              section === 'topics'
+                ? topicBaseHref(child.id)
+                : section === 'writtenCategories'
+                  ? dbWrittenSubcategoryHref(root.id, child.id)
+                  : dbSubcategoryHref(root.id, child.id),
             visible: true,
             logoAssetId: null,
             logoUrl: null,
@@ -269,13 +282,15 @@ export function HomepageSectionWorkspace({
             id: newTileId(),
             displayTitle: root.name,
             subtitle: '',
-            iconKey: guessHomepageIconKey(root.name),
+            iconKey: (root.iconKey as typeof iconKey) || iconKey,
             categoryId: root.id,
             subcategoryId: null,
             fallbackHref:
-              section === 'writtenCategories'
-                ? dbWrittenCategoryHref(root.id)
-                : dbCategoryHref(root.id),
+              section === 'topics'
+                ? ALL_TOPICS_PATH
+                : section === 'writtenCategories'
+                  ? dbWrittenCategoryHref(root.id)
+                  : dbCategoryHref(root.id),
             visible: true,
             logoAssetId: null,
             logoUrl: null,
@@ -314,7 +329,7 @@ export function HomepageSectionWorkspace({
       id: newTileId(),
       displayTitle: '',
       iconKey: 'book',
-      fallbackHref: '/preli-question-bank',
+      fallbackHref: ALL_TOPICS_PATH,
       visible: true,
       logoAssetId: null,
       logoUrl: null,
@@ -520,12 +535,18 @@ export function HomepageSectionWorkspace({
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
                 <h2 className="font-display text-base font-bold text-[var(--ink)]">
-                  {categoryLike ? 'All titles & subcategories' : 'Topic library'}
+                  {showTaxonomyLibrary
+                    ? section === 'topics'
+                      ? 'Topic Base taxonomy'
+                      : 'All titles & subcategories'
+                    : 'Topic library'}
                 </h2>
                 <p className="mt-0.5 text-sm text-[var(--muted)]">
-                  {categoryLike
-                    ? `Promote any ${section === 'writtenCategories' ? 'Written ' : ''}category or subcategory into positions 1–${HOMEPAGE_EDITABLE_PREVIEW_SLOTS}.`
-                    : `Add topics manually, then promote into positions 1–${HOMEPAGE_EDITABLE_PREVIEW_SLOTS}.`}
+                  {section === 'topics'
+                    ? `Live homepage tiles come from Taxonomy → Topics (active subcategories by sort order). This strip is optional CMS chrome — promote links use Topic Base pages.`
+                    : categoryLike
+                      ? `Promote any ${section === 'writtenCategories' ? 'Written ' : ''}category or subcategory into positions 1–${HOMEPAGE_EDITABLE_PREVIEW_SLOTS}.`
+                      : `Add topics manually, then promote into positions 1–${HOMEPAGE_EDITABLE_PREVIEW_SLOTS}.`}
                 </p>
               </div>
               <div className="w-full sm:w-72">
@@ -534,20 +555,24 @@ export function HomepageSectionWorkspace({
                   value={search}
                   onChange={setSearch}
                   placeholder={
-                    categoryLike
-                      ? 'Search titles or subcategories…'
+                    showTaxonomyLibrary
+                      ? section === 'topics'
+                        ? 'Search topics…'
+                        : 'Search titles or subcategories…'
                       : 'Search topics…'
                   }
                   aria-label={
-                    categoryLike
-                      ? 'Search titles or subcategories'
+                    showTaxonomyLibrary
+                      ? section === 'topics'
+                        ? 'Search topics'
+                        : 'Search titles or subcategories'
                       : 'Search topics'
                   }
                 />
               </div>
             </div>
 
-            {categoryLike ? (
+            {showTaxonomyLibrary ? (
               <>
                 {restTiles.length > 0 ? (
                   <RemainingTilesList

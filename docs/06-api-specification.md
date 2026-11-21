@@ -242,6 +242,20 @@ Parallel to Preli bulk upload. Template columns: `প্রশ্ন নং | �
 
 ---
 
+### 2.5d Topic Base Question Analysis (DEC-042)
+
+Separate TOPIC taxonomy + MCQ bank. Excel template (8 columns): `প্রশ্ন নং | প্রশ্ন | পরীক্ষার নাম ও সাল | ক | খ | গ | ঘ | উত্তর`. Upload is lenient (no duplicate / validation rejection). Marketing navbar unchanged.
+
+| Method | Endpoint | Description | Auth | Role |
+|--------|----------|-------------|------|------|
+| GET | `/categories?scope=TOPIC` | Topic category tree (includes `iconKey`) | Public | — |
+| GET | `/public/topic-directory` | Topic roots + subcategory question counts | Public | — |
+| GET | `/public/topic-subcategories/:id` | Topic subcategory meta | Public | — |
+| GET | `/public/topic-subcategories/:id/questions` | Cursor-paginated topic MCQs (`q`) | Public | — |
+| GET | `/admin/topic-question-imports` | Recent topic batches | User | ADMIN |
+| GET | `/admin/topic-question-imports/template` | 8-column Excel template | User | ADMIN |
+| POST | `/admin/topic-question-imports/upload` | Multipart import (`file`, `categoryId`, `subcategoryId`, optional `displayName`) | User | ADMIN |
+
 ### 2.5c Public guest exams (DEC-039)
 
 Quizzory-style timed exams with name-only entry. Separate from bank `Question` / PracticeSet. Correct answers are omitted until after submit.

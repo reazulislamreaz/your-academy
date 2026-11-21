@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export const revalidate = 30;
 
-async function loadTopicSection() {
+async function loadTopicSectionCopy() {
   const defaults = createDefaultHomepagePayload().topics;
   try {
     const home = await getPublicHomepage();
@@ -23,28 +23,24 @@ async function loadTopicSection() {
       heading: 'All Topics',
       breadcrumbLabel: sectionHeading,
       subtitle,
-      // Full published CMS catalog — homepage only previews Top 4 + Others.
-      tiles: home.payload.topics.tiles,
     };
   } catch {
     return {
       heading: 'All Topics',
       breadcrumbLabel: defaults.heading,
       subtitle: defaults.subtitle,
-      tiles: defaults.tiles,
     };
   }
 }
 
 export default async function TopicCategoriesPage() {
-  const section = await loadTopicSection();
+  const section = await loadTopicSectionCopy();
 
   return (
     <AllTopicsDirectory
       heading={section.heading}
       breadcrumbLabel={section.breadcrumbLabel}
       subtitle={section.subtitle}
-      tiles={section.tiles}
     />
   );
 }

@@ -17,6 +17,7 @@ import { LearningActivityModule } from './learning-activity/learning-activity.mo
 import { NewsModule } from './news/news.module';
 import { PracticeModule } from './practice/practice.module';
 import { QuestionImportModule } from './question-import/question-import.module';
+import { TopicImportModule } from './topic-import/topic-import.module';
 import { WrittenImportModule } from './written-import/written-import.module';
 import { PublicModule } from './public/public.module';
 import { QueueModule } from './queue/queue.module';
@@ -45,6 +46,7 @@ import { UsersModule } from './users/users.module';
     QuestionsModule,
     PracticeModule,
     QuestionImportModule,
+    TopicImportModule,
     WrittenImportModule,
     BookmarksModule,
     NewsModule,

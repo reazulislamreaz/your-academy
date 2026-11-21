@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { HOMEPAGE_ICON_KEYS, type HomepageIconKey } from '@your-academy/shared';
 import { Field } from '@/components/ui/field';
 import { FormDialog } from '@/components/ui/form-dialog';
 import { Input } from '@/components/ui/input';
@@ -20,12 +21,15 @@ type CategoryFormDialogProps = {
   defaultParentId?: string;
   pending?: boolean;
   error?: string | null;
+  /** Show icon picker (Topic Base taxonomy). */
+  allowIcon?: boolean;
   onClose: () => void;
   onSubmit: (values: {
     name: string;
     description?: string;
     parentId?: string;
     isActive: boolean;
+    iconKey?: string | null;
   }) => void;
 };
 
@@ -37,6 +41,7 @@ export function CategoryFormDialog({
   defaultParentId,
   pending,
   error,
+  allowIcon = false,
   onClose,
   onSubmit,
 }: CategoryFormDialogProps) {
@@ -44,12 +49,19 @@ export function CategoryFormDialog({
   const [description, setDescription] = useState('');
   const [parentId, setParentId] = useState('');
   const [isActive, setIsActive] = useState(true);
+  const [iconKey, setIconKey] = useState<HomepageIconKey | ''>('book');
 
   useEffect(() => {
     if (!open) return;
     setName(initial?.name ?? '');
     setDescription(initial?.description ?? '');
     setIsActive(initial?.isActive ?? true);
+    const initialIcon = (initial?.iconKey as HomepageIconKey | null | undefined) ?? 'book';
+    setIconKey(
+      initialIcon && (HOMEPAGE_ICON_KEYS as readonly string[]).includes(initialIcon)
+        ? initialIcon
+        : 'book',
+    );
     if (mode === 'create-child') {
       setParentId(defaultParentId || initial?.parentId || '');
     } else if (mode === 'edit' && initial?.parentId) {
@@ -93,6 +105,7 @@ export function CategoryFormDialog({
           description: description.trim() || undefined,
           parentId: isChild ? parentId || undefined : undefined,
           isActive,
+          iconKey: allowIcon ? iconKey || 'book' : undefined,
         })
       }
     >
@@ -124,12 +137,29 @@ export function CategoryFormDialog({
           id="cat-name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder={isChild ? 'e.g. অনুবাদ সাহিত্য' : 'e.g. বাংলা'}
+          placeholder={isChild ? 'e.g. চর্যাপদ' : 'e.g. বাংলা'}
           required
           minLength={2}
           maxLength={120}
         />
       </Field>
+
+      {allowIcon ? (
+        <Field>
+          <Label htmlFor="cat-icon">Icon</Label>
+          <Select
+            id="cat-icon"
+            value={iconKey}
+            onChange={(e) => setIconKey(e.target.value as HomepageIconKey)}
+          >
+            {HOMEPAGE_ICON_KEYS.map((key) => (
+              <option key={key} value={key}>
+                {key}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      ) : null}
 
       <Field>
         <Label htmlFor="cat-desc">Description (optional)</Label>

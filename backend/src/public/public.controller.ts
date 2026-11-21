@@ -186,6 +186,41 @@ export class PublicController {
     );
   }
 
+  /** Topic Base Question Analysis directory (DEC-042). */
+  @Get('topic-directory')
+  async topicDirectory() {
+    return createSuccessResponse(await this.publicService.listTopicDirectory(), newRequestId());
+  }
+
+  @Get('topic-subcategories/:id')
+  async topicSubcategory(@Param('id') id: string) {
+    return createSuccessResponse(
+      await this.publicService.getTopicSubcategory(id),
+      newRequestId(),
+    );
+  }
+
+  @Get('topic-subcategories/:id/questions')
+  async topicQuestions(
+    @Param('id') id: string,
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit?: string,
+    @Query('q') q?: string,
+  ) {
+    const take = Math.min(Math.max(Number(limit) || 20, 1), 100);
+    const data = await this.publicService.listTopicQuestions({
+      subcategoryId: id,
+      cursor,
+      limit: take,
+      q,
+    });
+    return createSuccessResponse(
+      data.items,
+      newRequestId(),
+      cursorPaginationMeta(data.nextCursor, take, data.total),
+    );
+  }
+
   @Get('questions')
   async questions(
     @Query('cursor') cursor?: string,

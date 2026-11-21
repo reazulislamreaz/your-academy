@@ -20,6 +20,11 @@ const TABS: Array<{ id: CategoryScope; label: string; hint: string }> = [
     label: 'Written',
     hint: 'Written Question Bank',
   },
+  {
+    id: 'TOPIC',
+    label: 'Topics',
+    hint: 'Topic Base Question Analysis',
+  },
 ];
 
 export default function AdminCategoriesPage() {
@@ -30,20 +35,27 @@ export default function AdminCategoriesPage() {
       <PageHeader
         eyebrow="Taxonomy"
         title="Categories"
-        description="Preliminary and Written banks have separate category trees — names can overlap without colliding. Use Written Bank Categories in the sidebar for homepage Top 4 positioning; manage Written taxonomy here under the Written tab."
+        description="Preliminary, Written, and Topic Base banks each have a separate category tree. Topic icons appear on the homepage Topic Base Question Analysis section."
         actions={
-          <Link href="/admin/written-bank-categories">
-            <Button type="button" variant="outline" className="cursor-pointer">
-              Written homepage Top 4
-            </Button>
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/admin/topic-question-imports">
+              <Button type="button" variant="outline" className="cursor-pointer">
+                Topic uploads
+              </Button>
+            </Link>
+            <Link href="/admin/written-bank-categories">
+              <Button type="button" variant="outline" className="cursor-pointer">
+                Written homepage Top 4
+              </Button>
+            </Link>
+          </div>
         }
       />
 
       <div
         role="tablist"
         aria-label="Category bank"
-        className="grid gap-2 sm:grid-cols-2"
+        className="grid gap-2 sm:grid-cols-3"
       >
         {TABS.map((tab) => {
           const active = scope === tab.id;
@@ -72,13 +84,27 @@ export default function AdminCategoriesPage() {
         key={scope}
         scope={scope}
         embedded
-        title={scope === 'WRITTEN' ? 'Written categories' : 'Preliminary categories'}
+        title={
+          scope === 'WRITTEN'
+            ? 'Written categories'
+            : scope === 'TOPIC'
+              ? 'Topic categories'
+              : 'Preliminary categories'
+        }
         description={
           scope === 'WRITTEN'
             ? 'Manage Written Question Bank categories and subcategories used by .docx / Excel uploads.'
-            : 'Manage Preli / MCQ Question Bank categories and subcategories.'
+            : scope === 'TOPIC'
+              ? 'Manage Topic Base categories and subcategories (with icons) used by topic question uploads and the homepage section.'
+              : 'Manage Preli / MCQ Question Bank categories and subcategories.'
         }
-        eyebrow={scope === 'WRITTEN' ? 'Written bank' : 'Preliminary bank'}
+        eyebrow={
+          scope === 'WRITTEN'
+            ? 'Written bank'
+            : scope === 'TOPIC'
+              ? 'Topic Base'
+              : 'Preliminary bank'
+        }
       />
     </AdminPage>
   );

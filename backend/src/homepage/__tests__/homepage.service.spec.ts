@@ -174,6 +174,35 @@ describe('HomepageService', () => {
     );
   });
 
+  it('preserves layout section visibility when section.visible hints disagree', async () => {
+    const payload = createDefaultHomepagePayload();
+    payload.layout.sections = payload.layout.sections.map((s) =>
+      s.id === 'topics' ? { ...s, visible: false } : s,
+    );
+    // Stale section flag — normalize must keep layout as source of truth.
+    payload.topics.visible = true;
+
+    prisma.mediaAsset.findMany.mockResolvedValue([]);
+    prisma.homepageContent.update.mockResolvedValue({
+      id: 'draft-1',
+      status: HomepageContentStatus.DRAFT,
+      payload,
+      heroImageAssetId: null,
+      publishedAt: null,
+      updatedAt: new Date(),
+      heroImage: null,
+    });
+
+    await service.updateDraft(user as never, { payload });
+
+    const savedPayload = prisma.homepageContent.update.mock.calls[0]![0].data.payload as {
+      layout: { sections: Array<{ id: string; visible: boolean }> };
+      topics: { visible: boolean };
+    };
+    expect(savedPayload.layout.sections.find((s) => s.id === 'topics')?.visible).toBe(false);
+    expect(savedPayload.topics.visible).toBe(false);
+  });
+
   it('forces a single visible Others tile and preserves Top/rest split on draft save', async () => {
     const payload = createDefaultHomepagePayload();
     const others = payload.categories.tiles.find((t) => isHomepageOthersTile(t))!;
@@ -231,9 +260,10 @@ describe('HomepageService', () => {
     expect(
       savedWell.categories.tiles.findIndex((t) => t.id === HOMEPAGE_OTHERS_TILE_ID),
     ).toBe(HOMEPAGE_EDITABLE_PREVIEW_SLOTS);
+    // Topic Base public tiles come from TOPIC taxonomy; CMS defaults to Others only.
     expect(
       savedWell.topics.tiles.findIndex((t) => t.id === HOMEPAGE_OTHERS_TILE_ID),
-    ).toBe(HOMEPAGE_EDITABLE_PREVIEW_SLOTS);
+    ).toBe(0);
     expect(HOMEPAGE_SECTION_PREVIEW_LIMIT).toBe(HOMEPAGE_EDITABLE_PREVIEW_SLOTS + 1);
   });
 });
