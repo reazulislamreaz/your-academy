@@ -15,12 +15,22 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
   return (
     <>
-      <div className="hidden lg:block">
-        <div className="sticky top-0 h-screen">
-          <AdminSidebar
-            footerExtra={<LearnerThemeToggle className="border-white/15 bg-white/10 text-white hover:bg-white/15 hover:text-white" />}
-          />
-        </div>
+      {/*
+        Fixed (viewport-anchored) desktop sidebar — immune to document scroll and
+        modal body locks. A matching in-flow spacer preserves main-column width,
+        including collapse via --ya-admin-sidebar-w set by AdminSidebar.
+      */}
+      <div
+        className="hidden shrink-0 lg:block"
+        style={{ width: 'var(--ya-admin-sidebar-w, var(--app-sidebar-width, 16.25rem))' }}
+        aria-hidden
+      />
+      <div className="fixed inset-y-0 left-0 z-20 hidden h-dvh max-h-dvh lg:block">
+        <AdminSidebar
+          footerExtra={
+            <LearnerThemeToggle className="border-white/15 bg-white/10 text-white hover:bg-white/15 hover:text-white" />
+          }
+        />
       </div>
       <div
         className={cn(

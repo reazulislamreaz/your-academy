@@ -424,9 +424,9 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Field | Value |
 |-------|-------|
 | Question | Should Your Academy offer public timed exams with name-only entry (no login), Excel upload, countdown auto-submit, and post-attempt answer-sheet review — separate from authenticated PracticeSet exams? |
-| Decision | **Yes.** Add `Exam` / `ExamQuestion` / `ExamAttempt` (guest domain; does **not** reuse bank `Question`). Admin upload at `/admin/exams/upload` (ExcelJS). Public listing `/exams` (newest first), take `/exams/[id]`, result with answer sheet + Bangla registration CTA. Correct answers omitted until submit. Learner “Govt job prep” moves to `/exam-tracks` so marketing can own `/exams`. NestJS `/api/v1/public/exams*` + `/api/v1/admin/exams*` (no Next.js Server Actions for scoring). Authenticated PracticeSet exams (DEC-023/035) remain unchanged. |
+| Decision | **Yes.** Add `Exam` / `ExamQuestion` / `ExamAttempt` (guest domain; does **not** reuse bank `Question`). Admin upload at `/admin/exams/upload` (ExcelJS). Public listing `/exams` (newest first), take `/exams/[id]`, result with answer sheet + Bangla registration CTA. Correct answers omitted until submit. Learner “Govt job prep” moves to `/exam-tracks` so marketing can own `/exams`. NestJS `/api/v1/public/exams*` + `/api/v1/admin/exams*` (no Next.js Server Actions for scoring). Authenticated PracticeSet exams (DEC-023/035) remain unchanged. **Guest Excel template (2026-11-21):** fixed **7 columns** `প্রশ্ন নং \| প্রশ্ন \| ক \| খ \| গ \| ঘ \| উত্তর`. `উত্তর` is a single letter `a`–`d` (case-insensitive; Bangla `ক`–`ঘ` also mapped). Stored `correctAnswer` is the matching option text. Legacy Preli 9-column sheets (exam name / date) and English OptionA–D / free-text answer matching are **deprecated** for guest exams — download the current template. Blank / non-sequential `প্রশ্ন নং` and blank spacer rows are allowed; row errors name the spreadsheet row and field. |
 | Impact | Prisma migration `20261118170000_guest_exams`, ExamsModule, marketing `/exams*`, admin upload UI, marketing nav |
-| Status | **CONFIRMED** (product request 2026-11-18) |
+| Status | **CONFIRMED** (product request 2026-11-18; template revised 2026-11-21) |
 
 ### Deferred / NEEDS APPROVAL (explicitly out of Phase 1)
 

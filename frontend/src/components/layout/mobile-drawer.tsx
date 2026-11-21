@@ -66,6 +66,8 @@ export function MobileDrawerPanel({
       role="dialog"
       aria-modal="true"
       aria-label={label}
+      data-mobile-drawer-panel=""
+      data-scroll-lock-scrollable=""
       className={cn(
         'fixed inset-y-0 z-[60] flex w-[min(100vw-2.5rem,21rem)] flex-col',
         'border-[var(--line)] bg-[var(--bg-elevated)] text-[var(--ink)] shadow-[var(--shadow-lg)]',

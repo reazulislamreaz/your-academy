@@ -37,7 +37,7 @@ export class AdminExamsController {
     );
     res.setHeader(
       'Content-Disposition',
-      'attachment; filename="your-academy-exam-template.xlsx"',
+      'attachment; filename="your-academy-exam-template-7col.xlsx"',
     );
     res.send(buffer);
   }

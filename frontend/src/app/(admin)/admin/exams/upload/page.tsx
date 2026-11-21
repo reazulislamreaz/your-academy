@@ -17,6 +17,21 @@ import { listAdminExams, uploadAdminExam } from '@/lib/api/exams';
 import { adminDownloadUrl } from '@/lib/api/upload';
 import type { AdminExamUploadResult } from '@your-academy/shared';
 
+const TEMPLATE_COLUMNS = [
+  { name: 'প্রশ্ন নং', hint: 'Question number (optional / reference)' },
+  { name: 'প্রশ্ন', hint: 'Question stem (required)' },
+  { name: 'ক', hint: 'Option A (required)' },
+  { name: 'খ', hint: 'Option B (required)' },
+  { name: 'গ', hint: 'Option C (required)' },
+  { name: 'ঘ', hint: 'Option D (required)' },
+  { name: 'উত্তর', hint: 'a, b, c, or d (required)' },
+] as const;
+
+const SAMPLE_PREVIEW = [
+  ['1', '‘পরাগলী মহাভারত’ খ্যাত গ্রন্থের অনুবাদকের নাম কী?', 'সঞ্জয়', 'কবীন্দ্র পরমেশ্বর', 'শ্রীকর নন্দী', 'কাশীরাম দাস', 'b'],
+  ['2', 'সন্ধি কাকে বলে?', 'পরপর দুই ধ্বনির মিলন', 'শুধু সমাস', 'শুধু প্রত্যয়', 'শুধু উপসর্গ', 'a'],
+] as const;
+
 export default function AdminExamUploadPage() {
   const qc = useQueryClient();
   const [title, setTitle] = useState('');
@@ -50,8 +65,56 @@ export default function AdminExamUploadPage() {
       <PageHeader
         eyebrow="Guest exams"
         title="Upload exam from Excel"
-        description="Create a public timed exam (Quizzory-style). Download the Bangla template (same columns as Preli bulk upload: প্রশ্ন নং, প্রশ্ন, পরীক্ষার নাম ও সাল, প্রশ্নের তারিখ, ক–ঘ, উত্তর). English OptionA–D sheets still work."
+        description="Create a public timed exam. Use the 7-column spreadsheet: প্রশ্ন নং, প্রশ্ন, ক, খ, গ, ঘ, উত্তর. Put a, b, c, or d in উত্তর (case-insensitive; ক–ঘ also accepted)."
       />
+
+      <AdminSection title="Spreadsheet format">
+        <AdminFormPanel title="Required columns">
+          <p className="mb-3 text-sm text-[var(--muted-strong)]">
+            Download the sample template or build an <code className="text-[var(--ink)]">.xlsx</code>{' '}
+            with exactly these headers. Blank spacer rows are skipped. <strong>প্রশ্ন নং</strong> may
+            be blank or non-sequential. Multi-line cells and Bengali text are supported.
+          </p>
+          <div className="overflow-x-auto rounded-[var(--radius)] border border-[var(--line)]">
+            <table className="min-w-full border-collapse text-left text-sm">
+              <thead className="bg-[var(--bg-desk)]">
+                <tr>
+                  {TEMPLATE_COLUMNS.map((col) => (
+                    <th
+                      key={col.name}
+                      className="border-b border-[var(--line)] px-3 py-2 font-semibold text-[var(--ink)] whitespace-nowrap"
+                    >
+                      {col.name}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {SAMPLE_PREVIEW.map((row, idx) => (
+                  <tr key={idx} className="odd:bg-[var(--bg-elevated)]">
+                    {row.map((cell, i) => (
+                      <td
+                        key={`${idx}-${i}`}
+                        className="max-w-[14rem] truncate border-b border-[var(--line)] px-3 py-2 text-[var(--muted-strong)]"
+                        title={cell}
+                      >
+                        {cell}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-[var(--muted-strong)]">
+            {TEMPLATE_COLUMNS.map((col) => (
+              <li key={col.name}>
+                <span className="font-medium text-[var(--ink)]">{col.name}</span> — {col.hint}
+              </li>
+            ))}
+          </ul>
+        </AdminFormPanel>
+      </AdminSection>
 
       <AdminSection title="Create from Excel">
         <AdminFormPanel title="New exam">
@@ -107,7 +170,7 @@ export default function AdminExamUploadPage() {
               </Button>
               <a href={adminDownloadUrl('/admin/exams/template')} className="block w-full sm:inline-flex sm:w-auto">
                 <Button type="button" variant="outline" className="h-11 w-full sm:h-10 sm:w-auto">
-                  Download template
+                  Download template (7-col .xlsx)
                 </Button>
               </a>
             </div>

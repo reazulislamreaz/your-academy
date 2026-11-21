@@ -21,10 +21,13 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <LearnerGate>
           <BrowsingHeartbeat />
           <SupportChatProvider mode="learner">
-            <div className="hidden lg:block">
-              <div className="sticky top-0 h-dvh">
-                <AppSidebar />
-              </div>
+            <div
+              className="hidden shrink-0 lg:block"
+              style={{ width: 'var(--ya-learner-sidebar-w, var(--app-sidebar-width, 16.25rem))' }}
+              aria-hidden
+            />
+            <div className="fixed inset-y-0 left-0 z-20 hidden h-dvh max-h-dvh lg:block">
+              <AppSidebar />
             </div>
             <div className="flex min-w-0 flex-1 flex-col overflow-x-clip">
               <AppHeader />

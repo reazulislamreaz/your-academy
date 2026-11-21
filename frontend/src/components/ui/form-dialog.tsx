@@ -146,6 +146,7 @@ export function FormDialog({
           aria-labelledby={titleId}
           aria-describedby={description ? descId : undefined}
           data-state={visible ? 'open' : 'closed'}
+          data-scroll-lock-scrollable=""
           className={cn(
             'ya-dialog-panel relative z-10 flex max-h-[calc(100dvh-1.5rem)] w-full max-w-lg flex-col overflow-hidden sm:max-h-[calc(100dvh-2rem)]',
             'rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] text-[var(--ink)] shadow-[var(--shadow-lg)]',

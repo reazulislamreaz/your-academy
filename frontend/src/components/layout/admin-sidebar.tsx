@@ -27,6 +27,18 @@ export function AdminSidebar({ footerExtra }: Props) {
     }
   }, []);
 
+  // Drive the in-flow spacer width in AdminShell when this sidebar is fixed.
+  useEffect(() => {
+    const root = document.documentElement;
+    const width = collapsed
+      ? 'var(--app-sidebar-collapsed-width, 4.75rem)'
+      : 'var(--app-sidebar-width, 16.25rem)';
+    root.style.setProperty('--ya-admin-sidebar-w', width);
+    return () => {
+      root.style.removeProperty('--ya-admin-sidebar-w');
+    };
+  }, [collapsed]);
+
   const toggleCollapsed = () => {
     setCollapsed((prev) => {
       const next = !prev;

@@ -246,6 +246,8 @@ Parallel to Preli bulk upload. Template columns: `প্রশ্ন নং | �
 
 Quizzory-style timed exams with name-only entry. Separate from bank `Question` / PracticeSet. Correct answers are omitted until after submit.
 
+Admin Excel template (7 columns): `প্রশ্ন নং | প্রশ্ন | ক | খ | গ | ঘ | উত্তর`. `উত্তর` must be `a`/`b`/`c`/`d` (case-insensitive) or Bangla `ক`/`খ`/`গ`/`ঘ`; the API stores the resolved option text. `প্রশ্ন নং` is optional reference only. Row-level validation errors are returned on `EXCEL_PARSE_FAILED`.
+
 | Method | Endpoint | Description | Auth | Role |
 |--------|----------|-------------|------|------|
 | GET | `/public/exams` | Published exams, `createdAt DESC` | Public | — |
@@ -253,7 +255,7 @@ Quizzory-style timed exams with name-only entry. Separate from bank `Question` /
 | POST | `/public/exams/:idOrSlug/attempts` | Submit answers (`userName`, `userAnswers`, optional `elapsedSeconds`/`timedOut`); scores server-side | Public | — |
 | GET | `/public/exams/attempts/:attemptId` | Result + full answer sheet (correct + explanation) | Public | — |
 | GET | `/admin/exams` | Admin list | User | ADMIN |
-| GET | `/admin/exams/template` | Excel template download | User | ADMIN |
+| GET | `/admin/exams/template` | 7-column Excel template download | User | ADMIN |
 | POST | `/admin/exams/upload` | Multipart create (`title`, `description`, `durationInMinutes`, `.xlsx` file) | User | ADMIN |
 
 ---

@@ -39,14 +39,15 @@ function SidebarNav() {
   }, []);
 
   useEffect(() => {
-    const root = document.querySelector('.learner-theme') as HTMLElement | null;
-    if (!root) return;
-    root.style.setProperty(
-      '--app-sidebar-current-width',
-      collapsed
-        ? 'var(--app-sidebar-collapsed-width, 4.75rem)'
-        : 'var(--app-sidebar-width, 16.25rem)',
-    );
+    const width = collapsed
+      ? 'var(--app-sidebar-collapsed-width, 4.75rem)'
+      : 'var(--app-sidebar-width, 16.25rem)';
+    const shell = document.querySelector('.learner-theme') as HTMLElement | null;
+    shell?.style.setProperty('--app-sidebar-current-width', width);
+    document.documentElement.style.setProperty('--ya-learner-sidebar-w', width);
+    return () => {
+      document.documentElement.style.removeProperty('--ya-learner-sidebar-w');
+    };
   }, [collapsed]);
 
   const toggleCollapsed = () => {

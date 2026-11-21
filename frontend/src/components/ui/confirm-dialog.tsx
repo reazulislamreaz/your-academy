@@ -135,6 +135,7 @@ export function ConfirmDialog({
           aria-labelledby={titleId}
           aria-describedby={descId}
           data-state={visible ? 'open' : 'closed'}
+          data-scroll-lock-scrollable=""
           className={cn(
             'ya-dialog-panel relative z-10 max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto overscroll-contain',
             'rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] p-4 text-[var(--ink)] shadow-[var(--shadow-lg)] sm:p-6',

@@ -3,61 +3,52 @@
 import { useEffect } from 'react';
 
 /**
- * Reference-counted body scroll lock shared by modals, drawers, and confirm dialogs.
- * Compensates for scrollbar width so sticky admin/learner sidebars do not jump.
- * Avoids `position: fixed` on desktop (that pattern breaks sticky shells); uses it
- * only on coarse-pointer / touch where iOS ignores overflow:hidden alone.
+ * Reference-counted body scroll lock for modals / drawers.
+ *
+ * Important: never use `position: fixed` + negative `top` on `body`. That pattern
+ * shifts sticky admin/learner sidebars (`sticky top-0 h-screen`) upward by the
+ * current scroll offset, clipping Overview / Users / etc. and leaving only the
+ * lower nav + footer visible — exactly the /admin/users modal regression.
+ *
+ * Desktop: overflow + scrollbar-width padding.
+ * Touch: same, plus a touchmove guard outside scrollable dialog panels.
  */
 
 type SavedScrollLock = {
-  scrollY: number;
   bodyOverflow: string;
   bodyPaddingRight: string;
-  bodyPosition: string;
-  bodyTop: string;
-  bodyWidth: string;
-  bodyLeft: string;
-  bodyRight: string;
-  htmlOverflow: string;
   htmlOverscroll: string;
-  usedFixed: boolean;
 };
 
 let lockCount = 0;
 let saved: SavedScrollLock | null = null;
+let touchGuard: ((e: TouchEvent) => void) | null = null;
 
 function scrollbarWidth(): number {
   if (typeof window === 'undefined') return 0;
   return Math.max(0, window.innerWidth - document.documentElement.clientWidth);
 }
 
-function prefersTouchScrollLock(): boolean {
-  if (typeof window === 'undefined') return false;
-  return window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+function isInsideScrollableOverlay(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  return Boolean(
+    target.closest(
+      '.ya-dialog-panel, [data-scroll-lock-scrollable], [data-mobile-drawer-panel]',
+    ),
+  );
 }
 
 function applyLock(): void {
   if (saved) return;
   const { body, documentElement } = document;
-  const scrollY = window.scrollY;
   const sbw = scrollbarWidth();
-  const usedFixed = prefersTouchScrollLock();
 
   saved = {
-    scrollY,
     bodyOverflow: body.style.overflow,
     bodyPaddingRight: body.style.paddingRight,
-    bodyPosition: body.style.position,
-    bodyTop: body.style.top,
-    bodyWidth: body.style.width,
-    bodyLeft: body.style.left,
-    bodyRight: body.style.right,
-    htmlOverflow: documentElement.style.overflow,
     htmlOverscroll: documentElement.style.overscrollBehavior,
-    usedFixed,
   };
 
-  documentElement.style.overflow = 'hidden';
   documentElement.style.overscrollBehavior = 'none';
   documentElement.setAttribute('data-scroll-locked', 'true');
   body.style.overflow = 'hidden';
@@ -65,13 +56,13 @@ function applyLock(): void {
     body.style.paddingRight = `${sbw}px`;
   }
 
-  if (usedFixed) {
-    body.style.position = 'fixed';
-    body.style.top = `-${scrollY}px`;
-    body.style.left = '0';
-    body.style.right = '0';
-    body.style.width = '100%';
-  }
+  // iOS / touch: overflow:hidden alone often still allows background scroll.
+  touchGuard = (e: TouchEvent) => {
+    if (e.touches.length > 1) return;
+    if (isInsideScrollableOverlay(e.target)) return;
+    e.preventDefault();
+  };
+  document.addEventListener('touchmove', touchGuard, { passive: false });
 }
 
 function releaseLock(): void {
@@ -82,17 +73,12 @@ function releaseLock(): void {
 
   body.style.overflow = prev.bodyOverflow;
   body.style.paddingRight = prev.bodyPaddingRight;
-  body.style.position = prev.bodyPosition;
-  body.style.top = prev.bodyTop;
-  body.style.width = prev.bodyWidth;
-  body.style.left = prev.bodyLeft;
-  body.style.right = prev.bodyRight;
-  documentElement.style.overflow = prev.htmlOverflow;
   documentElement.style.overscrollBehavior = prev.htmlOverscroll;
   documentElement.removeAttribute('data-scroll-locked');
 
-  if (prev.usedFixed) {
-    window.scrollTo(0, prev.scrollY);
+  if (touchGuard) {
+    document.removeEventListener('touchmove', touchGuard);
+    touchGuard = null;
   }
 }
 
