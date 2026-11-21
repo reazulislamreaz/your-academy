@@ -9,8 +9,8 @@ import {
   useState,
   type CSSProperties,
 } from 'react';
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { ChevronDown, LayoutDashboard, LogIn } from 'lucide-react';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { LogIn } from 'lucide-react';
 import Link from 'next/link';
 import { BrandMark } from './brand-mark';
 import { MobileNav } from './mobile-nav';
@@ -19,84 +19,13 @@ import {
   marketingNavItems,
   resolveActiveMarketingNavId,
 } from './marketing-nav';
-import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { SearchField } from '@/components/ui/search-field';
 import { useMe } from '@/features/auth/use-auth';
-import { defaultPathForRole } from '@/lib/auth/role-routing';
-import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
-
-function DashboardNavButton({
-  href,
-  className,
-  fullWidth = false,
-  compact = false,
-}: {
-  href: string;
-  className?: string;
-  fullWidth?: boolean;
-  compact?: boolean;
-}) {
-  return (
-    <Link href={href} className={className}>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        className={cn(
-          'marketing-nav-action cursor-pointer rounded-full',
-          compact ? 'px-3' : 'px-4',
-          fullWidth && 'w-full',
-        )}
-      >
-        <LayoutDashboard className="size-4" aria-hidden />
-        {compact ? <span className="sr-only">Dashboard</span> : 'Dashboard'}
-      </Button>
-    </Link>
-  );
-}
-
-function MarketingSearchField({
-  id,
-  value,
-  onChange,
-  className,
-}: {
-  id: string;
-  value: string;
-  onChange: (value: string) => void;
-  className?: string;
-}) {
-  return (
-    <div className={cn('marketing-nav-search min-w-0', className)}>
-      <label htmlFor={id} className="sr-only">
-        Search exams
-      </label>
-      <SearchField
-        id={id}
-        name="exam-search"
-        value={value}
-        onChange={onChange}
-        placeholder="Search exams…"
-        aria-label="Search exams"
-        autoComplete="off"
-        autoCorrect="off"
-        autoCapitalize="off"
-        spellCheck={false}
-        enterKeyHint="search"
-        variant="header"
-      />
-    </div>
-  );
-}
 
 function MarketingNavLinks({ activeId }: { activeId: string | null }) {
-  const pathname = usePathname();
   const navRef = useRef<HTMLElement>(null);
   const itemRefs = useRef(new Map<string, HTMLElement>());
   const [pill, setPill] = useState({ x: 0, width: 0, ready: false });
-  const [examsOpen, setExamsOpen] = useState(false);
-  const examsCloseTimer = useRef<number | null>(null);
 
   const syncPill = useCallback(() => {
     const nav = navRef.current;
@@ -151,21 +80,6 @@ function MarketingNavLinks({ activeId }: { activeId: string | null }) {
     };
   }, [syncPill]);
 
-  useEffect(() => {
-    return () => {
-      if (examsCloseTimer.current != null) window.clearTimeout(examsCloseTimer.current);
-    };
-  }, []);
-
-  const openExams = () => {
-    if (examsCloseTimer.current != null) window.clearTimeout(examsCloseTimer.current);
-    setExamsOpen(true);
-  };
-  const scheduleCloseExams = () => {
-    if (examsCloseTimer.current != null) window.clearTimeout(examsCloseTimer.current);
-    examsCloseTimer.current = window.setTimeout(() => setExamsOpen(false), 140);
-  };
-
   return (
     <nav
       ref={navRef}
@@ -183,80 +97,10 @@ function MarketingNavLinks({ activeId }: { activeId: string | null }) {
       />
       {marketingNavItems.map((item) => {
         const active = activeId === item.id;
-        const setRef = (node: HTMLElement | null) => {
+        const setRef = (node: HTMLAnchorElement | null) => {
           if (node) itemRefs.current.set(item.id, node);
           else itemRefs.current.delete(item.id);
         };
-
-        if (item.children?.length) {
-          return (
-            <div
-              key={item.id}
-              className="relative"
-              onMouseEnter={openExams}
-              onMouseLeave={scheduleCloseExams}
-              onFocus={openExams}
-              onBlur={(e) => {
-                if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
-                  scheduleCloseExams();
-                }
-              }}
-            >
-              <button
-                type="button"
-                ref={setRef}
-                className="marketing-nav-link inline-flex items-center gap-1"
-                aria-expanded={examsOpen}
-                aria-haspopup="menu"
-                aria-current={active ? 'page' : undefined}
-                onClick={() => setExamsOpen((v) => !v)}
-              >
-                {item.label}
-                <ChevronDown
-                  className={cn(
-                    'size-3.5 shrink-0 opacity-70 transition-transform duration-150',
-                    examsOpen && 'rotate-180',
-                  )}
-                  aria-hidden
-                />
-              </button>
-              <div
-                role="menu"
-                aria-label={item.label}
-                className={cn(
-                  'absolute top-full left-1/2 z-40 min-w-[11.5rem] -translate-x-1/2 pt-2 transition-[opacity,transform] duration-150',
-                  examsOpen
-                    ? 'pointer-events-auto translate-y-0 opacity-100'
-                    : 'pointer-events-none -translate-y-1 opacity-0',
-                )}
-              >
-                <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] py-1.5 shadow-[var(--shadow-md)]">
-                  {item.children.map((child) => {
-                    const childActive =
-                      pathname === child.href || pathname.startsWith(`${child.href}/`);
-                    return (
-                      <Link
-                        key={child.id}
-                        href={child.href}
-                        role="menuitem"
-                        aria-current={childActive ? 'page' : undefined}
-                        className={cn(
-                          'block whitespace-nowrap px-3.5 py-2.5 text-sm font-semibold transition-colors',
-                          childActive
-                            ? 'bg-[var(--accent-soft)] text-[var(--accent)]'
-                            : 'text-[var(--ink-soft)] hover:bg-[var(--brand-wash)] hover:text-[var(--ink)]',
-                        )}
-                        onClick={() => setExamsOpen(false)}
-                      >
-                        {child.label}
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          );
-        }
 
         return (
           <Link
@@ -275,86 +119,17 @@ function MarketingNavLinks({ activeId }: { activeId: string | null }) {
 }
 
 function MarketingHeaderInner() {
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const me = useMe();
-  const onBank = pathname.startsWith('/preli-question-bank');
-  const [query, setQuery] = useState(() =>
-    onBank ? (searchParams.get('q') ?? '') : '',
-  );
-  const debouncedQ = useDebouncedValue(query.trim(), 350);
-  const skipNav = useRef(true);
-  const wasOnBank = useRef(onBank);
-  const lastSyncedUrlQ = useRef<string | null>(onBank ? (searchParams.get('q') ?? '') : null);
-
-  const dashboardHref = me.data ? defaultPathForRole(me.data.role) : null;
   const activeId = resolveActiveMarketingNavId(pathname, searchParams.toString());
-  const mobileActiveId = pathname.startsWith('/model-test')
-    ? 'model-test'
-    : pathname === '/exams' || pathname.startsWith('/exams/')
-      ? 'quiz'
-      : activeId;
 
-  const mobileNavItems = marketingNavItems.flatMap((item) => {
-    if (item.children?.length) {
-      return item.children.map((child) => ({
-        id: child.id,
-        href: child.href,
-        label: child.label,
-        match: child.match,
-      }));
-    }
-    return [
-      {
-        id: item.id,
-        href: item.href,
-        label: item.label,
-        match: item.match,
-      },
-    ];
-  });
-
-  // Entering/leaving the bank: sync or clear header search so filters don't leak.
-  useEffect(() => {
-    if (wasOnBank.current && !onBank) {
-      skipNav.current = true;
-      setQuery('');
-      lastSyncedUrlQ.current = null;
-    } else if (onBank) {
-      const urlQ = searchParams.get('q') ?? '';
-      if (!wasOnBank.current || lastSyncedUrlQ.current !== urlQ) {
-        skipNav.current = true;
-        setQuery(urlQ);
-        lastSyncedUrlQ.current = urlQ;
-      }
-    }
-    wasOnBank.current = onBank;
-  }, [onBank, searchParams]);
-
-  useEffect(() => {
-    if (skipNav.current) {
-      skipNav.current = false;
-      return;
-    }
-    if (onBank) {
-      const current = searchParams.get('q') ?? '';
-      if (current === debouncedQ) return;
-      // Preserve category / subcategory / year while updating header search.
-      const sp = new URLSearchParams(searchParams.toString());
-      if (debouncedQ) sp.set('q', debouncedQ);
-      else sp.delete('q');
-      const qs = sp.toString();
-      router.replace(qs ? `/preli-question-bank?${qs}` : '/preli-question-bank', {
-        scroll: false,
-      });
-      return;
-    }
-    // Off-bank: only navigate when the user intentionally types a new query.
-    if (debouncedQ) {
-      router.push(`/preli-question-bank?q=${encodeURIComponent(debouncedQ)}`);
-    }
-  }, [debouncedQ, onBank, router, searchParams]);
+  const mobileNavItems = marketingNavItems.map((item) => ({
+    id: item.id,
+    href: item.href,
+    label: item.label,
+    match: item.match,
+  }));
 
   return (
     <header
@@ -379,15 +154,7 @@ function MarketingHeaderInner() {
         <MarketingNavLinks activeId={activeId} />
 
         <div className="marketing-nav-tools gap-1.5 sm:gap-2">
-          <MarketingSearchField
-            id="marketing-search"
-            value={query}
-            onChange={setQuery}
-            className="hidden w-[13.5rem] xl:block 2xl:w-[16rem]"
-          />
-
           <div className="hidden items-center gap-2 md:flex">
-            {dashboardHref ? <DashboardNavButton href={dashboardHref} /> : null}
             {me.data ? <UserMenu variant="header" /> : <UserMenu loginOnly />}
           </div>
 
@@ -411,21 +178,9 @@ function MarketingHeaderInner() {
               breakpointClassName=""
               title="Menu"
               items={mobileNavItems}
-              activeId={mobileActiveId}
-              leading={
-                <MarketingSearchField
-                  id="marketing-search-mobile"
-                  value={query}
-                  onChange={setQuery}
-                  className="w-full"
-                />
-              }
+              activeId={activeId}
               trailing={
-                me.data ? (
-                  dashboardHref ? (
-                    <DashboardNavButton href={dashboardHref} fullWidth />
-                  ) : null
-                ) : (
+                me.data ? null : (
                   <>
                     <Link href="/login" className="block w-full">
                       <Button variant="outline" className="marketing-nav-action w-full rounded-full">
@@ -452,19 +207,9 @@ function MarketingHeaderInner() {
             breakpointClassName=""
             title="Menu"
             items={mobileNavItems}
-            activeId={mobileActiveId}
-            leading={
-              <MarketingSearchField
-                id="marketing-search-tablet"
-                value={query}
-                onChange={setQuery}
-                className="w-full"
-              />
-            }
+            activeId={activeId}
             trailing={
-              me.data && dashboardHref ? (
-                <DashboardNavButton href={dashboardHref} fullWidth />
-              ) : !me.data ? (
+              !me.data ? (
                 <>
                   <Link href="/login" className="block w-full">
                     <Button variant="outline" className="marketing-nav-action w-full rounded-full">

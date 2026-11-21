@@ -395,8 +395,8 @@ body {
   max-width: 100%;
   min-width: 0;
   padding: 0.3rem;
-  overflow-x: auto;
-  overflow-y: hidden;
+  /* Overflow visible — horizontal scroll is unnecessary at xl where this rail shows. */
+  overflow: visible;
   scrollbar-width: none;
   border-radius: 9999px;
   border: 1px solid color-mix(in srgb, var(--accent) 14%, var(--glass-border));
@@ -3220,6 +3220,17 @@ a.site-footer-social-link:focus-visible {
   }
 }
 
+@keyframes ya-user-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 @keyframes ya-drawer-in {
   from {
     opacity: 0;
@@ -3369,6 +3380,10 @@ a.site-footer-social-link:focus-visible {
   .motion-pop {
     animation: ya-pop var(--duration) var(--ease-out) both;
     transform-origin: top center;
+  }
+
+  .user-menu-popover {
+    animation: ya-user-menu-in 180ms var(--ease-out) both;
   }
 
   .motion-drawer-in {
@@ -3559,6 +3574,7 @@ a.site-footer-social-link:focus-visible {
   .motion-soft-float,
   .motion-page,
   .motion-pop,
+  .user-menu-popover,
   .motion-drawer-in,
   .motion-drawer-slide-in,
   .motion-drawer-slide-in-left,

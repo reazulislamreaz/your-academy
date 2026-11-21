@@ -5,6 +5,8 @@ import { usePathname } from 'next/navigation';
 import {
   BookOpen,
   Briefcase,
+  ClipboardCheck,
+  ClipboardList,
   Home,
   Newspaper,
   PenLine,
@@ -30,6 +32,8 @@ export type NavItem = {
 };
 
 const FALLBACK_ICONS: Record<string, LucideIcon> = {
+  'model-test': ClipboardCheck,
+  quiz: ClipboardList,
   home: Home,
   preli: BookOpen,
   written: PenLine,

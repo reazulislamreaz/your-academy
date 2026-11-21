@@ -19,6 +19,8 @@ function roleLabel(role: string): string {
 /**
  * Authenticated account control: compact avatar trigger + dropdown with Logout.
  * Also handles guest login CTAs for marketing / mobile drawers.
+ *
+ * Header/avatar popup shows only Dashboard + Logout (DEC marketing chrome).
  */
 export function UserMenu({
   compact = false,
@@ -179,7 +181,7 @@ export function UserMenu({
         type="button"
         aria-expanded={open}
         aria-haspopup="menu"
-        aria-controls={panelId}
+        aria-controls={open ? panelId : undefined}
         aria-label="Account menu"
         onClick={() => setOpen((v) => !v)}
         className={cn(
@@ -199,50 +201,32 @@ export function UserMenu({
           role="menu"
           aria-label="Account"
           className={cn(
-            'motion-pop absolute z-50 w-60 overflow-hidden',
+            'user-menu-popover absolute z-50 w-52 overflow-hidden p-1.5',
             'rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] shadow-[var(--shadow-lg)]',
-            menuPlacement === 'top' ? 'bottom-full left-0 mb-2' : 'top-full right-0 mt-2',
+            menuPlacement === 'top'
+              ? 'bottom-full left-0 mb-2 origin-bottom-left'
+              : 'top-full right-0 mt-2 origin-top-right',
           )}
         >
-          <div className="flex items-center gap-3 border-b border-[var(--line)] px-3.5 py-3">
-            <UserAvatar name={user.name} avatarUrl={user.avatarUrl} size="lg" />
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-[var(--ink)]">{user.name}</p>
-              <p className="truncate text-xs text-[var(--muted-strong)]">{roleLabel(user.role)}</p>
-            </div>
-          </div>
-          <div className="flex flex-col p-1.5">
-            <Link
-              role="menuitem"
-              href={dashboardHref}
-              className="flex items-center gap-2 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--bg-muted)]"
-              onClick={() => setOpen(false)}
-            >
-              <LayoutDashboard className="size-3.5 shrink-0" aria-hidden />
-              Dashboard
-            </Link>
-            {!isAdmin ? (
-              <Link
-                role="menuitem"
-                href="/profile"
-                className="flex items-center gap-2 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-medium text-[var(--ink)] hover:bg-[var(--bg-muted)]"
-                onClick={() => setOpen(false)}
-              >
-                <UserRound className="size-3.5 shrink-0" aria-hidden />
-                Profile
-              </Link>
-            ) : null}
-            <button
-              type="button"
-              role="menuitem"
-              disabled={logout.isPending}
-              className="flex cursor-pointer items-center gap-2 rounded-[var(--radius-sm)] px-3 py-2 text-left text-sm font-semibold text-[var(--highlight)] hover:bg-[var(--highlight-soft)] disabled:opacity-60"
-              onClick={requestLogout}
-            >
-              <LogOut className="size-3.5 shrink-0" aria-hidden />
-              {logout.isPending ? 'Signing out…' : 'Logout'}
-            </button>
-          </div>
+          <Link
+            role="menuitem"
+            href={dashboardHref}
+            className="flex items-center gap-2 rounded-[var(--radius-sm)] px-3 py-2.5 text-sm font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--bg-muted)]"
+            onClick={() => setOpen(false)}
+          >
+            <LayoutDashboard className="size-3.5 shrink-0" aria-hidden />
+            Dashboard
+          </Link>
+          <button
+            type="button"
+            role="menuitem"
+            disabled={logout.isPending}
+            className="flex w-full cursor-pointer items-center gap-2 rounded-[var(--radius-sm)] px-3 py-2.5 text-left text-sm font-semibold text-[var(--highlight)] transition-colors hover:bg-[var(--highlight-soft)] disabled:opacity-60"
+            onClick={requestLogout}
+          >
+            <LogOut className="size-3.5 shrink-0" aria-hidden />
+            {logout.isPending ? 'Signing out…' : 'Logout'}
+          </button>
         </div>
       ) : null}
       {logoutDialog}
