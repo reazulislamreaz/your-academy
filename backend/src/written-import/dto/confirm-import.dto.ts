@@ -1,4 +1,13 @@
-import { IsBoolean, IsOptional, IsString, MaxLength } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsBoolean,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+} from 'class-validator';
 
 export class ConfirmWrittenImportDto {
   @IsOptional()
@@ -34,6 +43,14 @@ export class UpdateWrittenBatchDto {
   @IsOptional()
   @IsString()
   questionDate?: string | null;
+
+  /** Replace batch placements (Written subcategory UUIDs under the selected category). */
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(8)
+  @IsUUID('4', { each: true })
+  @Type(() => String)
+  placementSubcategoryIds?: string[] | null;
 }
 
 export class UpdateWrittenImportRowDto {

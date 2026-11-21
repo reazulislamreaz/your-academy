@@ -37,6 +37,14 @@ import {
   WRITTEN_TEMPLATE_HEADERS,
 } from './excel-parser';
 import { buildWrittenDocxTemplateBuffer } from './docx-template';
+import {
+  buildWrittenCategoryIndex,
+  nameKey,
+  resolveWrittenRoot,
+  resolveWrittenTopicId,
+  type WrittenCategoryIndex,
+  type WrittenRootCategory,
+} from './written-taxonomy';
 
 const MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
 const MAX_ROWS = 5000;
@@ -236,9 +244,10 @@ export class WrittenImportService {
       topicHint?: string | null;
       examCategoryHint?: string | null;
       questionDate?: string | null;
+      placementSubcategoryIds?: string[] | null;
     },
   ) {
-    await this.getBatch(id);
+    const batch = await this.getBatch(id);
     let questionDate: Date | null | undefined;
     let examYear: string | null | undefined;
     if (dto.questionDate !== undefined) {
@@ -260,6 +269,98 @@ export class WrittenImportService {
         examYear = parsed.examYear;
       }
     }
+
+    const taxonomyChanging =
+      dto.subjectHint !== undefined ||
+      dto.topicHint !== undefined ||
+      dto.placementSubcategoryIds !== undefined;
+
+    if (taxonomyChanging) {
+      if (
+        batch.status !== QuestionUploadStatus.VALIDATED &&
+        batch.status !== QuestionUploadStatus.FAILED
+      ) {
+        throw new BadRequestException(
+          createErrorResponse(
+            'BATCH_NOT_EDITABLE',
+            'Category / subcategory can only be changed before import is confirmed',
+            newRequestId(),
+          ),
+        );
+      }
+
+      const nextSubject =
+        dto.subjectHint !== undefined
+          ? dto.subjectHint?.trim().slice(0, 120) || ''
+          : batch.subjectHint?.trim() || '';
+      const nextTopic =
+        dto.topicHint !== undefined
+          ? dto.topicHint?.trim().slice(0, 120) || ''
+          : batch.topicHint?.trim() || '';
+      const nextPlacementIds =
+        dto.placementSubcategoryIds !== undefined
+          ? (dto.placementSubcategoryIds ?? []).map((x) => String(x).trim()).filter(Boolean)
+          : undefined;
+
+      const resolved = await this.resolveCollectionTaxonomy({
+        subjectHint: nextSubject,
+        topicHint: nextTopic,
+        placementSubcategoryIds: nextPlacementIds,
+        requireCategory: true,
+      });
+
+      await this.prisma.$transaction(async (tx) => {
+        await tx.writtenUploadBatchPlacement.deleteMany({ where: { batchId: id } });
+        if (resolved.placementRows.length) {
+          await tx.writtenUploadBatchPlacement.createMany({
+            data: resolved.placementRows.map((p) => ({
+              id: randomUUID(),
+              batchId: id,
+              categoryId: p.categoryId,
+              subcategoryId: p.subcategoryId,
+              sortOrder: p.sortOrder,
+            })),
+          });
+        }
+        await tx.writtenUploadBatch.update({
+          where: { id },
+          data: {
+            ...(dto.displayName !== undefined
+              ? { displayName: dto.displayName.trim().slice(0, 200) }
+              : {}),
+            ...(dto.description !== undefined
+              ? { description: dto.description?.trim() || null }
+              : {}),
+            subjectHint: resolved.root.name.slice(0, 120),
+            topicHint: resolved.primaryTopicName?.slice(0, 120) ?? null,
+            ...(dto.examCategoryHint !== undefined
+              ? { examCategoryHint: dto.examCategoryHint?.trim().slice(0, 120) || null }
+              : {}),
+            ...(questionDate !== undefined ? { questionDate, examYear: examYear ?? null } : {}),
+          },
+        });
+        // Rewrite row taxonomy so confirmImport assigns the edited subcategory.
+        await tx.writtenImportRow.updateMany({
+          where: {
+            batchId: id,
+            status: {
+              in: [
+                QuestionImportRowStatus.VALID,
+                QuestionImportRowStatus.DUPLICATE,
+                QuestionImportRowStatus.INVALID,
+              ],
+            },
+          },
+          data: {
+            subjectName: resolved.root.name.slice(0, 120),
+            topicName: resolved.primaryTopicName?.slice(0, 120) ?? null,
+          },
+        });
+      });
+
+      return this.getBatch(id);
+    }
+
     return this.prisma.writtenUploadBatch.update({
       where: { id },
       data: {
@@ -268,12 +369,6 @@ export class WrittenImportService {
           : {}),
         ...(dto.description !== undefined
           ? { description: dto.description?.trim() || null }
-          : {}),
-        ...(dto.subjectHint !== undefined
-          ? { subjectHint: dto.subjectHint?.trim().slice(0, 120) || null }
-          : {}),
-        ...(dto.topicHint !== undefined
-          ? { topicHint: dto.topicHint?.trim().slice(0, 120) || null }
           : {}),
         ...(dto.examCategoryHint !== undefined
           ? { examCategoryHint: dto.examCategoryHint?.trim().slice(0, 120) || null }
@@ -333,22 +428,132 @@ export class WrittenImportService {
     });
   }
 
-  private nameKey(name: string): string {
-    return name.normalize('NFC').trim().toLowerCase().replace(/\s+/g, ' ');
-  }
-
-  private async buildCategoryIndex() {
+  private async buildCategoryIndex(): Promise<WrittenCategoryIndex> {
     const categories = await this.prisma.category.findMany({
       where: { isActive: true, scope: CategoryScope.WRITTEN },
-      select: { id: true, name: true, slug: true, parentId: true, scope: true },
+      select: { id: true, name: true, slug: true, parentId: true },
     });
-    const rootsByName = new Map<string, { id: string; name: string; slug: string }>();
-    const topicsByParentAndName = new Map<string, string>();
-    for (const c of categories) {
-      if (!c.parentId) rootsByName.set(this.nameKey(c.name), c);
-      else topicsByParentAndName.set(`${c.parentId}::${this.nameKey(c.name)}`, c.id);
+    return buildWrittenCategoryIndex(categories);
+  }
+
+  /**
+   * Resolve Written root + placements from form hints / UUIDs.
+   * Fails closed on unknown category, unmatched topic names, or cross-parent IDs.
+   */
+  private async resolveCollectionTaxonomy(input: {
+    subjectHint: string;
+    topicHint?: string;
+    placementSubcategoryIds?: string[];
+    requireCategory: boolean;
+  }): Promise<{
+    root: WrittenRootCategory;
+    primaryTopicName: string | null;
+    placementRows: Array<{
+      categoryId: string;
+      subcategoryId: string;
+      sortOrder: number;
+      name: string;
+    }>;
+    index: WrittenCategoryIndex;
+  }> {
+    const index = await this.buildCategoryIndex();
+    const subjectHint = input.subjectHint.trim();
+    if (!subjectHint) {
+      if (input.requireCategory || (input.placementSubcategoryIds?.length ?? 0) > 0) {
+        throw new BadRequestException(
+          createErrorResponse(
+            'CATEGORY_REQUIRED',
+            'Select a Written category before assigning subcategories',
+            newRequestId(),
+          ),
+        );
+      }
+      throw new BadRequestException(
+        createErrorResponse(
+          'CATEGORY_REQUIRED',
+          'Category is required for this collection',
+          newRequestId(),
+        ),
+      );
     }
-    return { rootsByName, topicsByParentAndName };
+
+    const root = resolveWrittenRoot(index, subjectHint);
+    if (!root) {
+      throw new BadRequestException(
+        createErrorResponse(
+          'CATEGORY_NOT_FOUND',
+          `Written category not found: ${subjectHint}`,
+          newRequestId(),
+        ),
+      );
+    }
+
+    const placementIdSet: string[] = [];
+    const pushPlacementId = (id: string | undefined | null) => {
+      if (!id || placementIdSet.includes(id)) return;
+      if (placementIdSet.length >= MAX_PLACEMENT_SUBCATEGORIES) return;
+      placementIdSet.push(id);
+    };
+
+    const topicHint = input.topicHint?.trim() || '';
+    if (topicHint) {
+      const fromHint = resolveWrittenTopicId(index, root.id, topicHint);
+      if (!fromHint) {
+        throw new BadRequestException(
+          createErrorResponse(
+            'SUBCATEGORY_NOT_FOUND',
+            `Written subcategory "${topicHint}" was not found under category "${root.name}"`,
+            newRequestId(),
+          ),
+        );
+      }
+      pushPlacementId(fromHint);
+    }
+
+    for (const rawId of input.placementSubcategoryIds ?? []) {
+      pushPlacementId(rawId?.trim());
+    }
+
+    const placementRows: Array<{
+      categoryId: string;
+      subcategoryId: string;
+      sortOrder: number;
+      name: string;
+    }> = [];
+
+    for (let i = 0; i < placementIdSet.length; i += 1) {
+      const sub = await this.prisma.category.findFirst({
+        where: {
+          id: placementIdSet[i],
+          parentId: root.id,
+          isActive: true,
+          scope: CategoryScope.WRITTEN,
+        },
+        select: { id: true, name: true },
+      });
+      if (!sub) {
+        throw new BadRequestException(
+          createErrorResponse(
+            'SUBCATEGORY_INVALID',
+            'Each placement must be an active Written-bank subcategory of the selected Written category',
+            newRequestId(),
+          ),
+        );
+      }
+      placementRows.push({
+        categoryId: root.id,
+        subcategoryId: sub.id,
+        sortOrder: i,
+        name: sub.name,
+      });
+    }
+
+    return {
+      root,
+      primaryTopicName: placementRows[0]?.name ?? (topicHint || null),
+      placementRows,
+      index,
+    };
   }
 
   private extractYearHint(text: string | null | undefined): string | null {
@@ -507,7 +712,6 @@ export class WrittenImportService {
     const storagePath = path.join(storageDir, safeName);
     await pipeline(Readable.from(file.buffer), createWriteStream(storagePath));
 
-    const categoryIndex = await this.buildCategoryIndex();
     const collectionSubject = input.subjectHint?.trim() || '';
     const collectionTopic = input.topicHint?.trim() || '';
     const collectionExam =
@@ -515,6 +719,10 @@ export class WrittenImportService {
       [examMeta?.examTitle, examMeta?.postName].filter(Boolean).join(' — ').slice(0, 120) ||
       '';
     const sheetHasCategory = parsed.some((row) => Boolean(row.subject?.trim()));
+    const placementIds = (input.placementSubcategoryIds ?? [])
+      .map((id) => id?.trim())
+      .filter((id): id is string => Boolean(id));
+
     if (!collectionSubject && !sheetHasCategory) {
       throw new BadRequestException(
         createErrorResponse(
@@ -524,73 +732,38 @@ export class WrittenImportService {
         ),
       );
     }
-
-    const rootCategory = collectionSubject
-      ? categoryIndex.rootsByName.get(this.nameKey(collectionSubject))
-      : null;
-    if (collectionSubject && !rootCategory) {
+    if (!collectionSubject && (placementIds.length > 0 || collectionTopic)) {
       throw new BadRequestException(
         createErrorResponse(
-          'CATEGORY_NOT_FOUND',
-          `Category not found: ${collectionSubject}`,
+          'CATEGORY_REQUIRED',
+          'Select a Written category before assigning subcategories',
           newRequestId(),
         ),
       );
     }
 
-    const placementIdSet: string[] = [];
-    const pushPlacementId = (id: string | undefined | null) => {
-      if (!id || placementIdSet.includes(id)) return;
-      if (placementIdSet.length >= MAX_PLACEMENT_SUBCATEGORIES) return;
-      placementIdSet.push(id);
-    };
-    if (rootCategory && collectionTopic) {
-      pushPlacementId(
-        categoryIndex.topicsByParentAndName.get(
-          `${rootCategory.id}::${this.nameKey(collectionTopic)}`,
-        ),
-      );
-    }
-    for (const rawId of input.placementSubcategoryIds ?? []) {
-      pushPlacementId(rawId?.trim());
-    }
-
-    const placementRows: Array<{
+    let categoryIndex = await this.buildCategoryIndex();
+    let rootCategory: WrittenRootCategory | null = null;
+    let placementRows: Array<{
       categoryId: string;
       subcategoryId: string;
       sortOrder: number;
       name: string;
     }> = [];
-    if (rootCategory && placementIdSet.length) {
-      for (let i = 0; i < placementIdSet.length; i += 1) {
-        const sub = await this.prisma.category.findFirst({
-          where: {
-            id: placementIdSet[i],
-            parentId: rootCategory.id,
-            isActive: true,
-            scope: CategoryScope.WRITTEN,
-          },
-          select: { id: true, name: true },
-        });
-        if (!sub) {
-          throw new BadRequestException(
-            createErrorResponse(
-              'SUBCATEGORY_INVALID',
-              'Each placement must be an active Written-bank subcategory of the selected Written category',
-              newRequestId(),
-            ),
-          );
-        }
-        placementRows.push({
-          categoryId: rootCategory.id,
-          subcategoryId: sub.id,
-          sortOrder: i,
-          name: sub.name,
-        });
-      }
-    }
+    let resolvedTopicHint = '';
 
-    const resolvedTopicHint = placementRows[0]?.name?.trim() || collectionTopic || '';
+    if (collectionSubject) {
+      const resolved = await this.resolveCollectionTaxonomy({
+        subjectHint: collectionSubject,
+        topicHint: collectionTopic,
+        placementSubcategoryIds: placementIds,
+        requireCategory: true,
+      });
+      categoryIndex = resolved.index;
+      rootCategory = resolved.root;
+      placementRows = resolved.placementRows;
+      resolvedTopicHint = resolved.primaryTopicName ?? '';
+    }
     const filenameDate = (() => {
       const m = toAsciiDigits(originalFilename).match(/(\d{4})[./-](\d{1,2})[./-](\d{1,2})/);
       if (!m) return null;
@@ -619,8 +792,9 @@ export class WrittenImportService {
     let invalidCount = 0;
 
     for (const row of parsed) {
-      const subjectName = row.subject || collectionSubject;
-      const topicName = row.topic || resolvedTopicHint;
+      const subjectName = row.subject?.trim() || collectionSubject;
+      // Prefer explicit sheet topic; otherwise use primary placement / form topic.
+      const topicName = row.topic?.trim() || resolvedTopicHint;
       const examCategory = row.examCategory || collectionExam;
       const errors: string[] = [];
 
@@ -630,10 +804,20 @@ export class WrittenImportService {
           'Category is required — set it in the upload form or add a Subject/বিষয় column',
         );
       }
-      const subject = subjectName
-        ? categoryIndex.rootsByName.get(this.nameKey(subjectName))
-        : null;
-      if (subjectName && !subject) errors.push(`Category not found: ${subjectName}`);
+      const subject = resolveWrittenRoot(categoryIndex, subjectName);
+      if (subjectName && !subject) {
+        errors.push(`Written category not found: ${subjectName}`);
+      }
+      // When the form selected placements, every row topic must resolve under that parent.
+      // Sheet-only unknown topics (no placements) may auto-create on confirm.
+      if (subject && topicName && placementRows.length > 0) {
+        const topicId = resolveWrittenTopicId(categoryIndex, subject.id, topicName);
+        if (!topicId) {
+          errors.push(
+            `Written subcategory "${topicName}" was not found under category "${subject.name}"`,
+          );
+        }
+      }
 
       const marksValue = row.marks?.trim() ? parseMarks(row.marks) : null;
       if (row.marks?.trim() && marksValue == null) {
@@ -751,7 +935,7 @@ export class WrittenImportService {
           validCount,
           invalidCount,
           duplicateCount: 0,
-          subjectHint: collectionSubject || null,
+          subjectHint: (rootCategory?.name ?? collectionSubject) || null,
           topicHint: resolvedTopicHint || null,
           examCategoryHint: collectionExam || null,
           sheetPreamble,
@@ -818,9 +1002,30 @@ export class WrittenImportService {
   private async runImport(user: RequestUser, batchId: string) {
     const batch = await this.prisma.writtenUploadBatch.findUniqueOrThrow({
       where: { id: batchId },
-      select: { id: true, examYear: true, examCategoryHint: true, questionDate: true },
+      select: {
+        id: true,
+        examYear: true,
+        examCategoryHint: true,
+        questionDate: true,
+        placements: {
+          orderBy: { sortOrder: 'asc' },
+          select: {
+            categoryId: true,
+            subcategoryId: true,
+            subcategory: { select: { id: true, name: true } },
+          },
+        },
+      },
     });
     const categoryIndex = await this.buildCategoryIndex();
+    const primaryPlacement = batch.placements[0] ?? null;
+    const placementByTopicKey = new Map<string, string>();
+    for (const p of batch.placements) {
+      placementByTopicKey.set(
+        `${p.categoryId}::${nameKey(p.subcategory.name)}`,
+        p.subcategoryId,
+      );
+    }
     const rows = await this.prisma.writtenImportRow.findMany({
       where: {
         batchId,
@@ -839,21 +1044,34 @@ export class WrittenImportService {
         for (const row of chunk) {
           try {
             if (!row.contentHash) throw new Error('Missing content hash');
-            const subject = categoryIndex.rootsByName.get(this.nameKey(row.subjectName ?? ''));
-            if (!subject) throw new Error(`Category not found: ${row.subjectName}`);
+            const subject = resolveWrittenRoot(categoryIndex, row.subjectName);
+            if (!subject) throw new Error(`Written category not found: ${row.subjectName}`);
 
-            let topicId = row.topicName
-              ? categoryIndex.topicsByParentAndName.get(
-                  `${subject.id}::${this.nameKey(row.topicName)}`,
-                )
-              : undefined;
-            if (!topicId && row.topicName) {
+            let topicId: string | undefined;
+            const topicHint = row.topicName?.trim() || '';
+            if (topicHint) {
+              topicId =
+                placementByTopicKey.get(`${subject.id}::${nameKey(topicHint)}`) ??
+                resolveWrittenTopicId(categoryIndex, subject.id, topicHint);
+            } else if (primaryPlacement && primaryPlacement.categoryId === subject.id) {
+              // No per-row topic — use the batch's primary placement UUID.
+              topicId = primaryPlacement.subcategoryId;
+            }
+
+            if (!topicId && topicHint) {
+              // Auto-create only when the collection had no explicit placements
+              // (sheet-driven topic). With placements, fail closed instead of duplicating.
+              if (batch.placements.length > 0) {
+                throw new Error(
+                  `Written subcategory "${topicHint}" was not found under category "${subject.name}"`,
+                );
+              }
               const slugBase =
-                slugifyBatchCode(row.topicName).toLowerCase().replace(/_/g, '-') || 'topic';
+                slugifyBatchCode(topicHint).toLowerCase().replace(/_/g, '-') || 'topic';
               const slug = `${subject.slug}-${slugBase}`.slice(0, 100);
               const createdTopic = await tx.category.create({
                 data: {
-                  name: row.topicName.slice(0, 100),
+                  name: topicHint.slice(0, 100),
                   slug: `${slug}-${randomUUID().slice(0, 6)}`,
                   parentId: subject.id,
                   scope: CategoryScope.WRITTEN,
@@ -862,10 +1080,11 @@ export class WrittenImportService {
                 },
               });
               topicId = createdTopic.id;
-              categoryIndex.topicsByParentAndName.set(
-                `${subject.id}::${this.nameKey(row.topicName)}`,
+              categoryIndex.topicsByParentAndKey.set(
+                `${subject.id}::${nameKey(topicHint)}`,
                 topicId,
               );
+              categoryIndex.topicNameById.set(topicId, createdTopic.name);
             }
 
             const examTag = mapExamCategoryToTag(row.examCategory) ?? 'bcs-written';

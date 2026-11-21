@@ -2,16 +2,13 @@ import Link from 'next/link';
 import { BookOpen, FolderTree, Layers, Newspaper } from 'lucide-react';
 import type { HomepagePayload } from '@your-academy/shared';
 import type { PublicPlatformStats } from '@/lib/api/public-stats';
+import { AnimatedCounter } from '@/components/motion/animated-counter';
 import { Reveal } from '@/components/motion/reveal';
 
 type Props = {
   stats: PublicPlatformStats | null;
   content?: HomepagePayload['liveStats'];
 };
-
-function formatCount(n: number): string {
-  return new Intl.NumberFormat('en-BD').format(n);
-}
 
 const ITEMS = [
   {
@@ -64,7 +61,6 @@ export function HomepageLiveStats({ stats, content }: Props) {
           {ITEMS.map((item) => {
             const Icon = item.icon;
             const raw = stats?.[item.key];
-            const value = raw == null ? '—' : formatCount(raw);
             return (
               <div key={item.key} className="hp-card hp-card-interactive p-4 sm:p-5">
                 <dt className="flex items-center gap-2 text-xs font-semibold tracking-wide text-[var(--muted)] uppercase">
@@ -78,7 +74,13 @@ export function HomepageLiveStats({ stats, content }: Props) {
                     href={item.href}
                     className="transition-colors hover:text-[var(--highlight)]"
                   >
-                    {value}
+                    {raw == null ? (
+                      <span className="tabular-nums" aria-label="Count unavailable">
+                        —
+                      </span>
+                    ) : (
+                      <AnimatedCounter value={raw} />
+                    )}
                   </Link>
                 </dd>
               </div>

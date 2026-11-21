@@ -48,6 +48,7 @@ function QuestionImportDetailContent() {
   const [displayName, setDisplayName] = useState('');
   const [subjectHint, setSubjectHint] = useState('');
   const [topicHint, setTopicHint] = useState('');
+  const [placementSubcategoryId, setPlacementSubcategoryId] = useState('');
   const [importProgress, setImportProgress] = useState<number | null>(null);
 
   const batch = useQuery({
@@ -70,7 +71,16 @@ function QuestionImportDetailContent() {
     setDisplayName(batch.data.displayName);
     setSubjectHint(batch.data.subjectHint ?? '');
     setTopicHint(batch.data.topicHint ?? '');
-  }, [batch.data]);
+    const fromPlacement = batch.data.placements?.[0]?.subcategoryId ?? '';
+    if (fromPlacement) {
+      setPlacementSubcategoryId(fromPlacement);
+      return;
+    }
+    const byName = (categories.data ?? [])
+      .flatMap((c) => c.children ?? [])
+      .find((t) => t.name === (batch.data.topicHint ?? ''));
+    setPlacementSubcategoryId(byName?.id ?? '');
+  }, [batch.data, categories.data]);
 
   const rows = useInfiniteQuery({
     queryKey: ['admin-written-question-import-rows', id, rowStatus],
@@ -113,18 +123,24 @@ function QuestionImportDetailContent() {
   });
 
   const saveMeta = useMutation({
-    mutationFn: () =>
-      apiFetch<UploadBatch>(`/admin/written-question-imports/${id}`, {
+    mutationFn: () => {
+      const selectedSub = selectedCategory?.children.find(
+        (c) => c.id === placementSubcategoryId,
+      );
+      return apiFetch<UploadBatch>(`/admin/written-question-imports/${id}`, {
         method: 'PATCH',
         body: JSON.stringify({
           displayName,
           subjectHint: subjectHint.trim() || null,
-          topicHint: topicHint.trim() || null,
+          topicHint: selectedSub?.name ?? (topicHint.trim() || null),
+          placementSubcategoryIds: placementSubcategoryId ? [placementSubcategoryId] : [],
         }),
-      }),
+      });
+    },
     onSuccess: () => {
       setEditing(false);
       void qc.invalidateQueries({ queryKey: ['admin-written-question-import', id] });
+      void qc.invalidateQueries({ queryKey: ['admin-written-question-import-rows', id] });
       void qc.invalidateQueries({ queryKey: ['admin-written-question-imports'] });
     },
   });
@@ -372,6 +388,7 @@ function QuestionImportDetailContent() {
                   onChange={(e) => {
                     setSubjectHint(e.target.value);
                     setTopicHint('');
+                    setPlacementSubcategoryId('');
                   }}
                 >
                   <option value="">Select Written category…</option>
@@ -386,6 +403,7 @@ function QuestionImportDetailContent() {
                   onCreated={(created) => {
                     setSubjectHint(created.name);
                     setTopicHint('');
+                    setPlacementSubcategoryId('');
                   }}
                 />
               </div>
@@ -396,8 +414,13 @@ function QuestionImportDetailContent() {
                 <Select
                   id="edit-subcategory"
                   className="min-w-0 flex-1"
-                  value={topicHint}
-                  onChange={(e) => setTopicHint(e.target.value)}
+                  value={placementSubcategoryId}
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    setPlacementSubcategoryId(id);
+                    const child = selectedCategory?.children.find((c) => c.id === id);
+                    setTopicHint(child?.name ?? '');
+                  }}
                   disabled={!selectedCategory}
                 >
                   <option value="">
@@ -408,7 +431,7 @@ function QuestionImportDetailContent() {
                       : 'Select a Written category first…'}
                   </option>
                   {(selectedCategory?.children ?? []).map((t) => (
-                    <option key={t.id} value={t.name}>
+                    <option key={t.id} value={t.id}>
                       {t.name}
                     </option>
                   ))}
@@ -418,10 +441,14 @@ function QuestionImportDetailContent() {
                   parentId={selectedCategory?.id ?? null}
                   parentName={selectedCategory?.name}
                   onCreated={(created) => {
+                    setPlacementSubcategoryId(created.id);
                     setTopicHint(created.name);
                   }}
                 />
               </div>
+              <p className="mt-1 text-xs text-[var(--muted)]">
+                Saved to this collection and applied to every question on import.
+              </p>
             </Field>
             <div>
               <Button
