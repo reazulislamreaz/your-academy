@@ -43,6 +43,32 @@ export type TopicQuestionCard = PublicQuestionCard & {
   examLabel?: string | null;
 };
 
+export type TopicSetSummary = {
+  id: string;
+  batchCode: string;
+  title: string;
+  questionCount: number;
+  uploadedAt: string;
+  importedAt: string | null;
+  category: { id: string; name: string };
+  subcategory: { id: string; name: string };
+  childCategory: { id: string; name: string } | null;
+};
+
+export type TopicSetDetail = TopicSetSummary & {
+  category: { id: string; name: string; slug?: string; iconKey?: string | null };
+  subcategory: { id: string; name: string; slug?: string; iconKey?: string | null };
+  childCategory: {
+    id: string;
+    name: string;
+    slug?: string;
+    iconKey?: string | null;
+  } | null;
+  categoryId: string;
+  subcategoryId: string;
+  childCategoryId: string | null;
+};
+
 export type TopicUploadBatchSummary = {
   id: string;
   batchCode: string;
@@ -88,6 +114,31 @@ export function listTopicQuestions(
   if (params.q) sp.set('q', params.q);
   return apiFetchResult<TopicQuestionCard[]>(
     `/public/topic-subcategories/${subcategoryId}/questions?${sp}`,
+    { skipRefresh: true },
+  );
+}
+
+/** Title-first collections for a leaf Sub/Child Topic folder. */
+export function listTopicSets(folderId: string): Promise<TopicSetSummary[]> {
+  return apiFetch<TopicSetSummary[]>(`/public/topic-subcategories/${folderId}/sets`, {
+    skipRefresh: true,
+  });
+}
+
+export function getTopicSet(batchId: string): Promise<TopicSetDetail> {
+  return apiFetch<TopicSetDetail>(`/public/topic-sets/${batchId}`, { skipRefresh: true });
+}
+
+export function listTopicSetQuestions(
+  batchId: string,
+  params: { cursor?: string; limit?: number; q?: string } = {},
+) {
+  const sp = new URLSearchParams();
+  if (params.cursor) sp.set('cursor', params.cursor);
+  sp.set('limit', String(params.limit ?? 20));
+  if (params.q) sp.set('q', params.q);
+  return apiFetchResult<TopicQuestionCard[]>(
+    `/public/topic-sets/${batchId}/questions?${sp}`,
     { skipRefresh: true },
   );
 }

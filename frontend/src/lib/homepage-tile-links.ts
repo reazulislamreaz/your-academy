@@ -18,9 +18,14 @@ export function topicExplorerHref(opts?: {
   return q ? `${ALL_TOPICS_PATH}?${q}` : ALL_TOPICS_PATH;
 }
 
-/** Dedicated Topic Base question page for one taxonomy node (L1–L3). */
+/** Dedicated Topic Base folder page (title-first sets for a leaf Sub/Child). */
 export function topicBaseHref(topicNodeId: string): string {
   return `/topic-base/${encodeURIComponent(topicNodeId)}`;
+}
+
+/** Topic Base collection (upload batch) question view. */
+export function topicSetHref(batchId: string): string {
+  return `/topic-base/sets/${encodeURIComponent(batchId)}`;
 }
 /** Full Written subcategory directory (homepage Others / View all). */
 export const WRITTEN_SUBCATEGORIES_PATH = '/written-question-bank-categories';

@@ -5,13 +5,13 @@ import { useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { HomepageIconKey } from '@your-academy/shared';
-import { ArrowLeft, ChevronRight, FolderOpen } from 'lucide-react';
+import { ArrowLeft, ChevronRight } from 'lucide-react';
 import { DirectoryPageShell } from '@/components/marketing/directory-page-shell';
 import { DirectoryTileGridSkeleton } from '@/components/marketing/directory-tile-grid-skeleton';
 import { HomepageTileCard } from '@/components/marketing/homepage-tile-card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SkeletonRegion } from '@/components/ui/skeleton';
-import { TopicQuestionView } from '@/features/topic-base/topic-question-view';
+import { TopicSetList } from '@/features/topic-base/topic-set-list';
 import {
   fetchPublicCategories,
   publicCategoriesQueryKey,
@@ -22,21 +22,17 @@ import {
   guessHomepageIconKey,
   topicExplorerHref,
 } from '@/lib/homepage-tile-links';
-import { cn } from '@/lib/utils';
 
 type Props = {
   heading?: string;
-  subtitle?: string;
   breadcrumbLabel?: string;
 };
 
 type FolderTile = {
   id: string;
   name: string;
-  subtitle: string;
   iconKey: HomepageIconKey;
   href: string;
-  folderCount: number;
 };
 
 function asIcon(key: string | null | undefined, fallbackName: string): HomepageIconKey {
@@ -49,11 +45,11 @@ function childCount(node: CategoryLeaf | CategoryNode): number {
 
 /**
  * Folder-style Topic Base explorer (DEC-042):
- * Category → Sub Category → Child Category, with questions for the open folder.
+ * Category → Sub Category → Child Category.
+ * Title-first sets appear only on leaf Sub/Child folders with uploads.
  */
 export function AllTopicsDirectory({
   heading = 'All Topics',
-  subtitle = 'Browse Topic Base folders — open a category, then drill into sub and child topics.',
   breadcrumbLabel = 'Topic Base Question Analysis',
 }: Props) {
   const router = useRouter();
@@ -84,8 +80,6 @@ export function AllTopicsDirectory({
     [selectedSubcategory, childCategoryId],
   );
 
-  // Active folder for question list (deepest selected node).
-  const activeFolderId = childCategoryId || subcategoryId || categoryId || null;
   const activeFolderName =
     selectedChild?.name ||
     selectedSubcategory?.name ||
@@ -97,36 +91,25 @@ export function AllTopicsDirectory({
       return roots.map((root) => ({
         id: root.id,
         name: root.name,
-        subtitle:
-          childCount(root) > 0
-            ? `${childCount(root)} subcategor${childCount(root) === 1 ? 'y' : 'ies'}`
-            : 'Open folder',
         iconKey: asIcon(root.iconKey, root.name),
         href: topicExplorerHref({ categoryId: root.id }),
-        folderCount: childCount(root),
       }));
     }
     if (selectedCategory && !subcategoryId) {
       return (selectedCategory.children ?? []).map((sub) => ({
         id: sub.id,
         name: sub.name,
-        subtitle:
-          childCount(sub) > 0
-            ? `${childCount(sub)} child topic${childCount(sub) === 1 ? '' : 's'}`
-            : 'View questions',
         iconKey: asIcon(sub.iconKey || selectedCategory.iconKey, sub.name),
         href: topicExplorerHref({
           categoryId: selectedCategory.id,
           subcategoryId: sub.id,
         }),
-        folderCount: childCount(sub),
       }));
     }
     if (selectedCategory && selectedSubcategory && !childCategoryId) {
       return (selectedSubcategory.children ?? []).map((child) => ({
         id: child.id,
         name: child.name,
-        subtitle: 'View questions',
         iconKey: asIcon(
           child.iconKey || selectedSubcategory.iconKey || selectedCategory.iconKey,
           child.name,
@@ -136,7 +119,6 @@ export function AllTopicsDirectory({
           subcategoryId: selectedSubcategory.id,
           childCategoryId: child.id,
         }),
-        folderCount: 0,
       }));
     }
     return [];
@@ -184,15 +166,15 @@ export function AllTopicsDirectory({
   const parentHref =
     crumbs.length > 1 ? crumbs[crumbs.length - 2]!.href : ALL_TOPICS_PATH;
 
-  const levelLabel = !categoryId
-    ? 'Categories'
-    : !subcategoryId
-      ? 'Sub Categories'
-      : !childCategoryId
-        ? 'Child Categories'
-        : null;
+  // Leaf = Child Category, or Sub Category with no nested children.
+  const leafFolderId = useMemo(() => {
+    if (selectedChild) return selectedChild.id;
+    if (selectedSubcategory && childCount(selectedSubcategory) === 0) {
+      return selectedSubcategory.id;
+    }
+    return null;
+  }, [selectedChild, selectedSubcategory]);
 
-  // Invalid deep-link (stale id) — soft reset toward nearest valid ancestor.
   useEffect(() => {
     if (tree.isLoading || tree.isError) return;
     if (categoryId && !selectedCategory) {
@@ -226,11 +208,6 @@ export function AllTopicsDirectory({
   return (
     <DirectoryPageShell
       heading={activeFolderName ?? heading}
-      subtitle={
-        activeFolderName
-          ? `Questions and folders under “${activeFolderName}”.`
-          : subtitle
-      }
       breadcrumbLabel={breadcrumbLabel}
       backLabel="Back to homepage"
     >
@@ -265,7 +242,7 @@ export function AllTopicsDirectory({
             className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--muted-strong)] transition-colors hover:text-[var(--highlight)]"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden />
-            Up one folder
+            Up
           </Link>
         ) : null}
       </nav>
@@ -279,78 +256,26 @@ export function AllTopicsDirectory({
           <span className="sr-only">Loading</span>
         </SkeletonRegion>
       ) : tree.isError ? (
-        <EmptyState
-          align="center"
-          title="Couldn’t load topics"
-          description="Please refresh and try again."
-        />
+        <EmptyState align="center" title="Couldn’t load topics" />
       ) : roots.length === 0 ? (
-        <EmptyState
-          align="center"
-          title="No topics yet"
-          description="Admins create Topic Base categories under Taxonomy → Topics, then upload questions."
-        />
+        <EmptyState align="center" title="No topics yet" />
       ) : (
-        <div className="space-y-10">
-          {levelLabel && folderTiles.length > 0 ? (
-            <section className="space-y-4" aria-labelledby="topic-folders-heading">
-              <div className="flex flex-wrap items-end justify-between gap-2">
-                <div>
-                  <h2
-                    id="topic-folders-heading"
-                    className="font-display text-lg font-bold text-[var(--ink)]"
-                  >
-                    {levelLabel}
-                  </h2>
-                  <p className="text-sm text-[var(--muted-strong)]">
-                    Open a folder to drill down
-                    {activeFolderId ? ' or browse questions below' : ''}.
-                  </p>
-                </div>
-              </div>
-              <ul className="motion-stagger grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 lg:gap-4">
-                {folderTiles.map((tile) => (
-                  <li key={tile.id}>
-                    <HomepageTileCard
-                      href={tile.href}
-                      title={tile.name}
-                      subtitle={tile.subtitle}
-                      iconKey={tile.iconKey}
-                      className={cn(
-                        activeFolderId === tile.id &&
-                          'ring-2 ring-[var(--highlight)]/40 border-[var(--highlight)]/50',
-                      )}
-                    />
-                  </li>
-                ))}
-              </ul>
-            </section>
+        <div className="space-y-8">
+          {folderTiles.length > 0 ? (
+            <ul className="motion-stagger grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 lg:gap-4">
+              {folderTiles.map((tile) => (
+                <li key={tile.id}>
+                  <HomepageTileCard
+                    href={tile.href}
+                    title={tile.name}
+                    iconKey={tile.iconKey}
+                  />
+                </li>
+              ))}
+            </ul>
           ) : null}
 
-          {levelLabel && folderTiles.length === 0 && !childCategoryId ? (
-            <p className="flex items-center gap-2 rounded-[var(--radius-lg)] border border-dashed border-[var(--line)] bg-[var(--bg-elevated)] px-4 py-5 text-sm text-[var(--muted-strong)]">
-              <FolderOpen className="size-4 shrink-0 text-[var(--highlight)]" aria-hidden />
-              No nested folders here — questions for this selection are listed below.
-            </p>
-          ) : null}
-
-          {activeFolderId ? (
-            <section className="space-y-4" aria-labelledby="topic-questions-heading">
-              <h2
-                id="topic-questions-heading"
-                className="font-display text-lg font-bold text-[var(--ink)]"
-              >
-                Questions
-                {activeFolderName ? ` · ${activeFolderName}` : ''}
-              </h2>
-              <TopicQuestionView
-                subcategoryId={activeFolderId}
-                embed
-                backHref={parentHref}
-                className="pt-0"
-              />
-            </section>
-          ) : null}
+          {leafFolderId ? <TopicSetList folderId={leafFolderId} /> : null}
         </div>
       )}
     </DirectoryPageShell>

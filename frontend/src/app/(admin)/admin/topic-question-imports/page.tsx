@@ -48,6 +48,7 @@ import {
   listAdminTopicImports,
   type TopicUploadBatchSummary,
 } from '@/lib/api/topic-questions';
+import { topicSetHref } from '@/lib/homepage-tile-links';
 import { adminDownloadUrl } from '@/lib/api/upload';
 import type { CategoryNode } from '@/lib/api/types';
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
@@ -124,7 +125,7 @@ export default function TopicQuestionImportsHubPage() {
     <AdminRowActions
       align={align}
       primary={
-        <Link href={`/topic-base/${item.subcategory.id}`}>
+        <Link href={topicSetHref(item.id)}>
           <Button type="button" size="sm" variant="outline" className="cursor-pointer">
             <Eye className="size-3.5" />
             View
@@ -217,7 +218,7 @@ export default function TopicQuestionImportsHubPage() {
             {s.recentUploads.map((item) => (
               <Link
                 key={item.id}
-                href={`/topic-base/${item.subcategory.id}`}
+                href={topicSetHref(item.id)}
                 className="admin-list-card min-w-0 max-w-full rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] p-3.5 sm:p-4 shadow-[var(--shadow-sm)] transition-colors hover:border-[var(--highlight)]/40"
               >
                 <div className="mb-1 flex min-w-0 items-center gap-2">
@@ -354,7 +355,7 @@ export default function TopicQuestionImportsHubPage() {
                   badges={<Badge variant={statusTone(item.status)}>{item.status}</Badge>}
                   title={
                     <Link
-                      href={`/topic-base/${item.subcategory.id}`}
+                      href={topicSetHref(item.id)}
                       className="hover:text-[var(--highlight)]"
                     >
                       {item.displayName}
@@ -400,7 +401,7 @@ export default function TopicQuestionImportsHubPage() {
                       <tr key={item.id}>
                         <AdminTd className="max-w-[16rem] align-top">
                           <Link
-                            href={`/topic-base/${item.subcategory.id}`}
+                            href={topicSetHref(item.id)}
                             className="font-semibold text-[var(--ink)] hover:text-[var(--highlight)]"
                           >
                             {item.displayName}

@@ -1397,4 +1397,201 @@ export class PublicService {
 
     return { items, nextCursor, total };
   }
+
+  /**
+   * Title-first Topic collections for a leaf Sub Category or Child Category.
+   * Category (L1) and intermediate Sub folders with children return no sets.
+   */
+  async listTopicSets(topicNodeId: string) {
+    const meta = await this.getTopicSubcategory(topicNodeId);
+    if (meta.level === 'category') {
+      return [] as Array<{
+        id: string;
+        batchCode: string;
+        title: string;
+        questionCount: number;
+        uploadedAt: string;
+        importedAt: string | null;
+        category: { id: string; name: string };
+        subcategory: { id: string; name: string };
+        childCategory: { id: string; name: string } | null;
+      }>;
+    }
+
+    if (meta.level === 'subcategory' && (meta.folderCount ?? 0) > 0) {
+      // Intermediate folder — only child folders, not sets.
+      return [];
+    }
+
+    const where: Prisma.TopicUploadBatchWhereInput = {
+      status: { in: [QuestionUploadStatus.COMPLETED, QuestionUploadStatus.ARCHIVED] },
+      questions: { some: {} },
+      ...(meta.level === 'child'
+        ? { childCategoryId: meta.id }
+        : { subcategoryId: meta.id, childCategoryId: null }),
+    };
+
+    const batches = await this.prisma.topicUploadBatch.findMany({
+      where,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      select: {
+        id: true,
+        batchCode: true,
+        displayName: true,
+        createdAt: true,
+        importedAt: true,
+        category: { select: { id: true, name: true } },
+        subcategory: { select: { id: true, name: true } },
+        childCategory: { select: { id: true, name: true } },
+        _count: { select: { questions: true } },
+      },
+    });
+
+    return batches.map((b) => ({
+      id: b.id,
+      batchCode: b.batchCode,
+      title: b.displayName,
+      questionCount: b._count.questions,
+      uploadedAt: b.createdAt.toISOString(),
+      importedAt: b.importedAt?.toISOString() ?? null,
+      category: b.category,
+      subcategory: b.subcategory,
+      childCategory: b.childCategory,
+    }));
+  }
+
+  async getTopicSet(batchId: string) {
+    const batch = await this.prisma.topicUploadBatch.findFirst({
+      where: {
+        id: batchId,
+        status: { in: [QuestionUploadStatus.COMPLETED, QuestionUploadStatus.ARCHIVED] },
+        questions: { some: {} },
+      },
+      select: {
+        id: true,
+        batchCode: true,
+        displayName: true,
+        createdAt: true,
+        importedAt: true,
+        categoryId: true,
+        subcategoryId: true,
+        childCategoryId: true,
+        category: { select: { id: true, name: true, slug: true, iconKey: true } },
+        subcategory: { select: { id: true, name: true, slug: true, iconKey: true } },
+        childCategory: { select: { id: true, name: true, slug: true, iconKey: true } },
+        _count: { select: { questions: true } },
+      },
+    });
+    if (!batch) {
+      throw new NotFoundException(
+        createErrorResponse('TOPIC_SET_NOT_FOUND', 'Topic set not found', newRequestId()),
+      );
+    }
+    return {
+      id: batch.id,
+      batchCode: batch.batchCode,
+      title: batch.displayName,
+      questionCount: batch._count.questions,
+      uploadedAt: batch.createdAt.toISOString(),
+      importedAt: batch.importedAt?.toISOString() ?? null,
+      category: batch.category,
+      subcategory: batch.subcategory,
+      childCategory: batch.childCategory,
+      categoryId: batch.categoryId,
+      subcategoryId: batch.subcategoryId,
+      childCategoryId: batch.childCategoryId,
+    };
+  }
+
+  async listTopicSetQuestions(params: {
+    batchId: string;
+    cursor?: string;
+    limit: number;
+    q?: string;
+  }) {
+    await this.getTopicSet(params.batchId);
+
+    const where: Prisma.TopicQuestionWhereInput = {
+      batchId: params.batchId,
+      ...(params.q?.trim()
+        ? {
+            OR: [
+              { questionText: { contains: params.q.trim(), mode: 'insensitive' } },
+              { examLabel: { contains: params.q.trim(), mode: 'insensitive' } },
+              { sourceSerial: { contains: params.q.trim(), mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+    };
+
+    const total = await this.prisma.topicQuestion.count({ where });
+    const take = params.limit + 1;
+    const rows = await this.prisma.topicQuestion.findMany({
+      where,
+      orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+      take,
+      ...(params.cursor
+        ? {
+            skip: 1,
+            cursor: { id: params.cursor },
+          }
+        : {}),
+      include: {
+        category: { select: { id: true, name: true, slug: true } },
+        subcategory: { select: { id: true, name: true, slug: true, iconKey: true } },
+        childCategory: { select: { id: true, name: true, slug: true, iconKey: true } },
+      },
+    });
+
+    const nextCursor = rows.length > params.limit ? rows[params.limit - 1]?.id : null;
+    const page = rows.slice(0, params.limit);
+    const keyToLabel: Record<string, string> = { a: 'A', b: 'B', c: 'C', d: 'D' };
+
+    const items = page.map((q) => {
+      const options = [
+        { id: `${q.id}-A`, label: 'A', content: q.optionA, sortOrder: 0 },
+        { id: `${q.id}-B`, label: 'B', content: q.optionB, sortOrder: 1 },
+        { id: `${q.id}-C`, label: 'C', content: q.optionC, sortOrder: 2 },
+        { id: `${q.id}-D`, label: 'D', content: q.optionD, sortOrder: 3 },
+      ];
+      const correctAnswerLabel = q.correctKey ? keyToLabel[q.correctKey] ?? '' : '';
+      return {
+        id: q.id,
+        title: q.questionText.slice(0, 200),
+        content: q.questionText,
+        difficulty: 'MEDIUM' as Difficulty,
+        examTags: [] as string[],
+        sourceNote: q.examLabel,
+        sourceLabel: null as string | null,
+        sourceSerial: q.sourceSerial,
+        examYear: null as string | null,
+        sectionTitle: null as string | null,
+        examLabel: q.examLabel,
+        category: q.category,
+        subcategory: q.subcategory
+          ? {
+              id: q.subcategory.id,
+              name: q.subcategory.name,
+              slug: q.subcategory.slug,
+            }
+          : null,
+        childCategory: q.childCategory
+          ? {
+              id: q.childCategory.id,
+              name: q.childCategory.name,
+              slug: q.childCategory.slug,
+            }
+          : null,
+        options,
+        correctAnswerLabel,
+        correctAnswerBn: correctAnswerLabel ? BN_LABEL[correctAnswerLabel] ?? '' : '',
+        createdAt: q.createdAt.toISOString(),
+        publishedAt: q.createdAt.toISOString(),
+        uploadBatchId: q.batchId,
+        rowNumber: q.rowNumber,
+      };
+    });
+
+    return { items, nextCursor, total };
+  }
 }

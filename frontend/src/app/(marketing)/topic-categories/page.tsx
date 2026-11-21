@@ -8,7 +8,7 @@ import { getPublicHomepage } from '@/lib/api/homepage';
 export const metadata: Metadata = {
   title: 'All Topics — Topic Base Question Analysis — Your Academy',
   description:
-    'Browse Topic Base folders (Category → Sub Category → Child Category) and open questions for any folder.',
+    'Browse Topic Base folders (Category → Sub Category → Child Category) and open question collections.',
 };
 
 export const revalidate = 30;
@@ -19,20 +19,14 @@ async function loadTopicSectionCopy() {
     const home = await getPublicHomepage();
     const sectionHeading =
       home.payload.topics.heading?.trim() || defaults.heading;
-    const subtitle =
-      home.payload.topics.subtitle?.trim() ||
-      'Browse Topic Base folders — open a category, then drill into sub and child topics.';
     return {
       heading: 'All Topics',
       breadcrumbLabel: sectionHeading,
-      subtitle,
     };
   } catch {
     return {
       heading: 'All Topics',
       breadcrumbLabel: defaults.heading,
-      subtitle:
-        'Browse Topic Base folders — open a category, then drill into sub and child topics.',
     };
   }
 }
@@ -51,7 +45,6 @@ export default async function TopicCategoriesPage() {
       <AllTopicsDirectory
         heading={section.heading}
         breadcrumbLabel={section.breadcrumbLabel}
-        subtitle={section.subtitle}
       />
     </Suspense>
   );

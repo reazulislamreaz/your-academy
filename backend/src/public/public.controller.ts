@@ -221,6 +221,38 @@ export class PublicController {
     );
   }
 
+  /** Title-first Topic collections for a leaf Sub/Child folder. */
+  @Get('topic-subcategories/:id/sets')
+  async topicSets(@Param('id') id: string) {
+    return createSuccessResponse(await this.publicService.listTopicSets(id), newRequestId());
+  }
+
+  @Get('topic-sets/:id')
+  async topicSet(@Param('id') id: string) {
+    return createSuccessResponse(await this.publicService.getTopicSet(id), newRequestId());
+  }
+
+  @Get('topic-sets/:id/questions')
+  async topicSetQuestions(
+    @Param('id') id: string,
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit?: string,
+    @Query('q') q?: string,
+  ) {
+    const take = Math.min(Math.max(Number(limit) || 20, 1), 100);
+    const data = await this.publicService.listTopicSetQuestions({
+      batchId: id,
+      cursor,
+      limit: take,
+      q,
+    });
+    return createSuccessResponse(
+      data.items,
+      newRequestId(),
+      cursorPaginationMeta(data.nextCursor, take, data.total),
+    );
+  }
+
   @Get('questions')
   async questions(
     @Query('cursor') cursor?: string,

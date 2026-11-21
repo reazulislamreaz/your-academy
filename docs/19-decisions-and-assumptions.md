@@ -104,7 +104,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Field | Value |
 |-------|-------|
 | Question | Should Topic Base Question Analysis be a dedicated bank (taxonomy + Excel upload + public topic pages), separate from Preli/Written, without changing the marketing navbar? |
-| Decision | **Yes.** Add `CategoryScope.TOPIC` + optional `Category.iconKey`. Topic Base is **fully separate** from Preli/Written. Admin Taxonomy **Topics** tab supports **3-level** tree (Category → Sub → Child) + upload cascade IDs. Homepage **Topic Base** strip shows **Top 4 root Categories** + **Others** → `/topic-categories` folder explorer (query `categoryId` / `subcategoryId` / `childCategoryId`). Selecting a folder lists all Topic questions for that node (L1=`categoryId`, L2=`subcategoryId`, L3=`childCategoryId`). Marketing navbar unchanged. |
+| Decision | **Yes.** Add `CategoryScope.TOPIC` + optional `Category.iconKey`. Topic Base is **fully separate** from Preli/Written. Admin Taxonomy **Topics** tab supports **3-level** tree (Category → Sub → Child) + upload cascade IDs. Homepage **Topic Base** strip shows **Top 4 root Categories** + **Others** → `/topic-categories` folder explorer. Leaf Sub/Child folders show **title-first** Topic collections (upload batches); clicking a title opens `/topic-base/sets/:id` with that set’s questions (Preli/Written pattern). No question dump on Category or intermediate Sub folders. Marketing navbar unchanged. |
 | Impact | Migrations `20261121120000_topic_base_question_analysis`, `20261121140000_topic_three_level_hierarchy`; TopicImportModule; public topic APIs; admin upload/taxonomy UI; homepage topics wiring |
 | Status | **CONFIRMED** (product request 2026-11-21; 3-level hierarchy 2026-11-21) |
 
