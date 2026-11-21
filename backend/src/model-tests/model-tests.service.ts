@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -10,7 +11,9 @@ import {
   createErrorResponse,
   type ModelTestGuideConfig,
   type ModelTestGuideItem,
+  type TimedAttemptSummary,
 } from '@your-academy/shared';
+import type { RequestUser } from '../auth/auth.types';
 import { PrismaService } from '../database/prisma.service';
 import { newRequestId } from '../common/request-id';
 import { paginateById, parseLimit } from '../common/pagination';
@@ -231,7 +234,11 @@ export class ModelTestsService {
     };
   }
 
-  async submitAttempt(idOrSlug: string, dto: SubmitModelTestAttemptDto) {
+  async submitAttempt(
+    idOrSlug: string,
+    dto: SubmitModelTestAttemptDto,
+    actor: RequestUser | null = null,
+  ) {
     const modelTest = await this.findPublished(idOrSlug);
     const questions = await this.prisma.modelTestQuestion.findMany({
       where: { modelTestId: modelTest.id },
@@ -244,7 +251,18 @@ export class ModelTestsService {
       );
     }
 
-    const name = dto.userName?.trim() ?? '';
+    let name = dto.userName?.trim() ?? '';
+    let userId: string | null = null;
+    if (actor?.userId) {
+      const account = await this.prisma.user.findFirst({
+        where: { id: actor.userId, deletedAt: null },
+        select: { id: true, name: true },
+      });
+      if (account) {
+        userId = account.id;
+        name = account.name.trim();
+      }
+    }
     if (name.length < 2) {
       throw new BadRequestException(
         createErrorResponse('NAME_REQUIRED', 'Full name is required', newRequestId()),
@@ -283,6 +301,7 @@ export class ModelTestsService {
     const attempt = await this.prisma.modelTestAttempt.create({
       data: {
         modelTestId: modelTest.id,
+        userId,
         userName: name.slice(0, 120),
         score: correctCount,
         correctCount,
@@ -312,6 +331,77 @@ export class ModelTestsService {
       timedOut: attempt.timedOut,
       submittedAt: attempt.submittedAt,
     };
+  }
+
+  /** Attach a guest Model Test attempt to the newly registered / logged-in user. */
+  async claimAttempt(userId: string, attemptId: string) {
+    if (!UUID_RE.test(attemptId)) {
+      throw new NotFoundException(
+        createErrorResponse('ATTEMPT_NOT_FOUND', 'Attempt not found', newRequestId()),
+      );
+    }
+    const attempt = await this.prisma.modelTestAttempt.findUnique({
+      where: { id: attemptId },
+      select: { id: true, userId: true },
+    });
+    if (!attempt) {
+      throw new NotFoundException(
+        createErrorResponse('ATTEMPT_NOT_FOUND', 'Attempt not found', newRequestId()),
+      );
+    }
+    if (attempt.userId && attempt.userId !== userId) {
+      throw new ForbiddenException(
+        createErrorResponse(
+          'ATTEMPT_OWNED',
+          'This attempt is already linked to another account',
+          newRequestId(),
+        ),
+      );
+    }
+    if (attempt.userId === userId) {
+      return { ok: true as const, alreadyLinked: true };
+    }
+    await this.prisma.modelTestAttempt.update({
+      where: { id: attemptId },
+      data: { userId },
+    });
+    return { ok: true as const, alreadyLinked: false };
+  }
+
+  async listMyAttempts(
+    userId: string,
+    opts: { cursor?: string; limit?: number },
+  ): Promise<{ items: TimedAttemptSummary[]; nextCursor: string | null }> {
+    const take = parseLimit(opts.limit, 20);
+    const rows = await this.prisma.modelTestAttempt.findMany({
+      where: { userId },
+      take: take + 1,
+      ...(opts.cursor ? { cursor: { id: opts.cursor }, skip: 1 } : {}),
+      orderBy: [{ submittedAt: 'desc' }, { id: 'desc' }],
+      include: {
+        modelTest: { select: { title: true, slug: true, totalQuestions: true } },
+      },
+    });
+    const { items: pageRows, nextCursor } = paginateById(rows, take);
+
+    const items: TimedAttemptSummary[] = pageRows.map((row) => {
+      const total = row.modelTest.totalQuestions;
+      const percent =
+        total > 0 ? Math.round((row.score / total) * 1000) / 10 : 0;
+      return {
+        id: row.id,
+        kind: 'model-test',
+        title: row.modelTest.title,
+        slug: row.modelTest.slug,
+        score: row.score,
+        totalQuestions: total,
+        percent,
+        submittedAt: row.submittedAt.toISOString(),
+        resultPath: `/model-test/${encodeURIComponent(row.modelTest.slug)}/result/${encodeURIComponent(row.id)}`,
+      };
+    });
+
+    return { items, nextCursor };
   }
 
   async getAttemptResult(attemptId: string) {

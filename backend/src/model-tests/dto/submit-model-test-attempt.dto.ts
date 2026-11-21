@@ -11,10 +11,12 @@ import {
 } from 'class-validator';
 
 export class SubmitModelTestAttemptDto {
+  /** Required for guests; ignored when an authenticated session supplies the account name. */
+  @IsOptional()
   @IsString()
   @MinLength(2)
   @MaxLength(120)
-  userName!: string;
+  userName?: string;
 
   /** Map of questionId → selected option text. */
   @IsObject()

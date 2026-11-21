@@ -20,8 +20,12 @@ import {
   WhatsappField,
   toAuthWhatsappPayload,
 } from '@/features/auth/whatsapp-field';
-import { loadGuestResultLink } from '@/features/guest-exams/guest-result-link';
+import {
+  clearGuestResultLink,
+  loadGuestResultLink,
+} from '@/features/guest-exams/guest-result-link';
 import { ApiError, apiFetch } from '@/lib/api/client';
+import { claimTimedAttempt } from '@/lib/api/timed-attempts';
 import type { MeUser } from '@/lib/api/types';
 import { resolvePostAuthPath } from '@/lib/auth/role-routing';
 
@@ -75,8 +79,20 @@ function RegisterForm() {
         skipRefresh: true,
       });
       qc.setQueryData(meQueryKey, result.user);
-      const next =
-        searchParams.get('next') || loadGuestResultLink()?.resultPath || null;
+      const guestLink = loadGuestResultLink();
+      // Link the temporary guest score to the new account when present.
+      if (guestLink?.attemptId) {
+        try {
+          await claimTimedAttempt({
+            kind: guestLink.kind,
+            attemptId: guestLink.attemptId,
+          });
+        } catch {
+          // Non-blocking — registration already succeeded; score may stay unlinked.
+        }
+        clearGuestResultLink();
+      }
+      const next = searchParams.get('next') || guestLink?.resultPath || null;
       // Prefer returning guests to their result sheet; otherwise onboarding.
       const dest =
         next && next.startsWith('/') && !next.startsWith('//')

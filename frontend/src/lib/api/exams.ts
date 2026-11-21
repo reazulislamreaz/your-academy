@@ -54,17 +54,17 @@ export function getPublicExam(idOrSlug: string): Promise<PublicExamDetail> {
 export function submitPublicExamAttempt(
   idOrSlug: string,
   body: {
-    userName: string;
+    userName?: string;
     userAnswers: Record<string, string>;
     elapsedSeconds?: number;
     timedOut?: boolean;
   },
 ): Promise<ExamSubmitResult> {
+  // Include cookies so OptionalJwt can attach authenticated attempts (DEC-045).
   return apiFetch<ExamSubmitResult>(`/public/exams/${encodeURIComponent(idOrSlug)}/attempts`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
-    skipRefresh: true,
   });
 }
 

@@ -16,6 +16,7 @@ import {
 import { NameEntryModal } from './name-entry-modal';
 import { scrollExamToTop } from './scroll-exam-to-top';
 import { useExamCountdown } from './use-exam-countdown';
+import { useTimedExamCandidate } from './use-timed-exam-candidate';
 
 type Props = {
   exam: PublicExamDetail;
@@ -23,6 +24,7 @@ type Props = {
 
 export function GuestExamPlayer({ exam }: Props) {
   const router = useRouter();
+  const { accountName, canAutoStart, shouldPromptName } = useTimedExamCandidate();
   const [hydrated, setHydrated] = useState(false);
   const [userName, setUserName] = useState<string | null>(null);
   const [startedAtMs, setStartedAtMs] = useState<number | null>(null);
@@ -45,6 +47,32 @@ export function GuestExamPlayer({ exam }: Props) {
     }
     setHydrated(true);
   }, [exam.id]);
+
+  const startExam = useCallback(
+    (name: string) => {
+      const now = Date.now();
+      setUserName(name);
+      setStartedAtMs(now);
+      saveGuestExamSession({
+        examId: exam.id,
+        userName: name,
+        startedAtMs: now,
+        answers: {},
+      });
+      scrollExamToTop('exam-q-1');
+    },
+    [exam.id],
+  );
+
+  // Authenticated users: skip name modal; always use account display name.
+  useEffect(() => {
+    if (!hydrated || !canAutoStart) return;
+    if (!userName) {
+      startExam(accountName);
+      return;
+    }
+    if (userName !== accountName) setUserName(accountName);
+  }, [accountName, canAutoStart, hydrated, startExam, userName]);
 
   useEffect(() => {
     if (!hydrated || !userName || !startedAtMs) return;
@@ -106,19 +134,6 @@ export function GuestExamPlayer({ exam }: Props) {
 
   const allAnswered = totalQuestions > 0 && answeredCount === totalQuestions;
 
-  const startExam = (name: string) => {
-    const now = Date.now();
-    setUserName(name);
-    setStartedAtMs(now);
-    saveGuestExamSession({
-      examId: exam.id,
-      userName: name,
-      startedAtMs: now,
-      answers: {},
-    });
-    scrollExamToTop('exam-q-1');
-  };
-
   const selectAnswer = (questionId: string, option: string) => {
     if (submitting || !userName) return;
     setAnswers((prev) => ({
@@ -139,7 +154,7 @@ export function GuestExamPlayer({ exam }: Props) {
     <div className="guest-exam-player mx-auto w-full max-w-3xl overflow-x-clip px-3 py-4 sm:px-6 sm:py-8">
       <NameEntryModal
         examTitle={exam.title}
-        open={!userName}
+        open={!userName && shouldPromptName}
         durationInMinutes={exam.durationInMinutes}
         totalQuestions={exam.totalQuestions}
         onStart={startExam}

@@ -195,6 +195,8 @@ model User {
   createdPracticeSets PracticeSet[]       @relation("PracticeSetCreator")
   createdExams        Exam[]              @relation("ExamCreator")
   createdModelTests   ModelTest[]         @relation("ModelTestCreator")
+  examAttempts        ExamAttempt[]
+  modelTestAttempts   ModelTestAttempt[]
   modelTestGuideUpdates ModelTestGuideConfig[] @relation("ModelTestGuideUpdater")
   examGuideUpdates      ExamGuideConfig[]      @relation("ExamGuideUpdater")
   questionUploadBatches QuestionUploadBatch[]
@@ -735,6 +737,8 @@ model ExamQuestion {
 model ExamAttempt {
   id           String   @id @default(uuid()) @db.Uuid
   examId       String   @map("exam_id") @db.Uuid
+  /// Set when submitter is authenticated (or claimed after register).
+  userId       String?  @map("user_id") @db.Uuid
   userName     String   @map("user_name") @db.VarChar(120)
   score        Int
   correctCount Int      @map("correct_count")
@@ -746,9 +750,11 @@ model ExamAttempt {
   timedOut     Boolean  @default(false) @map("timed_out")
   submittedAt  DateTime @default(now()) @map("submitted_at") @db.Timestamptz(3)
 
-  exam Exam @relation(fields: [examId], references: [id], onDelete: Cascade)
+  exam Exam  @relation(fields: [examId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([examId, submittedAt(sort: Desc)])
+  @@index([userId, submittedAt(sort: Desc)])
   @@map("exam_attempts")
 }
 
@@ -812,6 +818,8 @@ model ModelTestQuestion {
 model ModelTestAttempt {
   id            String   @id @default(uuid()) @db.Uuid
   modelTestId   String   @map("model_test_id") @db.Uuid
+  /// Set when submitter is authenticated (or claimed after register).
+  userId        String?  @map("user_id") @db.Uuid
   userName      String   @map("user_name") @db.VarChar(120)
   score         Int
   correctCount  Int      @map("correct_count")
@@ -824,8 +832,10 @@ model ModelTestAttempt {
   submittedAt   DateTime @default(now()) @map("submitted_at") @db.Timestamptz(3)
 
   modelTest ModelTest @relation(fields: [modelTestId], references: [id], onDelete: Cascade)
+  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([modelTestId, submittedAt(sort: Desc)])
+  @@index([userId, submittedAt(sort: Desc)])
   @@map("model_test_attempts")
 }
 

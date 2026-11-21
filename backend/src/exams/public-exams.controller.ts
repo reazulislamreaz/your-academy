@@ -1,12 +1,15 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { createSuccessResponse, cursorPaginationMeta } from '@your-academy/shared';
+import type { Request } from 'express';
+import type { RequestUser } from '../auth/auth.types';
+import { OptionalJwtAuthGuard } from '../common/guards/optional-jwt-auth.guard';
 import { newRequestId } from '../common/request-id';
 import { parseLimit } from '../common/pagination';
 import { SubmitExamAttemptDto } from './dto/submit-exam-attempt.dto';
 import { ExamsService } from './exams.service';
 
-/** Unauthenticated guest timed exams (DEC-039). */
+/** Unauthenticated guest timed exams (DEC-039); optional JWT links attempt to account (DEC-045). */
 @Controller('api/v1/public/exams')
 export class PublicExamsController {
   constructor(private readonly exams: ExamsService) {}
@@ -45,9 +48,16 @@ export class PublicExamsController {
   }
 
   @Post(':idOrSlug/attempts')
-  @UseGuards(ThrottlerGuard)
+  @UseGuards(OptionalJwtAuthGuard, ThrottlerGuard)
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
-  async submit(@Param('idOrSlug') idOrSlug: string, @Body() dto: SubmitExamAttemptDto) {
-    return createSuccessResponse(await this.exams.submitAttempt(idOrSlug, dto), newRequestId());
+  async submit(
+    @Param('idOrSlug') idOrSlug: string,
+    @Body() dto: SubmitExamAttemptDto,
+    @Req() req: Request & { user?: RequestUser | null },
+  ) {
+    return createSuccessResponse(
+      await this.exams.submitAttempt(idOrSlug, dto, req.user ?? null),
+      newRequestId(),
+    );
   }
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
 import { useRouter } from 'next/navigation';
 import type { PublicModelTestDetail } from '@your-academy/shared';
 import { Alert } from '@/components/ui/alert';
@@ -8,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { NameEntryModal } from '@/features/guest-exams/name-entry-modal';
 import { scrollExamToTop } from '@/features/guest-exams/scroll-exam-to-top';
 import { useExamCountdown } from '@/features/guest-exams/use-exam-countdown';
+import { useTimedExamCandidate } from '@/features/guest-exams/use-timed-exam-candidate';
 import { ApiError } from '@/lib/api/client';
 import { submitPublicModelTestAttempt } from '@/lib/api/model-tests';
 import { cn } from '@/lib/utils';
@@ -26,6 +28,7 @@ const BN_LABELS = ['ক', 'খ', 'গ', 'ঘ'] as const;
 
 export function ModelTestPlayer({ modelTest }: Props) {
   const router = useRouter();
+  const { accountName, canAutoStart, shouldPromptName } = useTimedExamCandidate();
   const [hydrated, setHydrated] = useState(false);
   const [userName, setUserName] = useState<string | null>(null);
   const [startedAtMs, setStartedAtMs] = useState<number | null>(null);
@@ -49,6 +52,32 @@ export function ModelTestPlayer({ modelTest }: Props) {
     }
     setHydrated(true);
   }, [modelTest.id]);
+
+  const startExam = useCallback(
+    (name: string) => {
+      const now = Date.now();
+      setUserName(name);
+      setStartedAtMs(now);
+      saveModelTestSession({
+        modelTestId: modelTest.id,
+        userName: name,
+        startedAtMs: now,
+        answers: {},
+      });
+      scrollExamToTop('mt-q-1');
+    },
+    [modelTest.id],
+  );
+
+  // Authenticated users: skip name modal; always use account display name.
+  useEffect(() => {
+    if (!hydrated || !canAutoStart) return;
+    if (!userName) {
+      startExam(accountName);
+      return;
+    }
+    if (userName !== accountName) setUserName(accountName);
+  }, [accountName, canAutoStart, hydrated, startExam, userName]);
 
   useEffect(() => {
     if (!hydrated || !userName || !startedAtMs) return;
@@ -113,19 +142,6 @@ export function ModelTestPlayer({ modelTest }: Props) {
   const unansweredCount = Math.max(0, totalQuestions - answeredCount);
   const allAnswered = totalQuestions > 0 && unansweredCount === 0;
 
-  const startExam = (name: string) => {
-    const now = Date.now();
-    setUserName(name);
-    setStartedAtMs(now);
-    saveModelTestSession({
-      modelTestId: modelTest.id,
-      userName: name,
-      startedAtMs: now,
-      answers: {},
-    });
-    scrollExamToTop('mt-q-1');
-  };
-
   const selectAnswer = (questionId: string, option: string) => {
     if (submitting || !userName) return;
     setAnswers((prev) => ({
@@ -155,7 +171,7 @@ export function ModelTestPlayer({ modelTest }: Props) {
     <div className="guest-exam-player mx-auto w-full max-w-3xl overflow-x-clip px-3 py-4 sm:px-6 sm:py-8">
       <NameEntryModal
         examTitle={modelTest.title}
-        open={!userName}
+        open={!userName && shouldPromptName}
         durationInMinutes={modelTest.durationInMinutes}
         totalQuestions={modelTest.totalQuestions}
         onStart={startExam}

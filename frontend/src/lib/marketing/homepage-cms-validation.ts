@@ -80,6 +80,22 @@ export function validateHomepageDraft(payload: HomepagePayload): {
       'Topic section description must be 500 characters or fewer.';
   }
 
+  if (payload.accessFaq.faqs.length > 20) {
+    errors['accessFaq.faqs'] = 'At most 20 FAQ items are allowed.';
+  }
+  payload.accessFaq.faqs.forEach((faq, i) => {
+    if (!faq.question.trim()) {
+      errors[`accessFaq.faqs.${i}.question`] = `FAQ ${i + 1}: question is required.`;
+    } else if (faq.question.length > 500) {
+      errors[`accessFaq.faqs.${i}.question`] = `FAQ ${i + 1}: question must be 500 characters or fewer.`;
+    }
+    if (!faq.answer.trim()) {
+      errors[`accessFaq.faqs.${i}.answer`] = `FAQ ${i + 1}: answer is required.`;
+    } else if (faq.answer.length > 4000) {
+      errors[`accessFaq.faqs.${i}.answer`] = `FAQ ${i + 1}: answer must be 4000 characters or fewer.`;
+    }
+  });
+
   const keys = Object.keys(errors);
   if (keys.length === 0) return { ok: true, errors: {} };
 

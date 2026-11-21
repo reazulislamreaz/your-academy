@@ -1,12 +1,15 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { createSuccessResponse, cursorPaginationMeta } from '@your-academy/shared';
+import type { Request } from 'express';
+import type { RequestUser } from '../auth/auth.types';
+import { OptionalJwtAuthGuard } from '../common/guards/optional-jwt-auth.guard';
 import { newRequestId } from '../common/request-id';
 import { parseLimit } from '../common/pagination';
 import { SubmitModelTestAttemptDto } from './dto/submit-model-test-attempt.dto';
 import { ModelTestsService } from './model-tests.service';
 
-/** Unauthenticated guest Model Tests (parallel to DEC-039 guest exams). */
+/** Guest Model Tests; optional JWT links attempt to account (DEC-045). */
 @Controller('api/v1/public/model-tests')
 export class PublicModelTestsController {
   constructor(private readonly modelTests: ModelTestsService) {}
@@ -70,11 +73,15 @@ export class PublicModelTestsController {
   }
 
   @Post(':idOrSlug/attempts')
-  @UseGuards(ThrottlerGuard)
+  @UseGuards(OptionalJwtAuthGuard, ThrottlerGuard)
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
-  async submit(@Param('idOrSlug') idOrSlug: string, @Body() dto: SubmitModelTestAttemptDto) {
+  async submit(
+    @Param('idOrSlug') idOrSlug: string,
+    @Body() dto: SubmitModelTestAttemptDto,
+    @Req() req: Request & { user?: RequestUser | null },
+  ) {
     return createSuccessResponse(
-      await this.modelTests.submitAttempt(idOrSlug, dto),
+      await this.modelTests.submitAttempt(idOrSlug, dto, req.user ?? null),
       newRequestId(),
     );
   }

@@ -66,15 +66,26 @@ function scrubTrialText(text: string, fallback: string): string {
 }
 
 /**
+ * Drop only the lines that promote a free trial; keep the rest of the CMS list.
+ * Never replace an entire admin-authored array with defaults (that hid FAQ edits).
+ */
+function scrubPointList(points: string[], fallback: string[]): string[] {
+  const cleaned = points.filter((p) => !mentionsTrial(p));
+  if (cleaned.length > 0) return cleaned;
+  if (points.length === 0) return points;
+  return fallback;
+}
+
+/**
  * Presentation merge for the public homepage.
  *
  * CMS published payload is the source of truth. We only:
- * - scrub free-trial CTA / copy (product rule: trials disabled)
+ * - scrub free-trial CTA labels / promotional copy (product rule: trials disabled)
  * - strip fabricated hero social-proof stats (brand-first; live counts live in Live Stats)
  * - force trialStrip / progress off
  *
- * Do NOT replace admin headings, descriptions, or other copy with defaults —
- * that made Admin Dashboard edits appear to "not save" on the live homepage.
+ * Do NOT replace admin FAQ items, headings, or step lists with defaults —
+ * that made Admin Dashboard FAQ edits appear to "not save" on the live homepage.
  */
 export function presentHomepagePayload(
   payload: HomepagePayload,
@@ -95,13 +106,10 @@ export function presentHomepagePayload(
   // (Hero CMS has no stats editor; strip any legacy chips from older payloads.)
   const heroStats: HomepagePayload['hero']['stats'] = [];
 
-  const scrubPoints = (points: string[], fallback: string[]) =>
-    points.some((p) => mentionsTrial(p)) ? fallback : points;
-
   const why = {
     ...payload.why,
     heading: scrubTrialText(payload.why.heading, defaults.why.heading),
-    points: scrubPoints(payload.why.points, defaults.why.points),
+    points: scrubPointList(payload.why.points, defaults.why.points),
   };
 
   const ctaBanner = {
@@ -119,11 +127,8 @@ export function presentHomepagePayload(
 
   const howItWorks = {
     ...payload.howItWorks,
-    steps: payload.howItWorks.steps.some(
-      (s) => mentionsTrial(s.title) || mentionsTrial(s.body),
-    )
-      ? defaults.howItWorks.steps
-      : payload.howItWorks.steps,
+    // Keep CMS steps; only scrub CTA labels that promote a trial.
+    steps: payload.howItWorks.steps,
     cta: scrubTrialCta(payload.howItWorks.cta, defaults.howItWorks.cta.label),
   };
 
@@ -138,12 +143,12 @@ export function presentHomepagePayload(
 
   const accessFaq = {
     ...payload.accessFaq,
-    highlights: scrubPoints(payload.accessFaq.highlights, defaults.accessFaq.highlights),
-    faqs: payload.accessFaq.faqs.some(
-      (f) => mentionsTrial(f.question) || mentionsTrial(f.answer),
-    )
-      ? defaults.accessFaq.faqs
-      : payload.accessFaq.faqs,
+    highlights: scrubPointList(
+      payload.accessFaq.highlights,
+      defaults.accessFaq.highlights,
+    ),
+    // Always render the published FAQ list from CMS (DEC-038).
+    faqs: payload.accessFaq.faqs,
     cta: scrubTrialCta(payload.accessFaq.cta, defaults.accessFaq.cta.label),
   };
 

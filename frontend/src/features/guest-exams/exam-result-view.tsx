@@ -1,11 +1,11 @@
 'use client';
 
-import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ExamAttemptResult } from '@your-academy/shared';
 import { Button } from '@/components/ui/button';
 import { useMe } from '@/features/auth/use-auth';
 import { GuestRegisterCta } from '@/features/guest-exams/guest-register-cta';
+import { saveGuestResultLink } from '@/features/guest-exams/guest-result-link';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -20,6 +20,32 @@ export function ExamResultView({ result }: Props) {
   const progress = Math.min(100, Math.max(0, result.percent));
   const dash = (progress / 100) * circumference;
   const resultPath = `/exams/${encodeURIComponent(result.exam.slug)}/result/${encodeURIComponent(result.attemptId)}`;
+
+  // Persist guest pointer as soon as the result loads so register (any entry) can claim it.
+  useEffect(() => {
+    if (!isGuest) return;
+    saveGuestResultLink({
+      kind: 'exam',
+      attemptId: result.attemptId,
+      resultPath,
+      title: result.exam.title,
+      score: result.score,
+      totalQuestions: result.exam.totalQuestions,
+      percent: result.percent,
+      userName: result.userName,
+      savedAtMs: Date.now(),
+    });
+  }, [
+    isGuest,
+    result.attemptId,
+    result.exam.slug,
+    result.exam.title,
+    result.exam.totalQuestions,
+    result.percent,
+    result.score,
+    result.userName,
+    resultPath,
+  ]);
 
   return (
     <div className="mx-auto w-full max-w-3xl overflow-x-clip px-3 py-6 sm:px-6 sm:py-10">
@@ -75,18 +101,6 @@ export function ExamResultView({ result }: Props) {
             </p>
           </div>
         </div>
-
-        <div className="mt-6 flex justify-center sm:mt-8">
-          <Button
-            type="button"
-            variant="outline"
-            className="h-11 w-full max-w-sm sm:h-10 sm:w-auto"
-            onClick={() => setShowSheet((v) => !v)}
-            aria-expanded={showSheet}
-          >
-            {showSheet ? 'Hide answer sheet preview' : 'Show answer sheet preview'}
-          </Button>
-        </div>
       </section>
 
       {isGuest ? (
@@ -104,6 +118,18 @@ export function ExamResultView({ result }: Props) {
           }}
         />
       ) : null}
+
+      <div className="mt-4 flex justify-center sm:mt-6">
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11 w-full max-w-sm sm:h-10 sm:w-auto"
+          onClick={() => setShowSheet((v) => !v)}
+          aria-expanded={showSheet}
+        >
+          {showSheet ? 'Hide answer sheet preview' : 'Show answer sheet preview'}
+        </Button>
+      </div>
 
       {showSheet ? (
         <section className="mt-4 space-y-3 sm:mt-6 sm:space-y-4" aria-label="Answer sheet">
@@ -163,27 +189,6 @@ export function ExamResultView({ result }: Props) {
           ))}
         </section>
       ) : null}
-
-      <section className="guest-exam-cta mt-6 rounded-[var(--radius-xl)] border border-[var(--line)] p-4 sm:mt-8 sm:p-7">
-        <h2 className="font-display text-lg font-bold tracking-tight text-[var(--ink)] sm:text-2xl">
-          আপনার আজকের প্রোগ্রেস ও স্কোর সেভ করা হয়েছে!
-        </h2>
-        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[var(--muted-strong)] sm:text-base">
-          প্রতিদিন এমন আরও এক্সক্লুসিভ এক্সাম দিয়ে নিজের প্রস্তুতি ঝালাই করতে এবং লিডারবোর্ডে নিজের
-          নাম দেখতে আজই <strong className="text-[var(--ink)]">Your Academy</strong>-তে ফ্রি
-          রেজিস্ট্রেশন করুন।
-        </p>
-        <div className="mt-5 flex flex-col gap-2.5 sm:flex-row">
-          <Link href="/register" className="w-full sm:w-auto">
-            <Button className="h-11 w-full sm:h-10 sm:w-auto">Register Now</Button>
-          </Link>
-          <Link href="/exams" className="w-full sm:w-auto">
-            <Button variant="outline" className="h-11 w-full sm:h-10 sm:w-auto">
-              Explore More Exams
-            </Button>
-          </Link>
-        </div>
-      </section>
     </div>
   );
 }

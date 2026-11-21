@@ -10,6 +10,8 @@ import {
   type HomepagePayload,
 } from '@your-academy/shared';
 import {
+  ArrowDown,
+  ArrowUp,
   Copy,
   ExternalLink,
   Eye,
@@ -1201,6 +1203,43 @@ function SectionEditor({
 
   if (sectionId === 'accessFaq') {
     const b = payload.accessFaq;
+    const moveFaq = (from: number, to: number) => {
+      onPatch((p) => {
+        const faqs = [...p.accessFaq.faqs];
+        if (from < 0 || to < 0 || from >= faqs.length || to >= faqs.length) return p;
+        const [item] = faqs.splice(from, 1);
+        faqs.splice(to, 0, item!);
+        return { ...p, accessFaq: { ...p.accessFaq, faqs } };
+      });
+    };
+    const removeFaq = (index: number) => {
+      onPatch((p) => ({
+        ...p,
+        accessFaq: {
+          ...p.accessFaq,
+          faqs: p.accessFaq.faqs.filter((_, i) => i !== index),
+        },
+      }));
+    };
+    const addFaq = () => {
+      onPatch((p) => {
+        if (p.accessFaq.faqs.length >= 20) return p;
+        return {
+          ...p,
+          accessFaq: {
+            ...p.accessFaq,
+            faqs: [
+              ...p.accessFaq.faqs,
+              {
+                id: `faq-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+                question: '',
+                answer: '',
+              },
+            ],
+          },
+        };
+      });
+    };
     return (
       <div className="space-y-4">
         <Field label="Heading">
@@ -1254,34 +1293,117 @@ function SectionEditor({
             }
           />
         </Field>
-        {b.faqs.map((faq, i) => (
-          <div key={faq.id} className="space-y-2 rounded border border-[var(--line)] p-3">
-            <p className="text-xs font-semibold text-[var(--muted)]">FAQ {i + 1}</p>
-            <Input
-              value={faq.question}
-              placeholder="Question"
-              onChange={(e) =>
-                onPatch((p) => {
-                  const faqs = [...p.accessFaq.faqs];
-                  faqs[i] = { ...faqs[i]!, question: e.target.value };
-                  return { ...p, accessFaq: { ...p.accessFaq, faqs } };
-                })
-              }
-            />
-            <Textarea
-              rows={3}
-              value={faq.answer}
-              placeholder="Answer"
-              onChange={(e) =>
-                onPatch((p) => {
-                  const faqs = [...p.accessFaq.faqs];
-                  faqs[i] = { ...faqs[i]!, answer: e.target.value };
-                  return { ...p, accessFaq: { ...p.accessFaq, faqs } };
-                })
-              }
-            />
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm font-medium text-[var(--ink)]">
+              FAQ items ({b.faqs.length}/20)
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={b.faqs.length >= 20}
+              onClick={addFaq}
+            >
+              <Plus className="size-3.5" aria-hidden />
+              Add FAQ
+            </Button>
           </div>
-        ))}
+          {b.faqs.length === 0 ? (
+            <p className="rounded-[var(--radius)] border border-dashed border-[var(--line)] px-3 py-4 text-sm text-[var(--muted)]">
+              No FAQ items yet. Add a question, then Save draft and Publish.
+            </p>
+          ) : null}
+          {fieldErrors['accessFaq.faqs'] ? (
+            <p className="text-sm text-[var(--danger)]">{fieldErrors['accessFaq.faqs']}</p>
+          ) : null}
+          {b.faqs.map((faq, i) => {
+            const qErr = fieldErrors[`accessFaq.faqs.${i}.question`];
+            const aErr = fieldErrors[`accessFaq.faqs.${i}.answer`];
+            return (
+              <div
+                key={faq.id}
+                className="space-y-2 rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-muted)]/30 p-3"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs font-semibold tracking-wide text-[var(--muted)] uppercase">
+                    FAQ {i + 1}
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      disabled={i === 0}
+                      title="Move up"
+                      aria-label={`Move FAQ ${i + 1} up`}
+                      onClick={() => moveFaq(i, i - 1)}
+                    >
+                      <ArrowUp className="size-3.5" aria-hidden />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      disabled={i >= b.faqs.length - 1}
+                      title="Move down"
+                      aria-label={`Move FAQ ${i + 1} down`}
+                      onClick={() => moveFaq(i, i + 1)}
+                    >
+                      <ArrowDown className="size-3.5" aria-hidden />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 text-[var(--danger)]"
+                      title="Delete FAQ"
+                      aria-label={`Delete FAQ ${i + 1}`}
+                      onClick={() => removeFaq(i)}
+                    >
+                      <Trash2 className="size-3.5" aria-hidden />
+                    </Button>
+                  </div>
+                </div>
+                <Field label="Question" error={qErr}>
+                  <Input
+                    value={faq.question}
+                    placeholder="Question"
+                    aria-invalid={Boolean(qErr)}
+                    aria-label={`FAQ ${i + 1} question`}
+                    className={qErr ? 'border-[var(--danger)]' : undefined}
+                    onChange={(e) =>
+                      onPatch((p) => {
+                        const faqs = [...p.accessFaq.faqs];
+                        faqs[i] = { ...faqs[i]!, question: e.target.value };
+                        return { ...p, accessFaq: { ...p.accessFaq, faqs } };
+                      })
+                    }
+                  />
+                </Field>
+                <Field label="Answer" error={aErr}>
+                  <Textarea
+                    rows={3}
+                    value={faq.answer}
+                    placeholder="Answer"
+                    aria-invalid={Boolean(aErr)}
+                    aria-label={`FAQ ${i + 1} answer`}
+                    className={aErr ? 'border-[var(--danger)]' : undefined}
+                    onChange={(e) =>
+                      onPatch((p) => {
+                        const faqs = [...p.accessFaq.faqs];
+                        faqs[i] = { ...faqs[i]!, answer: e.target.value };
+                        return { ...p, accessFaq: { ...p.accessFaq, faqs } };
+                      })
+                    }
+                  />
+                </Field>
+              </div>
+            );
+          })}
+        </div>
       </div>
     );
   }

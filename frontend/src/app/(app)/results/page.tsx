@@ -1,6 +1,8 @@
 'use client';
 
 import Link from 'next/link';
+import { useQuery } from '@tanstack/react-query';
+import type { TimedAttemptSummary } from '@your-academy/shared';
 import { LearnerPage } from '@/components/layout/learner-page';
 import { PageHeader } from '@/components/layout/page-header';
 import { Alert } from '@/components/ui/alert';
@@ -9,10 +11,11 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { LoadMoreButton } from '@/components/ui/load-more-button';
 import { Surface } from '@/components/ui/surface';
 import { ContentIn } from '@/components/ui/skeleton';
+import { ResultsPageSkeleton } from '@/components/skeletons';
 import { ApiError } from '@/lib/api/client';
+import { listMyTimedAttempts } from '@/lib/api/timed-attempts';
 import type { PracticeAttemptSummary } from '@/lib/api/types';
 import { examLabel, practiceKindLabel } from '@/lib/exam-tags';
-import { ResultsPageSkeleton } from '@/components/skeletons';
 import { useCursorList } from '@/lib/hooks/use-cursor-list';
 
 export default function ResultsPage() {
@@ -26,8 +29,19 @@ export default function ResultsPage() {
     { retry: false },
   );
 
+  const timed = useQuery({
+    queryKey: ['timed-attempts'],
+    queryFn: () => listMyTimedAttempts(40),
+    retry: false,
+  });
+
   const unauthorized =
     list.error instanceof ApiError && (list.error.status === 401 || list.error.status === 403);
+
+  const timedItems = timed.data ?? [];
+  const practiceEmpty = !list.isLoading && !list.isError && list.items.length === 0;
+  const timedEmpty = !timed.isLoading && !timed.isError && timedItems.length === 0;
+  const showEmpty = practiceEmpty && timedEmpty && !unauthorized;
 
   return (
     <LearnerPage dense>
@@ -37,7 +51,7 @@ export default function ResultsPage() {
         description="Submitted quizzes and model tests with scores from your account history."
       />
 
-      {list.isLoading ? <ResultsPageSkeleton omitHeader /> : null}
+      {list.isLoading && timed.isLoading ? <ResultsPageSkeleton omitHeader /> : null}
 
       {unauthorized ? (
         <EmptyState
@@ -55,23 +69,67 @@ export default function ResultsPage() {
       ) : null}
 
       {list.isError && !unauthorized ? (
-        <Alert variant="danger">Could not load results.</Alert>
+        <Alert variant="danger">Could not load practice results.</Alert>
       ) : null}
 
-      {!list.isLoading && !list.isError && list.items.length === 0 ? (
+      {timed.isError && !unauthorized ? (
+        <Alert variant="danger" className="mt-3">
+          Could not load public Quiz / Model Test history.
+        </Alert>
+      ) : null}
+
+      {showEmpty ? (
         <EmptyState
           title="No attempts yet"
           description="Complete a quiz or model test to see scores here."
           action={
-            <Link href="/quizzes" className="text-sm font-semibold text-[var(--highlight)]">
-              Open quiz center
+            <Link href="/exams" className="text-sm font-semibold text-[var(--highlight)]">
+              Open quizzes
             </Link>
           }
         />
       ) : null}
 
+      {!unauthorized && timedItems.length > 0 ? (
+        <ContentIn className="mb-6 space-y-2.5">
+          <h2 className="font-display text-sm font-semibold tracking-tight text-[var(--ink)] sm:text-base">
+            Public Quizzes & Model Tests
+          </h2>
+          {timedItems.map((attempt: TimedAttemptSummary) => (
+            <Surface key={`${attempt.kind}-${attempt.id}`} elevated interactive className="p-3.5 sm:p-4">
+              <Link href={attempt.resultPath} className="flex items-start gap-3">
+                <div className="min-w-0 flex-1 space-y-1.5">
+                  <div className="flex flex-wrap gap-1.5">
+                    <Badge variant="highlight">
+                      {attempt.kind === 'model-test' ? 'Model Test' : 'Quiz'}
+                    </Badge>
+                  </div>
+                  <h3 className="font-display text-[0.95rem] font-semibold tracking-tight text-[var(--ink)] sm:text-base">
+                    {attempt.title}
+                  </h3>
+                  <p className="text-xs text-[var(--muted)]">
+                    {new Date(attempt.submittedAt).toLocaleString()}
+                  </p>
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="font-display text-lg font-bold tabular-nums text-[var(--ink)] sm:text-xl">
+                    {attempt.percent}%
+                  </p>
+                  <p className="text-xs tabular-nums text-[var(--muted)]">
+                    {attempt.score}/{attempt.totalQuestions}
+                  </p>
+                </div>
+              </Link>
+            </Surface>
+          ))}
+        </ContentIn>
+      ) : null}
+
       {!list.isLoading && !list.isError && list.items.length > 0 ? (
         <ContentIn className="space-y-2.5">
+          <h2 className="font-display text-sm font-semibold tracking-tight text-[var(--ink)] sm:text-base">
+            Practice sets
+          </h2>
           {list.items.map((attempt) => (
             <Surface key={attempt.id} elevated interactive className="p-3.5 sm:p-4">
               <Link href={`/results/${attempt.id}`} className="flex items-start gap-3">

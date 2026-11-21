@@ -1,11 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ModelTestAttemptResult } from '@your-academy/shared';
 import { Button } from '@/components/ui/button';
 import { useMe } from '@/features/auth/use-auth';
 import { GuestRegisterCta } from '@/features/guest-exams/guest-register-cta';
+import { saveGuestResultLink } from '@/features/guest-exams/guest-result-link';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -20,6 +21,31 @@ export function ModelTestResultView({ result }: Props) {
   const progress = Math.min(100, Math.max(0, result.percent));
   const dash = (progress / 100) * circumference;
   const resultPath = `/model-test/${encodeURIComponent(result.modelTest.slug)}/result/${encodeURIComponent(result.attemptId)}`;
+
+  useEffect(() => {
+    if (!isGuest) return;
+    saveGuestResultLink({
+      kind: 'model-test',
+      attemptId: result.attemptId,
+      resultPath,
+      title: result.modelTest.title,
+      score: result.score,
+      totalQuestions: result.modelTest.totalQuestions,
+      percent: result.percent,
+      userName: result.userName,
+      savedAtMs: Date.now(),
+    });
+  }, [
+    isGuest,
+    result.attemptId,
+    result.modelTest.slug,
+    result.modelTest.title,
+    result.modelTest.totalQuestions,
+    result.percent,
+    result.score,
+    result.userName,
+    resultPath,
+  ]);
 
   return (
     <div className="mx-auto w-full max-w-3xl overflow-x-clip px-3 py-6 sm:px-6 sm:py-10">
@@ -76,18 +102,6 @@ export function ModelTestResultView({ result }: Props) {
             </p>
           </div>
         </div>
-
-        <div className="mt-6 flex justify-center sm:mt-8">
-          <Button
-            type="button"
-            variant="outline"
-            className="h-11 w-full max-w-sm sm:h-10 sm:w-auto"
-            onClick={() => setShowSheet((v) => !v)}
-            aria-expanded={showSheet}
-          >
-            {showSheet ? 'Hide question review' : 'Show question review'}
-          </Button>
-        </div>
       </section>
 
       {isGuest ? (
@@ -105,6 +119,18 @@ export function ModelTestResultView({ result }: Props) {
           }}
         />
       ) : null}
+
+      <div className="mt-4 flex justify-center sm:mt-6">
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11 w-full max-w-sm sm:h-10 sm:w-auto"
+          onClick={() => setShowSheet((v) => !v)}
+          aria-expanded={showSheet}
+        >
+          {showSheet ? 'Hide question review' : 'Show question review'}
+        </Button>
+      </div>
 
       {showSheet ? (
         <section className="mt-4 space-y-3 sm:mt-6 sm:space-y-4" aria-label="Answer sheet">

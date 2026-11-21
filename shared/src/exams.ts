@@ -99,6 +99,19 @@ export type ExamGuideItem = {
   text: string;
 };
 
+/** Authenticated profile history for public Quiz / Model Test attempts (DEC-045). */
+export type TimedAttemptSummary = {
+  id: string;
+  kind: 'exam' | 'model-test';
+  title: string;
+  slug: string;
+  score: number;
+  totalQuestions: number;
+  percent: number;
+  submittedAt: string;
+  resultPath: string;
+};
+
 /** Public + admin payload for the Quiz listing sidebar guide (DEC-044). */
 export type ExamGuideConfig = {
   title: string;

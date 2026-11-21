@@ -71,19 +71,19 @@ export function getPublicModelTest(idOrSlug: string): Promise<PublicModelTestDet
 export function submitPublicModelTestAttempt(
   idOrSlug: string,
   body: {
-    userName: string;
+    userName?: string;
     userAnswers: Record<string, string>;
     elapsedSeconds?: number;
     timedOut?: boolean;
   },
 ): Promise<ModelTestSubmitResult> {
+  // Include cookies so OptionalJwt can attach authenticated attempts (DEC-045).
   return apiFetch<ModelTestSubmitResult>(
     `/public/model-tests/${encodeURIComponent(idOrSlug)}/attempts`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
-      skipRefresh: true,
     },
   );
 }

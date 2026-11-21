@@ -280,8 +280,10 @@ Admin Excel template (7 columns): `প্রশ্ন নং | প্রশ্�
 | GET | `/public/exams` | Published exams (`q`, `cursor`, `limit`; `createdAt DESC`) | Public | — |
 | GET | `/public/exams/meta/guide` | Quiz listing sidebar guide (`title` + ordered `items`) | Public | — |
 | GET | `/public/exams/:idOrSlug` | Exam + questions (no correct answers / explanations) | Public | — |
-| POST | `/public/exams/:idOrSlug/attempts` | Submit answers (`userName`, `userAnswers`, optional `elapsedSeconds`/`timedOut`); scores server-side | Public | — |
+| POST | `/public/exams/:idOrSlug/attempts` | Submit answers (`userName` required for guests; optional when JWT present — uses account name + sets `userId`); scores server-side | Public (+ optional JWT) | — |
 | GET | `/public/exams/attempts/:attemptId` | Result + full answer sheet (correct + explanation) | Public | — |
+| GET | `/me/timed-attempts` | Linked public Quiz + Model Test attempts for the signed-in user | Auth | — |
+| POST | `/me/timed-attempts/claim` | Attach a guest attempt (`kind`, `attemptId`) to the current user after register | Auth | CSRF |
 | GET | `/admin/exams` | Admin list (`cursor`, `limit`) | User | ADMIN |
 | GET | `/admin/exams/guide` | Quiz listing sidebar guide config | User | ADMIN |
 | PUT | `/admin/exams/guide` | Replace guide title + ordered steps | User | ADMIN |
@@ -299,7 +301,7 @@ Parallel to guest exams. Header row may follow title/date preamble rows. Same 7-
 | GET | `/public/model-tests/meta/categories` | Categories with ≥1 published Model Test | Public | — |
 | GET | `/public/model-tests/meta/guide` | Listing sidebar guide (`title` + ordered `items`) | Public | — |
 | GET | `/public/model-tests/:idOrSlug` | Detail + questions (no answers) | Public | — |
-| POST | `/public/model-tests/:idOrSlug/attempts` | Submit answers; scores server-side | Public | — |
+| POST | `/public/model-tests/:idOrSlug/attempts` | Submit answers; optional JWT attaches `userId` + account name (DEC-045) | Public (+ optional JWT) | — |
 | GET | `/public/model-tests/attempts/:attemptId` | Result + answer sheet | Public | — |
 | GET | `/admin/model-tests` | Admin list (`cursor`, `limit`) | User | ADMIN |
 | GET | `/admin/model-tests/categories` | All Model Test categories | User | ADMIN |
