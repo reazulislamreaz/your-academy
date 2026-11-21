@@ -50,6 +50,20 @@ export class AdminModelTestsController {
     return createSuccessResponse(await this.modelTests.listAdmin(), newRequestId());
   }
 
+  @Get('categories')
+  async listCategories() {
+    return createSuccessResponse(await this.modelTests.listCategories(), newRequestId());
+  }
+
+  @Post('categories')
+  @UseGuards(CsrfGuard)
+  async createCategory(@Body('name') name?: string) {
+    return createSuccessResponse(
+      await this.modelTests.createCategory(name ?? ''),
+      newRequestId(),
+    );
+  }
+
   @Post('upload')
   @UseGuards(CsrfGuard)
   @UseInterceptors(
@@ -65,6 +79,7 @@ export class AdminModelTestsController {
     @Body('description') description?: string,
     @Body('durationInMinutes') durationInMinutes?: string,
     @Body('examYear') examYear?: string,
+    @Body('categoryId') categoryId?: string,
     @Body('isPublished') isPublished?: string,
   ) {
     const duration = Number(durationInMinutes);
@@ -79,6 +94,7 @@ export class AdminModelTestsController {
       description,
       durationInMinutes: duration,
       examYear: yearRaw != null && Number.isFinite(yearRaw) ? yearRaw : null,
+      categoryId: categoryId?.trim() || null,
       isPublished: published,
       file,
       createdById: user.userId,
@@ -96,6 +112,7 @@ export class AdminModelTestsController {
       description?: string | null;
       durationInMinutes?: number;
       examYear?: number | null;
+      categoryId?: string | null;
       isPublished?: boolean;
     },
   ) {
@@ -103,7 +120,8 @@ export class AdminModelTestsController {
       body.title !== undefined ||
       body.description !== undefined ||
       body.durationInMinutes !== undefined ||
-      body.examYear !== undefined;
+      body.examYear !== undefined ||
+      body.categoryId !== undefined;
 
     if (typeof body.isPublished === 'boolean' && !hasMeta) {
       const data = await this.modelTests.setPublished(id, body.isPublished);
@@ -119,6 +137,7 @@ export class AdminModelTestsController {
       description: body.description,
       durationInMinutes: body.durationInMinutes,
       examYear: body.examYear,
+      categoryId: body.categoryId,
     });
     return createSuccessResponse(data, newRequestId());
   }

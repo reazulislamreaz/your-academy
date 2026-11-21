@@ -736,6 +736,19 @@ model ExamAttempt {
   @@map("exam_attempts")
 }
 
+/// Lightweight categories for guest Model Tests only (not bank taxonomy).
+model ModelTestCategory {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique @db.VarChar(120)
+  slug      String   @unique @db.VarChar(140)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  modelTests ModelTest[]
+
+  @@map("model_test_categories")
+}
+
 /// Public guest Model Tests — parallel to Exam (DEC-039) with preamble-aware Excel import.
 /// Does not reuse bank `Question` or guest `Exam` tables.
 model ModelTest {
@@ -745,6 +758,7 @@ model ModelTest {
   description       String?
   /// Optional year extracted from spreadsheet preamble / admin input (listing filter).
   examYear          Int?     @map("exam_year")
+  categoryId        String?  @map("category_id") @db.Uuid
   totalQuestions    Int      @map("total_questions")
   durationInMinutes Int      @map("duration_in_minutes")
   isPublished       Boolean  @default(true) @map("is_published")
@@ -752,12 +766,14 @@ model ModelTest {
   createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
+  category  ModelTestCategory?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   createdBy User?               @relation("ModelTestCreator", fields: [createdById], references: [id], onDelete: SetNull)
   questions ModelTestQuestion[]
   attempts  ModelTestAttempt[]
 
   @@index([isPublished, createdAt(sort: Desc)])
   @@index([examYear])
+  @@index([categoryId])
   @@map("model_tests")
 }
 

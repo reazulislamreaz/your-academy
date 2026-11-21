@@ -34,16 +34,19 @@ export class ModelTestsService {
   async listPublished(filters?: {
     q?: string;
     year?: number;
+    categoryId?: string;
     cursor?: string;
     limit?: number;
   }) {
     const q = filters?.q?.trim();
     const year = filters?.year;
+    const categoryId = filters?.categoryId?.trim();
     const limit = parseLimit(filters?.limit, 12);
     const where: Prisma.ModelTestWhereInput = {
       isPublished: true,
       ...(q ? { title: { contains: q, mode: 'insensitive' } } : {}),
       ...(year != null && Number.isFinite(year) ? { examYear: year } : {}),
+      ...(categoryId && UUID_RE.test(categoryId) ? { categoryId } : {}),
     };
 
     const rows = await this.prisma.modelTest.findMany({
@@ -60,6 +63,7 @@ export class ModelTestsService {
         totalQuestions: true,
         durationInMinutes: true,
         createdAt: true,
+        category: { select: { id: true, name: true, slug: true } },
       },
     });
     return paginateById(rows, limit);
@@ -75,6 +79,96 @@ export class ModelTestsService {
     return rows
       .map((r) => r.examYear)
       .filter((y): y is number => typeof y === 'number');
+  }
+
+  async listCategories() {
+    return this.prisma.modelTestCategory.findMany({
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true, slug: true },
+    });
+  }
+
+  /** Categories that have at least one published Model Test (public filter). */
+  async listPublishedCategories() {
+    return this.prisma.modelTestCategory.findMany({
+      where: { modelTests: { some: { isPublished: true } } },
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true, slug: true },
+    });
+  }
+
+  async createCategory(nameRaw: string) {
+    const name = nameRaw?.trim();
+    if (!name || name.length < 2) {
+      throw new BadRequestException(
+        createErrorResponse(
+          'CATEGORY_NAME_REQUIRED',
+          'Category name must be at least 2 characters',
+          newRequestId(),
+        ),
+      );
+    }
+    if (name.length > 120) {
+      throw new BadRequestException(
+        createErrorResponse(
+          'CATEGORY_NAME_TOO_LONG',
+          'Category name must be 120 characters or fewer',
+          newRequestId(),
+        ),
+      );
+    }
+
+    const baseSlug = slugifyModelTestTitle(name).slice(0, 140);
+    let slug = baseSlug;
+    for (let i = 0; i < 20; i += 1) {
+      const clash = await this.prisma.modelTestCategory.findUnique({
+        where: { slug },
+        select: { id: true },
+      });
+      if (!clash) break;
+      slug = `${baseSlug.slice(0, 120)}-${i + 2}`;
+    }
+
+    try {
+      return await this.prisma.modelTestCategory.create({
+        data: { name: name.slice(0, 120), slug },
+        select: { id: true, name: true, slug: true },
+      });
+    } catch (err) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === 'P2002'
+      ) {
+        throw new BadRequestException(
+          createErrorResponse(
+            'CATEGORY_EXISTS',
+            'A category with this name already exists',
+            newRequestId(),
+          ),
+        );
+      }
+      throw err;
+    }
+  }
+
+  private async resolveCategoryId(categoryId?: string | null): Promise<string | null> {
+    if (!categoryId?.trim()) return null;
+    const id = categoryId.trim();
+    if (!UUID_RE.test(id)) {
+      throw new BadRequestException(
+        createErrorResponse('INVALID_CATEGORY', 'Invalid category id', newRequestId()),
+      );
+    }
+    const found = await this.prisma.modelTestCategory.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!found) {
+      throw new BadRequestException(
+        createErrorResponse('CATEGORY_NOT_FOUND', 'Category not found', newRequestId()),
+      );
+    }
+    return found.id;
   }
 
   async getPublishedForTaking(idOrSlug: string) {
@@ -96,6 +190,13 @@ export class ModelTestsService {
       slug: modelTest.slug,
       description: modelTest.description,
       examYear: modelTest.examYear,
+      category: modelTest.category
+        ? {
+            id: modelTest.category.id,
+            name: modelTest.category.name,
+            slug: modelTest.category.slug,
+          }
+        : null,
       totalQuestions: modelTest.totalQuestions,
       durationInMinutes: modelTest.durationInMinutes,
       createdAt: modelTest.createdAt,
@@ -273,6 +374,7 @@ export class ModelTestsService {
     description?: string | null;
     durationInMinutes: number;
     examYear?: number | null;
+    categoryId?: string | null;
     isPublished?: boolean;
     file: Express.Multer.File;
     createdById: string;
@@ -353,6 +455,7 @@ export class ModelTestsService {
 
     const slug = await this.uniqueSlug(slugifyModelTestTitle(title));
     const isPublished = input.isPublished !== false;
+    const categoryId = await this.resolveCategoryId(input.categoryId);
 
     const created = await this.prisma.$transaction(async (tx) => {
       return tx.modelTest.create({
@@ -361,6 +464,7 @@ export class ModelTestsService {
           slug,
           description,
           examYear: examYear ?? null,
+          categoryId,
           totalQuestions: parsed.rows.length,
           durationInMinutes: Math.floor(input.durationInMinutes),
           isPublished,
@@ -376,6 +480,7 @@ export class ModelTestsService {
           },
         },
         include: {
+          category: { select: { id: true, name: true, slug: true } },
           questions: {
             orderBy: { sortOrder: 'asc' },
             select: {
@@ -397,6 +502,7 @@ export class ModelTestsService {
       slug: created.slug,
       description: created.description,
       examYear: created.examYear,
+      category: created.category,
       totalQuestions: created.totalQuestions,
       durationInMinutes: created.durationInMinutes,
       isPublished: created.isPublished,
@@ -428,6 +534,7 @@ export class ModelTestsService {
         durationInMinutes: true,
         isPublished: true,
         createdAt: true,
+        category: { select: { id: true, name: true, slug: true } },
         _count: { select: { attempts: true } },
       },
     });
@@ -462,6 +569,7 @@ export class ModelTestsService {
       description?: string | null;
       durationInMinutes?: number;
       examYear?: number | null;
+      categoryId?: string | null;
     },
   ) {
     const existing = await this.prisma.modelTest.findUnique({
@@ -505,6 +613,12 @@ export class ModelTestsService {
           ? null
           : Math.floor(input.examYear);
     }
+    if (input.categoryId !== undefined) {
+      const categoryId = await this.resolveCategoryId(input.categoryId);
+      data.category = categoryId
+        ? { connect: { id: categoryId } }
+        : { disconnect: true };
+    }
 
     return this.prisma.modelTest.update({
       where: { id },
@@ -518,6 +632,7 @@ export class ModelTestsService {
         durationInMinutes: true,
         isPublished: true,
         totalQuestions: true,
+        category: { select: { id: true, name: true, slug: true } },
       },
     });
   }
@@ -541,7 +656,12 @@ export class ModelTestsService {
       ? { OR: [{ id: idOrSlug }, { slug: idOrSlug }], isPublished: true }
       : { slug: idOrSlug, isPublished: true };
 
-    const modelTest = await this.prisma.modelTest.findFirst({ where });
+    const modelTest = await this.prisma.modelTest.findFirst({
+      where,
+      include: {
+        category: { select: { id: true, name: true, slug: true } },
+      },
+    });
     if (!modelTest) {
       throw new NotFoundException(
         createErrorResponse('MODEL_TEST_NOT_FOUND', 'Model test not found', newRequestId()),

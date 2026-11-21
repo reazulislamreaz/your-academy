@@ -1,11 +1,18 @@
 /** Public guest Model Test contracts (parallel to DEC-039 guest exams). */
 
+export type ModelTestCategoryRef = {
+  id: string;
+  name: string;
+  slug: string;
+};
+
 export type PublicModelTestListItem = {
   id: string;
   title: string;
   slug: string;
   description: string | null;
   examYear: number | null;
+  category: ModelTestCategoryRef | null;
   totalQuestions: number;
   durationInMinutes: number;
   createdAt: string;
@@ -24,6 +31,7 @@ export type PublicModelTestDetail = {
   slug: string;
   description: string | null;
   examYear: number | null;
+  category: ModelTestCategoryRef | null;
   totalQuestions: number;
   durationInMinutes: number;
   createdAt: string;
@@ -84,6 +92,7 @@ export type AdminModelTestUploadResult = {
   slug: string;
   description: string | null;
   examYear: number | null;
+  category: ModelTestCategoryRef | null;
   totalQuestions: number;
   durationInMinutes: number;
   isPublished: boolean;
@@ -106,6 +115,7 @@ export type AdminModelTestListItem = {
   title: string;
   slug: string;
   examYear: number | null;
+  category: ModelTestCategoryRef | null;
   totalQuestions: number;
   durationInMinutes: number;
   isPublished: boolean;

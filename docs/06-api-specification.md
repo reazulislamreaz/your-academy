@@ -291,14 +291,17 @@ Parallel to guest exams. Header row may follow title/date preamble rows. Same 7-
 
 | Method | Endpoint | Description | Auth | Role |
 |--------|----------|-------------|------|------|
-| GET | `/public/model-tests` | Published list (`q`, `year`, `cursor`, `limit`) | Public | — |
+| GET | `/public/model-tests` | Published list (`q`, `year`, `categoryId`, `cursor`, `limit`) | Public | — |
 | GET | `/public/model-tests/meta/years` | Distinct published years for filters | Public | — |
+| GET | `/public/model-tests/meta/categories` | Categories with ≥1 published Model Test | Public | — |
 | GET | `/public/model-tests/:idOrSlug` | Detail + questions (no answers) | Public | — |
 | POST | `/public/model-tests/:idOrSlug/attempts` | Submit answers; scores server-side | Public | — |
 | GET | `/public/model-tests/attempts/:attemptId` | Result + answer sheet | Public | — |
 | GET | `/admin/model-tests` | Admin list | User | ADMIN |
+| GET | `/admin/model-tests/categories` | All Model Test categories | User | ADMIN |
+| POST | `/admin/model-tests/categories` | Create category (`name`) | User | ADMIN |
 | GET | `/admin/model-tests/template` | 7-column Excel template (with sample preamble) | User | ADMIN |
-| POST | `/admin/model-tests/upload` | Multipart create | User | ADMIN |
+| POST | `/admin/model-tests/upload` | Multipart create (`categoryId` optional) | User | ADMIN |
 | PATCH | `/admin/model-tests/:id` | Update meta / publish flag | User | ADMIN |
 | DELETE | `/admin/model-tests/:id` | Delete model test + questions/attempts | User | ADMIN |
 

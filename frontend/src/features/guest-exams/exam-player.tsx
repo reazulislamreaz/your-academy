@@ -14,6 +14,7 @@ import {
   saveGuestExamSession,
 } from './exam-session';
 import { NameEntryModal } from './name-entry-modal';
+import { scrollExamToTop } from './scroll-exam-to-top';
 import { useExamCountdown } from './use-exam-countdown';
 
 type Props = {
@@ -115,6 +116,7 @@ export function GuestExamPlayer({ exam }: Props) {
       startedAtMs: now,
       answers: {},
     });
+    scrollExamToTop('exam-q-1');
   };
 
   const selectAnswer = (questionId: string, option: string) => {

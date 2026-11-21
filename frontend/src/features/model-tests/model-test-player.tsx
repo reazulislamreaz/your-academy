@@ -6,6 +6,7 @@ import type { PublicModelTestDetail } from '@your-academy/shared';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { NameEntryModal } from '@/features/guest-exams/name-entry-modal';
+import { scrollExamToTop } from '@/features/guest-exams/scroll-exam-to-top';
 import { useExamCountdown } from '@/features/guest-exams/use-exam-countdown';
 import { ApiError } from '@/lib/api/client';
 import { submitPublicModelTestAttempt } from '@/lib/api/model-tests';
@@ -122,6 +123,7 @@ export function ModelTestPlayer({ modelTest }: Props) {
       startedAtMs: now,
       answers: {},
     });
+    scrollExamToTop('mt-q-1');
   };
 
   const selectAnswer = (questionId: string, option: string) => {

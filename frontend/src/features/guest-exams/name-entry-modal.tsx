@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,8 +21,18 @@ export function NameEntryModal({
   onStart,
 }: Props) {
   const id = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  // Focus without scrolling the underlying (already-mounted) question sheet.
+  useEffect(() => {
+    if (!open) return;
+    const frame = window.requestAnimationFrame(() => {
+      inputRef.current?.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [open]);
 
   if (!open) return null;
 
@@ -35,6 +45,11 @@ export function NameEntryModal({
     if (trimmed.length > 120) {
       setError('Name must be 120 characters or fewer.');
       return;
+    }
+    // Dismiss mobile keyboard before the sheet takes over scroll.
+    inputRef.current?.blur();
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
     }
     onStart(trimmed);
   };
@@ -63,9 +78,9 @@ export function NameEntryModal({
         <div className="mt-5 space-y-2">
           <Label htmlFor={`${id}-name`}>Full name</Label>
           <Input
+            ref={inputRef}
             id={`${id}-name`}
             value={name}
-            autoFocus
             autoComplete="name"
             maxLength={120}
             placeholder="e.g. Rahim Uddin"

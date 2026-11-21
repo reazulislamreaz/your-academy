@@ -15,6 +15,7 @@ export class PublicModelTestsController {
   async list(
     @Query('q') q?: string,
     @Query('year') yearRaw?: string,
+    @Query('categoryId') categoryId?: string,
     @Query('cursor') cursor?: string,
     @Query('limit') limitRaw?: string,
   ) {
@@ -23,6 +24,7 @@ export class PublicModelTestsController {
     const page = await this.modelTests.listPublished({
       q,
       year: year != null && Number.isFinite(year) ? year : undefined,
+      categoryId,
       cursor,
       limit: take,
     });
@@ -36,6 +38,14 @@ export class PublicModelTestsController {
   @Get('meta/years')
   async years() {
     return createSuccessResponse(await this.modelTests.listFilterYears(), newRequestId());
+  }
+
+  @Get('meta/categories')
+  async categories() {
+    return createSuccessResponse(
+      await this.modelTests.listPublishedCategories(),
+      newRequestId(),
+    );
   }
 
   @Get('attempts/:attemptId')
