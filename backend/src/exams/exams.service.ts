@@ -371,10 +371,12 @@ export class ExamsService {
     };
   }
 
-  async listAdmin(limit = 50) {
-    return this.prisma.exam.findMany({
-      orderBy: { createdAt: 'desc' },
-      take: Math.min(Math.max(limit, 1), 100),
+  async listAdmin(filters?: { cursor?: string; limit?: number }) {
+    const limit = parseLimit(filters?.limit, 20);
+    const rows = await this.prisma.exam.findMany({
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: limit + 1,
+      ...(filters?.cursor ? { cursor: { id: filters.cursor }, skip: 1 } : {}),
       select: {
         id: true,
         title: true,
@@ -386,6 +388,7 @@ export class ExamsService {
         _count: { select: { attempts: true } },
       },
     });
+    return paginateById(rows, limit);
   }
 
   /** Public + admin: Quiz listing sidebar guide. Seeds defaults when missing. */

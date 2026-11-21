@@ -47,8 +47,22 @@ export class TopicImportController {
   }
 
   @Get()
-  async list() {
-    return createSuccessResponse(await this.imports.listBatches(), newRequestId());
+  async list(
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit?: string,
+    @Query('q') q?: string,
+  ) {
+    const take = Math.min(Math.max(Number(limit) || 20, 1), 100);
+    const data = await this.imports.listBatches({
+      cursor,
+      limit: take,
+      q,
+    });
+    return createSuccessResponse(
+      data.items,
+      newRequestId(),
+      cursorPaginationMeta(data.nextCursor, take),
+    );
   }
 
   @Get('stats')

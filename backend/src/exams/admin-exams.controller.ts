@@ -4,6 +4,7 @@ import {
   Get,
   Post,
   Put,
+  Query,
   Res,
   UploadedFile,
   UseGuards,
@@ -11,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UserRole } from '@prisma/client';
-import { createSuccessResponse } from '@your-academy/shared';
+import { createSuccessResponse, cursorPaginationMeta } from '@your-academy/shared';
 import type { Response } from 'express';
 import { memoryStorage } from 'multer';
 import type { RequestUser } from '../auth/auth.types';
@@ -20,6 +21,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { CsrfGuard } from '../common/guards/csrf.guard';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
+import { parseLimit } from '../common/pagination';
 import { newRequestId } from '../common/request-id';
 import { UpdateExamGuideDto } from './dto/update-exam-guide.dto';
 import { ExamsService } from './exams.service';
@@ -45,8 +47,14 @@ export class AdminExamsController {
   }
 
   @Get()
-  async list() {
-    return createSuccessResponse(await this.exams.listAdmin(), newRequestId());
+  async list(@Query('cursor') cursor?: string, @Query('limit') limitRaw?: string) {
+    const take = parseLimit(limitRaw, 20);
+    const page = await this.exams.listAdmin({ cursor, limit: take });
+    return createSuccessResponse(
+      page.items,
+      newRequestId(),
+      cursorPaginationMeta(page.nextCursor, take),
+    );
   }
 
   @Get('guide')

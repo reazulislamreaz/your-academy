@@ -1402,10 +1402,12 @@ export class PublicService {
    * Title-first Topic collections for a leaf Sub Category or Child Category.
    * Category (L1) and intermediate Sub folders with children return no sets.
    */
-  async listTopicSets(topicNodeId: string) {
-    const meta = await this.getTopicSubcategory(topicNodeId);
-    if (meta.level === 'category') {
-      return [] as Array<{
+  async listTopicSets(
+    topicNodeId: string,
+    params: { cursor?: string; limit?: number } = {},
+  ) {
+    const empty = {
+      items: [] as Array<{
         id: string;
         batchCode: string;
         title: string;
@@ -1415,12 +1417,19 @@ export class PublicService {
         category: { id: string; name: string };
         subcategory: { id: string; name: string };
         childCategory: { id: string; name: string } | null;
-      }>;
+      }>,
+      nextCursor: null as string | null,
+      total: 0,
+    };
+
+    const meta = await this.getTopicSubcategory(topicNodeId);
+    if (meta.level === 'category') {
+      return empty;
     }
 
     if (meta.level === 'subcategory' && (meta.folderCount ?? 0) > 0) {
       // Intermediate folder — only child folders, not sets.
-      return [];
+      return empty;
     }
 
     const where: Prisma.TopicUploadBatchWhereInput = {
@@ -1431,23 +1440,30 @@ export class PublicService {
         : { subcategoryId: meta.id, childCategoryId: null }),
     };
 
-    const batches = await this.prisma.topicUploadBatch.findMany({
-      where,
-      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-      select: {
-        id: true,
-        batchCode: true,
-        displayName: true,
-        createdAt: true,
-        importedAt: true,
-        category: { select: { id: true, name: true } },
-        subcategory: { select: { id: true, name: true } },
-        childCategory: { select: { id: true, name: true } },
-        _count: { select: { questions: true } },
-      },
-    });
+    const limit = Math.min(Math.max(params.limit ?? 20, 1), 100);
+    const [total, batches] = await Promise.all([
+      this.prisma.topicUploadBatch.count({ where }),
+      this.prisma.topicUploadBatch.findMany({
+        where,
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: limit + 1,
+        ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {}),
+        select: {
+          id: true,
+          batchCode: true,
+          displayName: true,
+          createdAt: true,
+          importedAt: true,
+          category: { select: { id: true, name: true } },
+          subcategory: { select: { id: true, name: true } },
+          childCategory: { select: { id: true, name: true } },
+          _count: { select: { questions: true } },
+        },
+      }),
+    ]);
 
-    return batches.map((b) => ({
+    const nextCursor = batches.length > limit ? batches.pop()!.id : null;
+    const items = batches.map((b) => ({
       id: b.id,
       batchCode: b.batchCode,
       title: b.displayName,
@@ -1458,6 +1474,8 @@ export class PublicService {
       subcategory: b.subcategory,
       childCategory: b.childCategory,
     }));
+
+    return { items, nextCursor, total };
   }
 
   async getTopicSet(batchId: string) {

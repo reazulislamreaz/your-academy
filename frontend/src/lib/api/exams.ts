@@ -92,8 +92,11 @@ export async function uploadAdminExam(input: {
   return result.data;
 }
 
-export function listAdminExams() {
-  return apiFetch<
+export function listAdminExams(params?: { cursor?: string; limit?: number }) {
+  const sp = new URLSearchParams();
+  sp.set('limit', String(params?.limit ?? 20));
+  if (params?.cursor) sp.set('cursor', params.cursor);
+  return apiFetchResult<
     Array<{
       id: string;
       title: string;
@@ -104,5 +107,5 @@ export function listAdminExams() {
       createdAt: string;
       _count: { attempts: number };
     }>
-  >('/admin/exams');
+  >(`/admin/exams?${sp.toString()}`);
 }

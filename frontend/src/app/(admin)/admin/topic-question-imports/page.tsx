@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import {
   CheckCircle2,
   Copy,
@@ -72,24 +72,20 @@ export default function TopicQuestionImportsHubPage() {
     queryFn: () => apiFetch<CategoryNode[]>('/categories?scope=TOPIC'),
   });
 
-  const batches = useQuery({
-    queryKey: ['admin-topic-imports'],
-    queryFn: listAdminTopicImports,
+  const batches = useInfiniteQuery({
+    queryKey: ['admin-topic-imports', debouncedQ],
+    initialPageParam: undefined as string | undefined,
+    queryFn: ({ pageParam }) =>
+      listAdminTopicImports({
+        cursor: pageParam,
+        limit: 20,
+        q: debouncedQ || undefined,
+      }),
+    getNextPageParam: (last) => last.pagination?.nextCursor ?? undefined,
   });
 
   const filtered = useMemo(() => {
-    let rows = [...(batches.data ?? [])];
-    const needle = debouncedQ.toLocaleLowerCase('bn');
-    if (needle) {
-      rows = rows.filter(
-        (b) =>
-          b.displayName.toLocaleLowerCase('bn').includes(needle) ||
-          b.batchCode.toLocaleLowerCase('bn').includes(needle) ||
-          (b.originalFilename ?? '').toLocaleLowerCase('bn').includes(needle) ||
-          b.category.name.toLocaleLowerCase('bn').includes(needle) ||
-          b.subcategory.name.toLocaleLowerCase('bn').includes(needle),
-      );
-    }
+    let rows = [...(batches.data?.pages.flatMap((p) => p.data) ?? [])];
     if (status) {
       rows = rows.filter((b) => b.status === status);
     }
@@ -118,7 +114,7 @@ export default function TopicQuestionImportsHubPage() {
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
     return rows;
-  }, [batches.data, debouncedQ, status, topicCategory, dateFrom, dateTo, sort]);
+  }, [batches.data, status, topicCategory, dateFrom, dateTo, sort]);
 
   const renderActions = (item: TopicUploadBatchSummary, align: 'left' | 'right' = 'right') => (
     <AdminRowActions
@@ -325,14 +321,18 @@ export default function TopicQuestionImportsHubPage() {
 
         {!batches.isLoading && !batches.isError && filtered.length === 0 ? (
           <EmptyState
-            title={(batches.data ?? []).length === 0 ? 'No collections yet' : 'No matching collections'}
+            title={
+              (batches.data?.pages.flatMap((p) => p.data) ?? []).length === 0
+                ? 'No collections yet'
+                : 'No matching collections'
+            }
             description={
-              (batches.data ?? []).length === 0
+              (batches.data?.pages.flatMap((p) => p.data) ?? []).length === 0
                 ? 'Download the template, then start a new upload to import topic questions.'
                 : 'Try clearing search or filters.'
             }
             action={
-              (batches.data ?? []).length === 0 ? (
+              (batches.data?.pages.flatMap((p) => p.data) ?? []).length === 0 ? (
                 <Link href="/admin/topic-question-imports/new">
                   <Button className="cursor-pointer">
                     <Plus className="size-4" />
@@ -449,6 +449,19 @@ export default function TopicQuestionImportsHubPage() {
                 </tbody>
               </AdminTable>
             </AdminTableShell>
+            {batches.hasNextPage ? (
+              <div className="mt-3 flex justify-center">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={batches.isFetchingNextPage}
+                  onClick={() => void batches.fetchNextPage()}
+                >
+                  {batches.isFetchingNextPage ? 'Loading…' : 'Load more'}
+                </Button>
+              </div>
+            ) : null}
           </>
         ) : null}
       </AdminSection>

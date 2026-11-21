@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useState } from 'react';
 import type { ExamAttemptResult } from '@your-academy/shared';
 import { Button } from '@/components/ui/button';
+import { useMe } from '@/features/auth/use-auth';
+import { GuestRegisterCta } from '@/features/guest-exams/guest-register-cta';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -11,10 +13,13 @@ type Props = {
 };
 
 export function ExamResultView({ result }: Props) {
+  const me = useMe();
+  const isGuest = !me.data && !me.isLoading;
   const [showSheet, setShowSheet] = useState(false);
   const circumference = 2 * Math.PI * 54;
   const progress = Math.min(100, Math.max(0, result.percent));
   const dash = (progress / 100) * circumference;
+  const resultPath = `/exams/${encodeURIComponent(result.exam.slug)}/result/${encodeURIComponent(result.attemptId)}`;
 
   return (
     <div className="mx-auto w-full max-w-3xl overflow-x-clip px-3 py-6 sm:px-6 sm:py-10">
@@ -83,6 +88,22 @@ export function ExamResultView({ result }: Props) {
           </Button>
         </div>
       </section>
+
+      {isGuest ? (
+        <GuestRegisterCta
+          className="mt-4 sm:mt-6"
+          link={{
+            kind: 'exam',
+            attemptId: result.attemptId,
+            resultPath,
+            title: result.exam.title,
+            score: result.score,
+            totalQuestions: result.exam.totalQuestions,
+            percent: result.percent,
+            userName: result.userName,
+          }}
+        />
+      ) : null}
 
       {showSheet ? (
         <section className="mt-4 space-y-3 sm:mt-6 sm:space-y-4" aria-label="Answer sheet">

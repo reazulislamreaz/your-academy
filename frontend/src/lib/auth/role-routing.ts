@@ -27,6 +27,11 @@ export const PUBLIC_MARKETING_PREFIXES = [
   '/written-question-bank',
   '/news',
   '/exams',
+  '/model-test',
+  '/topic-base',
+  '/topic-categories',
+  '/question-bank-categories',
+  '/written-question-bank-categories',
 ] as const;
 
 export function isPublicMarketingPath(pathname: string): boolean {

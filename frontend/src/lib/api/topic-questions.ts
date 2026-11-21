@@ -119,10 +119,18 @@ export function listTopicQuestions(
 }
 
 /** Title-first collections for a leaf Sub/Child Topic folder. */
-export function listTopicSets(folderId: string): Promise<TopicSetSummary[]> {
-  return apiFetch<TopicSetSummary[]>(`/public/topic-subcategories/${folderId}/sets`, {
-    skipRefresh: true,
-  });
+export function listTopicSets(
+  folderId: string,
+  params: { cursor?: string; limit?: number } = {},
+) {
+  const sp = new URLSearchParams();
+  if (params.cursor) sp.set('cursor', params.cursor);
+  sp.set('limit', String(params.limit ?? 20));
+  const qs = sp.toString();
+  return apiFetchResult<TopicSetSummary[]>(
+    `/public/topic-subcategories/${folderId}/sets${qs ? `?${qs}` : ''}`,
+    { skipRefresh: true },
+  );
 }
 
 export function getTopicSet(batchId: string): Promise<TopicSetDetail> {
@@ -143,8 +151,18 @@ export function listTopicSetQuestions(
   );
 }
 
-export function listAdminTopicImports() {
-  return apiFetch<TopicUploadBatchSummary[]>('/admin/topic-question-imports');
+export function listAdminTopicImports(params?: {
+  cursor?: string;
+  limit?: number;
+  q?: string;
+}) {
+  const sp = new URLSearchParams();
+  sp.set('limit', String(params?.limit ?? 20));
+  if (params?.cursor) sp.set('cursor', params.cursor);
+  if (params?.q?.trim()) sp.set('q', params.q.trim());
+  return apiFetchResult<TopicUploadBatchSummary[]>(
+    `/admin/topic-question-imports?${sp.toString()}`,
+  );
 }
 
 export function getAdminTopicImportStats() {

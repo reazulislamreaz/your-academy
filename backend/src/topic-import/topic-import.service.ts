@@ -62,13 +62,33 @@ export class TopicImportService {
     };
   }
 
-  async listBatches(limit = 40) {
+  async listBatches(opts: { cursor?: string; limit?: number; q?: string } = {}) {
+    const limit = Math.min(Math.max(opts.limit ?? 20, 1), 100);
+    const q = opts.q?.trim();
+    const where = q
+      ? {
+          OR: [
+            { displayName: { contains: q, mode: 'insensitive' as const } },
+            { batchCode: { contains: q, mode: 'insensitive' as const } },
+            { originalFilename: { contains: q, mode: 'insensitive' as const } },
+          ],
+        }
+      : undefined;
+
     const rows = await this.prisma.topicUploadBatch.findMany({
-      orderBy: { createdAt: 'desc' },
-      take: Math.min(Math.max(limit, 1), 100),
+      where,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: limit + 1,
+      ...(opts.cursor ? { cursor: { id: opts.cursor }, skip: 1 } : {}),
       include: this.batchInclude,
     });
-    return rows.map((row) => this.mapBatchSummary(row));
+    const hasMore = rows.length > limit;
+    const page = hasMore ? rows.slice(0, limit) : rows;
+    const last = page[page.length - 1];
+    return {
+      items: page.map((row) => this.mapBatchSummary(row)),
+      nextCursor: hasMore && last ? last.id : null,
+    };
   }
 
   /** Hub stats — mirrors Written import stats cards (dup/failed stay 0; Topic never blocks). */

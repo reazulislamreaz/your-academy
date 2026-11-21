@@ -5,6 +5,7 @@ import { useState } from 'react';
 import type { ModelTestAttemptResult } from '@your-academy/shared';
 import { Button } from '@/components/ui/button';
 import { useMe } from '@/features/auth/use-auth';
+import { GuestRegisterCta } from '@/features/guest-exams/guest-register-cta';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -18,6 +19,7 @@ export function ModelTestResultView({ result }: Props) {
   const circumference = 2 * Math.PI * 54;
   const progress = Math.min(100, Math.max(0, result.percent));
   const dash = (progress / 100) * circumference;
+  const resultPath = `/model-test/${encodeURIComponent(result.modelTest.slug)}/result/${encodeURIComponent(result.attemptId)}`;
 
   return (
     <div className="mx-auto w-full max-w-3xl overflow-x-clip px-3 py-6 sm:px-6 sm:py-10">
@@ -89,20 +91,19 @@ export function ModelTestResultView({ result }: Props) {
       </section>
 
       {isGuest ? (
-        <section className="mt-4 rounded-[var(--radius-xl)] border border-[color-mix(in_srgb,var(--accent)_35%,var(--line))] bg-[var(--accent-soft)] p-4 sm:mt-6 sm:p-6">
-          <h2 className="font-display text-lg font-bold tracking-tight text-[var(--ink)] sm:text-xl">
-            Save your scores on youracademy.com.bd
-          </h2>
-          <p className="mt-2 text-sm leading-relaxed text-[var(--muted-strong)] sm:text-base">
-            You are browsing as a guest. Register an account to save exam scores and performance
-            history across Model Tests and Quizzes.
-          </p>
-          <div className="mt-4">
-            <Link href="/register">
-              <Button className="h-11 w-full sm:h-10 sm:w-auto">Create free account</Button>
-            </Link>
-          </div>
-        </section>
+        <GuestRegisterCta
+          className="mt-4 sm:mt-6"
+          link={{
+            kind: 'model-test',
+            attemptId: result.attemptId,
+            resultPath,
+            title: result.modelTest.title,
+            score: result.score,
+            totalQuestions: result.modelTest.totalQuestions,
+            percent: result.percent,
+            userName: result.userName,
+          }}
+        />
       ) : null}
 
       {showSheet ? (

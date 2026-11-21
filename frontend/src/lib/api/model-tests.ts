@@ -120,8 +120,13 @@ export async function uploadAdminModelTest(input: {
   return result.data;
 }
 
-export function listAdminModelTests() {
-  return apiFetch<AdminModelTestListItem[]>('/admin/model-tests');
+export function listAdminModelTests(params?: { cursor?: string; limit?: number }) {
+  const sp = new URLSearchParams();
+  sp.set('limit', String(params?.limit ?? 20));
+  if (params?.cursor) sp.set('cursor', params.cursor);
+  return apiFetchResult<AdminModelTestListItem[]>(
+    `/admin/model-tests?${sp.toString()}`,
+  );
 }
 
 export function listAdminModelTestCategories() {

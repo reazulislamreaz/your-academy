@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useId, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useBodyScrollLock } from '@/lib/hooks/use-body-scroll-lock';
 
 type Props = {
   examTitle: string;
@@ -13,6 +15,11 @@ type Props = {
   onStart: (fullName: string) => void;
 };
 
+/**
+ * Name gate before guest Quiz / Model Test sheets.
+ * Portaled to `document.body` so parent `overflow-x-clip` shells cannot clip
+ * `position: fixed` and hide the dialog after Start.
+ */
 export function NameEntryModal({
   examTitle,
   open,
@@ -24,6 +31,13 @@ export function NameEntryModal({
   const inputRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useBodyScrollLock(open);
 
   // Focus without scrolling the underlying (already-mounted) question sheet.
   useEffect(() => {
@@ -34,7 +48,7 @@ export function NameEntryModal({
     return () => window.cancelAnimationFrame(frame);
   }, [open]);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
   const tryStart = () => {
     const trimmed = name.trim();
@@ -54,8 +68,8 @@ export function NameEntryModal({
     onStart(trimmed);
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-4 sm:items-center">
+  return createPortal(
+    <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/45 p-4 sm:items-center">
       <div
         role="dialog"
         aria-modal="true"
@@ -104,6 +118,7 @@ export function NameEntryModal({
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

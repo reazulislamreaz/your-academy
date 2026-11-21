@@ -251,11 +251,11 @@ Separate TOPIC taxonomy + MCQ bank. Excel template (8 columns): `প্রশ্
 | GET | `/categories?scope=TOPIC` | Topic category tree (includes `iconKey`) | Public | — |
 | GET | `/public/topic-directory` | Topic roots + nested Sub/Child folders | Public | — |
 | GET | `/public/topic-subcategories/:id` | Topic folder meta for L1 Category, L2 Sub, or L3 Child (`level`) | Public | — |
-| GET | `/public/topic-subcategories/:id/sets` | Title-first Topic collections for a **leaf** Sub/Child (empty for Category or Sub with children) | Public | — |
+| GET | `/public/topic-subcategories/:id/sets` | Title-first Topic collections for a **leaf** Sub/Child (`cursor`, `limit`; empty for Category or Sub with children) | Public | — |
 | GET | `/public/topic-subcategories/:id/questions` | Cursor-paginated topic MCQs for that folder (legacy/folder dump; prefer sets) | Public | — |
 | GET | `/public/topic-sets/:id` | Topic upload-batch meta | Public | — |
 | GET | `/public/topic-sets/:id/questions` | Cursor-paginated MCQs for one Topic collection (`q`) | Public | — |
-| GET | `/admin/topic-question-imports` | Recent topic batches | User | ADMIN |
+| GET | `/admin/topic-question-imports` | Topic batches (`cursor`, `limit`, optional `q`) | User | ADMIN |
 | GET | `/admin/topic-question-imports/template` | 8-column Excel template | User | ADMIN |
 | GET | `/admin/topic-question-imports/:id` | Topic batch detail (admin) | User | ADMIN |
 | PATCH | `/admin/topic-question-imports/:id` | Update title + Category/Sub/Child (cascades to questions) | User | ADMIN |
@@ -282,7 +282,7 @@ Admin Excel template (7 columns): `প্রশ্ন নং | প্রশ্�
 | GET | `/public/exams/:idOrSlug` | Exam + questions (no correct answers / explanations) | Public | — |
 | POST | `/public/exams/:idOrSlug/attempts` | Submit answers (`userName`, `userAnswers`, optional `elapsedSeconds`/`timedOut`); scores server-side | Public | — |
 | GET | `/public/exams/attempts/:attemptId` | Result + full answer sheet (correct + explanation) | Public | — |
-| GET | `/admin/exams` | Admin list | User | ADMIN |
+| GET | `/admin/exams` | Admin list (`cursor`, `limit`) | User | ADMIN |
 | GET | `/admin/exams/guide` | Quiz listing sidebar guide config | User | ADMIN |
 | PUT | `/admin/exams/guide` | Replace guide title + ordered steps | User | ADMIN |
 | GET | `/admin/exams/template` | 7-column Excel template download | User | ADMIN |
@@ -301,7 +301,7 @@ Parallel to guest exams. Header row may follow title/date preamble rows. Same 7-
 | GET | `/public/model-tests/:idOrSlug` | Detail + questions (no answers) | Public | — |
 | POST | `/public/model-tests/:idOrSlug/attempts` | Submit answers; scores server-side | Public | — |
 | GET | `/public/model-tests/attempts/:attemptId` | Result + answer sheet | Public | — |
-| GET | `/admin/model-tests` | Admin list | User | ADMIN |
+| GET | `/admin/model-tests` | Admin list (`cursor`, `limit`) | User | ADMIN |
 | GET | `/admin/model-tests/categories` | All Model Test categories | User | ADMIN |
 | POST | `/admin/model-tests/categories` | Create category (`name`) | User | ADMIN |
 | GET | `/admin/model-tests/guide` | Listing sidebar guide config | User | ADMIN |

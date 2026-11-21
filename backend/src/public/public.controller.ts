@@ -223,8 +223,18 @@ export class PublicController {
 
   /** Title-first Topic collections for a leaf Sub/Child folder. */
   @Get('topic-subcategories/:id/sets')
-  async topicSets(@Param('id') id: string) {
-    return createSuccessResponse(await this.publicService.listTopicSets(id), newRequestId());
+  async topicSets(
+    @Param('id') id: string,
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const take = Math.min(Math.max(Number(limit) || 20, 1), 100);
+    const data = await this.publicService.listTopicSets(id, { cursor, limit: take });
+    return createSuccessResponse(
+      data.items,
+      newRequestId(),
+      cursorPaginationMeta(data.nextCursor, take, data.total),
+    );
   }
 
   @Get('topic-sets/:id')

@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { isValidWhatsapp } from '@your-academy/shared';
 import { ArrowRight, Lock, MessageCircle, User } from 'lucide-react';
@@ -12,6 +12,7 @@ import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Surface } from '@/components/ui/surface';
+import { RegisterPageSkeleton } from '@/components/skeletons';
 import { PasswordField } from '@/features/auth/password-field';
 import { PasswordStrength } from '@/features/auth/password-strength';
 import { meQueryKey } from '@/features/auth/use-auth';
@@ -19,11 +20,14 @@ import {
   WhatsappField,
   toAuthWhatsappPayload,
 } from '@/features/auth/whatsapp-field';
+import { loadGuestResultLink } from '@/features/guest-exams/guest-result-link';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import type { MeUser } from '@/lib/api/types';
+import { resolvePostAuthPath } from '@/lib/auth/role-routing';
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const qc = useQueryClient();
   const [form, setForm] = useState({
     name: '',
@@ -71,7 +75,14 @@ export default function RegisterPage() {
         skipRefresh: true,
       });
       qc.setQueryData(meQueryKey, result.user);
-      router.push('/onboarding');
+      const next =
+        searchParams.get('next') || loadGuestResultLink()?.resultPath || null;
+      // Prefer returning guests to their result sheet; otherwise onboarding.
+      const dest =
+        next && next.startsWith('/') && !next.startsWith('//')
+          ? resolvePostAuthPath(result.user.role, next)
+          : '/onboarding';
+      router.push(dest);
       router.refresh();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Registration failed');
@@ -201,12 +212,24 @@ export default function RegisterPage() {
       >
         Already have an account?{' '}
         <Link
-          href="/login"
+          href={
+            searchParams.get('next')
+              ? `/login?next=${encodeURIComponent(searchParams.get('next')!)}`
+              : '/login'
+          }
           className="font-bold text-[var(--highlight)] underline-offset-2 hover:underline"
         >
           Sign in
         </Link>
       </p>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<RegisterPageSkeleton />}>
+      <RegisterForm />
+    </Suspense>
   );
 }

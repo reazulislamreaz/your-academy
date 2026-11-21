@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { AdminFormPanel, AdminPage, AdminSection } from '@/components/admin/admin-page';
 import { PageHeader } from '@/components/layout/page-header';
@@ -39,10 +39,13 @@ export default function AdminModelTestUploadPage() {
   const [result, setResult] = useState<AdminModelTestUploadResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const tests = useQuery({
+  const tests = useInfiniteQuery({
     queryKey: ['admin-model-tests'],
-    queryFn: listAdminModelTests,
+    initialPageParam: undefined as string | undefined,
+    queryFn: ({ pageParam }) => listAdminModelTests({ cursor: pageParam, limit: 20 }),
+    getNextPageParam: (last) => last.pagination?.nextCursor ?? undefined,
   });
+  const testItems = tests.data?.pages.flatMap((p) => p.data) ?? [];
 
   const categories = useQuery({
     queryKey: ['admin-model-test-categories'],
@@ -298,56 +301,71 @@ export default function AdminModelTestUploadPage() {
         <AdminFormPanel title="Published & drafts">
           {tests.isLoading ? (
             <p className="text-sm text-[var(--muted)]">Loading…</p>
-          ) : tests.data?.length ? (
-            <ul className="divide-y divide-[var(--line)]">
-              {tests.data.map((item) => (
-                <li
-                  key={item.id}
-                  className="flex flex-col gap-2.5 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-2"
-                >
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium break-words text-[var(--ink)]">{item.title}</p>
-                    <p className="mt-0.5 text-xs text-[var(--muted)]">
-                      {item.totalQuestions} Q · {item.durationInMinutes} min
-                      {item.category ? ` · ${item.category.name}` : ''}
-                      {item.examYear ? ` · ${item.examYear}` : ''} ·{' '}
-                      {item.isPublished ? 'Published' : 'Hidden'}
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 flex-wrap gap-1.5">
-                    <Link href={`/model-test/${item.slug}`}>
-                      <Button size="sm" variant="outline" className="h-8 px-2.5 text-xs">
-                        View
-                      </Button>
-                    </Link>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-8 px-2.5 text-xs"
-                      disabled={togglePublish.isPending}
-                      onClick={() =>
-                        togglePublish.mutate({ id: item.id, next: !item.isPublished })
-                      }
-                    >
-                      {item.isPublished ? 'Hide' : 'Publish'}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-8 px-2.5 text-xs text-[var(--danger)]"
-                      disabled={remove.isPending}
-                      onClick={() => {
-                        if (window.confirm(`Delete “${item.title}”?`)) {
-                          remove.mutate(item.id);
+          ) : testItems.length ? (
+            <>
+              <ul className="divide-y divide-[var(--line)]">
+                {testItems.map((item) => (
+                  <li
+                    key={item.id}
+                    className="flex flex-col gap-2.5 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-2"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium break-words text-[var(--ink)]">{item.title}</p>
+                      <p className="mt-0.5 text-xs text-[var(--muted)]">
+                        {item.totalQuestions} Q · {item.durationInMinutes} min
+                        {item.category ? ` · ${item.category.name}` : ''}
+                        {item.examYear ? ` · ${item.examYear}` : ''} ·{' '}
+                        {item.isPublished ? 'Published' : 'Hidden'}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 flex-wrap gap-1.5">
+                      <Link href={`/model-test/${item.slug}`}>
+                        <Button size="sm" variant="outline" className="h-8 px-2.5 text-xs">
+                          View
+                        </Button>
+                      </Link>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 px-2.5 text-xs"
+                        disabled={togglePublish.isPending}
+                        onClick={() =>
+                          togglePublish.mutate({ id: item.id, next: !item.isPublished })
                         }
-                      }}
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                </li>
-              ))}
-            </ul>
+                      >
+                        {item.isPublished ? 'Hide' : 'Publish'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 px-2.5 text-xs text-[var(--danger)]"
+                        disabled={remove.isPending}
+                        onClick={() => {
+                          if (window.confirm(`Delete “${item.title}”?`)) {
+                            remove.mutate(item.id);
+                          }
+                        }}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              {tests.hasNextPage ? (
+                <div className="mt-3 flex justify-center">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={tests.isFetchingNextPage}
+                    onClick={() => void tests.fetchNextPage()}
+                  >
+                    {tests.isFetchingNextPage ? 'Loading…' : 'Load more'}
+                  </Button>
+                </div>
+              ) : null}
+            </>
           ) : (
             <p className="text-sm text-[var(--muted)]">No Model Tests yet.</p>
           )}

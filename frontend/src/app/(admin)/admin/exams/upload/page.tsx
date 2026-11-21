@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { AdminFormPanel, AdminPage, AdminSection } from '@/components/admin/admin-page';
 import { PageHeader } from '@/components/layout/page-header';
@@ -42,10 +42,13 @@ export default function AdminExamUploadPage() {
   const [result, setResult] = useState<AdminExamUploadResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const exams = useQuery({
+  const exams = useInfiniteQuery({
     queryKey: ['admin-exams'],
-    queryFn: listAdminExams,
+    initialPageParam: undefined as string | undefined,
+    queryFn: ({ pageParam }) => listAdminExams({ cursor: pageParam, limit: 20 }),
+    getNextPageParam: (last) => last.pagination?.nextCursor ?? undefined,
   });
+  const examItems = exams.data?.pages.flatMap((p) => p.data) ?? [];
 
   const upload = useMutation({
     mutationFn: uploadAdminExam,
@@ -221,28 +224,43 @@ export default function AdminExamUploadPage() {
         <AdminFormPanel title="Published exams">
           {exams.isLoading ? (
             <p className="text-sm text-[var(--muted)]">Loading…</p>
-          ) : exams.data?.length ? (
-            <ul className="divide-y divide-[var(--line)]">
-              {exams.data.map((exam) => (
-                <li
-                  key={exam.id}
-                  className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-2"
-                >
-                  <div className="min-w-0">
-                    <p className="font-medium break-words text-[var(--ink)]">{exam.title}</p>
-                    <p className="mt-0.5 text-xs text-[var(--muted)]">
-                      {exam.totalQuestions} Q · {exam.durationInMinutes} mins ·{' '}
-                      {exam._count.attempts} attempts
-                    </p>
-                  </div>
-                  <Link href={`/exams/${exam.slug}`} className="shrink-0">
-                    <Button size="sm" variant="outline" className="h-10 w-full sm:w-auto">
-                      View
-                    </Button>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+          ) : examItems.length ? (
+            <>
+              <ul className="divide-y divide-[var(--line)]">
+                {examItems.map((exam) => (
+                  <li
+                    key={exam.id}
+                    className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-2"
+                  >
+                    <div className="min-w-0">
+                      <p className="font-medium break-words text-[var(--ink)]">{exam.title}</p>
+                      <p className="mt-0.5 text-xs text-[var(--muted)]">
+                        {exam.totalQuestions} Q · {exam.durationInMinutes} mins ·{' '}
+                        {exam._count.attempts} attempts
+                      </p>
+                    </div>
+                    <Link href={`/exams/${exam.slug}`} className="shrink-0">
+                      <Button size="sm" variant="outline" className="h-10 w-full sm:w-auto">
+                        View
+                      </Button>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              {exams.hasNextPage ? (
+                <div className="mt-3 flex justify-center">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={exams.isFetchingNextPage}
+                    onClick={() => void exams.fetchNextPage()}
+                  >
+                    {exams.isFetchingNextPage ? 'Loading…' : 'Load more'}
+                  </Button>
+                </div>
+              ) : null}
+            </>
           ) : (
             <p className="text-sm text-[var(--muted)]">No guest exams yet.</p>
           )}
