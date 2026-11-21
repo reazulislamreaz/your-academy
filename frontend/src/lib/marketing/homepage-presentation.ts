@@ -5,11 +5,6 @@ import {
 } from '@your-academy/shared';
 import type { PublicPlatformStats } from '@/lib/api/public-stats';
 
-const LEGACY_DESCRIPTIONS = new Set([
-  'Boost Your Knowledge',
-  'Boost your knowledge',
-]);
-
 const FABRICATED_STAT_VALUES = new Set(['1M+', '50+', '100%']);
 
 function formatCount(n: number): string {
@@ -18,7 +13,7 @@ function formatCount(n: number): string {
 
 /** Detect pre-redesign CMS copy that included fabricated social proof. */
 export function isLegacyHomepageHero(hero: HomepagePayload['hero']): boolean {
-  if (LEGACY_DESCRIPTIONS.has(hero.description.trim())) return true;
+  if (/boost your knowledge/i.test(hero.description.trim())) return true;
   if (hero.stats.some((s) => FABRICATED_STAT_VALUES.has(s.value.trim()))) return true;
   if (hero.primaryCta.label === 'Start Practicing') return true;
   return false;
@@ -66,12 +61,20 @@ function scrubTrialCta(cta: Cta, fallbackLabel: string): Cta {
   return { ...cta, label: fallbackLabel };
 }
 
+function scrubTrialText(text: string, fallback: string): string {
+  return mentionsTrial(text) ? fallback : text;
+}
+
 /**
  * Presentation merge for the public homepage.
  *
- * Critical: never wholesale-replace the CMS hero. Admin-published eyebrow,
- * titles, description, CTAs, and visibility must win. Only scrub known
- * free-trial CTA labels and fabricated social-proof stats.
+ * CMS published payload is the source of truth. We only:
+ * - scrub free-trial CTA / copy (product rule: trials disabled)
+ * - strip fabricated hero social-proof stats (brand-first; live counts live in Live Stats)
+ * - force trialStrip / progress off
+ *
+ * Do NOT replace admin headings, descriptions, or other copy with defaults —
+ * that made Admin Dashboard edits appear to "not save" on the live homepage.
  */
 export function presentHomepagePayload(
   payload: HomepagePayload,
@@ -80,112 +83,69 @@ export function presentHomepagePayload(
   void _liveStats;
   const defaults = createDefaultHomepagePayload();
 
-  // Field-level legacy upgrades for the hero — keep admin copy intact.
   const heroSource = payload.hero;
-  const description = LEGACY_DESCRIPTIONS.has(heroSource.description.trim())
-    ? defaults.hero.description
-    : heroSource.description;
-  const primaryCta = scrubTrialCta(
-    heroSource.primaryCta.label === 'Start Practicing'
-      ? { ...heroSource.primaryCta, label: defaults.hero.primaryCta.label }
-      : heroSource.primaryCta,
-    defaults.hero.primaryCta.label,
-  );
+  const primaryCta = scrubTrialCta(heroSource.primaryCta, defaults.hero.primaryCta.label);
   const secondaryCta = scrubTrialCta(
     heroSource.secondaryCta,
     defaults.hero.secondaryCta.label,
   );
-  // Brand-first hero: live platform counts render in HomepageLiveStats below the fold.
+
+  // Brand-first hero: never render hero social-proof chips.
+  // Live platform counts render in HomepageLiveStats below the fold.
+  // (Hero CMS has no stats editor; strip any legacy chips from older payloads.)
   const heroStats: HomepagePayload['hero']['stats'] = [];
 
-  const why =
-    payload.why.points.some((p) => /unlimited exam practice/i.test(p)) ||
-    payload.why.points.some((p) => /performance update/i.test(p)) ||
-    payload.why.points.some((p) => mentionsTrial(p))
-      ? defaults.why
-      : payload.why;
+  const scrubPoints = (points: string[], fallback: string[]) =>
+    points.some((p) => mentionsTrial(p)) ? fallback : points;
 
-  const ctaBanner =
-    /thousands of successful/i.test(payload.ctaBanner.body) ||
-    payload.ctaBanner.cta.label === 'Start Now' ||
-    mentionsTrial(payload.ctaBanner.heading) ||
-    mentionsTrial(payload.ctaBanner.body) ||
-    mentionsTrial(payload.ctaBanner.cta.label)
-      ? defaults.ctaBanner
-      : payload.ctaBanner;
-
-  const newsletter =
-    (/aren't live yet/i.test(payload.newsletter.body) &&
-      payload.newsletter.title === 'Stay updated') ||
-    mentionsTrial(payload.newsletter.body) ||
-    mentionsTrial(payload.newsletter.cta.label)
-      ? defaults.newsletter
-      : payload.newsletter;
-
-  const latest =
-    payload.latest.heading === 'Latest Collections' ? defaults.latest : payload.latest;
-
-  const categories = {
-    ...payload.categories,
-    heading:
-      payload.categories.heading === 'Our Question Bank Categories'
-        ? defaults.categories.heading
-        : payload.categories.heading,
-    subtitle:
-      payload.categories.heading === 'Our Question Bank Categories'
-        ? defaults.categories.subtitle
-        : payload.categories.subtitle,
-    cta:
-      payload.categories.heading === 'Our Question Bank Categories'
-        ? { ...payload.categories.cta, label: defaults.categories.cta.label }
-        : payload.categories.cta,
+  const why = {
+    ...payload.why,
+    heading: scrubTrialText(payload.why.heading, defaults.why.heading),
+    points: scrubPoints(payload.why.points, defaults.why.points),
   };
 
-  const legacyTopicHeadings = new Set([
-    'Topic Based Question Analysis',
-    'Topics-Based Question Analysis',
-    'Topic-based practice',
-  ]);
-  const legacyTopicSubtitles = new Set([
-    'Master Every Subject, One Topic at a Time',
-    'Explore subject-wise and topic-wise questions to strengthen your knowledge and improve your exam preparation.',
-  ]);
-  const topicHeading = payload.topics.heading.trim();
-  const topicSubtitle = payload.topics.subtitle?.trim() ?? '';
-  const topics = {
-    ...payload.topics,
-    heading: legacyTopicHeadings.has(topicHeading)
-      ? defaults.topics.heading
-      : payload.topics.heading,
-    subheading: '',
-    // Empty / legacy copy → default paragraph so the section always has a lede.
-    subtitle:
-      !topicSubtitle || legacyTopicSubtitles.has(topicSubtitle)
-        ? defaults.topics.subtitle
-        : payload.topics.subtitle,
-    cta: legacyTopicHeadings.has(topicHeading)
-      ? { ...payload.topics.cta, label: defaults.topics.cta.label }
-      : payload.topics.cta,
+  const ctaBanner = {
+    ...payload.ctaBanner,
+    heading: scrubTrialText(payload.ctaBanner.heading, defaults.ctaBanner.heading),
+    body: scrubTrialText(payload.ctaBanner.body, defaults.ctaBanner.body),
+    cta: scrubTrialCta(payload.ctaBanner.cta, defaults.ctaBanner.cta.label),
   };
 
-  const howItWorks =
-    payload.howItWorks.steps.some((s) => mentionsTrial(s.title) || mentionsTrial(s.body)) ||
-    mentionsTrial(payload.howItWorks.cta.label)
-      ? defaults.howItWorks
-      : payload.howItWorks;
+  const newsletter = {
+    ...payload.newsletter,
+    body: scrubTrialText(payload.newsletter.body, defaults.newsletter.body),
+    cta: scrubTrialCta(payload.newsletter.cta, defaults.newsletter.cta.label),
+  };
 
-  const dashboardPreview =
-    mentionsTrial(payload.dashboardPreview.primaryCta.label) ||
-    mentionsTrial(payload.dashboardPreview.body)
-      ? defaults.dashboardPreview
-      : payload.dashboardPreview;
+  const howItWorks = {
+    ...payload.howItWorks,
+    steps: payload.howItWorks.steps.some(
+      (s) => mentionsTrial(s.title) || mentionsTrial(s.body),
+    )
+      ? defaults.howItWorks.steps
+      : payload.howItWorks.steps,
+    cta: scrubTrialCta(payload.howItWorks.cta, defaults.howItWorks.cta.label),
+  };
 
-  const accessFaq =
-    payload.accessFaq.highlights.some((h) => mentionsTrial(h)) ||
-    payload.accessFaq.faqs.some((f) => mentionsTrial(f.question) || mentionsTrial(f.answer)) ||
-    mentionsTrial(payload.accessFaq.cta.label)
-      ? defaults.accessFaq
-      : payload.accessFaq;
+  const dashboardPreview = {
+    ...payload.dashboardPreview,
+    body: scrubTrialText(payload.dashboardPreview.body, defaults.dashboardPreview.body),
+    primaryCta: scrubTrialCta(
+      payload.dashboardPreview.primaryCta,
+      defaults.dashboardPreview.primaryCta.label,
+    ),
+  };
+
+  const accessFaq = {
+    ...payload.accessFaq,
+    highlights: scrubPoints(payload.accessFaq.highlights, defaults.accessFaq.highlights),
+    faqs: payload.accessFaq.faqs.some(
+      (f) => mentionsTrial(f.question) || mentionsTrial(f.answer),
+    )
+      ? defaults.accessFaq.faqs
+      : payload.accessFaq.faqs,
+    cta: scrubTrialCta(payload.accessFaq.cta, defaults.accessFaq.cta.label),
+  };
 
   return normalizeHomepagePayload({
     ...defaults,
@@ -205,18 +165,23 @@ export function presentHomepagePayload(
     customSections: payload.customSections ?? defaults.customSections,
     hero: {
       ...heroSource,
-      description,
       primaryCta,
       secondaryCta,
+      // Empty after scrub → brand-first (no chips). Non-fabricated CMS stats still render.
       stats: heroStats,
     },
-    categories,
+    categories: payload.categories,
     writtenCategories: payload.writtenCategories ?? defaults.writtenCategories,
-    topics,
+    topics: {
+      ...payload.topics,
+      // Preserve empty subtitle — do not invent a lede when admin cleared it.
+      subtitle: payload.topics.subtitle ?? '',
+      subheading: payload.topics.subheading ?? '',
+    },
     why,
     progress: { ...defaults.progress, visible: false },
     ctaBanner,
-    latest,
+    latest: payload.latest,
     newsletter,
   });
 }

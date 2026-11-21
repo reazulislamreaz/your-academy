@@ -62,7 +62,9 @@ export function HomepageBankBrowseCategories({ categories }: CategoriesProps) {
           >
             {categories.heading}
           </h2>
-          <p className="hp-lede text-sm sm:text-base">{categories.subtitle}</p>
+          {categories.subtitle.trim() ? (
+            <p className="hp-lede text-sm sm:text-base">{categories.subtitle}</p>
+          ) : null}
           {categories.cta.visible ? (
             <Link href={categoriesCtaHref} className="inline-flex w-full pt-1 sm:w-auto">
               <Button className="min-h-11 w-full rounded-full px-6 shadow-[0_10px_24px_-12px_rgba(227,30,36,0.45)] transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 sm:w-auto">
@@ -124,7 +126,9 @@ export function HomepageBankBrowseWrittenCategories({
           >
             {writtenCategories.heading}
           </h2>
-          <p className="hp-lede text-sm sm:text-base">{writtenCategories.subtitle}</p>
+          {writtenCategories.subtitle.trim() ? (
+            <p className="hp-lede text-sm sm:text-base">{writtenCategories.subtitle}</p>
+          ) : null}
           {writtenCategories.cta.visible ? (
             <Link href={ctaHref} className="inline-flex w-full pt-1 sm:w-auto">
               <Button className="min-h-11 w-full rounded-full px-6 shadow-[0_10px_24px_-12px_rgba(227,30,36,0.45)] transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 sm:w-auto">

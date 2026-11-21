@@ -47,9 +47,12 @@ export async function POST() {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
+  // Expire immediately so the next homepage render blocks on fresh Nest data.
+  // (Single-arg form is correct for Next 15.2; later Next versions may take a profile.)
   revalidateTag('homepage');
   for (const path of HOMEPAGE_PATHS) {
-    revalidatePath(path);
+    revalidatePath(path, 'page');
+    revalidatePath(path, 'layout');
   }
 
   return NextResponse.json({

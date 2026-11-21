@@ -121,14 +121,15 @@ export function useHomepageSection(section: HomepageSectionKind) {
 
   useEffect(() => {
     if (!adminQ.data) return;
+    // Never clobber in-progress edits when React Query refetches in the background.
+    if (dirty) return;
     const next = adminQ.data.draft.payload;
     const tiles = normalizeHomepageSectionTiles(
       readTiles(section, next),
       createOthers(section, next),
     );
     setPayload(writeTiles(section, next, tiles));
-    setDirty(false);
-  }, [adminQ.data, section]);
+  }, [adminQ.data, section, dirty]);
 
   const tiles = readTiles(section, payload);
   const sectionMeta = readSectionMeta(section, payload);

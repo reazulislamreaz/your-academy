@@ -126,11 +126,12 @@ export function HomepageCms() {
 
   useEffect(() => {
     if (!adminQ.data) return;
+    // Keep in-progress edits when React Query refetches in the background.
+    if (dirty) return;
     setPayload(normalizeHomepagePayload(adminQ.data.draft.payload));
     setHeroImageAssetId(adminQ.data.draft.heroImageAssetId);
     setHeroPreview(adminQ.data.draft.heroImageUrl);
-    setDirty(false);
-  }, [adminQ.data]);
+  }, [adminQ.data, dirty]);
 
   useEffect(() => () => revokeHeroObjectUrl(), []);
 

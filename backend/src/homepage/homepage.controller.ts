@@ -28,12 +28,11 @@ export class HomepageController {
 
   /**
    * Published homepage for marketing site (DEC-038).
-   * Short shared-cache window only — Next.js owns ISR via `tags: ['homepage']`
-   * and admin publish calls `/api/revalidate/homepage` to purge immediately.
-   * Avoid long browser max-age so clients do not keep stale JSON.
+   * Next.js owns ISR via `tags: ['homepage']` + on-demand revalidate after publish.
+   * Do not use shared CDN s-maxage here — it can serve stale CMS payloads after publish.
    */
   @Get('public/homepage')
-  @Header('Cache-Control', 'public, max-age=0, s-maxage=30, stale-while-revalidate=60')
+  @Header('Cache-Control', 'private, no-cache, no-store, must-revalidate')
   async publicHomepage() {
     return createSuccessResponse(await this.homepage.getPublishedPublic(), newRequestId());
   }
