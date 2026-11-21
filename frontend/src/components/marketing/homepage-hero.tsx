@@ -12,7 +12,7 @@ type Props = {
 
 /**
  * Marketing hero — 100% CMS-driven (eyebrow, titles, description, CTAs, image).
- * No hardcoded marketing copy is injected on top of published payload values.
+ * Motion polish only; no hardcoded marketing copy on top of published payload values.
  */
 export function HomepageHero({ hero, heroImageUrl }: Props) {
   if (!hero.visible) return null;
@@ -24,24 +24,21 @@ export function HomepageHero({ hero, heroImageUrl }: Props) {
 
   return (
     <section className="hero-section relative overflow-x-hidden overflow-y-hidden bg-[var(--bg-inverse)] text-white">
-      {/* Atmosphere — restrained navy/red washes (no purple / neon) */}
+      {/* Atmosphere — restrained navy/red washes + soft drifting orbs */}
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="hero-atmosphere absolute inset-0" />
-        <div className="absolute -top-20 left-[6%] h-52 w-52 rounded-full bg-[color-mix(in_srgb,var(--highlight)_18%,transparent)] blur-3xl sm:h-80 sm:w-80" />
-        <div className="absolute right-[18%] top-[12%] hidden h-32 w-32 rounded-full bg-[#7eb6e8]/15 blur-3xl lg:block" />
-        <div className="absolute bottom-0 left-0 h-44 w-44 rounded-full bg-[#1a4a8a]/35 blur-3xl sm:h-60 sm:w-60" />
+        <div className="hero-orb hero-orb-a absolute -top-20 left-[6%] h-52 w-52 rounded-full bg-[color-mix(in_srgb,var(--highlight)_18%,transparent)] blur-3xl sm:h-80 sm:w-80" />
+        <div className="hero-orb hero-orb-b absolute right-[18%] top-[12%] hidden h-32 w-32 rounded-full bg-[#7eb6e8]/15 blur-3xl lg:block" />
+        <div className="hero-orb hero-orb-c absolute bottom-0 left-0 h-44 w-44 rounded-full bg-[#1a4a8a]/35 blur-3xl sm:h-60 sm:w-60" />
         <div className="hero-grid absolute inset-0 opacity-[0.05] sm:opacity-[0.07]" />
         <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/20 to-transparent lg:hidden" />
       </div>
 
       <div className="relative mx-auto grid w-full min-w-0 max-w-[var(--marketing-content-max)] items-stretch lg:grid-cols-2">
         <div className="relative z-10 flex min-w-0 flex-col justify-center px-4 py-10 sm:px-8 sm:py-14 lg:min-h-[560px] lg:py-20 lg:pr-10 lg:pl-6 xl:pl-8">
-          <div
-            className="motion-stagger mx-auto flex w-full min-w-0 max-w-xl flex-col items-center gap-5 sm:gap-7 lg:mx-0 lg:items-start lg:gap-8"
-            style={{ ['--stagger-step' as string]: '70ms' }}
-          >
+          <div className="hero-enter mx-auto flex w-full min-w-0 max-w-xl flex-col items-center gap-5 sm:gap-7 lg:mx-0 lg:items-start lg:gap-8">
             {hero.eyebrow.trim() ? (
-              <p className="hero-eyebrow inline-flex w-full max-w-full items-start gap-2.5 border border-white/18 bg-white/[0.09] px-3 py-2 text-left text-[0.75rem] leading-snug font-medium tracking-[0.01em] text-white/92 shadow-[inset_0_1px_0_rgba(255,255,255,0.16),0_8px_24px_-12px_rgba(0,0,0,0.35)] backdrop-blur-md sm:w-auto sm:max-w-full sm:items-center sm:px-3.5 sm:text-[0.8125rem]">
+              <p className="hero-eyebrow inline-flex w-full max-w-full items-start gap-2.5 border border-white/18 bg-white/[0.09] px-3 py-2 text-left text-[0.75rem] leading-snug font-medium tracking-[0.01em] text-white/92 shadow-[inset_0_1px_0_rgba(255,255,255,0.16),0_8px_24px_-12px_rgba(0,0,0,0.35)] backdrop-blur-md transition-[transform,background-color,border-color] duration-300 ease-[var(--ease-luxury)] hover:border-white/28 hover:bg-white/[0.12] sm:w-auto sm:max-w-full sm:items-center sm:px-3.5 sm:text-[0.8125rem]">
                 <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--highlight)] text-white shadow-[0_4px_12px_-2px_rgba(227,30,36,0.55)] sm:mt-0 sm:h-7 sm:w-7">
                   <GraduationCap className="h-3.5 w-3.5" aria-hidden />
                 </span>
@@ -67,7 +64,7 @@ export function HomepageHero({ hero, heroImageUrl }: Props) {
                       {tagline}
                       <span
                         aria-hidden
-                        className="absolute inset-x-3 -bottom-0.5 h-[3px] rounded-full bg-[var(--highlight)] sm:inset-x-2"
+                        className="hero-tagline-underline absolute inset-x-3 -bottom-0.5 h-[3px] rounded-full bg-[var(--highlight)] sm:inset-x-2"
                       />
                     </span>
                   </p>
@@ -80,10 +77,10 @@ export function HomepageHero({ hero, heroImageUrl }: Props) {
                 <Link href={hero.primaryCta.href} className="w-full sm:w-auto">
                   <Button
                     size="lg"
-                    className="hero-cta-primary group w-full rounded-full px-6 text-[0.9rem] shadow-[0_10px_28px_-8px_rgba(227,30,36,0.55)] transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_32px_-8px_rgba(227,30,36,0.65)] sm:w-auto sm:px-8 sm:text-[0.95rem]"
+                    className="hero-cta-primary group w-full rounded-full px-6 text-[0.9rem] shadow-[0_10px_28px_-8px_rgba(227,30,36,0.55)] transition-[transform,box-shadow] duration-300 ease-[var(--ease-luxury)] hover:-translate-y-0.5 hover:shadow-[0_16px_36px_-10px_rgba(227,30,36,0.7)] active:translate-y-0 sm:w-auto sm:px-8 sm:text-[0.95rem]"
                   >
                     {hero.primaryCta.label}
-                    <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+                    <ArrowRight className="h-4 w-4 transition-transform duration-300 ease-[var(--ease-luxury)] group-hover:translate-x-0.5" />
                   </Button>
                 </Link>
               ) : null}
@@ -92,7 +89,7 @@ export function HomepageHero({ hero, heroImageUrl }: Props) {
                   <Button
                     size="lg"
                     variant="outline"
-                    className="w-full rounded-full border-white/40 bg-white/5 px-6 text-[0.9rem] text-white backdrop-blur-sm transition-[transform,background-color,border-color] duration-200 hover:-translate-y-0.5 hover:border-white/70 hover:bg-white/12 sm:w-auto sm:px-8 sm:text-[0.95rem]"
+                    className="w-full rounded-full border-white/40 bg-white/5 px-6 text-[0.9rem] text-white backdrop-blur-sm transition-[transform,background-color,border-color,box-shadow] duration-300 ease-[var(--ease-luxury)] hover:-translate-y-0.5 hover:border-white/70 hover:bg-white/12 hover:shadow-[0_10px_28px_-14px_rgba(255,255,255,0.45)] active:translate-y-0 sm:w-auto sm:px-8 sm:text-[0.95rem]"
                   >
                     {hero.secondaryCta.label}
                   </Button>
@@ -105,7 +102,7 @@ export function HomepageHero({ hero, heroImageUrl }: Props) {
                 {hero.stats.map((stat, i) => (
                   <div
                     key={`${stat.label}-${i}`}
-                    className="flex min-w-0 items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.06] px-3 py-2.5 backdrop-blur-sm sm:px-3.5 sm:py-3 lg:rounded-none lg:border-0 lg:bg-transparent lg:px-0 lg:py-0 lg:backdrop-blur-none"
+                    className="flex min-w-0 items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.06] px-3 py-2.5 backdrop-blur-sm transition-[transform,background-color,border-color] duration-300 ease-[var(--ease-luxury)] hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.1] sm:px-3.5 sm:py-3 lg:rounded-none lg:border-0 lg:bg-transparent lg:px-0 lg:py-0 lg:backdrop-blur-none lg:hover:translate-y-0 lg:hover:bg-transparent"
                   >
                     {i > 0 ? (
                       <span
@@ -113,7 +110,7 @@ export function HomepageHero({ hero, heroImageUrl }: Props) {
                         aria-hidden
                       />
                     ) : null}
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-white sm:h-10 sm:w-10">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-white transition-transform duration-300 ease-[var(--ease-luxury)] sm:h-10 sm:w-10">
                       <HomepageIcon iconKey={stat.iconKey} className="h-4 w-4 sm:h-5 sm:w-5" />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -132,10 +129,7 @@ export function HomepageHero({ hero, heroImageUrl }: Props) {
           </div>
         </div>
 
-        <div
-          className="motion-rise relative min-h-[220px] w-full min-w-0 sm:min-h-[300px] lg:min-h-full"
-          style={{ animationDelay: '120ms' }}
-        >
+        <div className="hero-visual-enter relative min-h-[220px] w-full min-w-0 sm:min-h-[300px] lg:min-h-full">
           <div className="hero-photo-mask absolute inset-0 overflow-hidden">
             <Image
               src={imageSrc}

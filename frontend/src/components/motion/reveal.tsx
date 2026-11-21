@@ -21,7 +21,7 @@ export function Reveal({
   children,
   className,
   delayMs = 0,
-  rootMargin = '0px 0px -8% 0px',
+  rootMargin = '0px 0px -6% 0px',
   once = true,
 }: Props) {
   const ref = useRef<HTMLDivElement | null>(null);

@@ -28,7 +28,7 @@ export function HomepageTileCard({
         className,
       )}
     >
-      <span className="relative z-[1] flex h-12 w-12 items-center justify-center transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-[1.04]">
+      <span className="motion-icon-pop relative z-[1] flex h-12 w-12 items-center justify-center">
         {logoUrl ? (
           <img src={logoUrl} alt="" className="h-12 w-12 object-contain" />
         ) : (
@@ -70,7 +70,7 @@ export function HomepageOthersTile({
         className,
       )}
     >
-      <span className="relative z-[1] flex h-12 w-12 items-center justify-center transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-[1.04]">
+      <span className="motion-icon-pop relative z-[1] flex h-12 w-12 items-center justify-center">
         {logoUrl ? (
           <img src={logoUrl} alt="" className="h-12 w-12 object-contain" />
         ) : iconKey !== 'gear' ? (

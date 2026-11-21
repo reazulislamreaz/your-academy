@@ -109,9 +109,12 @@
 
   /* Motion */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Premium storefront-style settle (watch-commerce UI language) */
+  --ease-luxury: cubic-bezier(0.16, 1, 0.3, 1);
   --duration-fast: 140ms;
   --duration: 220ms;
   --duration-slow: 360ms;
+  --duration-hero: 780ms;
 
   /*
     Typography (DEC-037):
@@ -2623,12 +2626,21 @@ a.site-footer-social-link:focus-visible {
 }
 
 .hero-photo {
-  transform: scale(1.02);
-  transition: transform 8s var(--ease-out);
+  transform: scale(1.03);
+  transition: transform 9s var(--ease-luxury);
 }
 
 .hero-section:hover .hero-photo {
-  transform: scale(1.06);
+  transform: scale(1.07);
+}
+
+.hero-tagline-underline {
+  transform-origin: left center;
+  transform: scaleX(0.35);
+}
+
+.hero-orb {
+  will-change: transform;
 }
 
 /* Marketing hero photo — soft left wave on desktop to match reference */
@@ -2649,11 +2661,113 @@ a.site-footer-social-link:focus-visible {
   }
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  .hero-enter > * {
+    animation: ya-hero-rise var(--duration-hero) var(--ease-luxury) both;
+  }
+
+  .hero-enter > *:nth-child(1) {
+    animation-delay: 40ms;
+  }
+  .hero-enter > *:nth-child(2) {
+    animation-delay: 120ms;
+  }
+  .hero-enter > *:nth-child(3) {
+    animation-delay: 200ms;
+  }
+  .hero-enter > *:nth-child(4) {
+    animation-delay: 280ms;
+  }
+  .hero-enter > *:nth-child(5) {
+    animation-delay: 360ms;
+  }
+
+  .hero-visual-enter {
+    animation: ya-hero-visual 920ms var(--ease-luxury) both;
+    animation-delay: 100ms;
+  }
+
+  .hero-tagline-underline {
+    animation: ya-hero-underline 700ms var(--ease-luxury) both;
+    animation-delay: 420ms;
+  }
+
+  .hero-orb-a {
+    animation: ya-hero-orb 14s ease-in-out infinite;
+  }
+
+  .hero-orb-b {
+    animation: ya-hero-orb 18s ease-in-out infinite reverse;
+    animation-delay: -4s;
+  }
+
+  .hero-orb-c {
+    animation: ya-hero-orb 16s ease-in-out infinite;
+    animation-delay: -7s;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hero-photo,
   .hero-section:hover .hero-photo {
     transform: none;
     transition: none;
+  }
+
+  .hero-enter > *,
+  .hero-visual-enter,
+  .hero-tagline-underline,
+  .hero-orb {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .hero-tagline-underline {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes ya-hero-rise {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ya-hero-visual {
+  from {
+    opacity: 0;
+    transform: translateX(18px) scale(1.04);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes ya-hero-underline {
+  from {
+    transform: scaleX(0.2);
+    opacity: 0.35;
+  }
+  to {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+
+@keyframes ya-hero-orb {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(12px, -18px, 0) scale(1.06);
   }
 }
 
@@ -2953,20 +3067,55 @@ a.site-footer-social-link:focus-visible {
   transform: translateX(-120%);
 }
 
+/* Homepage motion language — fluid storefront pacing adapted for exam prep */
+.homepage-shell {
+  --stagger-step: 55ms;
+}
+
+.homepage-shell .hp-card-interactive,
+.homepage-shell .hp-step,
+.homepage-shell .hp-tile,
+.homepage-shell .motion-hover-lift {
+  transition:
+    transform 420ms var(--ease-luxury),
+    box-shadow 420ms var(--ease-luxury),
+    border-color 320ms var(--ease-out),
+    background-color 320ms var(--ease-out);
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .homepage-shell .hero-cta-primary:hover::after {
-    animation: ya-hp-sheen 700ms var(--ease-out) both;
+    animation: ya-hp-sheen 780ms var(--ease-luxury) both;
   }
 
   .homepage-shell .motion-reveal {
-    transform: translateY(20px);
+    transform: translateY(28px);
+    filter: blur(0);
     transition:
-      opacity 520ms var(--ease-out),
-      transform 520ms var(--ease-out);
+      opacity 640ms var(--ease-luxury),
+      transform 640ms var(--ease-luxury);
   }
 
   .homepage-shell .motion-reveal.is-visible {
     transform: translateY(0);
+  }
+
+  .homepage-shell .motion-stagger > * {
+    animation-duration: 560ms;
+    animation-timing-function: var(--ease-luxury);
+  }
+
+  .homepage-shell .motion-hover-lift:hover,
+  .homepage-shell .hp-tile:hover,
+  .homepage-shell .hp-card-interactive:hover,
+  .homepage-shell .hp-step:hover {
+    transform: translateY(-6px);
+  }
+
+  .homepage-shell .motion-hover-lift:active,
+  .homepage-shell .hp-tile:active,
+  .homepage-shell .hp-card-interactive:active {
+    transform: translateY(-2px);
   }
 }
 
@@ -2988,6 +3137,16 @@ a.site-footer-social-link:focus-visible {
 
   .homepage-shell .hero-cta-primary::after {
     display: none;
+  }
+
+  .homepage-shell .motion-hover-lift:hover,
+  .homepage-shell .hp-tile:hover,
+  .homepage-shell .hp-card-interactive:hover,
+  .homepage-shell .hp-step:hover,
+  .homepage-shell .motion-hover-lift:active,
+  .homepage-shell .hp-tile:active,
+  .homepage-shell .hp-card-interactive:active {
+    transform: none;
   }
 }
 
