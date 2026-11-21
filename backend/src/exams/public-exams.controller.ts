@@ -1,7 +1,8 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
-import { createSuccessResponse } from '@your-academy/shared';
+import { createSuccessResponse, cursorPaginationMeta } from '@your-academy/shared';
 import { newRequestId } from '../common/request-id';
+import { parseLimit } from '../common/pagination';
 import { SubmitExamAttemptDto } from './dto/submit-exam-attempt.dto';
 import { ExamsService } from './exams.service';
 
@@ -11,8 +12,18 @@ export class PublicExamsController {
   constructor(private readonly exams: ExamsService) {}
 
   @Get()
-  async list() {
-    return createSuccessResponse(await this.exams.listPublished(), newRequestId());
+  async list(
+    @Query('q') q?: string,
+    @Query('cursor') cursor?: string,
+    @Query('limit') limitRaw?: string,
+  ) {
+    const take = parseLimit(limitRaw, 12);
+    const page = await this.exams.listPublished({ q, cursor, limit: take });
+    return createSuccessResponse(
+      page.items,
+      newRequestId(),
+      cursorPaginationMeta(page.nextCursor, take),
+    );
   }
 
   @Get('attempts/:attemptId')

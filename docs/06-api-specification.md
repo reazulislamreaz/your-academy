@@ -277,7 +277,7 @@ Admin Excel template (7 columns): `প্রশ্ন নং | প্রশ্�
 
 | Method | Endpoint | Description | Auth | Role |
 |--------|----------|-------------|------|------|
-| GET | `/public/exams` | Published exams, `createdAt DESC` | Public | — |
+| GET | `/public/exams` | Published exams (`q`, `cursor`, `limit`; `createdAt DESC`) | Public | — |
 | GET | `/public/exams/:idOrSlug` | Exam + questions (no correct answers / explanations) | Public | — |
 | POST | `/public/exams/:idOrSlug/attempts` | Submit answers (`userName`, `userAnswers`, optional `elapsedSeconds`/`timedOut`); scores server-side | Public | — |
 | GET | `/public/exams/attempts/:attemptId` | Result + full answer sheet (correct + explanation) | Public | — |
@@ -291,7 +291,7 @@ Parallel to guest exams. Header row may follow title/date preamble rows. Same 7-
 
 | Method | Endpoint | Description | Auth | Role |
 |--------|----------|-------------|------|------|
-| GET | `/public/model-tests` | Published list (`q`, `year` query filters) | Public | — |
+| GET | `/public/model-tests` | Published list (`q`, `year`, `cursor`, `limit`) | Public | — |
 | GET | `/public/model-tests/meta/years` | Distinct published years for filters | Public | — |
 | GET | `/public/model-tests/:idOrSlug` | Detail + questions (no answers) | Public | — |
 | POST | `/public/model-tests/:idOrSlug/attempts` | Submit answers; scores server-side | Public | — |

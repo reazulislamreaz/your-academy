@@ -1,7 +1,8 @@
 import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
-import { createSuccessResponse } from '@your-academy/shared';
+import { createSuccessResponse, cursorPaginationMeta } from '@your-academy/shared';
 import { newRequestId } from '../common/request-id';
+import { parseLimit } from '../common/pagination';
 import { SubmitModelTestAttemptDto } from './dto/submit-model-test-attempt.dto';
 import { ModelTestsService } from './model-tests.service';
 
@@ -11,14 +12,24 @@ export class PublicModelTestsController {
   constructor(private readonly modelTests: ModelTestsService) {}
 
   @Get()
-  async list(@Query('q') q?: string, @Query('year') yearRaw?: string) {
+  async list(
+    @Query('q') q?: string,
+    @Query('year') yearRaw?: string,
+    @Query('cursor') cursor?: string,
+    @Query('limit') limitRaw?: string,
+  ) {
     const year = yearRaw?.trim() ? Number(yearRaw) : undefined;
+    const take = parseLimit(limitRaw, 12);
+    const page = await this.modelTests.listPublished({
+      q,
+      year: year != null && Number.isFinite(year) ? year : undefined,
+      cursor,
+      limit: take,
+    });
     return createSuccessResponse(
-      await this.modelTests.listPublished({
-        q,
-        year: year != null && Number.isFinite(year) ? year : undefined,
-      }),
+      page.items,
       newRequestId(),
+      cursorPaginationMeta(page.nextCursor, take),
     );
   }
 

@@ -6,21 +6,24 @@ import type {
   PublicModelTestDetail,
   PublicModelTestListItem,
 } from '@your-academy/shared';
-import { apiFetch } from './client';
+import { apiFetch, apiFetchResult, type ApiResult } from './client';
 import { apiUploadForm } from './upload';
 
 export function listPublicModelTests(params?: {
   q?: string;
   year?: number;
-}): Promise<PublicModelTestListItem[]> {
+  cursor?: string;
+  limit?: number;
+}): Promise<ApiResult<PublicModelTestListItem[]>> {
   const sp = new URLSearchParams();
   if (params?.q?.trim()) sp.set('q', params.q.trim());
   if (params?.year != null) sp.set('year', String(params.year));
+  if (params?.cursor) sp.set('cursor', params.cursor);
+  sp.set('limit', String(params?.limit ?? 12));
   const qs = sp.toString();
-  return apiFetch<PublicModelTestListItem[]>(
-    `/public/model-tests${qs ? `?${qs}` : ''}`,
-    { skipRefresh: true },
-  );
+  return apiFetchResult<PublicModelTestListItem[]>(`/public/model-tests?${qs}`, {
+    skipRefresh: true,
+  });
 }
 
 export function listPublicModelTestYears(): Promise<number[]> {

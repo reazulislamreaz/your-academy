@@ -7,6 +7,7 @@ import { Prisma } from '@prisma/client';
 import { createErrorResponse } from '@your-academy/shared';
 import { PrismaService } from '../database/prisma.service';
 import { newRequestId } from '../common/request-id';
+import { paginateById, parseLimit } from '../common/pagination';
 import { buildExamTemplateBuffer, parseExamWorkbook } from './exam-excel-parser';
 import { slugifyExamTitle } from './exam-slug';
 import type { SubmitExamAttemptDto } from './dto/submit-exam-attempt.dto';
@@ -27,10 +28,17 @@ export class ExamsService {
     return buildExamTemplateBuffer();
   }
 
-  async listPublished() {
-    const exams = await this.prisma.exam.findMany({
-      where: { isPublished: true },
-      orderBy: { createdAt: 'desc' },
+  async listPublished(filters?: { q?: string; cursor?: string; limit?: number }) {
+    const q = filters?.q?.trim();
+    const limit = parseLimit(filters?.limit, 12);
+    const rows = await this.prisma.exam.findMany({
+      where: {
+        isPublished: true,
+        ...(q ? { title: { contains: q, mode: 'insensitive' } } : {}),
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: limit + 1,
+      ...(filters?.cursor ? { cursor: { id: filters.cursor }, skip: 1 } : {}),
       select: {
         id: true,
         title: true,
@@ -41,7 +49,7 @@ export class ExamsService {
         createdAt: true,
       },
     });
-    return exams;
+    return paginateById(rows, limit);
   }
 
   async getPublishedForTaking(idOrSlug: string) {

@@ -7,6 +7,7 @@ import { Prisma } from '@prisma/client';
 import { createErrorResponse } from '@your-academy/shared';
 import { PrismaService } from '../database/prisma.service';
 import { newRequestId } from '../common/request-id';
+import { paginateById, parseLimit } from '../common/pagination';
 import {
   buildModelTestTemplateBuffer,
   parseModelTestWorkbook,
@@ -30,20 +31,26 @@ export class ModelTestsService {
     return buildModelTestTemplateBuffer();
   }
 
-  async listPublished(filters?: { q?: string; year?: number }) {
+  async listPublished(filters?: {
+    q?: string;
+    year?: number;
+    cursor?: string;
+    limit?: number;
+  }) {
     const q = filters?.q?.trim();
     const year = filters?.year;
+    const limit = parseLimit(filters?.limit, 12);
     const where: Prisma.ModelTestWhereInput = {
       isPublished: true,
-      ...(q
-        ? { title: { contains: q, mode: 'insensitive' } }
-        : {}),
+      ...(q ? { title: { contains: q, mode: 'insensitive' } } : {}),
       ...(year != null && Number.isFinite(year) ? { examYear: year } : {}),
     };
 
-    return this.prisma.modelTest.findMany({
+    const rows = await this.prisma.modelTest.findMany({
       where,
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: limit + 1,
+      ...(filters?.cursor ? { cursor: { id: filters.cursor }, skip: 1 } : {}),
       select: {
         id: true,
         title: true,
@@ -55,6 +62,7 @@ export class ModelTestsService {
         createdAt: true,
       },
     });
+    return paginateById(rows, limit);
   }
 
   async listFilterYears(): Promise<number[]> {

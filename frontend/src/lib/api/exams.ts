@@ -5,11 +5,21 @@ import type {
   PublicExamDetail,
   PublicExamListItem,
 } from '@your-academy/shared';
-import { apiFetch } from './client';
+import { apiFetch, apiFetchResult, type ApiResult } from './client';
 import { apiUploadForm } from './upload';
 
-export function listPublicExams(): Promise<PublicExamListItem[]> {
-  return apiFetch<PublicExamListItem[]>('/public/exams', { skipRefresh: true });
+export function listPublicExams(params?: {
+  q?: string;
+  cursor?: string;
+  limit?: number;
+}): Promise<ApiResult<PublicExamListItem[]>> {
+  const sp = new URLSearchParams();
+  if (params?.q?.trim()) sp.set('q', params.q.trim());
+  if (params?.cursor) sp.set('cursor', params.cursor);
+  sp.set('limit', String(params?.limit ?? 12));
+  return apiFetchResult<PublicExamListItem[]>(`/public/exams?${sp.toString()}`, {
+    skipRefresh: true,
+  });
 }
 
 export function getPublicExam(idOrSlug: string): Promise<PublicExamDetail> {

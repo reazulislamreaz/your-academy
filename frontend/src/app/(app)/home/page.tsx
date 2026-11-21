@@ -137,7 +137,7 @@ export default function StudyHomePage() {
 
   const publicExams = useQuery({
     queryKey: ['public-exams', 'home'],
-    queryFn: () => listPublicExams(),
+    queryFn: async () => (await listPublicExams({ limit: 6 })).data,
     enabled: Boolean(me.data),
     staleTime: 60_000,
   });
