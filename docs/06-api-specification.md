@@ -257,6 +257,14 @@ Separate TOPIC taxonomy + MCQ bank. Excel template (8 columns): `প্রশ্
 | GET | `/public/topic-sets/:id/questions` | Cursor-paginated MCQs for one Topic collection (`q`) | Public | — |
 | GET | `/admin/topic-question-imports` | Recent topic batches | User | ADMIN |
 | GET | `/admin/topic-question-imports/template` | 8-column Excel template | User | ADMIN |
+| GET | `/admin/topic-question-imports/:id` | Topic batch detail (admin) | User | ADMIN |
+| PATCH | `/admin/topic-question-imports/:id` | Update title + Category/Sub/Child (cascades to questions) | User | ADMIN |
+| GET | `/admin/topic-question-imports/:id/questions` | Paginated Topic questions in the batch | User | ADMIN |
+| POST | `/admin/topic-question-imports/:id/questions` | Add a question to the batch | User | ADMIN |
+| PATCH | `/admin/topic-question-imports/:id/questions/:questionId` | Update a Topic question | User | ADMIN |
+| DELETE | `/admin/topic-question-imports/:id/questions/:questionId` | Delete a Topic question | User | ADMIN |
+| PATCH | `/admin/topic-question-imports/:id/archive` | Archive batch | User | ADMIN |
+| DELETE | `/admin/topic-question-imports/:id` | Delete batch (+ cascade questions) | User | ADMIN |
 | POST | `/admin/topic-question-imports/upload` | Multipart import (`file`, `categoryId`, `subcategoryId`, optional `childCategoryId`, `displayName`) | User | ADMIN |
 
 Marketing UI: homepage Top 4 + Others → `/topic-categories` folder explorer. Leaf Sub/Child shows collection **titles**; `/topic-base/sets/:id` opens questions.

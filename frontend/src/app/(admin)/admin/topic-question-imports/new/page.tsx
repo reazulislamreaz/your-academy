@@ -24,7 +24,6 @@ import {
   uploadTopicQuestions,
   type TopicUploadBatchSummary,
 } from '@/lib/api/topic-questions';
-import { topicSetHref } from '@/lib/homepage-tile-links';
 import { adminDownloadUrl } from '@/lib/api/upload';
 import type { CategoryNode } from '@/lib/api/types';
 import { cn } from '@/lib/utils';
@@ -114,7 +113,7 @@ export default function NewTopicQuestionImportPage() {
       void qc.invalidateQueries({ queryKey: ['admin-topic-import-stats'] });
       void qc.invalidateQueries({ queryKey: ['admin-categories', 'TOPIC'] });
       void qc.invalidateQueries({ queryKey: ['categories', 'TOPIC'] });
-      router.push(topicSetHref(batch.id));
+      router.push(`/admin/topic-question-imports/${batch.id}`);
     },
     onError: (err) => {
       setProgress(null);
