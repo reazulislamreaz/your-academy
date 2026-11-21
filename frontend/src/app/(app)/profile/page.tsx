@@ -10,6 +10,7 @@ import { PageHeader } from '@/components/layout/page-header';
 import { UserAvatar } from '@/components/layout/user-avatar';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -36,6 +37,7 @@ export default function ProfilePage() {
     enabled: Boolean(me.data),
   });
 
+  const [logoutOpen, setLogoutOpen] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [profileMsg, setProfileMsg] = useState<string | null>(null);
@@ -165,12 +167,27 @@ export default function ProfilePage() {
               size="sm"
               className="w-full sm:w-auto"
               disabled={logout.isPending}
-              onClick={() => logout.mutate()}
+              onClick={() => setLogoutOpen(true)}
             >
               {logout.isPending ? 'Signing out…' : 'Sign out'}
             </Button>
           </div>
         }
+      />
+
+      <ConfirmDialog
+        open={logoutOpen}
+        title="Sign out?"
+        description="You will need to sign in again to access your dashboard, bookmarks, and practice tools."
+        confirmLabel="Sign out"
+        cancelLabel="Stay signed in"
+        destructive
+        reversible
+        pending={logout.isPending}
+        onCancel={() => {
+          if (!logout.isPending) setLogoutOpen(false);
+        }}
+        onConfirm={() => logout.mutate()}
       />
 
       <Surface elevated className="space-y-4 border-l-[3px] border-l-[var(--highlight)] p-5 sm:p-6">

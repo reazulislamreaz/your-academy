@@ -2,6 +2,7 @@
 
 import { Download, FileText, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useBodyScrollLock } from '@/lib/hooks/use-body-scroll-lock';
 import { cn } from '@/lib/utils';
 
 export type SupportAttachmentViewModel = {
@@ -114,17 +115,14 @@ function ImageLightbox({
   filename: string;
   onClose: () => void;
 }) {
+  useBodyScrollLock(true);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prev;
-    };
+    return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
 
   return (

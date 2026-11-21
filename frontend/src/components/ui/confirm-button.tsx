@@ -59,7 +59,13 @@ export function ConfirmButton({
         onConfirm={() => {
           setPending(true);
           void Promise.resolve(onConfirm())
-            .then(() => setOpen(false))
+            .then(() => {
+              // Close after success; ConfirmDialog plays a short exit animation.
+              setOpen(false);
+            })
+            .catch(() => {
+              // Keep dialog open so the admin can retry or cancel after an error.
+            })
             .finally(() => setPending(false));
         }}
       />

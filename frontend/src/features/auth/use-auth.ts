@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import type { MeUser } from '@/lib/api/types';
+import { resetBodyScrollLock } from '@/lib/hooks/use-body-scroll-lock';
 import { getCookie } from '@/lib/utils';
 
 export const meQueryKey = ['me'] as const;
@@ -31,6 +32,8 @@ export function useLogout() {
   return useMutation({
     mutationFn: () => apiFetch<{ ok: boolean }>('/auth/logout', { method: 'POST' }),
     onSettled: async () => {
+      // Clear any modal/drawer body lock left behind by unmounted overlays.
+      resetBodyScrollLock();
       qc.setQueryData(meQueryKey, null);
       await qc.invalidateQueries({ queryKey: meQueryKey });
       qc.removeQueries({ queryKey: ['questions'] });

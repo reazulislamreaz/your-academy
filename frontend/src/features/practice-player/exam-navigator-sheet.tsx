@@ -4,6 +4,7 @@ import { X } from 'lucide-react';
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { LearnerThemePortal } from '@/components/theme/learner-theme-portal';
+import { useBodyScrollLock } from '@/lib/hooks/use-body-scroll-lock';
 import { ExamProgressCard } from './exam-progress-card';
 import { ExamQuestionNavigator } from './exam-question-navigator';
 
@@ -35,18 +36,15 @@ export function ExamNavigatorSheet({
   markedCount,
   onJump,
 }: Props) {
+  useBodyScrollLock(open);
+
   useEffect(() => {
     if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', onKey);
-    return () => {
-      document.body.style.overflow = prev;
-      window.removeEventListener('keydown', onKey);
-    };
+    return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
   if (!open || typeof document === 'undefined') return null;

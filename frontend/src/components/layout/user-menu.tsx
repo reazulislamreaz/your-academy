@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { LogIn, LogOut, LayoutDashboard, UserRound } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useIsAdmin, useLogout, useMe } from '@/features/auth/use-auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { defaultPathForRole } from '@/lib/auth/role-routing';
@@ -36,9 +37,15 @@ export function UserMenu({
   const logout = useLogout();
   const isAdmin = useIsAdmin();
   const [open, setOpen] = useState(false);
+  const [logoutOpen, setLogoutOpen] = useState(false);
   const panelId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+
+  const requestLogout = () => {
+    setOpen(false);
+    setLogoutOpen(true);
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -105,6 +112,23 @@ export function UserMenu({
   const dashboardHref = defaultPathForRole(user.role);
   const useAvatarMenu = variant === 'header' || loginOnly || !compact;
 
+  const logoutDialog = (
+    <ConfirmDialog
+      open={logoutOpen}
+      title="Sign out?"
+      description="You will need to sign in again to access your dashboard, bookmarks, and practice tools."
+      confirmLabel="Sign out"
+      cancelLabel="Stay signed in"
+      destructive
+      reversible
+      pending={logout.isPending}
+      onCancel={() => {
+        if (!logout.isPending) setLogoutOpen(false);
+      }}
+      onConfirm={() => logout.mutate()}
+    />
+  );
+
   if (compact && !loginOnly) {
     return (
       <div className="flex flex-col gap-3">
@@ -134,11 +158,12 @@ export function UserMenu({
           size="sm"
           className="w-full justify-start gap-2 text-[var(--highlight)] hover:bg-[var(--highlight-soft)] hover:text-[var(--highlight)]"
           disabled={logout.isPending}
-          onClick={() => logout.mutate()}
+          onClick={requestLogout}
         >
           <LogOut className="size-4" aria-hidden />
           {logout.isPending ? 'Signing out…' : 'Logout'}
         </Button>
+        {logoutDialog}
       </div>
     );
   }
@@ -212,10 +237,7 @@ export function UserMenu({
               role="menuitem"
               disabled={logout.isPending}
               className="flex cursor-pointer items-center gap-2 rounded-[var(--radius-sm)] px-3 py-2 text-left text-sm font-semibold text-[var(--highlight)] hover:bg-[var(--highlight-soft)] disabled:opacity-60"
-              onClick={() => {
-                setOpen(false);
-                logout.mutate();
-              }}
+              onClick={requestLogout}
             >
               <LogOut className="size-3.5 shrink-0" aria-hidden />
               {logout.isPending ? 'Signing out…' : 'Logout'}
@@ -223,6 +245,7 @@ export function UserMenu({
           </div>
         </div>
       ) : null}
+      {logoutDialog}
     </div>
   );
 }

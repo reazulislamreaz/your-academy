@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useId, useRef, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LearnerThemePortal } from '@/components/theme/learner-theme-portal';
+import { useBodyScrollLock } from '@/lib/hooks/use-body-scroll-lock';
 import { cn } from '@/lib/utils';
 
 export type FormDialogProps = {
@@ -22,8 +23,10 @@ export type FormDialogProps = {
   className?: string;
 };
 
+const EXIT_MS = 160;
+
 /**
- * Accessible modal for create/edit forms. Closes on Escape / backdrop when not pending.
+ * Accessible modal for create/edit forms. Animated open/close; shared scroll lock.
  */
 export function FormDialog({
   open,
@@ -43,16 +46,43 @@ export function FormDialog({
   const descId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(open);
+  const [visible, setVisible] = useState(open);
+  const reduceMotionRef = useRef(false);
 
   useEffect(() => {
-    if (!open) return;
+    reduceMotionRef.current =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }, []);
+
+  useEffect(() => {
+    if (open) {
+      setMounted(true);
+      const id = window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => setVisible(true));
+      });
+      return () => window.cancelAnimationFrame(id);
+    }
+    setVisible(false);
+    if (!mounted) return;
+    if (reduceMotionRef.current) {
+      setMounted(false);
+      return;
+    }
+    const t = window.setTimeout(() => setMounted(false), EXIT_MS);
+    return () => window.clearTimeout(t);
+  }, [open, mounted]);
+
+  useBodyScrollLock(mounted);
+
+  useEffect(() => {
+    if (!mounted || !visible) return;
     const prev = document.activeElement as HTMLElement | null;
     const focusables = dialogRef.current?.querySelectorAll<HTMLElement>(
       'input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled])',
     );
     (focusables?.[0] ?? closeRef.current)?.focus();
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
 
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !pending) {
@@ -79,12 +109,11 @@ export function FormDialog({
     document.addEventListener('keydown', onKey);
     return () => {
       document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prevOverflow;
       prev?.focus?.();
     };
-  }, [open, pending, onClose]);
+  }, [mounted, visible, pending, onClose]);
 
-  if (!open || typeof document === 'undefined') return null;
+  if (!mounted || typeof document === 'undefined') return null;
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -93,11 +122,17 @@ export function FormDialog({
 
   return (
     <LearnerThemePortal>
-      <div className="fixed inset-0 z-[90] flex items-end justify-center p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:items-center sm:p-4">
+      <div
+        className={cn(
+          'ya-dialog-root fixed inset-0 z-[90] flex items-end justify-center p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:items-center sm:p-4',
+          visible && 'is-open',
+        )}
+        data-state={visible ? 'open' : 'closed'}
+      >
         <button
           type="button"
           aria-label="Dismiss"
-          className="absolute inset-0 bg-[var(--ink)]/40 backdrop-blur-[2px]"
+          className="ya-dialog-backdrop absolute inset-0 cursor-pointer border-0 bg-[color-mix(in_srgb,var(--ink)_42%,transparent)] backdrop-blur-[2px]"
           disabled={pending}
           tabIndex={-1}
           onClick={() => {
@@ -110,9 +145,10 @@ export function FormDialog({
           aria-modal="true"
           aria-labelledby={titleId}
           aria-describedby={description ? descId : undefined}
+          data-state={visible ? 'open' : 'closed'}
           className={cn(
-            'relative z-10 flex max-h-[calc(100dvh-1.5rem)] w-full max-w-lg flex-col overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] sm:max-h-[calc(100dvh-2rem)]',
-            'motion-scale-in bg-[var(--bg-elevated)] text-[var(--ink)] shadow-[var(--shadow-lg)]',
+            'ya-dialog-panel relative z-10 flex max-h-[calc(100dvh-1.5rem)] w-full max-w-lg flex-col overflow-hidden sm:max-h-[calc(100dvh-2rem)]',
+            'rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] text-[var(--ink)] shadow-[var(--shadow-lg)]',
             className,
           )}
         >

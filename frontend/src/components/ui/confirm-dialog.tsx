@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { LearnerThemePortal } from '@/components/theme/learner-theme-portal';
+import { useBodyScrollLock } from '@/lib/hooks/use-body-scroll-lock';
 import { cn } from '@/lib/utils';
 
 export type ConfirmDialogProps = {
@@ -20,9 +21,11 @@ export type ConfirmDialogProps = {
   onCancel: () => void;
 };
 
+const EXIT_MS = 160;
+
 /**
- * Accessible confirm modal (replaces window.confirm). Focuses the cancel control
- * on open and closes on Escape.
+ * Accessible confirm modal (replaces window.confirm).
+ * Animated open/close; shared scroll lock; portals above sticky shells.
  */
 export function ConfirmDialog({
   open,
@@ -40,13 +43,40 @@ export function ConfirmDialog({
   const descId = useId();
   const cancelRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(open);
+  const [visible, setVisible] = useState(open);
+  const reduceMotionRef = useRef(false);
 
   useEffect(() => {
-    if (!open) return;
+    reduceMotionRef.current =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }, []);
+
+  useEffect(() => {
+    if (open) {
+      setMounted(true);
+      const id = window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => setVisible(true));
+      });
+      return () => window.cancelAnimationFrame(id);
+    }
+    setVisible(false);
+    if (!mounted) return;
+    if (reduceMotionRef.current) {
+      setMounted(false);
+      return;
+    }
+    const t = window.setTimeout(() => setMounted(false), EXIT_MS);
+    return () => window.clearTimeout(t);
+  }, [open, mounted]);
+
+  useBodyScrollLock(mounted);
+
+  useEffect(() => {
+    if (!mounted || !visible) return;
     const prev = document.activeElement as HTMLElement | null;
     cancelRef.current?.focus();
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
 
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !pending) {
@@ -73,21 +103,25 @@ export function ConfirmDialog({
     document.addEventListener('keydown', onKey);
     return () => {
       document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prevOverflow;
       prev?.focus?.();
     };
-  }, [open, pending, onCancel]);
+  }, [mounted, visible, pending, onCancel]);
 
-  if (!open || typeof document === 'undefined') return null;
+  if (!mounted || typeof document === 'undefined') return null;
 
-  // Portal escapes Surface overflow-hidden / transform so the modal is never clipped.
   return (
     <LearnerThemePortal>
-      <div className="fixed inset-0 z-[90] flex items-end justify-center p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:items-center sm:p-4">
+      <div
+        className={cn(
+          'ya-dialog-root fixed inset-0 z-[90] flex items-end justify-center p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:items-center sm:p-4',
+          visible && 'is-open',
+        )}
+        data-state={visible ? 'open' : 'closed'}
+      >
         <button
           type="button"
           aria-label="Dismiss"
-          className="absolute inset-0 bg-[var(--ink)]/40 backdrop-blur-[2px]"
+          className="ya-dialog-backdrop absolute inset-0 cursor-pointer border-0 bg-[color-mix(in_srgb,var(--ink)_42%,transparent)] backdrop-blur-[2px]"
           disabled={pending}
           tabIndex={-1}
           onClick={() => {
@@ -100,9 +134,10 @@ export function ConfirmDialog({
           aria-modal="true"
           aria-labelledby={titleId}
           aria-describedby={descId}
+          data-state={visible ? 'open' : 'closed'}
           className={cn(
-            'relative z-10 max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-[var(--radius-lg)] border border-[var(--line)]',
-            'motion-scale-in bg-[var(--bg-elevated)] p-4 text-[var(--ink)] shadow-[var(--shadow-lg)] sm:p-6',
+            'ya-dialog-panel relative z-10 max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto overscroll-contain',
+            'rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] p-4 text-[var(--ink)] shadow-[var(--shadow-lg)] sm:p-6',
           )}
         >
           <h2 id={titleId} className="font-display text-lg font-semibold text-[var(--ink)]">

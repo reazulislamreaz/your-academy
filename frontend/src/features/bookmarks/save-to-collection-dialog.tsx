@@ -11,6 +11,7 @@ import type {
   QuestionDetail,
   SaveQuestionBookmarkResult,
 } from '@/lib/api/types';
+import { useBodyScrollLock } from '@/lib/hooks/use-body-scroll-lock';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -102,6 +103,8 @@ export function SaveToCollectionDialog({ open, questionId, questionTitle, onClos
 
   const pending = save.isPending || unsave.isPending;
 
+  useBodyScrollLock(open);
+
   useEffect(() => {
     if (!open) {
       setCreating(false);
@@ -111,8 +114,6 @@ export function SaveToCollectionDialog({ open, questionId, questionTitle, onClos
       return;
     }
     const prev = document.activeElement as HTMLElement | null;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
     const focusClose = () => {
       dialogRef.current?.querySelector<HTMLElement>('button[aria-label="Close"]')?.focus();
     };
@@ -144,7 +145,6 @@ export function SaveToCollectionDialog({ open, questionId, questionTitle, onClos
     return () => {
       window.cancelAnimationFrame(focusId);
       document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prevOverflow;
       prev?.focus?.();
     };
   }, [open, onClose, pending]);

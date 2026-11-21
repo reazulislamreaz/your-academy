@@ -3236,6 +3236,39 @@ a.site-footer-social-link:focus-visible {
     animation: ya-fade-in var(--duration) var(--ease-out) both;
   }
 
+  /* Confirm / form dialogs — fade backdrop + soft scale panel (open & close). */
+  .ya-dialog-backdrop {
+    opacity: 0;
+    transition: opacity 160ms var(--ease-out);
+  }
+
+  .ya-dialog-root.is-open .ya-dialog-backdrop {
+    opacity: 1;
+  }
+
+  .ya-dialog-panel {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+    transition:
+      opacity 160ms var(--ease-out),
+      transform 180ms var(--ease-out);
+  }
+
+  .ya-dialog-root.is-open .ya-dialog-panel {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  @media (min-width: 640px) {
+    .ya-dialog-panel {
+      transform: translateY(6px) scale(0.97);
+    }
+
+    .ya-dialog-root.is-open .ya-dialog-panel {
+      transform: translateY(0) scale(1);
+    }
+  }
+
   .motion-nav-indicator {
     transition:
       color var(--duration-fast) var(--ease-out),
@@ -3372,6 +3405,10 @@ a.site-footer-social-link:focus-visible {
   .motion-drawer-slide-in-left,
   .motion-scale-in,
   .motion-content-in,
+  .ya-dialog-backdrop,
+  .ya-dialog-panel,
+  .ya-dialog-root.is-open .ya-dialog-backdrop,
+  .ya-dialog-root.is-open .ya-dialog-panel,
   .motion-press,
   .motion-hover-lift,
   .motion-icon-pop,
