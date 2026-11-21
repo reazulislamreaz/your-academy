@@ -1,3 +1,10 @@
+export type MarketingNavChild = {
+  id: string;
+  href: string;
+  label: string;
+  match: 'exact' | 'prefix';
+};
+
 export type MarketingNavItem = {
   id: string;
   href: string;
@@ -11,6 +18,8 @@ export type MarketingNavItem = {
    * path matched (e.g. base Preli bank vs Written / Jobs filters).
    */
   fallbackForPath?: boolean;
+  /** Optional dropdown children (e.g. Exams → Model Test / Quiz). */
+  children?: MarketingNavChild[];
 };
 
 /** Public marketing primary nav — unique destinations, query-aware active state. */
@@ -40,6 +49,10 @@ export const marketingNavItems: MarketingNavItem[] = [
     href: '/exams',
     label: 'Exams',
     match: 'prefix',
+    children: [
+      { id: 'model-test', href: '/model-test', label: 'Model Test', match: 'prefix' },
+      { id: 'quiz', href: '/exams', label: 'Quiz', match: 'prefix' },
+    ],
   },
   {
     id: 'jobs',
@@ -73,6 +86,7 @@ function queryMatches(
 /**
  * Returns the single active marketing nav item id for the current URL.
  * Specific query links win over the base Preli bank fallback.
+ * Parent `exams` is active for `/exams*` and `/model-test*`.
  */
 export function resolveActiveMarketingNavId(
   pathname: string,
@@ -80,6 +94,11 @@ export function resolveActiveMarketingNavId(
   items: MarketingNavItem[] = marketingNavItems,
 ): string | null {
   const searchParams = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
+
+  // Model Test lives under its own path but belongs to the Exams menu.
+  if (pathMatches(pathname, '/model-test', 'prefix')) {
+    return 'exams';
+  }
 
   const specific = items.find((item) => {
     if (item.fallbackForPath || !item.query) return false;
@@ -92,7 +111,6 @@ export function resolveActiveMarketingNavId(
     if (!item.fallbackForPath) return false;
     const hrefPath = item.href.split('?')[0] || '/';
     if (!pathMatches(pathname, hrefPath, item.match)) return false;
-    // Base bank is active when no competing filter query is present for sibling items.
     const siblingKeys = items
       .filter((s) => s.query && (s.href.split('?')[0] || '/') === hrefPath)
       .flatMap((s) => Object.keys(s.query ?? {}));

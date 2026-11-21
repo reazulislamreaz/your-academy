@@ -52,7 +52,13 @@ export const adminNavItems: AdminNavItem[] = [
     icon: Shapes,
   },
   { href: '/admin/practice-sets', label: 'Practice sets', shortLabel: 'Practice', icon: ClipboardList },
-  { href: '/admin/exams/upload', label: 'Guest exams', shortLabel: 'Exams', icon: ClipboardList },
+  { href: '/admin/exams/upload', label: 'Guest exams', shortLabel: 'Quiz', icon: ClipboardList },
+  {
+    href: '/admin/model-tests/upload',
+    label: 'Model Test',
+    shortLabel: 'Model',
+    icon: ClipboardList,
+  },
   { href: '/admin/practice-attempts', label: 'Exam results', shortLabel: 'Results', icon: Activity },
   { href: '/admin/categories', label: 'Taxonomy', shortLabel: 'Tree', icon: FolderTree },
   {
@@ -98,6 +104,7 @@ export const adminNavGroups: AdminNavGroup[] = [
         '/admin/topic-question-imports',
         '/admin/practice-sets',
         '/admin/exams/upload',
+        '/admin/model-tests/upload',
         '/admin/practice-attempts',
         '/admin/categories',
         '/admin/question-bank-categories',

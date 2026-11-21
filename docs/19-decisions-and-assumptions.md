@@ -38,6 +38,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | DEC-029 | Real-time support messaging (Socket.IO) | CONFIRMED |
 | DEC-030 | Role-exclusive dashboard routing (ADMIN vs learner) | CONFIRMED |
 | DEC-039 | Public guest timed exams (Quizzory-style) | CONFIRMED |
+| DEC-040 | Public guest Model Tests (parallel to DEC-039) | CONFIRMED |
 | DEC-042 | Topic Base Question Analysis (taxonomy + 8-col upload + public pages) | CONFIRMED |
 
 ---
@@ -437,6 +438,15 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Decision | **Yes.** Add `Exam` / `ExamQuestion` / `ExamAttempt` (guest domain; does **not** reuse bank `Question`). Admin upload at `/admin/exams/upload` (ExcelJS). Public listing `/exams` (newest first), take `/exams/[id]`, result with answer sheet + Bangla registration CTA. Correct answers omitted until submit. Learner “Govt job prep” moves to `/exam-tracks` so marketing can own `/exams`. NestJS `/api/v1/public/exams*` + `/api/v1/admin/exams*` (no Next.js Server Actions for scoring). Authenticated PracticeSet exams (DEC-023/035) remain unchanged. **Guest Excel template (2026-11-21):** fixed **7 columns** `প্রশ্ন নং \| প্রশ্ন \| ক \| খ \| গ \| ঘ \| উত্তর`. `উত্তর` is a single letter `a`–`d` (case-insensitive; Bangla `ক`–`ঘ` also mapped). Stored `correctAnswer` is the matching option text. Legacy Preli 9-column sheets (exam name / date) and English OptionA–D / free-text answer matching are **deprecated** for guest exams — download the current template. Blank / non-sequential `প্রশ্ন নং` and blank spacer rows are allowed; row errors name the spreadsheet row and field. |
 | Impact | Prisma migration `20261118170000_guest_exams`, ExamsModule, marketing `/exams*`, admin upload UI, marketing nav |
 | Status | **CONFIRMED** (product request 2026-11-18; template revised 2026-11-21) |
+
+### DEC-040 — Public guest Model Tests (parallel to guest Quiz)
+
+| Field | Value |
+|-------|-------|
+| Question | Should Model Tests be a dedicated guest timed-exam product (admin Excel upload, public listing, single-page timer sheet, unanswered confirm, results + guest register CTA) without changing DEC-039 Quiz/Guest Exam? |
+| Decision | **Yes.** Add isolated `ModelTest` / `ModelTestQuestion` / `ModelTestAttempt` tables and `ModelTestsModule`. Admin `/admin/model-tests/upload`. Public `/model-test` (listing/search/year filter), take `/model-test/[id]`, result `/model-test/[id]/result/[attemptId]`. Marketing **Exams** nav is a dropdown: Model Test → `/model-test`, Quiz → `/exams` (unchanged). Excel parser scans for header row with `প্রশ্ন নং` + `প্রশ্ন` (preamble title/date rows OK); 7 columns; `উত্তর` = `a`–`d` or `ক`–`ঘ`. Incomplete submit shows Skip & Submit / Go Back. Guest result shows register CTA. Authenticated learner `/model-tests` PracticeSet route remains separate. |
+| Impact | Migration `20261121160000_model_tests`, ModelTestsModule, marketing `/model-test*`, admin upload, Exams dropdown |
+| Status | **CONFIRMED** (product request 2026-11-21) |
 
 ### Deferred / NEEDS APPROVAL (explicitly out of Phase 1)
 

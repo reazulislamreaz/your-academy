@@ -194,6 +194,7 @@ model User {
   practiceAttempts    PracticeAttempt[]
   createdPracticeSets PracticeSet[]       @relation("PracticeSetCreator")
   createdExams        Exam[]              @relation("ExamCreator")
+  createdModelTests   ModelTest[]         @relation("ModelTestCreator")
   questionUploadBatches QuestionUploadBatch[]
   writtenUploadBatches  WrittenUploadBatch[]
   topicUploadBatches    TopicUploadBatch[]
@@ -733,6 +734,67 @@ model ExamAttempt {
 
   @@index([examId, submittedAt(sort: Desc)])
   @@map("exam_attempts")
+}
+
+/// Public guest Model Tests — parallel to Exam (DEC-039) with preamble-aware Excel import.
+/// Does not reuse bank `Question` or guest `Exam` tables.
+model ModelTest {
+  id                String   @id @default(uuid()) @db.Uuid
+  title             String   @db.VarChar(200)
+  slug              String   @unique @db.VarChar(220)
+  description       String?
+  /// Optional year extracted from spreadsheet preamble / admin input (listing filter).
+  examYear          Int?     @map("exam_year")
+  totalQuestions    Int      @map("total_questions")
+  durationInMinutes Int      @map("duration_in_minutes")
+  isPublished       Boolean  @default(true) @map("is_published")
+  createdById       String?  @map("created_by_id") @db.Uuid
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  createdBy User?               @relation("ModelTestCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  questions ModelTestQuestion[]
+  attempts  ModelTestAttempt[]
+
+  @@index([isPublished, createdAt(sort: Desc)])
+  @@index([examYear])
+  @@map("model_tests")
+}
+
+model ModelTestQuestion {
+  id            String  @id @default(uuid()) @db.Uuid
+  modelTestId   String  @map("model_test_id") @db.Uuid
+  questionText  String  @map("question_text")
+  /// Exactly four option strings [A, B, C, D].
+  options       Json
+  correctAnswer String  @map("correct_answer") @db.VarChar(1000)
+  explanation   String?
+  sortOrder     Int     @default(0) @map("sort_order")
+
+  modelTest ModelTest @relation(fields: [modelTestId], references: [id], onDelete: Cascade)
+
+  @@index([modelTestId, sortOrder])
+  @@map("model_test_questions")
+}
+
+model ModelTestAttempt {
+  id            String   @id @default(uuid()) @db.Uuid
+  modelTestId   String   @map("model_test_id") @db.Uuid
+  userName      String   @map("user_name") @db.VarChar(120)
+  score         Int
+  correctCount  Int      @map("correct_count")
+  wrongCount    Int      @map("wrong_count")
+  skippedCount  Int      @default(0) @map("skipped_count")
+  /// Map of questionId → selected option text (or empty if skipped).
+  userAnswers   Json     @map("user_answers")
+  elapsedSeconds Int?    @map("elapsed_seconds")
+  timedOut      Boolean  @default(false) @map("timed_out")
+  submittedAt   DateTime @default(now()) @map("submitted_at") @db.Timestamptz(3)
+
+  modelTest ModelTest @relation(fields: [modelTestId], references: [id], onDelete: Cascade)
+
+  @@index([modelTestId, submittedAt(sort: Desc)])
+  @@map("model_test_attempts")
 }
 
 /// Timed or untimed practice packs: daily quiz, subject quiz, model test, etc. (DEC-023).

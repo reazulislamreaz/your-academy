@@ -16,9 +16,11 @@ function isDocumentReaderPath(pathname: string): boolean {
   return /^\/news\/d\/[^/]+\/?$/.test(pathname);
 }
 
-/** Live guest exam take page (`/exams/:id`) — hide floating support chat. */
+/** Live guest exam / model-test take pages — hide floating support chat. */
 function isLiveExamTakePath(pathname: string): boolean {
-  return /^\/exams\/[^/]+\/?$/.test(pathname);
+  return (
+    /^\/exams\/[^/]+\/?$/.test(pathname) || /^\/model-test\/[^/]+\/?$/.test(pathname)
+  );
 }
 
 /**

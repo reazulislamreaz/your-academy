@@ -10,7 +10,7 @@ import {
   type CSSProperties,
 } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { LayoutDashboard, LogIn } from 'lucide-react';
+import { ChevronDown, LayoutDashboard, LogIn } from 'lucide-react';
 import Link from 'next/link';
 import { BrandMark } from './brand-mark';
 import { MobileNav } from './mobile-nav';
@@ -91,9 +91,12 @@ function MarketingSearchField({
 }
 
 function MarketingNavLinks({ activeId }: { activeId: string | null }) {
+  const pathname = usePathname();
   const navRef = useRef<HTMLElement>(null);
-  const itemRefs = useRef(new Map<string, HTMLAnchorElement>());
+  const itemRefs = useRef(new Map<string, HTMLElement>());
   const [pill, setPill] = useState({ x: 0, width: 0, ready: false });
+  const [examsOpen, setExamsOpen] = useState(false);
+  const examsCloseTimer = useRef<number | null>(null);
 
   const syncPill = useCallback(() => {
     const nav = navRef.current;
@@ -139,7 +142,6 @@ function MarketingNavLinks({ activeId }: { activeId: string | null }) {
     ro?.observe(nav);
     for (const el of itemRefs.current.values()) ro?.observe(el);
 
-    // Bangla/Latin font swap can change label widths after first paint.
     void document.fonts?.ready.then(() => syncPill());
 
     return () => {
@@ -148,6 +150,21 @@ function MarketingNavLinks({ activeId }: { activeId: string | null }) {
       ro?.disconnect();
     };
   }, [syncPill]);
+
+  useEffect(() => {
+    return () => {
+      if (examsCloseTimer.current != null) window.clearTimeout(examsCloseTimer.current);
+    };
+  }, []);
+
+  const openExams = () => {
+    if (examsCloseTimer.current != null) window.clearTimeout(examsCloseTimer.current);
+    setExamsOpen(true);
+  };
+  const scheduleCloseExams = () => {
+    if (examsCloseTimer.current != null) window.clearTimeout(examsCloseTimer.current);
+    examsCloseTimer.current = window.setTimeout(() => setExamsOpen(false), 140);
+  };
 
   return (
     <nav
@@ -166,10 +183,81 @@ function MarketingNavLinks({ activeId }: { activeId: string | null }) {
       />
       {marketingNavItems.map((item) => {
         const active = activeId === item.id;
-        const setRef = (node: HTMLAnchorElement | null) => {
+        const setRef = (node: HTMLElement | null) => {
           if (node) itemRefs.current.set(item.id, node);
           else itemRefs.current.delete(item.id);
         };
+
+        if (item.children?.length) {
+          return (
+            <div
+              key={item.id}
+              className="relative"
+              onMouseEnter={openExams}
+              onMouseLeave={scheduleCloseExams}
+              onFocus={openExams}
+              onBlur={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+                  scheduleCloseExams();
+                }
+              }}
+            >
+              <button
+                type="button"
+                ref={setRef}
+                className="marketing-nav-link inline-flex items-center gap-1"
+                aria-expanded={examsOpen}
+                aria-haspopup="menu"
+                aria-current={active ? 'page' : undefined}
+                onClick={() => setExamsOpen((v) => !v)}
+              >
+                {item.label}
+                <ChevronDown
+                  className={cn(
+                    'size-3.5 shrink-0 opacity-70 transition-transform duration-150',
+                    examsOpen && 'rotate-180',
+                  )}
+                  aria-hidden
+                />
+              </button>
+              <div
+                role="menu"
+                aria-label={item.label}
+                className={cn(
+                  'absolute top-full left-1/2 z-40 min-w-[11.5rem] -translate-x-1/2 pt-2 transition-[opacity,transform] duration-150',
+                  examsOpen
+                    ? 'pointer-events-auto translate-y-0 opacity-100'
+                    : 'pointer-events-none -translate-y-1 opacity-0',
+                )}
+              >
+                <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] py-1.5 shadow-[var(--shadow-md)]">
+                  {item.children.map((child) => {
+                    const childActive =
+                      pathname === child.href || pathname.startsWith(`${child.href}/`);
+                    return (
+                      <Link
+                        key={child.id}
+                        href={child.href}
+                        role="menuitem"
+                        aria-current={childActive ? 'page' : undefined}
+                        className={cn(
+                          'block whitespace-nowrap px-3.5 py-2.5 text-sm font-semibold transition-colors',
+                          childActive
+                            ? 'bg-[var(--accent-soft)] text-[var(--accent)]'
+                            : 'text-[var(--ink-soft)] hover:bg-[var(--brand-wash)] hover:text-[var(--ink)]',
+                        )}
+                        onClick={() => setExamsOpen(false)}
+                      >
+                        {child.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          );
+        }
+
         return (
           <Link
             key={item.id}
@@ -202,13 +290,30 @@ function MarketingHeaderInner() {
 
   const dashboardHref = me.data ? defaultPathForRole(me.data.role) : null;
   const activeId = resolveActiveMarketingNavId(pathname, searchParams.toString());
+  const mobileActiveId = pathname.startsWith('/model-test')
+    ? 'model-test'
+    : pathname === '/exams' || pathname.startsWith('/exams/')
+      ? 'quiz'
+      : activeId;
 
-  const mobileNavItems = marketingNavItems.map((item) => ({
-    id: item.id,
-    href: item.href,
-    label: item.label,
-    match: item.match,
-  }));
+  const mobileNavItems = marketingNavItems.flatMap((item) => {
+    if (item.children?.length) {
+      return item.children.map((child) => ({
+        id: child.id,
+        href: child.href,
+        label: child.label,
+        match: child.match,
+      }));
+    }
+    return [
+      {
+        id: item.id,
+        href: item.href,
+        label: item.label,
+        match: item.match,
+      },
+    ];
+  });
 
   // Entering/leaving the bank: sync or clear header search so filters don't leak.
   useEffect(() => {
@@ -306,7 +411,7 @@ function MarketingHeaderInner() {
               breakpointClassName=""
               title="Menu"
               items={mobileNavItems}
-              activeId={activeId}
+              activeId={mobileActiveId}
               leading={
                 <MarketingSearchField
                   id="marketing-search-mobile"
@@ -347,7 +452,7 @@ function MarketingHeaderInner() {
             breakpointClassName=""
             title="Menu"
             items={mobileNavItems}
-            activeId={activeId}
+            activeId={mobileActiveId}
             leading={
               <MarketingSearchField
                 id="marketing-search-tablet"

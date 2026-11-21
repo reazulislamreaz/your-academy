@@ -285,6 +285,23 @@ Admin Excel template (7 columns): `প্রশ্ন নং | প্রশ্�
 | GET | `/admin/exams/template` | 7-column Excel template download | User | ADMIN |
 | POST | `/admin/exams/upload` | Multipart create (`title`, `description`, `durationInMinutes`, `.xlsx` file) | User | ADMIN |
 
+### 2.5a Public guest Model Tests (DEC-040)
+
+Parallel to guest exams. Header row may follow title/date preamble rows. Same 7-column template; `উত্তর` = `a`–`d` or `ক`–`ঘ`. Attempt results include `skippedCount`.
+
+| Method | Endpoint | Description | Auth | Role |
+|--------|----------|-------------|------|------|
+| GET | `/public/model-tests` | Published list (`q`, `year` query filters) | Public | — |
+| GET | `/public/model-tests/meta/years` | Distinct published years for filters | Public | — |
+| GET | `/public/model-tests/:idOrSlug` | Detail + questions (no answers) | Public | — |
+| POST | `/public/model-tests/:idOrSlug/attempts` | Submit answers; scores server-side | Public | — |
+| GET | `/public/model-tests/attempts/:attemptId` | Result + answer sheet | Public | — |
+| GET | `/admin/model-tests` | Admin list | User | ADMIN |
+| GET | `/admin/model-tests/template` | 7-column Excel template (with sample preamble) | User | ADMIN |
+| POST | `/admin/model-tests/upload` | Multipart create | User | ADMIN |
+| PATCH | `/admin/model-tests/:id` | Update meta / publish flag | User | ADMIN |
+| DELETE | `/admin/model-tests/:id` | Delete model test + questions/attempts | User | ADMIN |
+
 ---
 
 ### 2.5b Practice sets (DEC-023)
