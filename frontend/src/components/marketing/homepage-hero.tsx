@@ -1,10 +1,10 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import type { HomepagePayload } from '@your-academy/shared';
 import { HomepageHeroEntrance } from '@/components/marketing/homepage-gsap';
+import { HomepageHeroVisual } from '@/components/marketing/homepage-hero-visual';
 import { Button } from '@/components/ui/button';
 import type { PublicPlatformStats } from '@/lib/api/public-stats';
 import { cn } from '@/lib/utils';
@@ -52,7 +52,6 @@ function resolveCtaHref(href: string, fallback: string): string {
 export function HomepageHero({ hero, heroImageUrl, liveStats = null }: Props) {
   if (!hero.visible) return null;
 
-  const imageSrc = heroImageUrl?.trim() || '/images/hero-students.avif';
   const brand = hero.titleBefore.trim() || 'Your Academy';
   const highlight = hero.titleHighlight.trim();
   const sideLabel = hero.titleAfter?.trim() || '';
@@ -201,36 +200,9 @@ export function HomepageHero({ hero, heroImageUrl, liveStats = null }: Props) {
           </div>
         </HomepageHeroEntrance>
 
-        {/* Right — framed CMS / default visual */}
-        <HomepageHeroEntrance className="relative mx-auto w-full min-w-0 max-w-xl lg:mx-0 lg:max-w-none">
-          <div data-hp-hero className="relative w-full lg:pl-2">
-            <div
-              aria-hidden
-              className="pointer-events-none absolute -inset-4 rounded-[2rem] bg-[radial-gradient(ellipse_at_60%_40%,color-mix(in_srgb,var(--highlight)_8%,transparent),transparent_70%)] blur-2xl sm:-inset-6"
-            />
-            <figure
-              className={cn(
-                'relative overflow-hidden rounded-[var(--hp-radius-lg)] border border-[var(--hp-panel-border)] bg-[var(--bg-elevated)]',
-                'shadow-[var(--hp-shadow)] ring-1 ring-black/[0.03]',
-                'before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:z-[1] before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/80 before:to-transparent',
-              )}
-            >
-              <div className="relative aspect-[3/2] w-full bg-[var(--bg-muted)]">
-                <Image
-                  src={imageSrc}
-                  alt="Students preparing for exams with Your Academy"
-                  fill
-                  priority
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 46vw"
-                  className="hero-photo object-cover object-center"
-                  unoptimized={imageSrc.startsWith('http')}
-                />
-              </div>
-              <figcaption className="sr-only">
-                Collaborative study session for exam preparation
-              </figcaption>
-            </figure>
-          </div>
+        {/* Right — glow + tilted frames + auto-playing image slider */}
+        <HomepageHeroEntrance className="relative flex w-full min-w-0 items-center justify-center overflow-x-clip bg-transparent lg:justify-end lg:pl-2">
+          <HomepageHeroVisual primarySrc={heroImageUrl} />
         </HomepageHeroEntrance>
       </div>
     </section>

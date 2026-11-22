@@ -2677,6 +2677,27 @@ a.site-footer-social-link:focus-visible {
   transform: scale(1.05);
 }
 
+/* Hero right visual — soft indigo backlight behind the framed slider */
+.hero-visual-glow {
+  opacity: 0.9;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero-visual-glow {
+    animation: ya-hero-glow-pulse 6s ease-in-out infinite;
+  }
+}
+
+@keyframes ya-hero-glow-pulse {
+  0%,
+  100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 .hero-orb {
   will-change: transform;
 }
@@ -2741,6 +2762,7 @@ a.site-footer-social-link:focus-visible {
     transition: none;
   }
 
+  .hero-visual-glow,
   .hero-enter > *,
   .hero-visual-enter,
   .hero-orb,

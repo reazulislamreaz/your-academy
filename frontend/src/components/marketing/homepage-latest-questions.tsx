@@ -9,14 +9,6 @@ import { Button } from '@/components/ui/button';
 import { HomepageReveal } from '@/components/marketing/homepage-gsap';
 import { listPublicQuestionSets } from '@/lib/api/public-questions';
 
-function formatUploadDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-}
-
 type Props = {
   latest: HomepagePayload['latest'];
 };
@@ -108,9 +100,6 @@ export function HomepageLatestQuestions({ latest }: Props) {
                     <h3 className="break-words font-display text-[0.975rem] font-bold leading-snug tracking-tight text-[var(--ink)] transition-colors duration-200 group-hover:text-[var(--highlight)] sm:text-base md:text-[1.05rem]">
                       {set.title}
                     </h3>
-                    <p className="mt-1.5 text-sm leading-relaxed text-[var(--muted)] sm:mt-2 sm:text-[0.875rem]">
-                      {formatUploadDate(set.uploadedAt)}
-                    </p>
                   </span>
                   <span
                     className="hp-collection-arrow inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--hp-panel-border)] bg-[color-mix(in_srgb,var(--bg-muted)_55%,white)] text-[var(--muted-strong)] transition-[border-color,background-color,color,transform] duration-200 group-hover:border-[color-mix(in_srgb,var(--highlight)_28%,var(--line))] group-hover:bg-[var(--highlight-soft)] group-hover:text-[var(--highlight)]"
