@@ -14,7 +14,7 @@ function TopicsContent() {
   return (
     <LearnerPage dense>
       <PageHeader
-        eyebrow="Practice & Learning"
+        eyebrow="Learning"
         title="Topic-Based Questions"
         description="Explore Topic Base folders (Category → Sub → Child) and open uploaded collections."
       />
@@ -35,7 +35,7 @@ export default function TopicsPage() {
     <Suspense
       fallback={
         <LearnerPage dense>
-          <PageHeader eyebrow="Practice & Learning" title="Topic-Based Questions" />
+          <PageHeader eyebrow="Learning" title="Topic-Based Questions" />
           <DirectoryTileGridSkeleton count={8} />
         </LearnerPage>
       }

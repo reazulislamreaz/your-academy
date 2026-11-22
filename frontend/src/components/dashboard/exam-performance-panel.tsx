@@ -180,7 +180,7 @@ export function ExamPerformancePanel({ initial, compact }: Props) {
         {data.recentExams.length === 0 ? (
           <p className="text-sm text-[var(--muted-strong)]">
             No exams yet.{' '}
-            <Link href="/quizzes" className="font-semibold text-[var(--highlight)]">
+            <Link href="/live-quizzes" className="font-semibold text-[var(--highlight)]">
               Open quiz center
             </Link>
           </p>

@@ -8,17 +8,17 @@ import type { PreliPracticeResult } from './preli-practice-session';
 
 type Props = {
   result: PreliPracticeResult;
-  /** Listing URL prefix (learner: `/preliminary`). */
+  /** Listing URL prefix (learner: `/preli-practice`). */
   basePath?: string;
 };
 
 /** Preli Practice result + answer sheet — same visual language as Model Test results. */
-export function PreliPracticeResultView({ result, basePath = '/preliminary' }: Props) {
+export function PreliPracticeResultView({ result, basePath = '/preli-practice' }: Props) {
   const [showSheet, setShowSheet] = useState(true);
   const circumference = 2 * Math.PI * 54;
   const progress = Math.min(100, Math.max(0, result.percent));
   const dash = (progress / 100) * circumference;
-  const takeBase = basePath.replace(/\/$/, '') || '/preliminary';
+  const takeBase = basePath.replace(/\/$/, '') || '/preli-practice';
   const retakeHref = `${takeBase}/${encodeURIComponent(result.setId)}`;
 
   return (

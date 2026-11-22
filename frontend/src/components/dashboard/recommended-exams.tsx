@@ -38,20 +38,23 @@ export function RecommendedExams({ practiceSets, publicExams, loading }: Props) 
           </p>
         </div>
         <div className="flex flex-wrap gap-3 text-xs font-semibold">
-          <Link href="/quizzes" className="text-[var(--accent)] underline-offset-2 hover:underline">
-            Quiz
-          </Link>
           <Link
             href="/live-quizzes"
             className="text-[var(--accent)] underline-offset-2 hover:underline"
           >
-            Exams
+            Quiz
           </Link>
           <Link
             href="/live-model-tests"
             className="text-[var(--accent)] underline-offset-2 hover:underline"
           >
-            Model Tests
+            Model Test
+          </Link>
+          <Link
+            href="/preli-practice"
+            className="text-[var(--accent)] underline-offset-2 hover:underline"
+          >
+            Preli Practice
           </Link>
         </div>
       </div>

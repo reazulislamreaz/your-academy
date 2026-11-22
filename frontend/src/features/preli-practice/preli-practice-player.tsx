@@ -22,16 +22,16 @@ import { scorePreliPractice } from './score-preli-practice';
 
 type Props = {
   setId: string;
-  /** Listing / take / result URL prefix (learner: `/preliminary`). */
+  /** Listing / take / result URL prefix (learner: `/preli-practice`). */
   basePath?: string;
 };
 
 const BN_LABELS = ['ক', 'খ', 'গ', 'ঘ'] as const;
 
 /** Timed Preli Practice player — Model Test chrome, client-side scoring, no name gate. */
-export function PreliPracticePlayer({ setId, basePath = '/preliminary' }: Props) {
+export function PreliPracticePlayer({ setId, basePath = '/preli-practice' }: Props) {
   const router = useRouter();
-  const takeBase = basePath.replace(/\/$/, '') || '/preliminary';
+  const takeBase = basePath.replace(/\/$/, '') || '/preli-practice';
   const [hydrated, setHydrated] = useState(false);
   const [durationMinutes, setDurationMinutes] = useState<number | null>(null);
   const [startedAtMs, setStartedAtMs] = useState<number | null>(null);

@@ -58,9 +58,9 @@ export default function SubjectsPage() {
                     MCQs
                   </Button>
                 </Link>
-                <Link href={`/quizzes?categoryId=${subject.id}`}>
+                <Link href="/live-quizzes">
                   <Button variant="outline" size="sm" className="w-full">
-                    Quizzes
+                    Quiz
                   </Button>
                 </Link>
               </div>

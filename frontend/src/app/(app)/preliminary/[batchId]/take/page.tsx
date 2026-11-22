@@ -1,10 +1,9 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { useParams } from 'next/navigation';
-import { PreliPracticePlayer } from '@/features/preli-practice/preli-practice-player';
+type Props = { params: Promise<{ batchId: string }> };
 
-/** Timed Preli Practice exam — Model Test-style UI, client-side scoring. */
-export default function PreliminaryTakePage() {
-  const { batchId } = useParams<{ batchId: string }>();
-  return <PreliPracticePlayer setId={batchId} basePath="/preliminary" />;
+/** Legacy take URL → Practice Preli Practice take. */
+export default async function PreliminaryTakeLegacyRedirect({ params }: Props) {
+  const { batchId } = await params;
+  redirect(`/preli-practice/${encodeURIComponent(batchId)}/take`);
 }

@@ -1,7 +1,6 @@
 import {
   BookMarked,
   BookOpenText,
-  ClipboardList,
   FilePenLine,
   FileText,
   Folders,
@@ -9,6 +8,7 @@ import {
   LayoutDashboard,
   Layers3,
   Sparkles,
+  Timer,
   UserRound,
   type LucideIcon,
 } from 'lucide-react';
@@ -32,14 +32,19 @@ export const learnerNavGroups: LearnerNavGroup[] = [
     ],
   },
   {
-    title: 'Practice & Learning',
+    title: 'Learning',
     items: [
-      { href: '/quizzes', label: 'Quiz', icon: Sparkles, match: 'prefix' },
-      { href: '/live-quizzes', label: 'Exams', icon: ClipboardList, match: 'prefix' },
-      { href: '/live-model-tests', label: 'Model Tests', icon: Layers3, match: 'prefix' },
-      { href: '/preliminary', label: 'Preli Practice', icon: BookOpenText, match: 'prefix' },
+      { href: '/preli-questions', label: 'Preli Questions', icon: BookOpenText, match: 'prefix' },
       { href: '/written', label: 'Written Questions', icon: FilePenLine, match: 'prefix' },
       { href: '/topics', label: 'Topic-Based Questions', icon: Folders, match: 'prefix' },
+    ],
+  },
+  {
+    title: 'Practice',
+    items: [
+      { href: '/live-quizzes', label: 'Quiz', icon: Sparkles, match: 'prefix' },
+      { href: '/live-model-tests', label: 'Model Test', icon: Layers3, match: 'prefix' },
+      { href: '/preli-practice', label: 'Preli Practice', icon: Timer, match: 'prefix' },
     ],
   },
   {
@@ -58,7 +63,5 @@ export function learnerLinkActive(pathname: string, item: LearnerNavLink): boole
   if (pathOnly === '/questions') {
     return pathname === '/questions' || pathname.startsWith('/questions/');
   }
-  // Avoid /topics matching /topics/sets incorrectly overlapping other prefixes —
-  // prefix match is intentional for nested bank routes.
   return pathname === pathOnly || pathname.startsWith(`${pathOnly}/`);
 }

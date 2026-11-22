@@ -57,7 +57,7 @@ export function DashboardWelcomeBanner({
               variant="outline"
               className="motion-press h-11 w-full whitespace-nowrap px-4 text-sm sm:h-10 sm:w-auto sm:px-5"
             >
-              Exams
+              Quiz
             </Button>
           </Link>
         </div>

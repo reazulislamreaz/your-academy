@@ -36,15 +36,17 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="space-y-6">
-      <div className="motion-rise space-y-2">
-        <h1 className="font-display text-3xl font-bold tracking-tight">Reset password</h1>
-        <p className="text-sm leading-relaxed text-[var(--muted-strong)] sm:text-base">
+      <div className="motion-rise space-y-1.5">
+        <h1 className="auth-welcome-title font-display text-[1.85rem] font-bold tracking-tight text-[var(--ink)] sm:text-[2rem]">
+          Reset password
+        </h1>
+        <p className="text-sm leading-relaxed text-[var(--muted-strong)]">
           Enter the email on your account. If it matches, we send a reset link.
         </p>
       </div>
       <Surface
         elevated
-        className="motion-rise ya-panel-shine p-6 shadow-[var(--shadow)] sm:p-7"
+        className="motion-rise auth-card-ref p-5 sm:p-6"
         style={{ animationDelay: '60ms' }}
       >
         {done ? (
@@ -63,10 +65,16 @@ export default function ForgotPasswordPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
+                className="auth-input"
               />
             </Field>
             {error ? <Alert variant="danger">{error}</Alert> : null}
-            <Button type="submit" className="motion-press w-full" disabled={loading} loading={loading}>
+            <Button
+              type="submit"
+              className="hero-cta-primary motion-press auth-submit auth-submit-gradient h-11 w-full"
+              disabled={loading}
+              loading={loading}
+            >
               {loading ? 'Sending…' : 'Send reset link'}
             </Button>
           </form>

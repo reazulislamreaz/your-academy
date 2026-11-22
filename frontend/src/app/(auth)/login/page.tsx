@@ -62,10 +62,10 @@ function LoginForm() {
   return (
     <div className="auth-form-stack space-y-5 lg:space-y-5">
       <div className="motion-rise space-y-1.5">
-        <h1 className="auth-welcome-title font-display text-[1.85rem] font-bold tracking-tight text-[var(--bg-inverse)] sm:text-[2rem]">
+        <h1 className="auth-welcome-title font-display text-[1.85rem] font-bold tracking-tight text-[var(--ink)] sm:text-[2rem]">
           Welcome Back
         </h1>
-        <p className="text-sm text-[var(--muted-strong)]">
+        <p className="text-sm leading-relaxed text-[var(--muted-strong)]">
           Continue your journey towards exam success.
         </p>
       </div>
@@ -122,7 +122,7 @@ function LoginForm() {
           {error ? <Alert variant="danger">{error}</Alert> : null}
           <Button
             type="submit"
-            className="motion-press auth-submit auth-submit-gradient mt-1 w-full"
+            className="hero-cta-primary motion-press auth-submit auth-submit-gradient mt-1 h-11 w-full"
             disabled={loading}
             loading={loading}
           >

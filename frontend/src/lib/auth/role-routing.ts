@@ -21,6 +21,8 @@ export const LEARNER_APP_PREFIXES = [
   '/exam-tracks',
   '/previous-year',
   '/preliminary',
+  '/preli-questions',
+  '/preli-practice',
   '/written',
   '/topics',
 ] as const;

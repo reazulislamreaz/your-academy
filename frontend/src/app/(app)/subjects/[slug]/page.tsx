@@ -60,9 +60,9 @@ export default function SubjectDetailPage() {
                 All MCQs
               </Button>
             </Link>
-            <Link href={`/quizzes?categoryId=${subject.id}`} className="min-w-0">
+            <Link href="/live-quizzes" className="min-w-0">
               <Button variant="outline" size="sm" className="w-full sm:w-auto">
-                Quizzes
+                Quiz
               </Button>
             </Link>
           </div>
@@ -88,11 +88,9 @@ export default function SubjectDetailPage() {
                       MCQs
                     </Button>
                   </Link>
-                  <Link
-                    href={`/quizzes?categoryId=${subject.id}&subcategoryId=${topic.id}`}
-                  >
+                  <Link href="/live-quizzes">
                     <Button variant="outline" size="sm" className="w-full">
-                      Quizzes
+                      Quiz
                     </Button>
                   </Link>
                 </div>

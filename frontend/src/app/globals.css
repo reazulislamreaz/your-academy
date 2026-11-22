@@ -2170,36 +2170,37 @@ a.site-footer-social-link:focus-visible {
     linear-gradient(165deg, transparent 55%, rgba(227, 30, 36, 0.05) 100%);
 }
 
+/* Match homepage desk canvas (cool paper + soft brand radials). */
 .auth-form-pane {
-  background:
-    radial-gradient(ellipse 70% 45% at 100% 100%, rgba(227, 30, 36, 0.07), transparent 55%),
-    radial-gradient(ellipse 50% 40% at 0% 0%, rgba(0, 32, 80, 0.04), transparent 50%), #ffffff;
+  --hp-radius: 1.15rem;
+  --hp-panel-border: color-mix(in srgb, var(--line) 82%, var(--ink) 10%);
+  --hp-shadow: 0 1px 2px rgba(15, 35, 70, 0.04), 0 14px 36px rgba(15, 35, 70, 0.07);
+  --hp-cta-shadow: 0 12px 28px -14px rgba(227, 30, 36, 0.45);
+  background-color: #f7f9fc;
+  background-image:
+    radial-gradient(ellipse 70% 50% at 100% 0%, rgba(227, 30, 36, 0.08), transparent 55%),
+    radial-gradient(ellipse 55% 45% at 0% 100%, rgba(56, 132, 220, 0.07), transparent 50%),
+    radial-gradient(ellipse 40% 35% at 80% 90%, rgba(0, 32, 80, 0.04), transparent 55%),
+    linear-gradient(180deg, #fbfcfe 0%, #f7f9fc 100%);
 }
 
 .auth-welcome-title {
   position: relative;
   display: inline-block;
+  color: var(--ink);
 }
 
-.auth-welcome-title::before,
-.auth-welcome-title::after {
+/* Quiet accent mark — same language as homepage section eyebrows. */
+.auth-welcome-title::before {
   content: '';
   position: absolute;
-  pointer-events: none;
-  background: var(--highlight);
+  left: 0;
+  top: -0.55em;
+  width: 1.5rem;
+  height: 3px;
   border-radius: 999px;
-}
-
-/* Decorative sparks near “Back” (reference) */
-.auth-welcome-title::before {
-  top: 0.12em;
-  right: -0.85em;
-  width: 0.55em;
-  height: 0.12em;
-  transform: rotate(-38deg);
-  box-shadow:
-    0.28em -0.28em 0 -0.02em var(--highlight),
-    0.12em 0.22em 0 -0.03em var(--highlight);
+  background: linear-gradient(90deg, var(--highlight), var(--accent));
+  pointer-events: none;
 }
 
 .auth-welcome-title::after {
@@ -2207,23 +2208,23 @@ a.site-footer-social-link:focus-visible {
 }
 
 .auth-card-ref {
-  border-radius: 1.15rem;
-  border: 1px solid rgba(15, 35, 70, 0.06);
-  background: #fff;
-  box-shadow:
-    0 1px 2px rgba(15, 35, 70, 0.04),
-    0 18px 40px rgba(15, 35, 70, 0.08);
+  border-radius: var(--hp-radius, 1.15rem);
+  border: 1px solid var(--hp-panel-border, var(--line));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), var(--bg-elevated));
+  box-shadow: var(--hp-shadow, var(--shadow));
 }
 
+/* Solid brand CTA — matches homepage hero / “Create free account” buttons. */
 .auth-submit-gradient {
   border-radius: 999px !important;
-  background: linear-gradient(90deg, #e31e24 0%, #c41820 55%, #a51218 100%) !important;
-  box-shadow: 0 10px 24px rgba(227, 30, 36, 0.28);
+  background: var(--highlight) !important;
+  color: var(--highlight-fg, #fff) !important;
+  box-shadow: var(--hp-cta-shadow, 0 12px 28px -14px rgba(227, 30, 36, 0.45));
 }
 
 .auth-submit-gradient:hover:not(:disabled) {
-  filter: brightness(1.05);
-  box-shadow: 0 12px 28px rgba(227, 30, 36, 0.34);
+  filter: brightness(1.04);
+  box-shadow: 0 14px 32px -12px rgba(227, 30, 36, 0.5);
 }
 
 .auth-label-row {
@@ -2447,9 +2448,9 @@ a.site-footer-social-link:focus-visible {
 }
 
 .auth-input {
-  border-radius: 0.75rem;
-  background-color: #f4f6f9;
-  border-color: #e6ebf2;
+  border-radius: var(--radius);
+  background-color: var(--bg-elevated);
+  border-color: var(--line);
   transition:
     border-color var(--duration-fast) var(--ease-out),
     box-shadow var(--duration-fast) var(--ease-out),
@@ -2457,7 +2458,9 @@ a.site-footer-social-link:focus-visible {
 }
 
 .auth-shell .ya-control.auth-input:focus {
-  background-color: #fff;
+  background-color: var(--bg-elevated);
+  border-color: var(--accent);
+  box-shadow: var(--focus-ring);
 }
 
 .auth-submit {
@@ -2468,7 +2471,7 @@ a.site-footer-social-link:focus-visible {
 }
 
 .auth-submit:hover:not(:disabled) {
-  box-shadow: 0 8px 22px rgba(227, 30, 36, 0.28);
+  box-shadow: var(--hp-cta-shadow, 0 12px 28px -14px rgba(227, 30, 36, 0.45));
 }
 
 @keyframes ya-auth-orb {

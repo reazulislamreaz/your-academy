@@ -48,14 +48,16 @@ function ResetForm() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-3xl font-bold tracking-tight">Choose a new password</h1>
-        <p className="mt-2 text-sm leading-relaxed text-[var(--muted-strong)] sm:text-base">
+    <div className="auth-form-stack space-y-5">
+      <div className="motion-rise space-y-1.5">
+        <h1 className="auth-welcome-title font-display text-[1.85rem] font-bold tracking-tight text-[var(--ink)] sm:text-[2rem]">
+          Choose a new password
+        </h1>
+        <p className="text-sm leading-relaxed text-[var(--muted-strong)]">
           Use at least 8 characters with a letter and a number.
         </p>
       </div>
-      <Surface elevated className="p-6 sm:p-7">
+      <Surface elevated className="motion-rise auth-card-ref p-5 sm:p-6">
         <form onSubmit={onSubmit} className="space-y-4">
           {!token ? (
             <Alert variant="warning">
@@ -79,6 +81,7 @@ function ResetForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="new-password"
+              className="auth-input"
             />
           </Field>
           <Field>
@@ -91,10 +94,15 @@ function ResetForm() {
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               autoComplete="new-password"
+              className="auth-input"
             />
           </Field>
           {error ? <Alert variant="danger">{error}</Alert> : null}
-          <Button type="submit" className="w-full" disabled={loading || !token}>
+          <Button
+            type="submit"
+            className="hero-cta-primary motion-press auth-submit auth-submit-gradient h-11 w-full"
+            disabled={loading || !token}
+          >
             {loading ? 'Updating…' : 'Update password'}
           </Button>
         </form>

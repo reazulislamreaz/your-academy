@@ -1,23 +1,6 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { LearnerPage } from '@/components/layout/learner-page';
-import { PageHeader } from '@/components/layout/page-header';
-import { PracticeSetList } from '@/components/practice/practice-set-list';
-
-export default function DailyQuizPage() {
-  return (
-    <LearnerPage dense>
-      <PageHeader
-        eyebrow="Daily habit"
-        title="Daily quiz"
-        description="Short published daily sets to keep exam prep consistent."
-      />
-      <PracticeSetList
-        kind="DAILY_QUIZ"
-        isDaily
-        emptyTitle="No daily quiz published"
-        emptyDescription="When an admin publishes a daily quiz, it will appear here."
-      />
-    </LearnerPage>
-  );
+/** Legacy daily-quiz shortcut — Practice Quiz lives at `/live-quizzes`. */
+export default function DailyQuizRedirectPage() {
+  redirect('/live-quizzes');
 }

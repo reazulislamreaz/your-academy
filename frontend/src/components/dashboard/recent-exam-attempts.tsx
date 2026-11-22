@@ -53,7 +53,7 @@ export function RecentExamAttempts({ recentExams }: Props) {
             <Link href="/live-quizzes">
               <Button size="sm" className="min-h-10">
                 <ClipboardList className="size-4" aria-hidden />
-                Explore exams
+                Explore quizzes
               </Button>
             </Link>
           }

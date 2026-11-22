@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ModelTestListing } from '@/features/model-tests/model-test-listing';
 
 export const metadata: Metadata = {
-  title: 'Model Tests',
+  title: 'Model Test',
   description: 'Take published model tests from your dashboard.',
 };
 
@@ -16,8 +16,8 @@ export default function LiveModelTestsPage() {
   return (
     <LearnerPage dense>
       <PageHeader
-        eyebrow="Practice & Learning"
-        title="Model Tests"
+        eyebrow="Practice"
+        title="Model Test"
         description="Full-length timed mocks with score review. Live sets match the public site; practice sets stay on your account."
         actions={
           <Link href="/results">

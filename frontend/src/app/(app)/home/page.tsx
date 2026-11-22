@@ -5,7 +5,6 @@ import { useQuery } from '@tanstack/react-query';
 import {
   BookOpenText,
   ClipboardCheck,
-  ClipboardList,
   FilePenLine,
   Flame,
   Folders,
@@ -176,7 +175,7 @@ export default function StudyHomePage() {
   const newsItems = (news.data ?? []).slice(0, 4);
   const resumeHref = last
     ? `/questions/${last.id}${last.filterQs ? `?${last.filterQs}` : ''}`
-    : '/preliminary';
+    : '/preli-practice';
 
   const progressLine =
     exams && exams.totalExamsCompleted > 0
@@ -259,7 +258,7 @@ export default function StudyHomePage() {
 
       <Reveal delayMs={80} className="grid gap-4 lg:grid-cols-5">
         <Surface elevated className="space-y-5 overflow-x-clip p-3.5 sm:p-5 lg:col-span-3">
-          <SectionTitle title="Continue practice" href="/preliminary" linkLabel="Preliminary" />
+          <SectionTitle title="Continue practice" href="/preli-practice" linkLabel="Preli Practice" />
           {last ? (
             <div className="rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-muted)]/50 p-4">
               <p className="text-[0.6875rem] font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
@@ -280,10 +279,10 @@ export default function StudyHomePage() {
               nested
               className="py-8"
               title="No practice history yet"
-              description="Open any MCQ and press Check answer. Accuracy and subject progress will appear here."
+              description="Start a Quiz, Model Test, or Preli Practice to build history here."
               action={
-                <Link href="/preliminary">
-                  <Button size="sm">Browse preliminary</Button>
+                <Link href="/preli-practice">
+                  <Button size="sm">Open Preli Practice</Button>
                 </Link>
               }
             />
@@ -291,31 +290,36 @@ export default function StudyHomePage() {
 
           <div>
             <h3 className="mb-3 text-[0.6875rem] font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
-              Quick access
+              Practice
             </h3>
-            <Stagger className="grid gap-2.5 sm:grid-cols-2" stepMs={55}>
+            <Stagger className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3" stepMs={55}>
               <QuickLink
-                href="/quizzes"
+                href="/live-quizzes"
                 title="Quiz"
-                description="Daily, subject, and topic quizzes"
+                description="Timed quizzes with score review"
                 icon={Sparkles}
               />
               <QuickLink
-                href="/live-quizzes"
-                title="Exams"
-                description="Timed public exams with score review"
-                icon={ClipboardList}
-              />
-              <QuickLink
                 href="/live-model-tests"
-                title="Model Tests"
+                title="Model Test"
                 description="Full-length timed mocks"
                 icon={Layers3}
               />
               <QuickLink
-                href="/preliminary"
+                href="/preli-practice"
                 title="Preli Practice"
-                description="Timed practice from preliminary MCQ sets"
+                description="Set your own time on Preli MCQ sets"
+                icon={BookOpenText}
+              />
+            </Stagger>
+            <h3 className="mb-3 mt-5 text-[0.6875rem] font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
+              Learning
+            </h3>
+            <Stagger className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3" stepMs={55}>
+              <QuickLink
+                href="/preli-questions"
+                title="Preli Questions"
+                description="Browse preliminary collections"
                 icon={BookOpenText}
               />
               <QuickLink

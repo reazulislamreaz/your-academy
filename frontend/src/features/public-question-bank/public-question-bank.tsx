@@ -23,7 +23,7 @@ import { cn } from '@/lib/utils';
 
 type Props = {
   className?: string;
-  /** Listing + set routes root. Marketing default; learner uses `/preliminary`. */
+  /** Listing + set routes root. Marketing default; learner uses `/preli-questions` or `/preli-practice`. */
   basePath?: string;
   /** Hide homepage marketing CTAs when nested in the learner shell. */
   embedded?: boolean;

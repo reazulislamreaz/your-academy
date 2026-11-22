@@ -29,7 +29,7 @@ export default function PracticePlayerPage() {
         title="Practice set not found"
         description="It may be unpublished or the link is incorrect."
         action={
-          <Link href="/quizzes" className="text-sm font-semibold text-[var(--highlight)]">
+            <Link href="/live-quizzes" className="text-sm font-semibold text-[var(--highlight)]">
             Back to quizzes
           </Link>
         }

@@ -24,7 +24,7 @@ import { cn } from '@/lib/utils';
 type Props = {
   setId: string;
   className?: string;
-  /** Listing root for back navigation. Marketing default; learner uses `/preliminary`. */
+  /** Listing root for back navigation. Marketing default; learner uses `/preli-questions`. */
   basePath?: string;
   /** Hide homepage marketing CTAs when nested in the learner shell. */
   embedded?: boolean;

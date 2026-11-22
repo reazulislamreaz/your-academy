@@ -84,7 +84,7 @@ export default function ResultsPage() {
           description="Complete a quiz or model test to see scores here."
           action={
             <Link href="/live-quizzes" className="text-sm font-semibold text-[var(--highlight)]">
-              Open exams
+              Open Quiz
             </Link>
           }
         />

@@ -19,7 +19,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           <div className="hidden lg:block" />
           <Link
             href="/"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--muted-strong)] transition-colors hover:text-[var(--highlight)]"
+            className="inline-flex h-10 items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--bg-elevated)] px-3.5 text-sm font-semibold text-[var(--ink-soft)] shadow-[var(--shadow-sm)] transition-colors hover:border-[var(--line-strong)] hover:bg-[var(--bg-muted)] hover:text-[var(--ink)]"
           >
             <Home className="size-3.5" aria-hidden strokeWidth={2} />
             Back home
