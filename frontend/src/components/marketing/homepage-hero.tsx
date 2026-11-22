@@ -1,166 +1,241 @@
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight, GraduationCap } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import type { HomepagePayload } from '@your-academy/shared';
+import { HomepageHeroEntrance } from '@/components/marketing/homepage-gsap';
 import { Button } from '@/components/ui/button';
-import { HomepageIcon } from '@/lib/homepage-icon-map';
+import type { PublicPlatformStats } from '@/lib/api/public-stats';
+import { cn } from '@/lib/utils';
 
 type Props = {
   hero: HomepagePayload['hero'];
   heroImageUrl?: string | null;
+  liveStats?: PublicPlatformStats | null;
 };
 
+const EXAM_PILLS = [
+  { label: 'BCS', href: '/preli-question-bank?q=BCS' },
+  { label: 'Bank', href: '/preli-question-bank?q=Bank' },
+  { label: 'Primary & NTRCA', href: '/preli-question-bank?q=NTRCA' },
+  { label: 'Model Test', href: '/model-test' },
+] as const;
+
+function formatCount(n: number): string {
+  return new Intl.NumberFormat('en-BD').format(n);
+}
+
+function resolveCtaLabel(label: string, fallback: string): string {
+  const trimmed = label.trim();
+  return trimmed.length > 0 ? trimmed : fallback;
+}
+
+function resolveCtaHref(href: string, fallback: string): string {
+  const trimmed = href.trim();
+  if (!trimmed) return fallback;
+  try {
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      const u = new URL(trimmed);
+      return `${u.pathname}${u.search}${u.hash}` || fallback;
+    }
+  } catch {
+    // keep as-is below
+  }
+  return trimmed.startsWith('/') || trimmed.startsWith('http') ? trimmed : fallback;
+}
+
 /**
- * Marketing hero — 100% CMS-driven (eyebrow, titles, description, CTAs, image).
- * Motion polish only; no hardcoded marketing copy on top of published payload values.
+ * Homepage hero — CMS-driven copy/CTAs/image + live stats.
+ * Asymmetric split: clarity & action left, framed showcase right.
  */
-export function HomepageHero({ hero, heroImageUrl }: Props) {
+export function HomepageHero({ hero, heroImageUrl, liveStats = null }: Props) {
   if (!hero.visible) return null;
 
-  const imageSrc = heroImageUrl?.trim() || '/images/hero-students.jpg';
+  const imageSrc = heroImageUrl?.trim() || '/images/hero-students.avif';
   const brand = hero.titleBefore.trim() || 'Your Academy';
-  const sideLabel = (hero.titleAfter?.trim() || hero.titleHighlight.trim()).trim();
-  const tagline = hero.description.trim();
+  const highlight = hero.titleHighlight.trim();
+  const sideLabel = hero.titleAfter?.trim() || '';
+  const tagline =
+    hero.description.trim() ||
+    'Practice published MCQs for BCS, Bank, NTRCA, and government jobs.';
+  const eyebrow =
+    hero.eyebrow.trim() || 'BCS · Bank · NTRCA · Primary · Government Jobs';
+
+  const primaryLabel = resolveCtaLabel(hero.primaryCta.label, 'Browse MCQ Bank');
+  const primaryHref = resolveCtaHref(hero.primaryCta.href, '/preli-question-bank');
+  const secondaryLabel = resolveCtaLabel(hero.secondaryCta.label, 'Written Question Bank');
+  const secondaryHref = resolveCtaHref(hero.secondaryCta.href, '/written-question-bank');
+
+  const mcqCount = liveStats?.questions;
+  const collectionCount = liveStats?.questionSets;
+  const hasLiveCounts = mcqCount != null || collectionCount != null;
 
   return (
-    <section className="hero-section relative overflow-x-hidden overflow-y-hidden bg-[var(--bg-inverse)] text-white">
-      {/* Atmosphere — restrained navy/red washes + soft drifting orbs */}
+    <section
+      className={cn(
+        'hero-section relative isolate overflow-x-hidden',
+        'bg-[var(--bg)] text-[var(--ink)]',
+      )}
+      aria-labelledby="homepage-hero-heading"
+    >
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="hero-atmosphere absolute inset-0" />
-        <div className="hero-orb hero-orb-a absolute -top-20 left-[6%] h-52 w-52 rounded-full bg-[color-mix(in_srgb,var(--highlight)_18%,transparent)] blur-3xl sm:h-80 sm:w-80" />
-        <div className="hero-orb hero-orb-b absolute right-[18%] top-[12%] hidden h-32 w-32 rounded-full bg-[#7eb6e8]/15 blur-3xl lg:block" />
-        <div className="hero-orb hero-orb-c absolute bottom-0 left-0 h-44 w-44 rounded-full bg-[#1a4a8a]/35 blur-3xl sm:h-60 sm:w-60" />
-        <div className="hero-grid absolute inset-0 opacity-[0.05] sm:opacity-[0.07]" />
-        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/20 to-transparent lg:hidden" />
+        <div className="hero-mesh absolute inset-0" />
       </div>
 
-      <div className="relative mx-auto grid w-full min-w-0 max-w-[var(--marketing-content-max)] items-stretch lg:grid-cols-2">
-        <div className="relative z-10 flex min-w-0 flex-col justify-center px-4 py-10 sm:px-8 sm:py-14 lg:min-h-[560px] lg:py-20 lg:pr-10 lg:pl-6 xl:pl-8">
-          <div className="hero-enter mx-auto flex w-full min-w-0 max-w-xl flex-col items-center gap-5 sm:gap-7 lg:mx-0 lg:items-start lg:gap-8">
-            {hero.eyebrow.trim() ? (
-              <p className="hero-eyebrow inline-flex w-full max-w-full items-start gap-2.5 border border-white/18 bg-white/[0.09] px-3 py-2 text-left text-[0.75rem] leading-snug font-medium tracking-[0.01em] text-white/92 shadow-[inset_0_1px_0_rgba(255,255,255,0.16),0_8px_24px_-12px_rgba(0,0,0,0.35)] backdrop-blur-md transition-[transform,background-color,border-color] duration-300 ease-[var(--ease-luxury)] hover:border-white/28 hover:bg-white/[0.12] sm:w-auto sm:max-w-full sm:items-center sm:px-3.5 sm:text-[0.8125rem]">
-                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--highlight)] text-white shadow-[0_4px_12px_-2px_rgba(227,30,36,0.55)] sm:mt-0 sm:h-7 sm:w-7">
-                  <GraduationCap className="h-3.5 w-3.5" aria-hidden />
-                </span>
-                <span className="min-w-0 flex-1 text-pretty break-words">{hero.eyebrow.trim()}</span>
+      <div className="relative mx-auto grid w-full min-w-0 max-w-[var(--marketing-content-max)] items-center gap-9 px-4 py-11 sm:gap-11 sm:px-6 sm:py-14 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-12 lg:px-8 lg:py-[4.5rem] xl:gap-16 xl:py-24">
+        {/* Left — trust, value, action */}
+        <HomepageHeroEntrance className="relative z-10 flex min-w-0 flex-col items-stretch gap-5 sm:gap-6 lg:items-start lg:pr-2">
+          <div
+            data-hp-hero
+            className="inline-flex max-w-full items-center gap-2.5 self-start rounded-full border border-[var(--hp-panel-border)] bg-[var(--bg-elevated)] px-3.5 py-1.5 shadow-[var(--shadow-sm)]"
+          >
+            <span className="relative flex h-2 w-2 shrink-0" aria-hidden>
+              <span className="hero-live-ping absolute inline-flex h-full w-full rounded-full bg-[var(--highlight)] opacity-40" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--highlight)]" />
+            </span>
+            <p className="min-w-0 text-[0.75rem] leading-snug text-[var(--muted-strong)] sm:text-[0.8125rem]">
+              {hasLiveCounts ? (
+                <>
+                  {mcqCount != null ? (
+                    <>
+                      <span className="font-semibold tabular-nums text-[var(--ink)]">
+                        {formatCount(mcqCount)}
+                      </span>
+                      <span className="font-medium"> Published MCQs</span>
+                    </>
+                  ) : null}
+                  {mcqCount != null && collectionCount != null ? (
+                    <span className="text-[var(--muted)]"> · </span>
+                  ) : null}
+                  {collectionCount != null ? (
+                    <>
+                      <span className="font-semibold tabular-nums text-[var(--ink)]">
+                        {formatCount(collectionCount)}
+                      </span>
+                      <span className="font-medium"> Collections</span>
+                    </>
+                  ) : null}
+                </>
+              ) : (
+                <span className="text-pretty break-words font-medium">{eyebrow}</span>
+              )}
+            </p>
+          </div>
+
+          <div data-hp-hero className="w-full min-w-0 space-y-3.5">
+            {hasLiveCounts && eyebrow ? (
+              <p className="text-[0.8rem] font-medium tracking-[0.01em] text-[var(--muted)] text-pretty">
+                {eyebrow}
               </p>
             ) : null}
-
-            <div className="w-full min-w-0">
-              <div className="mx-auto flex w-full max-w-full flex-col items-center gap-2.5 sm:gap-3 lg:mx-0 lg:w-fit lg:items-stretch lg:gap-3.5">
-                <h1 className="flex w-full max-w-full flex-col items-center gap-y-2 text-center sm:gap-y-2.5 md:flex-row md:flex-wrap md:items-center md:justify-center md:gap-x-4 md:gap-y-2 lg:w-auto lg:flex-nowrap lg:justify-start lg:gap-x-5 lg:text-left">
-                  <span className="font-display max-w-full text-[clamp(1.85rem,7.5vw,4.15rem)] leading-[1.05] font-extrabold tracking-[-0.03em] text-balance text-white drop-shadow-[0_1px_0_rgba(255,255,255,0.08)]">
-                    {brand}
-                  </span>
-                  {sideLabel ? (
-                    <span className="relative max-w-[16rem] text-[clamp(0.8rem,2.4vw,1.0625rem)] leading-snug font-medium tracking-[0.02em] text-pretty text-white/72 md:max-w-[12.5rem] md:border-l md:border-white/25 md:pl-3.5 md:text-left lg:max-w-[15.5rem] lg:pl-4">
-                      {sideLabel}
-                    </span>
-                  ) : null}
-                </h1>
-                {tagline ? (
-                  <p className="relative text-center font-display text-[clamp(1rem,3.2vw,1.5rem)] leading-snug font-semibold tracking-[0.015em] text-white lg:text-left">
-                    <span className="relative inline-block max-w-full px-1 pb-1.5">
-                      {tagline}
-                      <span
-                        aria-hidden
-                        className="hero-tagline-underline absolute inset-x-3 -bottom-0.5 h-[3px] rounded-full bg-[var(--highlight)] sm:inset-x-2"
-                      />
-                    </span>
-                  </p>
-                ) : null}
-              </div>
-            </div>
-
-            <div className="flex w-full max-w-md flex-col gap-2.5 sm:max-w-none sm:flex-row sm:flex-wrap sm:justify-center sm:gap-3 lg:justify-start">
-              {hero.primaryCta.visible ? (
-                <Link href={hero.primaryCta.href} className="w-full sm:w-auto">
-                  <Button
-                    size="lg"
-                    className="hero-cta-primary group w-full rounded-full px-6 text-[0.9rem] shadow-[0_10px_28px_-8px_rgba(227,30,36,0.55)] transition-[transform,box-shadow] duration-300 ease-[var(--ease-luxury)] hover:-translate-y-0.5 hover:shadow-[0_16px_36px_-10px_rgba(227,30,36,0.7)] active:translate-y-0 sm:w-auto sm:px-8 sm:text-[0.95rem]"
-                  >
-                    {hero.primaryCta.label}
-                    <ArrowRight className="h-4 w-4 transition-transform duration-300 ease-[var(--ease-luxury)] group-hover:translate-x-0.5" />
-                  </Button>
-                </Link>
+            <h1
+              id="homepage-hero-heading"
+              className="font-display max-w-[15ch] text-[clamp(2.15rem,5.5vw,3.65rem)] leading-[1.05] font-bold tracking-tight text-balance"
+            >
+              <span className="block text-[var(--ink)]">{brand}</span>
+              {highlight ? (
+                <span className="mt-1.5 block max-w-[22ch] text-[clamp(1.15rem,2.9vw,1.7rem)] leading-snug font-semibold tracking-tight text-[var(--highlight)]">
+                  {highlight}
+                </span>
               ) : null}
-              {hero.secondaryCta.visible ? (
-                <Link href={hero.secondaryCta.href} className="w-full sm:w-auto">
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="w-full rounded-full border-white/40 bg-white/5 px-6 text-[0.9rem] text-white backdrop-blur-sm transition-[transform,background-color,border-color,box-shadow] duration-300 ease-[var(--ease-luxury)] hover:-translate-y-0.5 hover:border-white/70 hover:bg-white/12 hover:shadow-[0_10px_28px_-14px_rgba(255,255,255,0.45)] active:translate-y-0 sm:w-auto sm:px-8 sm:text-[0.95rem]"
-                  >
-                    {hero.secondaryCta.label}
-                  </Button>
-                </Link>
+              {!highlight && sideLabel ? (
+                <span className="mt-2 block max-w-[22ch] text-[clamp(1rem,2.4vw,1.2rem)] leading-snug font-medium tracking-tight text-[var(--muted-strong)]">
+                  {sideLabel}
+                </span>
               ) : null}
-            </div>
+            </h1>
+            {highlight && sideLabel && sideLabel !== highlight ? (
+              <p className="max-w-md text-sm font-medium text-[var(--muted-strong)]">
+                {sideLabel}
+              </p>
+            ) : null}
+            <p className="max-w-md text-[0.95rem] leading-relaxed text-pretty text-[var(--muted-strong)] sm:text-base line-clamp-3">
+              {tagline}
+            </p>
+          </div>
 
-            {hero.stats.length > 0 ? (
-              <dl className="hero-stats mt-0 grid w-full min-w-0 grid-cols-1 gap-2.5 sm:grid-cols-3 sm:gap-3 lg:gap-0">
-                {hero.stats.map((stat, i) => (
-                  <div
-                    key={`${stat.label}-${i}`}
-                    className="flex min-w-0 items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.06] px-3 py-2.5 backdrop-blur-sm transition-[transform,background-color,border-color] duration-300 ease-[var(--ease-luxury)] hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.1] sm:px-3.5 sm:py-3 lg:rounded-none lg:border-0 lg:bg-transparent lg:px-0 lg:py-0 lg:backdrop-blur-none lg:hover:translate-y-0 lg:hover:bg-transparent"
-                  >
-                    {i > 0 ? (
-                      <span
-                        className="mr-3 hidden h-10 w-px bg-gradient-to-b from-transparent via-white/30 to-transparent lg:block"
-                        aria-hidden
-                      />
-                    ) : null}
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-white transition-transform duration-300 ease-[var(--ease-luxury)] sm:h-10 sm:w-10">
-                      <HomepageIcon iconKey={stat.iconKey} className="h-4 w-4 sm:h-5 sm:w-5" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <dt className="sr-only">{stat.label}</dt>
-                      <dd className="font-display text-lg leading-none font-bold tracking-tight sm:text-xl lg:text-[1.35rem]">
-                        {stat.value}
-                      </dd>
-                      <dd className="mt-1 text-xs leading-snug text-pretty text-white/70 sm:text-sm">
-                        {stat.label}
-                      </dd>
-                    </div>
-                  </div>
-                ))}
-              </dl>
+          <div
+            data-hp-hero
+            className="flex w-full flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3"
+          >
+            {hero.primaryCta.visible ? (
+              <Link href={primaryHref} className="w-full sm:w-auto">
+                <Button
+                  size="lg"
+                  className="hero-cta-primary group h-12 w-full min-h-12 rounded-full px-7 text-[0.9375rem] font-semibold shadow-[0_10px_28px_-14px_rgba(227,30,36,0.4)] transition-[transform,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_14px_32px_-14px_rgba(227,30,36,0.48)] active:translate-y-0 sm:w-auto sm:min-w-[12rem]"
+                >
+                  <span className="truncate">{primaryLabel}</span>
+                  <ArrowRight
+                    className="h-4 w-4 shrink-0 transition-transform duration-200 ease-out group-hover:translate-x-1"
+                    aria-hidden
+                  />
+                </Button>
+              </Link>
+            ) : null}
+            {hero.secondaryCta.visible ? (
+              <Link href={secondaryHref} className="w-full sm:w-auto">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="h-12 w-full min-h-12 rounded-full border-[var(--hp-panel-border)] bg-[var(--bg-elevated)] px-7 text-[0.9375rem] font-semibold text-[var(--ink)] shadow-[var(--shadow-sm)] transition-[transform,border-color,background-color,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--ink)_14%,var(--line))] hover:bg-[var(--bg)] hover:shadow-[var(--hp-shadow)] active:translate-y-0 sm:w-auto sm:min-w-[12rem]"
+                >
+                  <span className="truncate">{secondaryLabel}</span>
+                </Button>
+              </Link>
             ) : null}
           </div>
-        </div>
 
-        <div className="hero-visual-enter relative min-h-[220px] w-full min-w-0 sm:min-h-[300px] lg:min-h-full">
-          <div className="hero-photo-mask absolute inset-0 overflow-hidden">
-            <Image
-              src={imageSrc}
-              alt="Students studying together outdoors"
-              fill
-              priority
-              sizes="(max-width: 1024px) 100vw, 50vw"
-              className="hero-photo object-cover object-[center_28%]"
-              unoptimized={imageSrc.startsWith('http')}
-            />
+          <div data-hp-hero className="w-full space-y-2.5 pt-0.5">
+            <p className="text-[0.68rem] font-semibold tracking-[0.11em] text-[var(--muted)] uppercase">
+              Quick start
+            </p>
+            <ul className="flex flex-wrap gap-2" aria-label="Quick exam links">
+              {EXAM_PILLS.map((pill) => (
+                <li key={pill.href}>
+                  <Link
+                    href={pill.href}
+                    className="inline-flex min-h-10 items-center rounded-full border border-[var(--hp-panel-border)] bg-[var(--bg-elevated)] px-3.5 text-xs font-semibold text-[var(--ink-soft)] transition-[transform,border-color,color,background-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--highlight)_30%,var(--line))] hover:text-[var(--highlight)] active:translate-y-0"
+                  >
+                    {pill.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </HomepageHeroEntrance>
+
+        {/* Right — framed CMS / default visual */}
+        <HomepageHeroEntrance className="relative mx-auto w-full min-w-0 max-w-xl lg:mx-0 lg:max-w-none">
+          <div data-hp-hero className="relative w-full lg:pl-2">
             <div
               aria-hidden
-              className="absolute inset-0 bg-gradient-to-t from-[var(--bg-inverse)]/60 via-transparent to-transparent lg:bg-gradient-to-l lg:from-transparent lg:via-transparent lg:to-[var(--bg-inverse)]/25"
+              className="pointer-events-none absolute -inset-4 rounded-[2rem] bg-[radial-gradient(ellipse_at_60%_40%,color-mix(in_srgb,var(--highlight)_8%,transparent),transparent_70%)] blur-2xl sm:-inset-6"
             />
+            <figure
+              className={cn(
+                'relative overflow-hidden rounded-2xl border border-[var(--hp-panel-border)] bg-[var(--bg-elevated)]',
+                'shadow-[0_1px_2px_rgba(15,23,42,0.04),0_24px_48px_-28px_rgba(15,23,42,0.28)]',
+                'ring-1 ring-black/[0.03] sm:rounded-[1.35rem]',
+              )}
+            >
+              <div className="relative aspect-[3/2] w-full bg-[var(--bg-muted)]">
+                <Image
+                  src={imageSrc}
+                  alt="Students preparing for exams with Your Academy"
+                  fill
+                  priority
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 46vw"
+                  className="hero-photo object-cover object-center"
+                  unoptimized={imageSrc.startsWith('http')}
+                />
+              </div>
+              <figcaption className="sr-only">
+                Collaborative study session for exam preparation
+              </figcaption>
+            </figure>
           </div>
-          <svg
-            aria-hidden
-            className="pointer-events-none absolute inset-y-0 left-0 z-10 hidden h-full w-[4.75rem] -translate-x-1/2 lg:block"
-            viewBox="0 0 72 640"
-            preserveAspectRatio="none"
-          >
-            <path
-              d="M40 0C12 130 8 250 34 360C56 450 54 540 36 640H22C40 540 42 450 20 360C-6 250-2 130 26 0H40Z"
-              fill="var(--highlight)"
-            />
-            <path
-              d="M52 0C24 130 20 250 46 360C68 450 66 540 48 640H40C58 540 60 450 38 360C12 250 16 130 44 0H52Z"
-              fill="#a8d0f0"
-            />
-          </svg>
-        </div>
+        </HomepageHeroEntrance>
       </div>
     </section>
   );

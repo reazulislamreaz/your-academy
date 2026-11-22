@@ -13,6 +13,7 @@ import {
   Newspaper,
   PenLine,
   ScrollText,
+  Share2,
   Shapes,
   Users,
   type LucideIcon,
@@ -80,6 +81,12 @@ export const adminNavItems: AdminNavItem[] = [
     icon: Shapes,
   },
   { href: '/admin/homepage', label: 'Homepage', icon: Home },
+  {
+    href: '/admin/social-links',
+    label: 'Social media links',
+    shortLabel: 'Social',
+    icon: Share2,
+  },
   { href: '/admin/news', label: 'News', icon: Newspaper },
   { href: '/admin/documents', label: 'Documents', shortLabel: 'Docs', icon: FileText },
 ];
@@ -111,6 +118,7 @@ export const adminNavGroups: AdminNavGroup[] = [
         '/admin/written-bank-categories',
         '/admin/topic-categories',
         '/admin/homepage',
+        '/admin/social-links',
         '/admin/news',
         '/admin/documents',
       ].includes(i.href),

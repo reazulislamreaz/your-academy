@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
+import type { SocialLinkPublic } from '@your-academy/shared';
 import { MarketingHeader } from '@/components/layout/marketing-header';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { PageShell } from '@/components/motion/page-shell';
@@ -28,7 +29,13 @@ function isLiveExamTakePath(pathname: string): boolean {
  * Short pages (`/news` empty, empty banks, directories) keep the footer below the
  * fold via `min-h-dvh` + `main.flex-1` — never let the footer ride up mid-viewport.
  */
-export function MarketingShell({ children }: { children: ReactNode }) {
+export function MarketingShell({
+  children,
+  socialLinks = [],
+}: {
+  children: ReactNode;
+  socialLinks?: SocialLinkPublic[];
+}) {
   const pathname = usePathname();
   const reader = isDocumentReaderPath(pathname);
   const liveExam = isLiveExamTakePath(pathname);
@@ -60,7 +67,7 @@ export function MarketingShell({ children }: { children: ReactNode }) {
           {children}
         </PageShell>
       </main>
-      {!reader ? <SiteFooter /> : null}
+      {!reader ? <SiteFooter socialLinks={socialLinks} /> : null}
       {!liveExam ? <SupportWidget mode="guest" /> : null}
     </div>
   );

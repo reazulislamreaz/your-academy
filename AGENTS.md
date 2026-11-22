@@ -242,6 +242,7 @@ Forbidden without approval: microservices, GraphQL, alternate ORMs, payment prov
 |-----|-------|
 | `docs/00`–`03` | Overview, business, functional, NFR |
 | `docs/19` DEC-031 | Public Preli Question Bank (no login) |
+| `docs/19` DEC-046 | Admin-managed footer social links |
 | `docs/04`–`06` | Architecture, DB, API |
 | `docs/07`–`08` | Auth, access control |
 | `docs/09`–`10` | Cloudinary, BullMQ |

@@ -21,8 +21,8 @@ import { HomepageMidSections } from '@/components/marketing/homepage-mid-section
 import { HomepageNewsStrip } from '@/components/marketing/homepage-news-strip';
 import { HomepageProductFeatures } from '@/components/marketing/homepage-product-features';
 import { HomepageSampleMcq } from '@/components/marketing/homepage-sample-mcq';
+import { HomepageReveal } from '@/components/marketing/homepage-gsap';
 import { NewsletterBar } from '@/components/marketing/newsletter-bar';
-import { Reveal } from '@/components/motion/reveal';
 import type { PublicDocumentListItem } from '@/lib/api/public-documents';
 import type { PublicQuestionCard } from '@/lib/api/public-questions';
 import type { PublicPlatformStats } from '@/lib/api/public-stats';
@@ -66,6 +66,7 @@ export function HomepageSectionsRenderer({
                 key={entry.id}
                 hero={payload.hero}
                 heroImageUrl={heroImageUrl}
+                liveStats={liveStats}
               />
             ) : null;
           case 'trialStrip':
@@ -135,10 +136,10 @@ export function HomepageSectionsRenderer({
             ) : null;
           case 'newsletter':
             return payload.newsletter.visible ? (
-              <section key={entry.id} className="pb-[var(--space-section)]">
-                <Reveal className="marketing-container">
+              <section key={entry.id} className="hp-section hp-newsletter-section">
+                <HomepageReveal className="marketing-container">
                   <NewsletterBar newsletter={payload.newsletter} />
-                </Reveal>
+                </HomepageReveal>
               </section>
             ) : null;
           default:

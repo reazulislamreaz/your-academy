@@ -59,15 +59,9 @@ Docker Compose overrides `DATABASE_URL` host to `postgres` for `api` / `worker` 
 | `API_INTERNAL_URL` | yes | Backend origin for rewrite (`http://localhost:5000` or `http://api:5000` in Docker) |
 | `NEXT_PUBLIC_SOCKET_URL` | no | Socket.IO origin for support chat. **Leave empty** so the browser uses same-origin `/socket.io` (Next rewrite / Nginx → API) and sends HttpOnly auth + `support_guest_token` cookies. Set only if you intentionally connect straight to the API origin. |
 | `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | yes | Public cloud name only |
-| `NEXT_PUBLIC_SOCIAL_FACEBOOK_URL` | no | Footer Facebook profile URL |
-| `NEXT_PUBLIC_SOCIAL_INSTAGRAM_URL` | no | Footer Instagram profile URL |
-| `NEXT_PUBLIC_SOCIAL_YOUTUBE_URL` | no | Footer YouTube channel URL |
-| `NEXT_PUBLIC_SOCIAL_LINKEDIN_URL` | no | Footer LinkedIn page URL |
-| `NEXT_PUBLIC_SOCIAL_X_URL` | no | Footer X / Twitter profile URL |
-| `NEXT_PUBLIC_SOCIAL_WHATSAPP_URL` | no | Footer WhatsApp link (`https://wa.me/...`) |
-| `NEXT_PUBLIC_SOCIAL_TELEGRAM_URL` | no | Footer Telegram channel/profile URL |
-| `NEXT_PUBLIC_SOCIAL_TIKTOK_URL` | no | Footer TikTok profile URL |
 | `PORT` | no | Next listen port |
+
+Footer social URLs are **not** configured via env (DEC-046). Admins manage them at `/admin/social-links` (Postgres `social_links`).
 
 Support guest cookie reuses `COOKIE_SECURE` / `COOKIE_SAME_SITE` / `COOKIE_DOMAIN` (`support_guest_token`, HttpOnly).
 

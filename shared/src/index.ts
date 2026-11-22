@@ -4,4 +4,5 @@ export * from './exams';
 export * from './model-tests';
 export * from './homepage';
 export * from './homepage-layout';
+export * from './social-links';
 export * from './whatsapp';

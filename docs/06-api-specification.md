@@ -145,6 +145,12 @@ Scoped taxonomies (DEC-041): `PRELIMINARY` (default) vs `WRITTEN`. Unique `(scop
 | GET | `/public/written-question-sets/:id` | Written set metadata | Public | — |
 | GET | `/public/written-question-sets/:id/questions` | Written questions in upload order (modelAnswer, marks) | Public | — |
 | GET | `/public/homepage` | Published homepage CMS payload + hero image URL (DEC-038; Cache-Control max-age=60) | Public | — |
+| GET | `/public/social-links` | Enabled footer social links ordered by `sortOrder` (DEC-046) | Public | — |
+| GET | `/admin/social-links` | All social links (including disabled) | User | ADMIN |
+| POST | `/admin/social-links` | Create social link (unique platform) | User | ADMIN |
+| PATCH | `/admin/social-links/:id` | Update URL / label / enabled / sortOrder | User | ADMIN |
+| DELETE | `/admin/social-links/:id` | Delete social link | User | ADMIN |
+| PUT | `/admin/social-links/reorder` | Replace sort order (`orderedIds` must list every id) | User | ADMIN |
 | GET | `/admin/homepage` | Draft + published homepage CMS documents | User | ADMIN |
 | PUT | `/admin/homepage/draft` | Replace draft payload (+ optional `heroImageAssetId`); normalizes `layout.sections` + tiles | User | ADMIN |
 | POST | `/admin/homepage/publish` | Copy draft → published; snapshot `HomepageRevision`; invalidate public cache | User | ADMIN |

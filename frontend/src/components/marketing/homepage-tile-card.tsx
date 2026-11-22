@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ArrowUpRight } from 'lucide-react';
 import type { HomepageIconKey } from '@your-academy/shared';
 import { HomepageIcon } from '@/lib/homepage-icon-map';
 import { cn } from '@/lib/utils';
@@ -10,6 +11,7 @@ export type HomepageTileCardProps = {
   iconKey: HomepageIconKey;
   logoUrl?: string | null;
   className?: string;
+  tone?: 'preli' | 'written' | 'topic';
 };
 
 export function HomepageTileCard({
@@ -23,24 +25,32 @@ export function HomepageTileCard({
   return (
     <Link
       href={href}
+      data-hp-stagger
       className={cn(
-        'hp-tile motion-hover-lift ya-panel-shine relative group flex h-full min-h-[7.25rem] touch-manipulation flex-col items-center justify-center gap-2 overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] px-1.5 py-4 text-center shadow-[var(--shadow-sm)] transition-[border-color,box-shadow,transform] duration-[var(--duration-fast)] hover:border-[var(--highlight)]/50 sm:min-h-[8.5rem] sm:gap-2.5 sm:px-2 sm:py-5',
+        'hp-tile motion-hover-lift relative group flex h-full min-h-[6.75rem] touch-manipulation flex-col items-start justify-between gap-3 overflow-hidden rounded-2xl border border-[var(--hp-panel-border)] bg-[var(--bg-elevated)] px-3.5 py-3.5 text-left shadow-[var(--hp-shadow)] transition-[border-color,box-shadow,transform] duration-200 sm:min-h-[7.5rem] sm:px-4 sm:py-4',
         className,
       )}
     >
-      <span className="motion-icon-pop relative z-[1] flex h-12 w-12 items-center justify-center">
-        {logoUrl ? (
-          <img src={logoUrl} alt="" className="h-12 w-12 object-contain" />
-        ) : (
-          <HomepageIcon iconKey={iconKey} className="h-12 w-12" />
-        )}
+      <span className="relative z-[1] flex w-full items-start justify-between gap-2">
+        <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--hp-panel-border)] bg-[var(--bg-muted)] text-[var(--ink-soft)] transition-[border-color,background-color,color] duration-200 group-hover:border-[color-mix(in_srgb,var(--highlight)_22%,var(--line))] group-hover:bg-[var(--highlight-soft)] group-hover:text-[var(--highlight)]">
+          {logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- CMS Cloudinary URLs; sized explicitly for CLS
+            <img src={logoUrl} alt="" width={28} height={28} className="h-7 w-7 object-contain" />
+          ) : (
+            <HomepageIcon iconKey={iconKey} className="h-5 w-5" />
+          )}
+        </span>
+        <ArrowUpRight
+          className="h-3.5 w-3.5 text-[var(--muted)] opacity-0 transition-[opacity,transform,color] duration-200 group-hover:translate-x-0 group-hover:text-[var(--highlight)] group-hover:opacity-100"
+          aria-hidden
+        />
       </span>
-      <span className="relative z-[1]">
-        <span className="block font-display text-sm leading-snug font-bold tracking-tight text-[var(--ink)] sm:text-[15px]">
+      <span className="relative z-[1] min-w-0">
+        <span className="block truncate font-display text-sm leading-snug font-semibold tracking-tight text-[var(--ink)] sm:text-[0.9375rem]">
           {title}
         </span>
         {subtitle ? (
-          <span className="mt-0.5 block text-xs leading-snug text-[var(--muted-strong)]">
+          <span className="mt-0.5 line-clamp-2 block text-xs leading-snug text-[var(--muted-strong)]">
             {subtitle}
           </span>
         ) : null}
@@ -65,27 +75,32 @@ export function HomepageOthersTile({
   return (
     <Link
       href={href}
+      data-hp-stagger
       className={cn(
-        'motion-hover-lift ya-panel-shine relative group flex h-full min-h-[7.25rem] touch-manipulation flex-col items-center justify-center gap-2 overflow-hidden rounded-[var(--radius-lg)] border border-dashed border-[var(--highlight)]/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.55),transparent),color-mix(in_srgb,var(--highlight-soft)_55%,white)] px-1.5 py-4 text-center shadow-[var(--shadow-sm)] transition-[border-color,box-shadow,transform,background-color] duration-[var(--duration-fast)] hover:border-[var(--highlight)] hover:bg-[var(--highlight-soft)]/80 sm:min-h-[8.5rem] sm:gap-2.5 sm:px-2 sm:py-5',
+        'motion-hover-lift relative group flex h-full min-h-[6.75rem] touch-manipulation flex-col items-start justify-between gap-3 overflow-hidden rounded-2xl border border-dashed border-[var(--hp-panel-border)] bg-[color-mix(in_srgb,var(--bg-muted)_50%,var(--bg-elevated))] px-3.5 py-3.5 text-left transition-[border-color,background-color,transform] duration-200 hover:border-[color-mix(in_srgb,var(--highlight)_35%,var(--line))] hover:bg-[var(--highlight-soft)] sm:min-h-[7.5rem] sm:px-4 sm:py-4',
         className,
       )}
     >
-      <span className="motion-icon-pop relative z-[1] flex h-12 w-12 items-center justify-center">
+      <span className="relative z-[1] flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--hp-panel-border)] bg-[var(--bg-elevated)] text-[var(--ink-soft)]">
         {logoUrl ? (
-          <img src={logoUrl} alt="" className="h-12 w-12 object-contain" />
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={logoUrl} alt="" width={28} height={28} className="h-7 w-7 object-contain" />
         ) : iconKey !== 'gear' ? (
-          <HomepageIcon iconKey={iconKey} className="h-12 w-12" />
+          <HomepageIcon iconKey={iconKey} className="h-5 w-5" />
         ) : (
-          <span
-            className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--bg-elevated)] text-lg font-bold text-[var(--highlight)] shadow-[var(--shadow-sm)]"
-            aria-hidden
-          >
+          <span className="text-sm font-semibold tracking-widest text-[var(--muted)]" aria-hidden>
             ···
           </span>
         )}
       </span>
-      <span className="relative z-[1] font-display text-sm font-bold tracking-tight text-[var(--ink)] sm:text-[15px]">
-        {title}
+      <span className="relative z-[1] flex w-full items-center justify-between gap-2">
+        <span className="font-display text-sm font-semibold tracking-tight text-[var(--ink)] sm:text-[0.9375rem]">
+          {title}
+        </span>
+        <ArrowUpRight
+          className="h-3.5 w-3.5 text-[var(--muted)] transition-colors duration-200 group-hover:text-[var(--highlight)]"
+          aria-hidden
+        />
       </span>
     </Link>
   );

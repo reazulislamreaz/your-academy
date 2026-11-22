@@ -43,6 +43,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | DEC-043 | Model Test listing guide CMS (sidebar “কীভাবে দিবেন”) | CONFIRMED |
 | DEC-044 | Quiz listing guide CMS (sidebar “কুইজ কীভাবে দিবেন”) | CONFIRMED |
 | DEC-045 | Auth-aware public Quiz / Model Test start + result CTA | CONFIRMED |
+| DEC-046 | Admin-managed footer social media links (DB + CMS) | CONFIRMED |
 
 ---
 
@@ -384,9 +385,9 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Field | Value |
 |-------|-------|
 | Question | How should Bengali and English UI/educational text share a consistent type system? |
-| Decision | **Two-tier typography:** (1) **Anek Latin + Anek Bangla** for UI/brand (headings, nav, buttons, dashboards). (2) **Hind Siliguri** for educational Q&A (MCQ stems, options, answers, explanations, exam prose) — regular 400 / medium 500, reading line-height ~1.85. Loaded via `next/font`; CSS `--font-stack` vs `--font-reading-stack`. |
+| Decision | **Two-tier typography:** (1) **Anek Latin + Anek Bangla** for UI/brand (headings, nav, buttons, dashboards). (2) **Hind Siliguri** for educational Q&A (MCQ stems, options, answers, explanations, exam prose) — regular 400 / medium 500, reading line-height ~1.85. Loaded via `next/font`; CSS `--font-stack` vs `--font-reading-stack`. **Homepage exception (2026-11-22):** `.homepage-shell` uses **Plus Jakarta Sans** (`--font-marketing-latin`) + **Hind Siliguri** so Bengali digits (especially **১**) stay clear on marketing copy without changing learner/admin Anek stacks. |
 | Impact | `frontend/src/lib/fonts.ts`, `globals.css`, shared UI controls, MCQ/reading surfaces, `docs/21-design-system.md` |
-| Status | **CONFIRMED** (product request 2026-11-14; upgraded pairing same day) |
+| Status | **CONFIRMED** (product request 2026-11-14; upgraded pairing same day; homepage marketing stack exception 2026-11-22) |
 
 ### DEC-038 — Homepage CMS (draft + published)
 
@@ -477,6 +478,15 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Decision | **Yes (identical for Quiz + Model Test).** Optional `userId` on `ExamAttempt` / `ModelTestAttempt`. Submit endpoints use `OptionalJwtAuthGuard`; when authenticated, candidate name = account `User.name` and `userId` is set. Guests must enter a non-empty name (≥2). Result Overview hides the registration card when `useMe` has a session; guests see a soft-gradient CTA with **Register Now** + **Explore More Exams**, storing `sessionStorage` + `?next=` for return. After register, `POST /api/v1/me/timed-attempts/claim` links the attempt. `GET /api/v1/me/timed-attempts` powers `/results` history. |
 | Impact | Migration `20261121195000_timed_attempt_user_id`, MeTimedAttemptsController, player + result UI, register claim |
 | Status | **CONFIRMED** (product request 2026-11-21) |
+
+### DEC-046 — Admin-managed footer social media links
+
+| Field | Value |
+|-------|-------|
+| Question | Should footer social profile URLs be managed from the Admin Dashboard (add/edit/delete/enable) instead of `NEXT_PUBLIC_SOCIAL_*` env vars? |
+| Decision | **Yes.** Persist `SocialLink` rows (`platform` unique enum, `url`, optional `label`, `enabled`, `sortOrder`) in Postgres. Public `GET /api/v1/public/social-links` returns enabled links with non-empty URLs for the marketing footer. Admin CRUD at `/api/v1/admin/social-links` (+ reorder). Admin UI `/admin/social-links`. Platforms: Facebook, Instagram, YouTube, LinkedIn, X, WhatsApp, Telegram, TikTok. After mutations, Next `POST /api/revalidate/social-links` purges `social-links` tag so layouts refresh without code/env changes. Env-based footer socials are deprecated. |
+| Impact | Migration `20261122153000_social_links`, SocialLinksModule, admin page, marketing footer props |
+| Status | **CONFIRMED** (product request 2026-11-22) |
 
 ### Deferred / NEEDS APPROVAL (explicitly out of Phase 1)
 

@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import type { HomepagePayload } from '@your-academy/shared';
 import { Button } from '@/components/ui/button';
-import { Reveal } from '@/components/motion/reveal';
+import { HomepageReveal } from '@/components/marketing/homepage-gsap';
 
 type Props = {
   section: HomepagePayload['customSections'][number];
@@ -12,24 +12,20 @@ type Props = {
 export function HomepageCustomSection({ section }: Props) {
   if (!section.visible) return null;
   return (
-    <section className="scroll-mt-24 py-[var(--space-section)]">
-      <Reveal className="marketing-container max-w-3xl space-y-4">
+    <section className="hp-section">
+      <HomepageReveal className="marketing-container max-w-3xl space-y-4">
         <span className="hp-mark" aria-hidden />
-        <h2 className="hp-heading text-2xl sm:text-[2rem]">
-          {section.heading}
-        </h2>
-        <p className="hp-lede text-sm whitespace-pre-wrap sm:text-base">
-          {section.body}
-        </p>
+        <h2 className="hp-heading text-[1.5rem] sm:text-[1.85rem]">{section.heading}</h2>
+        <p className="hp-lede text-sm whitespace-pre-wrap sm:text-[0.975rem]">{section.body}</p>
         {section.cta.visible ? (
           <Link href={section.cta.href} className="inline-flex pt-1">
-            <Button className="rounded-full px-6 shadow-[0_10px_24px_-12px_rgba(227,30,36,0.45)] transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5">
+            <Button className="min-h-11 rounded-full px-6 font-semibold shadow-[0_10px_28px_-14px_rgba(227,30,36,0.35)]">
               {section.cta.label}
               <ArrowRight className="h-4 w-4" aria-hidden />
             </Button>
           </Link>
         ) : null}
-      </Reveal>
+      </HomepageReveal>
     </section>
   );
 }

@@ -3,7 +3,7 @@ const PORTFOLIO_URL = 'https://reazul-islam-reaz.vercel.app';
 /** Premium developer credit — portfolio opens in a new tab. */
 export function FooterDeveloperCredit() {
   return (
-    <p className="footer-dev-credit mt-3 text-xs leading-relaxed text-white/60 sm:text-[0.8125rem]">
+    <p className="footer-dev-credit text-xs leading-relaxed text-slate-400/95 sm:text-[0.8125rem]">
       Designed &amp; Developed by{' '}
       <a
         href={PORTFOLIO_URL}

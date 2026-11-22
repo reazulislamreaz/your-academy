@@ -25,6 +25,7 @@ import { QueueModule } from './queue/queue.module';
 import { QuestionsModule } from './questions/questions.module';
 import { StorageModule } from './storage/storage.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
+import { SocialLinksModule } from './social-links/social-links.module';
 import { SupportModule } from './support/support.module';
 import { UsersModule } from './users/users.module';
 
@@ -52,6 +53,7 @@ import { UsersModule } from './users/users.module';
     BookmarksModule,
     NewsModule,
     HomepageModule,
+    SocialLinksModule,
     DocumentsModule,
     ExamsModule,
     ModelTestsModule,

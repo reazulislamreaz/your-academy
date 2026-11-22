@@ -55,6 +55,18 @@ enum HomepageContentStatus {
   PUBLISHED
 }
 
+/// Footer social platforms managed from Admin (DEC-046).
+enum SocialPlatform {
+  FACEBOOK
+  INSTAGRAM
+  YOUTUBE
+  LINKEDIN
+  X
+  WHATSAPP
+  TELEGRAM
+  TIKTOK
+}
+
 enum MediaResourceType {
   IMAGE
   RAW
@@ -1334,6 +1346,23 @@ model TopicUploadBatch {
   @@index([childCategoryId])
   @@index([uploadedById, createdAt(sort: Desc)])
   @@map("topic_upload_batches")
+}
+
+/// Marketing footer social profiles — admin-managed URLs (DEC-046).
+model SocialLink {
+  id        String         @id @default(uuid()) @db.Uuid
+  platform  SocialPlatform
+  /// Optional display override; empty → platform default label.
+  label     String         @default("") @db.VarChar(80)
+  url       String         @db.VarChar(500)
+  enabled   Boolean        @default(true)
+  sortOrder Int            @default(0) @map("sort_order")
+  createdAt DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([platform])
+  @@index([enabled, sortOrder, id])
+  @@map("social_links")
 }
 
 /// Topic Base MCQ (8-column Excel). Always imported; duplicates / soft gaps allowed.

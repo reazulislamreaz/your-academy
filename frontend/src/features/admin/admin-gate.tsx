@@ -23,7 +23,8 @@ function AdminRouteBodySkeleton({ pathname }: { pathname: string }) {
     pathname.startsWith('/admin/written-bank-categories') ||
     pathname.startsWith('/admin/topic-categories') ||
     pathname.startsWith('/admin/categories') ||
-    pathname.startsWith('/admin/homepage')
+    pathname.startsWith('/admin/homepage') ||
+    pathname.startsWith('/admin/social-links')
   ) {
     return <AdminCategoriesPageSkeleton />;
   }

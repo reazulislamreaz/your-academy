@@ -35,7 +35,10 @@ erDiagram
   SupportMessage ||--o{ SupportAttachment : files
   SupportConversation ||--o{ SupportInternalNote : notes
   MediaAsset ||--o{ SupportAttachment : file
+  SocialLink
 ```
+
+`SocialLink` (DEC-046) stores admin-managed footer social profiles (`platform` unique, `url`, `enabled`, `sortOrder`). No FK relations — standalone CMS table.
 
 ## 2. Soft-Delete Strategy
 

@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import type { HomepagePayload } from '@your-academy/shared';
 import { Button } from '@/components/ui/button';
-import { Reveal } from '@/components/motion/reveal';
+import { HomepageReveal } from '@/components/marketing/homepage-gsap';
 
 type Props = {
   ctaBanner: HomepagePayload['ctaBanner'];
@@ -15,10 +15,10 @@ export function HomepageFinalCta({ ctaBanner }: Props) {
     <section
       id="get-started"
       aria-labelledby="final-cta-heading"
-      className="scroll-mt-24 pb-[var(--space-section)]"
+      className="hp-section"
     >
-      <Reveal className="marketing-container">
-        <div className="hp-cta-panel px-6 py-10 text-center text-white sm:px-10 sm:py-12">
+      <HomepageReveal className="marketing-container">
+        <div className="hp-cta-panel px-6 py-12 text-center text-white sm:px-12 sm:py-14">
           <div className="relative z-[1] mx-auto max-w-xl space-y-4">
             <h2
               id="final-cta-heading"
@@ -32,7 +32,7 @@ export function HomepageFinalCta({ ctaBanner }: Props) {
             <div className="flex flex-col items-stretch justify-center gap-3 pt-2 sm:flex-row sm:items-center">
               {ctaBanner.cta.visible ? (
                 <Link href={ctaBanner.cta.href}>
-                  <Button className="w-full rounded-full px-8 shadow-[0_12px_28px_-10px_rgba(227,30,36,0.55)] transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 sm:w-auto">
+                  <Button className="w-full rounded-full px-7 font-semibold sm:w-auto">
                     {ctaBanner.cta.label}
                     <ArrowRight className="h-4 w-4" aria-hidden />
                   </Button>
@@ -41,7 +41,7 @@ export function HomepageFinalCta({ ctaBanner }: Props) {
               <Link href="/preli-question-bank">
                 <Button
                   variant="outline"
-                  className="w-full rounded-full border-white/40 bg-white/6 px-8 text-white backdrop-blur-sm transition-[transform,background-color,border-color] duration-200 hover:-translate-y-0.5 hover:border-white/70 hover:bg-white/12 sm:w-auto"
+                  className="w-full rounded-full border-white/30 bg-transparent px-7 font-semibold text-white hover:border-white/55 hover:bg-white/8 sm:w-auto"
                 >
                   Explore Question Bank
                 </Button>
@@ -49,7 +49,7 @@ export function HomepageFinalCta({ ctaBanner }: Props) {
             </div>
           </div>
         </div>
-      </Reveal>
+      </HomepageReveal>
     </section>
   );
 }

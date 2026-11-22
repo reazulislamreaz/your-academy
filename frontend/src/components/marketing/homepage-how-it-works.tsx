@@ -1,8 +1,10 @@
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, BookOpenCheck, LayoutDashboard, UserPlus } from 'lucide-react';
 import { createDefaultExtendedSections, type HomepagePayload } from '@your-academy/shared';
 import { Button } from '@/components/ui/button';
-import { Reveal } from '@/components/motion/reveal';
+import { HomepageReveal } from '@/components/marketing/homepage-gsap';
+
+const STEP_ICONS = [BookOpenCheck, UserPlus, LayoutDashboard] as const;
 
 type Props = {
   content?: HomepagePayload['howItWorks'];
@@ -10,51 +12,77 @@ type Props = {
 
 export function HomepageHowItWorks({ content }: Props) {
   const data = content ?? createDefaultExtendedSections().howItWorks;
+
   return (
     <section
       id="how-it-works"
       aria-labelledby="how-heading"
-      className="scroll-mt-24 bg-[color-mix(in_srgb,var(--bg-elevated)_90%,transparent)] py-[var(--space-section)]"
+      className="hp-section hp-section-tone"
     >
-      <Reveal className="marketing-container space-y-6 sm:space-y-8">
-        <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
-          <div className="max-w-2xl space-y-2">
+      <HomepageReveal className="marketing-container space-y-10 md:space-y-12" staggerChildren>
+        <div
+          className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between sm:gap-8"
+          data-hp-stagger
+        >
+          <div className="max-w-xl space-y-3">
             <span className="hp-mark" aria-hidden />
             <h2
               id="how-heading"
-              className="hp-heading text-[1.375rem] sm:text-2xl md:text-[2rem]"
+              className="hp-heading text-[1.5rem] sm:text-2xl md:text-[1.9rem]"
             >
               {data.heading}
             </h2>
             {data.subtitle ? (
-              <p className="hp-lede text-sm sm:text-base">{data.subtitle}</p>
+              <p className="hp-lede text-sm sm:text-[0.975rem]">{data.subtitle}</p>
             ) : null}
           </div>
           {data.cta.visible ? (
-            <Link href={data.cta.href} className="w-full sm:w-auto">
-              <Button className="min-h-11 w-full rounded-full px-6 shadow-[0_10px_24px_-12px_rgba(227,30,36,0.45)] transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 sm:w-auto">
+            <Link href={data.cta.href} className="w-full shrink-0 sm:w-auto">
+              <Button className="group min-h-11 w-full rounded-full px-6 font-semibold shadow-[0_10px_28px_-14px_rgba(227,30,36,0.4)] sm:w-auto">
                 {data.cta.label}
-                <ArrowRight className="h-4 w-4" aria-hidden />
+                <ArrowRight
+                  className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5"
+                  aria-hidden
+                />
               </Button>
             </Link>
           ) : null}
         </div>
 
-        <ol className="motion-stagger grid gap-3 sm:gap-4 md:grid-cols-3">
-          {data.steps.map((item) => (
-            <li
-              key={`${item.step}-${item.title}`}
-              className="hp-step p-4 sm:p-5 md:p-6"
-            >
-              <span className="font-display text-3xl font-extrabold tracking-tight text-[var(--highlight)]/30">
-                {item.step}
-              </span>
-              <h3 className="mt-2 font-display text-lg font-bold text-[var(--ink)]">{item.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-[var(--muted-strong)]">{item.body}</p>
-            </li>
-          ))}
+        <ol className="relative grid gap-4 md:grid-cols-3 md:gap-5">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute top-[2.15rem] right-[8%] left-[8%] hidden h-px bg-[color-mix(in_srgb,var(--hp-panel-border)_90%,var(--ink))] md:block"
+          />
+
+          {data.steps.map((item, index) => {
+            const Icon = STEP_ICONS[index] ?? BookOpenCheck;
+            const stepLabel = item.step || String(index + 1).padStart(2, '0');
+
+            return (
+              <li key={`${item.step}-${item.title}`} data-hp-stagger className="relative min-w-0">
+                <article className="group flex h-full flex-col rounded-2xl border border-[var(--hp-panel-border)] bg-[var(--bg-elevated)] p-5 shadow-[var(--hp-shadow)] ring-1 ring-black/[0.03] transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--ink)_12%,var(--line))] hover:shadow-[var(--hp-shadow-hover)] sm:p-6">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="relative z-[1] inline-flex h-11 w-11 items-center justify-center rounded-xl border border-[var(--hp-panel-border)] bg-[var(--bg-muted)] text-[var(--ink-soft)] transition-[border-color,background-color,color] duration-200 group-hover:border-[color-mix(in_srgb,var(--highlight)_22%,var(--line))] group-hover:bg-[var(--highlight-soft)] group-hover:text-[var(--highlight)]">
+                      <Icon className="h-5 w-5" aria-hidden />
+                    </span>
+                    <span className="font-display text-[0.75rem] font-semibold tracking-[0.08em] text-[var(--highlight)] tabular-nums">
+                      {stepLabel}
+                    </span>
+                  </div>
+
+                  <h3 className="mt-5 font-display text-[1.05rem] font-semibold tracking-tight text-[var(--ink)] sm:text-lg">
+                    {item.title}
+                  </h3>
+                  <p className="mt-2 flex-1 text-sm leading-relaxed text-pretty text-[var(--muted-strong)]">
+                    {item.body}
+                  </p>
+                </article>
+              </li>
+            );
+          })}
         </ol>
-      </Reveal>
+      </HomepageReveal>
     </section>
   );
 }
