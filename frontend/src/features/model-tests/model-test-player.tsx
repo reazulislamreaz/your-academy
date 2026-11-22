@@ -22,12 +22,15 @@ import { ModelTestSubmitDialog } from './model-test-submit-dialog';
 
 type Props = {
   modelTest: PublicModelTestDetail;
+  /** Take/result URL prefix. Marketing: `/model-test`; learner: `/live-model-tests`. */
+  basePath?: string;
 };
 
 const BN_LABELS = ['ক', 'খ', 'গ', 'ঘ'] as const;
 
-export function ModelTestPlayer({ modelTest }: Props) {
+export function ModelTestPlayer({ modelTest, basePath = '/model-test' }: Props) {
   const router = useRouter();
+  const takeBase = basePath.replace(/\/$/, '') || '/model-test';
   const { accountName, canAutoStart, shouldPromptName } = useTimedExamCandidate();
   const [hydrated, setHydrated] = useState(false);
   const [userName, setUserName] = useState<string | null>(null);
@@ -105,7 +108,7 @@ export function ModelTestPlayer({ modelTest }: Props) {
           timedOut,
         });
         clearModelTestSession(modelTest.id);
-        router.push(`/model-test/${modelTest.slug}/result/${result.attemptId}`);
+        router.push(`${takeBase}/${modelTest.slug}/result/${result.attemptId}`);
       } catch (err) {
         submittingRef.current = false;
         setSubmitting(false);
@@ -114,7 +117,7 @@ export function ModelTestPlayer({ modelTest }: Props) {
         );
       }
     },
-    [modelTest.id, modelTest.slug, router],
+    [modelTest.id, modelTest.slug, router, takeBase],
   );
 
   const { display, remainingSeconds, elapsedSeconds, isExpired } = useExamCountdown({

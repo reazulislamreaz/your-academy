@@ -97,7 +97,7 @@ function AppHeaderInner() {
 
   return (
     <header
-      className="ya-glass sticky top-0 z-30 flex min-h-[var(--header-h,3.75rem)] shrink-0 items-center gap-2 border-b border-[var(--glass-border)] bg-[var(--glass-bg)] px-3 pt-[env(safe-area-inset-top,0px)] sm:min-h-[var(--header-h,4.25rem)] sm:gap-3 sm:px-5 lg:px-6"
+      className="ya-glass sticky top-0 z-30 flex min-h-[var(--header-h,3.75rem)] shrink-0 items-center gap-2 border-b border-[var(--glass-border)] bg-[var(--glass-bg)] px-3.5 pt-[env(safe-area-inset-top,0px)] sm:min-h-[var(--header-h,4.25rem)] sm:gap-3 sm:px-5 lg:px-6"
       style={{ boxShadow: 'var(--shadow-header)' } as CSSProperties}
     >
       <div className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
@@ -110,7 +110,7 @@ function AppHeaderInner() {
         {/* Desktop brand lives in the sidebar — keep header lean */}
       </div>
 
-      <div className="ml-auto flex min-w-0 flex-1 items-center justify-end gap-1 sm:gap-2 md:gap-2.5">
+      <div className="ml-auto flex min-w-0 flex-1 items-center justify-end gap-1.5 sm:gap-2 md:gap-2.5">
         <Link
           href="/bookmarks"
           aria-label="Saved MCQs"

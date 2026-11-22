@@ -28,26 +28,28 @@ export function MetricTile({ label, value, suffix, icon: Icon, tone = 'navy', cl
   return (
     <div
       className={cn(
-        'motion-hover-lift ya-panel-shine relative flex min-w-0 items-center gap-3 overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] p-3.5 shadow-[var(--shadow-sm)] sm:p-4',
+        'motion-hover-lift ya-panel-shine relative flex min-w-0 items-start gap-2.5 overflow-x-clip rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] p-3 shadow-[var(--shadow-sm)] sm:items-center sm:gap-3 sm:p-4',
         className,
       )}
     >
       <div
         className={cn(
-          'relative z-[1] flex size-10 shrink-0 items-center justify-center rounded-[var(--radius)] sm:size-11',
+          'relative z-[1] mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-[var(--radius)] sm:mt-0 sm:size-11',
           t.bg,
         )}
       >
         <Icon className={cn('size-4 sm:size-5', t.icon)} aria-hidden strokeWidth={1.75} />
       </div>
-      <div className="relative z-[1] min-w-0">
-        <p className="font-display text-xl font-bold tabular-nums text-[var(--ink)] sm:text-2xl">
+      <div className="relative z-[1] min-w-0 flex-1">
+        <p className="font-display text-lg font-bold tabular-nums leading-tight text-[var(--ink)] sm:text-2xl">
           {value}
           {suffix ? (
             <span className="text-sm font-semibold text-[var(--muted)]">{suffix}</span>
           ) : null}
         </p>
-        <p className="truncate text-xs font-medium text-[var(--muted)] sm:text-sm">{label}</p>
+        <p className="mt-0.5 text-[0.7rem] leading-snug font-medium text-pretty hyphens-auto break-words text-[var(--muted)] sm:text-sm">
+          {label}
+        </p>
       </div>
     </div>
   );

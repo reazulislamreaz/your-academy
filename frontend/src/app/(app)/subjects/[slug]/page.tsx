@@ -78,8 +78,8 @@ export default function SubjectDetailPage() {
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
             {subject.children.map((topic) => (
-              <Surface key={topic.id} elevated className="flex flex-col gap-3 p-4">
-                <h3 className="font-medium text-[var(--ink)]">{topic.name}</h3>
+              <Surface key={topic.id} elevated className="flex flex-col gap-3 overflow-x-clip p-3.5 sm:p-4">
+                <h3 className="break-words font-medium text-[var(--ink)]">{topic.name}</h3>
                 <div className="mt-auto grid grid-cols-2 gap-2">
                   <Link
                     href={`/questions?categoryId=${subject.id}&subcategoryId=${topic.id}`}

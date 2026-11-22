@@ -30,7 +30,8 @@ export function AppMain({ children }: Props) {
         'mx-auto w-full min-w-0 flex-1 overflow-x-clip',
         immersive
           ? 'flex max-w-none flex-col px-0 py-0 pb-[env(safe-area-inset-bottom,0px)]'
-          : 'max-w-[var(--app-content-max,72rem)] px-3 py-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:px-5 sm:py-6 md:px-6 lg:px-8 lg:py-7',
+          : // Extra bottom pad on mobile clears the support FAB; wider gutters reduce edge crowding.
+            'max-w-[var(--app-content-max,72rem)] px-3.5 py-4 pb-[max(5.5rem,calc(env(safe-area-inset-bottom)+4.5rem))] sm:px-5 sm:py-6 sm:pb-[max(2rem,env(safe-area-inset-bottom))] md:px-6 lg:px-8 lg:py-7',
       )}
     >
       {immersive ? children : <PageShell>{children}</PageShell>}

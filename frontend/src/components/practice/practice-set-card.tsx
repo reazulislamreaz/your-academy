@@ -10,20 +10,22 @@ export function PracticeSetCard({ set }: { set: PracticeSetListItem }) {
     set.durationSeconds != null ? Math.max(1, Math.round(set.durationSeconds / 60)) : null;
 
   return (
-    <Surface elevated interactive className="p-4 hover:border-[var(--highlight)]/35">
+    <Surface elevated interactive className="overflow-x-clip p-3.5 hover:border-[var(--highlight)]/35 sm:p-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0 space-y-1">
           <div className="flex flex-wrap gap-1.5">
             <Badge variant="highlight">{practiceKindLabel(set.kind)}</Badge>
             {set.examTag ? <Badge variant="outline">{examLabel(set.examTag)}</Badge> : null}
           </div>
-          <h3 className="font-display text-base font-semibold text-[var(--ink)]">
+          <h3 className="break-words font-display text-base font-semibold text-[var(--ink)]">
             <Link href={`/practice/${set.slug}`} className="hover:text-[var(--highlight)]">
               {set.title}
             </Link>
           </h3>
           {set.description ? (
-            <p className="line-clamp-2 text-sm leading-relaxed text-[var(--muted-strong)]">{set.description}</p>
+            <p className="line-clamp-2 break-words text-sm leading-relaxed text-[var(--muted-strong)]">
+              {set.description}
+            </p>
           ) : null}
         </div>
       </div>

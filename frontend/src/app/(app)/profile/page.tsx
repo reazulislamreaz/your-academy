@@ -190,7 +190,7 @@ export default function ProfilePage() {
         onConfirm={() => logout.mutate()}
       />
 
-      <Surface elevated className="space-y-4 border-l-[3px] border-l-[var(--highlight)] p-5 sm:p-6">
+      <Surface elevated className="space-y-4 overflow-x-clip border-l-[3px] border-l-[var(--highlight)] p-3.5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex min-w-0 items-start gap-3">
             <UserAvatar

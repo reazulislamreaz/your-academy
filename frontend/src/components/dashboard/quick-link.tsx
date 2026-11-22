@@ -16,7 +16,7 @@ export function QuickLink({ href, title, description, icon: Icon, className }: P
     <Link
       href={href}
       className={cn(
-        'motion-hover-lift ya-panel-shine group flex items-start gap-3 overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] p-3.5 shadow-[var(--shadow-sm)] sm:p-4',
+        'motion-hover-lift ya-panel-shine group flex items-start gap-3 overflow-x-clip rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] p-3.5 shadow-[var(--shadow-sm)] sm:p-4',
         className,
       )}
     >
@@ -25,7 +25,7 @@ export function QuickLink({ href, title, description, icon: Icon, className }: P
       </span>
       <span className="relative z-[1] min-w-0 flex-1">
         <span className="flex items-center justify-between gap-2">
-          <span className="font-display text-sm font-bold tracking-tight text-[var(--ink)]">
+          <span className="font-display text-sm font-bold tracking-tight break-words text-[var(--ink)]">
             {title}
           </span>
           <ArrowRight
@@ -33,7 +33,7 @@ export function QuickLink({ href, title, description, icon: Icon, className }: P
             aria-hidden
           />
         </span>
-        <span className="mt-1 block text-xs leading-relaxed text-[var(--muted-strong)] sm:text-sm">
+        <span className="mt-1 block text-pretty break-words text-xs leading-relaxed text-[var(--muted-strong)] sm:text-sm">
           {description}
         </span>
       </span>

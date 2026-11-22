@@ -41,20 +41,22 @@ export function LearnerSection({
   return (
     <section className={cn('min-w-0 space-y-3 sm:space-y-4', className)}>
       {title || actions ? (
-        <div className="flex flex-wrap items-end justify-between gap-2 sm:gap-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-3">
           <div className="min-w-0">
             {title ? (
-              <h2 className="font-display text-base font-semibold tracking-tight text-[var(--ink)] sm:text-[1.0625rem]">
+              <h2 className="font-display text-base font-semibold tracking-tight break-words text-[var(--ink)] sm:text-[1.0625rem]">
                 {title}
               </h2>
             ) : null}
             {description ? (
-              <p className="mt-1 max-w-2xl text-sm leading-relaxed text-[var(--muted)]">
+              <p className="mt-1 max-w-2xl text-pretty break-words text-sm leading-relaxed text-[var(--muted)]">
                 {description}
               </p>
             ) : null}
           </div>
-          {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+          {actions ? (
+            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">{actions}</div>
+          ) : null}
         </div>
       ) : null}
       {children}

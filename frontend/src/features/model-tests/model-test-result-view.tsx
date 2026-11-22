@@ -11,16 +11,19 @@ import { cn } from '@/lib/utils';
 
 type Props = {
   result: ModelTestAttemptResult;
+  /** Listing + result URL prefix (default marketing `/model-test`). */
+  basePath?: string;
 };
 
-export function ModelTestResultView({ result }: Props) {
+export function ModelTestResultView({ result, basePath = '/model-test' }: Props) {
   const me = useMe();
   const isGuest = !me.data && !me.isLoading;
   const [showSheet, setShowSheet] = useState(true);
   const circumference = 2 * Math.PI * 54;
   const progress = Math.min(100, Math.max(0, result.percent));
   const dash = (progress / 100) * circumference;
-  const resultPath = `/model-test/${encodeURIComponent(result.modelTest.slug)}/result/${encodeURIComponent(result.attemptId)}`;
+  const takeBase = basePath.replace(/\/$/, '') || '/model-test';
+  const resultPath = `${takeBase}/${encodeURIComponent(result.modelTest.slug)}/result/${encodeURIComponent(result.attemptId)}`;
 
   useEffect(() => {
     if (!isGuest) return;
@@ -185,8 +188,8 @@ export function ModelTestResultView({ result }: Props) {
         </section>
       ) : null}
 
-      <section className="mt-6 flex flex-col gap-2.5 sm:mt-8 sm:flex-row">
-        <Link href="/model-test" className="w-full sm:w-auto">
+      <section className="mt-6 flex flex-col gap-2.5 sm:mt-8 sm:flex-row sm:flex-wrap">
+        <Link href={takeBase} className="w-full sm:w-auto">
           <Button variant="outline" className="h-11 w-full sm:h-10 sm:w-auto">
             More Model Tests
           </Button>
@@ -196,6 +199,18 @@ export function ModelTestResultView({ result }: Props) {
             Explore Quizzes
           </Button>
         </Link>
+        <Link href="/" className="w-full sm:w-auto">
+          <Button variant="soft" className="h-11 w-full sm:h-10 sm:w-auto">
+            Browse website
+          </Button>
+        </Link>
+        {!isGuest ? (
+          <Link href="/home" className="w-full sm:w-auto">
+            <Button variant="ghost" className="h-11 w-full sm:h-10 sm:w-auto">
+              Dashboard
+            </Button>
+          </Link>
+        ) : null}
       </section>
     </div>
   );

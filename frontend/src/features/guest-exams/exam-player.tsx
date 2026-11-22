@@ -20,10 +20,13 @@ import { useTimedExamCandidate } from './use-timed-exam-candidate';
 
 type Props = {
   exam: PublicExamDetail;
+  /** Take/result URL prefix. Marketing: `/exams`; learner: `/live-quizzes`. */
+  basePath?: string;
 };
 
-export function GuestExamPlayer({ exam }: Props) {
+export function GuestExamPlayer({ exam, basePath = '/exams' }: Props) {
   const router = useRouter();
+  const takeBase = basePath.replace(/\/$/, '') || '/exams';
   const { accountName, canAutoStart, shouldPromptName } = useTimedExamCandidate();
   const [hydrated, setHydrated] = useState(false);
   const [userName, setUserName] = useState<string | null>(null);
@@ -99,14 +102,14 @@ export function GuestExamPlayer({ exam }: Props) {
           timedOut,
         });
         clearGuestExamSession(exam.id);
-        router.push(`/exams/${exam.slug}/result/${result.attemptId}`);
+        router.push(`${takeBase}/${exam.slug}/result/${result.attemptId}`);
       } catch (err) {
         submittingRef.current = false;
         setSubmitting(false);
         setError(err instanceof ApiError ? err.message : 'Could not submit exam. Please try again.');
       }
     },
-    [exam.id, exam.slug, router],
+    [exam.id, exam.slug, router, takeBase],
   );
 
   const { display, remainingSeconds, elapsedSeconds, isExpired } = useExamCountdown({

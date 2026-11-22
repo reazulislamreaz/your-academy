@@ -34,7 +34,7 @@ function Stat({
 }) {
   return (
     <div className="min-w-0">
-      <p className="truncate text-[0.6875rem] text-[var(--muted)] sm:text-xs">{label}</p>
+      <p className="text-pretty break-words text-[0.6875rem] text-[var(--muted)] sm:text-xs">{label}</p>
       <p className={cn('font-display text-lg font-bold tabular-nums sm:text-2xl', tone)}>{value}</p>
     </div>
   );
@@ -86,7 +86,7 @@ export default function ResultDetailPage() {
         description="Score summary and answer-by-answer analysis."
       />
 
-      <Surface elevated className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-4 sm:gap-4 sm:p-5">
+      <Surface elevated className="grid grid-cols-2 gap-3 overflow-x-clip p-3.5 sm:grid-cols-4 sm:gap-4 sm:p-5">
         <Stat
           label="Marks"
           value={`${data.score ?? 0}/${data.maxScore ?? 0}`}
@@ -110,7 +110,7 @@ export default function ResultDetailPage() {
         </div>
       </Surface>
 
-      <Surface elevated className="grid grid-cols-3 gap-3 p-4 sm:grid-cols-6 sm:gap-4 sm:p-5">
+      <Surface elevated className="grid grid-cols-3 gap-2.5 overflow-x-clip p-3.5 sm:grid-cols-6 sm:gap-4 sm:p-5">
         <Stat label="Questions" value={total} />
         <Stat label="Attempted" value={attempted} />
         <Stat label="Skipped" value={unanswered} />

@@ -104,7 +104,7 @@ export default function ResultsPage() {
                       {attempt.kind === 'model-test' ? 'Model Test' : 'Quiz'}
                     </Badge>
                   </div>
-                  <h3 className="font-display text-[0.95rem] font-semibold tracking-tight text-[var(--ink)] sm:text-base">
+                  <h3 className="break-words font-display text-[0.95rem] font-semibold tracking-tight text-[var(--ink)] sm:text-base">
                     {attempt.title}
                   </h3>
                   <p className="text-xs text-[var(--muted)]">
@@ -149,7 +149,7 @@ export default function ResultsPage() {
                       <Badge variant="outline">{attempt.status}</Badge>
                     )}
                   </div>
-                  <h3 className="font-display text-[0.95rem] font-semibold tracking-tight text-[var(--ink)] sm:text-base">
+                  <h3 className="break-words font-display text-[0.95rem] font-semibold tracking-tight text-[var(--ink)] sm:text-base">
                     {attempt.practiceSet.title}
                   </h3>
                   <p className="text-xs text-[var(--muted)]">

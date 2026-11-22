@@ -23,7 +23,7 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'motion-fade-in flex w-full flex-col gap-3 px-6 py-10',
+        'motion-fade-in flex w-full min-w-0 flex-col gap-3 px-3.5 py-8 sm:px-6 sm:py-10',
         nested
           ? 'rounded-[var(--radius)] bg-[var(--bg-desk)]/70'
           : 'rounded-[var(--radius-lg)] border border-dashed border-[var(--line-strong)] bg-[var(--bg-elevated)] shadow-[var(--shadow-sm)]',
@@ -31,9 +31,13 @@ export function EmptyState({
         className,
       )}
     >
-      <h3 className="font-display text-lg font-semibold text-[var(--ink)]">{title}</h3>
+      <h3 className="font-display text-base font-semibold break-words text-[var(--ink)] sm:text-lg">
+        {title}
+      </h3>
       {description ? (
-        <p className="max-w-md text-sm leading-relaxed text-[var(--muted-strong)]">{description}</p>
+        <p className="max-w-md text-pretty break-words text-sm leading-relaxed text-[var(--muted-strong)]">
+          {description}
+        </p>
       ) : null}
       {action ? (
         <div className={cn('flex flex-wrap gap-2', align === 'center' && 'justify-center')}>

@@ -18,7 +18,15 @@ import { cn } from '@/lib/utils';
 
 const PAGE_SIZE = 12;
 
-export function QuizListing() {
+type Props = {
+  /** Start-link prefix. Marketing `/exams`; learner `/live-quizzes`. */
+  basePath?: string;
+  /** Hide marketing page chrome when nested under learner `PageHeader`. */
+  embedded?: boolean;
+};
+
+export function QuizListing({ basePath = '/exams', embedded = false }: Props) {
+  const takeBase = basePath.replace(/\/$/, '') || '/exams';
   const [q, setQ] = useState('');
   const debouncedQ = useDebouncedValue(q.trim(), 300);
 
@@ -44,14 +52,26 @@ export function QuizListing() {
   const guideConfig = resolveGuide(guide.data);
 
   return (
-    <div className="marketing-container w-full overflow-x-clip py-7 sm:py-10">
-      <header className="min-w-0">
-        <h1 className="font-display text-[1.75rem] font-bold tracking-tight text-[var(--ink)] sm:text-3xl">
-          Quiz
-        </h1>
-      </header>
+    <div
+      className={cn(
+        'w-full overflow-x-clip',
+        embedded ? '' : 'marketing-container py-7 sm:py-10',
+      )}
+    >
+      {embedded ? null : (
+        <header className="min-w-0">
+          <h1 className="font-display text-[1.75rem] font-bold tracking-tight text-[var(--ink)] sm:text-3xl">
+            Quiz
+          </h1>
+        </header>
+      )}
 
-      <div className="mt-6 grid w-full gap-4 lg:mt-8 lg:grid-cols-[minmax(0,1fr)_17.5rem] lg:items-start lg:gap-6 xl:grid-cols-[minmax(0,1fr)_18.5rem]">
+      <div
+        className={cn(
+          'grid w-full gap-4 lg:grid-cols-[minmax(0,1fr)_17.5rem] lg:items-start lg:gap-6 xl:grid-cols-[minmax(0,1fr)_18.5rem]',
+          embedded ? 'mt-0' : 'mt-6 lg:mt-8',
+        )}
+      >
         <div className="min-w-0 space-y-4">
           <div
             className={cn(
@@ -91,7 +111,7 @@ export function QuizListing() {
                       )}
                     >
                       <Link
-                        href={`/exams/${exam.slug}`}
+                        href={`${takeBase}/${exam.slug}`}
                         className="min-w-0 font-display text-sm font-bold leading-snug tracking-tight break-words text-[var(--ink)] hover:text-[var(--accent)]"
                       >
                         {exam.title}
@@ -107,7 +127,7 @@ export function QuizListing() {
                         </span>
                       </div>
                       <div className="mt-auto pt-2.5">
-                        <Link href={`/exams/${exam.slug}`} className="block">
+                        <Link href={`${takeBase}/${exam.slug}`} className="block">
                           <Button
                             size="sm"
                             className="min-h-11 w-full sm:min-h-9 sm:w-auto sm:px-3.5"

@@ -27,13 +27,13 @@ export function RecommendedExams({ practiceSets, publicExams, loading }: Props) 
   const empty = !loading && sets.length === 0 && guests.length === 0;
 
   return (
-    <Surface elevated className="space-y-4 p-4 sm:p-5">
-      <div className="flex flex-wrap items-end justify-between gap-2">
-        <div>
+    <Surface elevated className="space-y-4 overflow-x-clip p-3.5 sm:p-5">
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
+        <div className="min-w-0">
           <h2 className="font-display text-base font-bold tracking-tight text-[var(--ink)] sm:text-lg">
             Recommended exams
           </h2>
-          <p className="mt-0.5 text-sm text-[var(--muted)]">
+          <p className="mt-0.5 text-sm text-pretty text-[var(--muted)]">
             Jump into the newest published sets
           </p>
         </div>

@@ -155,7 +155,7 @@ export function SupportWidget({
 
   return (
     <div className={cn('pointer-events-none fixed inset-x-0 bottom-0 z-50', className)}>
-      <div className="pointer-events-auto absolute right-4 bottom-4 flex flex-col items-end gap-3 sm:right-6 sm:bottom-6">
+      <div className="pointer-events-auto absolute right-3.5 bottom-[max(1rem,env(safe-area-inset-bottom))] flex flex-col items-end gap-3 sm:right-6 sm:bottom-6">
         {open ? (
           <div className="flex h-[min(32rem,calc(100vh-6rem))] w-[min(24rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-[1.25rem] border border-[var(--line)] bg-[var(--bg-elevated)] shadow-[var(--shadow-lg)]">
             {booting ? (

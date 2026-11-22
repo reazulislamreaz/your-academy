@@ -16,6 +16,8 @@ export const LEARNER_APP_PREFIXES = [
   '/quizzes',
   '/daily-quiz',
   '/model-tests',
+  '/live-model-tests',
+  '/live-quizzes',
   '/exam-tracks',
   '/previous-year',
 ] as const;

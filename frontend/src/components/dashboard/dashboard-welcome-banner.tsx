@@ -45,15 +45,18 @@ export function DashboardWelcomeBanner({
           </p>
           <p className="text-sm leading-relaxed text-[var(--muted)]">{progressLine}</p>
         </div>
-        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:shrink-0">
-          <Link href={primaryHref} className="min-w-0">
-            <Button className="motion-press h-11 w-full px-3 sm:h-10 sm:w-auto sm:px-5">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:shrink-0 sm:flex-row">
+          <Link href={primaryHref} className="min-w-0 sm:flex-none">
+            <Button className="motion-press h-11 w-full whitespace-nowrap px-4 text-sm sm:h-10 sm:w-auto sm:px-5">
               {primaryLabel}
-              <ArrowRight className="size-4" aria-hidden />
+              <ArrowRight className="size-4 shrink-0" aria-hidden />
             </Button>
           </Link>
-          <Link href="/exams" className="min-w-0">
-            <Button variant="outline" className="motion-press h-11 w-full px-3 sm:h-10 sm:w-auto sm:px-5">
+          <Link href="/exams" className="min-w-0 sm:flex-none">
+            <Button
+              variant="outline"
+              className="motion-press h-11 w-full whitespace-nowrap px-4 text-sm sm:h-10 sm:w-auto sm:px-5"
+            >
               Live exams
             </Button>
           </Link>

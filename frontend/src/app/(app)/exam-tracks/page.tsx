@@ -17,7 +17,7 @@ export default function ExamTracksPage() {
       />
       <div className="motion-stagger grid gap-3 sm:grid-cols-2">
         {EXAM_TRACKS.map((track) => (
-          <Surface key={track.tag} elevated className="flex flex-col gap-4 p-4 sm:p-5">
+          <Surface key={track.tag} elevated className="flex flex-col gap-4 overflow-x-clip p-3.5 sm:p-5">
             <h2 className="font-display text-base font-semibold tracking-tight text-[var(--ink)]">
               {track.label}
             </h2>

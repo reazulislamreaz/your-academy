@@ -28,7 +28,15 @@ const filterSelectClass =
 
 const PAGE_SIZE = 12;
 
-export function ModelTestListing() {
+type Props = {
+  /** Start-link prefix. Marketing `/model-test`; learner `/live-model-tests`. */
+  basePath?: string;
+  /** Hide marketing page chrome when nested under learner `PageHeader`. */
+  embedded?: boolean;
+};
+
+export function ModelTestListing({ basePath = '/model-test', embedded = false }: Props) {
+  const takeBase = basePath.replace(/\/$/, '') || '/model-test';
   const [q, setQ] = useState('');
   const [year, setYear] = useState('');
   const [categoryId, setCategoryId] = useState('');
@@ -72,14 +80,26 @@ export function ModelTestListing() {
   const guideConfig = resolveGuide(guide.data);
 
   return (
-    <div className="marketing-container w-full overflow-x-clip py-7 sm:py-10">
-      <header className="min-w-0">
-        <h1 className="font-display text-[1.75rem] font-bold tracking-tight text-[var(--ink)] sm:text-3xl">
-          Model Test
-        </h1>
-      </header>
+    <div
+      className={cn(
+        'w-full overflow-x-clip',
+        embedded ? '' : 'marketing-container py-7 sm:py-10',
+      )}
+    >
+      {embedded ? null : (
+        <header className="min-w-0">
+          <h1 className="font-display text-[1.75rem] font-bold tracking-tight text-[var(--ink)] sm:text-3xl">
+            Model Test
+          </h1>
+        </header>
+      )}
 
-      <div className="mt-6 grid w-full gap-4 lg:mt-8 lg:grid-cols-[minmax(0,1fr)_17.5rem] lg:items-start lg:gap-6 xl:grid-cols-[minmax(0,1fr)_18.5rem]">
+      <div
+        className={cn(
+          'grid w-full gap-4 lg:grid-cols-[minmax(0,1fr)_17.5rem] lg:items-start lg:gap-6 xl:grid-cols-[minmax(0,1fr)_18.5rem]',
+          embedded ? 'mt-0' : 'mt-6 lg:mt-8',
+        )}
+      >
         <div className="min-w-0 space-y-4">
           <div
             className={cn(
@@ -171,7 +191,7 @@ export function ModelTestListing() {
                     >
                       <div className="flex items-start justify-between gap-2">
                         <Link
-                          href={`/model-test/${item.slug}`}
+                          href={`${takeBase}/${item.slug}`}
                           className="min-w-0 font-display text-sm font-bold leading-snug tracking-tight break-words text-[var(--ink)] hover:text-[var(--accent)]"
                         >
                           {item.title}
@@ -200,7 +220,7 @@ export function ModelTestListing() {
                         </span>
                       </div>
                       <div className="mt-auto pt-2.5">
-                        <Link href={`/model-test/${item.slug}`} className="block">
+                        <Link href={`${takeBase}/${item.slug}`} className="block">
                           <Button
                             size="sm"
                             className="min-h-11 w-full sm:min-h-9 sm:w-auto sm:px-3.5"

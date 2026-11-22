@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import type { ExamAttemptResult } from '@your-academy/shared';
 import { Button } from '@/components/ui/button';
@@ -10,16 +11,19 @@ import { cn } from '@/lib/utils';
 
 type Props = {
   result: ExamAttemptResult;
+  /** Listing + result URL prefix (default marketing `/exams`). */
+  basePath?: string;
 };
 
-export function ExamResultView({ result }: Props) {
+export function ExamResultView({ result, basePath = '/exams' }: Props) {
   const me = useMe();
   const isGuest = !me.data && !me.isLoading;
   const [showSheet, setShowSheet] = useState(false);
   const circumference = 2 * Math.PI * 54;
   const progress = Math.min(100, Math.max(0, result.percent));
   const dash = (progress / 100) * circumference;
-  const resultPath = `/exams/${encodeURIComponent(result.exam.slug)}/result/${encodeURIComponent(result.attemptId)}`;
+  const takeBase = basePath.replace(/\/$/, '') || '/exams';
+  const resultPath = `${takeBase}/${encodeURIComponent(result.exam.slug)}/result/${encodeURIComponent(result.attemptId)}`;
 
   // Persist guest pointer as soon as the result loads so register (any entry) can claim it.
   useEffect(() => {
@@ -130,6 +134,31 @@ export function ExamResultView({ result }: Props) {
           {showSheet ? 'Hide answer sheet preview' : 'Show answer sheet preview'}
         </Button>
       </div>
+
+      <section className="mt-4 flex flex-col gap-2.5 sm:mt-6 sm:flex-row sm:flex-wrap">
+        <Link href={takeBase} className="w-full sm:w-auto">
+          <Button variant="outline" className="h-11 w-full sm:h-10 sm:w-auto">
+            More Quizzes
+          </Button>
+        </Link>
+        <Link href="/model-test" className="w-full sm:w-auto">
+          <Button variant="outline" className="h-11 w-full sm:h-10 sm:w-auto">
+            Explore Model Tests
+          </Button>
+        </Link>
+        <Link href="/" className="w-full sm:w-auto">
+          <Button variant="soft" className="h-11 w-full sm:h-10 sm:w-auto">
+            Browse website
+          </Button>
+        </Link>
+        {!isGuest ? (
+          <Link href="/home" className="w-full sm:w-auto">
+            <Button variant="ghost" className="h-11 w-full sm:h-10 sm:w-auto">
+              Dashboard
+            </Button>
+          </Link>
+        ) : null}
+      </section>
 
       {showSheet ? (
         <section className="mt-4 space-y-3 sm:mt-6 sm:space-y-4" aria-label="Answer sheet">

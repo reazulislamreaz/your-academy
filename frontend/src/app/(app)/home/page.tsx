@@ -74,14 +74,14 @@ function SectionTitle({
   linkLabel?: string;
 }) {
   return (
-    <div className="flex items-center justify-between gap-2">
-      <h2 className="min-w-0 truncate text-[0.9375rem] font-semibold tracking-tight text-[var(--ink)] sm:text-base">
+    <div className="flex min-w-0 items-start justify-between gap-2 sm:items-center">
+      <h2 className="min-w-0 text-pretty break-words text-[0.9375rem] font-semibold tracking-tight text-[var(--ink)] sm:text-base">
         {title}
       </h2>
       {href && linkLabel ? (
         <Link
           href={href}
-          className="shrink-0 text-xs font-semibold text-[var(--muted)] underline-offset-2 hover:text-[var(--ink)] hover:underline"
+          className="shrink-0 text-xs font-semibold whitespace-nowrap text-[var(--muted)] underline-offset-2 hover:text-[var(--ink)] hover:underline"
         >
           {linkLabel}
         </Link>
@@ -210,7 +210,7 @@ export default function StudyHomePage() {
       {!statsFailed ? (
         <Reveal delayMs={30}>
           <Stagger
-            className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4"
+            className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4 lg:gap-4"
             stepMs={55}
           >
             <MetricTile
@@ -256,7 +256,7 @@ export default function StudyHomePage() {
       </Reveal>
 
       <Reveal delayMs={80} className="grid gap-4 lg:grid-cols-5">
-        <Surface elevated className="space-y-5 p-4 sm:p-5 lg:col-span-3">
+        <Surface elevated className="space-y-5 overflow-x-clip p-3.5 sm:p-5 lg:col-span-3">
           <SectionTitle title="Continue practice" href="/questions" linkLabel="Question bank" />
           {last ? (
             <div className="rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-muted)]/50 p-4">
@@ -324,7 +324,7 @@ export default function StudyHomePage() {
           </div>
         </Surface>
 
-        <Surface elevated className="space-y-3 p-4 sm:p-5 lg:col-span-2">
+        <Surface elevated className="space-y-3 overflow-x-clip p-3.5 sm:p-5 lg:col-span-2">
           <SectionTitle title="Answer mix" />
           {stats.isLoading ? (
             <HomeAnswerMixSkeleton />
@@ -337,7 +337,7 @@ export default function StudyHomePage() {
       </Reveal>
 
       <Reveal delayMs={90} className="grid gap-4 md:grid-cols-2">
-        <Surface elevated className="space-y-3 p-4 sm:p-5">
+        <Surface elevated className="space-y-3 overflow-x-clip p-3.5 sm:p-5">
           <SectionTitle title="Subject performance" href="/onboarding" linkLabel="My topics" />
           {stats.isLoading ? (
             <HomeSubjectProgressSkeleton />
@@ -348,7 +348,7 @@ export default function StudyHomePage() {
           )}
         </Surface>
 
-        <Surface elevated className="space-y-3 p-4 sm:p-5">
+        <Surface elevated className="space-y-3 overflow-x-clip p-3.5 sm:p-5">
           <SectionTitle title="Study time" />
           {analytics.isLoading ? (
             <HomeStudyTimeSkeleton />
@@ -374,7 +374,7 @@ export default function StudyHomePage() {
       </Reveal>
 
       <Reveal delayMs={100} className="grid gap-4 lg:grid-cols-2">
-        <Surface elevated className="space-y-3 p-4 sm:p-5">
+        <Surface elevated className="space-y-3 overflow-x-clip p-3.5 sm:p-5">
           <SectionTitle
             title={preferredIds.length ? 'Your topics' : 'Recommended topics'}
             href="/onboarding"
@@ -414,7 +414,7 @@ export default function StudyHomePage() {
           )}
         </Surface>
 
-        <Surface elevated className="space-y-3 overflow-hidden p-4 sm:p-5">
+        <Surface elevated className="space-y-3 overflow-x-clip p-3.5 sm:p-5">
           <SectionTitle title="Updates & circulars" href="/news" linkLabel="All news" />
           {news.isLoading ? <HomeActivityListSkeleton rows={3} /> : null}
           {!news.isLoading && newsItems.length === 0 ? (
@@ -447,7 +447,7 @@ export default function StudyHomePage() {
       </Reveal>
 
       <Reveal delayMs={110}>
-        <Surface elevated className="space-y-3 overflow-hidden p-4 sm:p-5">
+        <Surface elevated className="space-y-3 overflow-x-clip p-3.5 sm:p-5">
           <SectionTitle title="Saved for later" href="/bookmarks" linkLabel="View all" />
           {stats.isLoading ? <HomeActivityListSkeleton rows={3} /> : null}
           {!stats.isLoading &&

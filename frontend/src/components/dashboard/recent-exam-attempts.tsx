@@ -24,19 +24,19 @@ function scoreLabel(exam: ExamPerformance['recentExams'][number]): string {
 /** Recent practice/model-test attempts with deep links to result sheets. */
 export function RecentExamAttempts({ recentExams }: Props) {
   return (
-    <Surface elevated className="space-y-4 p-4 sm:p-5">
-      <div className="flex flex-wrap items-end justify-between gap-2">
-        <div>
+    <Surface elevated className="space-y-4 overflow-x-clip p-3.5 sm:p-5">
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
+        <div className="min-w-0">
           <h2 className="font-display text-base font-bold tracking-tight text-[var(--ink)] sm:text-lg">
             Recent exam attempts
           </h2>
-          <p className="mt-0.5 text-sm text-[var(--muted)]">
+          <p className="mt-0.5 text-sm text-pretty text-[var(--muted)]">
             Your latest timed quizzes and model tests
           </p>
         </div>
         <Link
           href="/results"
-          className="text-xs font-semibold text-[var(--accent)] underline-offset-2 hover:underline"
+          className="shrink-0 self-start text-xs font-semibold text-[var(--accent)] underline-offset-2 hover:underline sm:self-auto"
         >
           View all results
         </Link>
@@ -46,12 +46,12 @@ export function RecentExamAttempts({ recentExams }: Props) {
         <EmptyState
           nested
           align="center"
-          className="py-10"
+          className="px-3 py-8 sm:px-6 sm:py-10"
           title="No exams yet"
           description="Take a quiz or model test to build your history and unlock answer-sheet review."
           action={
-            <Link href="/quizzes">
-              <Button size="sm">
+            <Link href="/exams">
+              <Button size="sm" className="min-h-10">
                 <ClipboardList className="size-4" aria-hidden />
                 Explore quizzes
               </Button>

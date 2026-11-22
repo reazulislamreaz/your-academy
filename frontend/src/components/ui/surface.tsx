@@ -30,7 +30,7 @@ export function Surface({
   return (
     <div
       className={cn(
-        'relative min-w-0 max-w-full overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)]',
+        'relative min-w-0 max-w-full overflow-x-clip rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)]',
         quiet
           ? 'border-[var(--line)]/80 shadow-none'
           : elevated

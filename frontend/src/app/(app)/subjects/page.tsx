@@ -40,9 +40,9 @@ export default function SubjectsPage() {
       {!categories.isLoading && !categories.isError && (categories.data?.length ?? 0) > 0 ? (
         <ContentIn className="motion-stagger grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {(categories.data ?? []).map((subject) => (
-            <Surface key={subject.id} elevated interactive className="flex flex-col p-4 sm:p-5">
+            <Surface key={subject.id} elevated interactive className="flex flex-col overflow-x-clip p-3.5 sm:p-5">
               <Link href={`/subjects/${subject.slug}`} className="min-w-0 flex-1">
-                <h2 className="font-display text-lg font-semibold tracking-tight text-[var(--ink)] hover:text-[var(--highlight)]">
+                <h2 className="break-words font-display text-lg font-semibold tracking-tight text-[var(--ink)] hover:text-[var(--highlight)]">
                   {subject.name}
                 </h2>
                 {subject.description ? (
