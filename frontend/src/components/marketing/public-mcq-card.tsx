@@ -45,9 +45,9 @@ export function PublicMcqCard({
       )}
     >
       <div className="relative z-[1] space-y-3">
-        <h2 className="question-text" lang="bn">
+        <h2 className="type-prose-title text-[var(--ink)]">
           {question.sourceSerial ? (
-            <span className="type-bn-serial mr-2 text-[var(--highlight)]">
+            <span className="type-bn-serial mr-2 text-[var(--highlight)]" lang="bn">
               {question.sourceSerial}.
             </span>
           ) : null}
@@ -63,13 +63,13 @@ export function PublicMcqCard({
             <li
               key={opt.id}
               className={cn(
-                'option-text rounded-[var(--radius)] border px-3.5 py-3.5 transition-colors duration-200',
+                'type-mcq-option rounded-[var(--radius)] border px-3.5 py-3.5 transition-colors duration-200',
                 highlight
                   ? 'border-[var(--success)] bg-[var(--success-soft)] text-[var(--ink)]'
                   : 'border-[var(--line)] bg-[var(--bg-desk)] text-[var(--ink-soft)]',
               )}
             >
-              <span className="option-label text-[var(--ink)]" lang="bn">
+              <span className="font-semibold text-[var(--ink)]">
                 ({BN_OPTION[opt.label] ?? opt.label})
               </span>{' '}
               <span className="whitespace-pre-wrap break-words">{opt.content}</span>
@@ -121,12 +121,11 @@ export function PublicMcqCard({
 
           <span
             className={cn(
-              'option-label inline-flex items-center rounded-full px-3.5 py-1.5 text-sm transition-all duration-200',
+              'inline-flex items-center rounded-full px-3.5 py-1.5 text-sm font-semibold transition-all duration-200',
               answerVisible
                 ? 'bg-[var(--success-soft)] text-[var(--success)] opacity-100'
                 : 'pointer-events-none max-h-0 overflow-hidden bg-transparent px-0 py-0 opacity-0',
             )}
-            lang="bn"
             aria-hidden={!answerVisible}
           >
             {answerVisible

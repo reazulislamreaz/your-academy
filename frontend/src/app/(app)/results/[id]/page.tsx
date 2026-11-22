@@ -189,9 +189,7 @@ export default function ResultDetailPage() {
                   <Badge variant="outline">Answered</Badge>
                 )}
               </div>
-              <p className="question-text whitespace-pre-wrap text-[var(--ink-soft)]">
-                {item.content}
-              </p>
+              <p className="type-prose whitespace-pre-wrap text-[var(--ink-soft)]">{item.content}</p>
               <div className="grid gap-2">
                 {item.options.map((opt) => {
                   const selected = item.selectedOptionId === opt.id;
@@ -202,7 +200,7 @@ export default function ResultDetailPage() {
                     <div
                       key={opt.id}
                       className={cn(
-                        'option-text rounded-[var(--radius-sm)] border px-3 py-2',
+                        'rounded-[var(--radius-sm)] border px-3 py-2 text-sm',
                         showCorrect &&
                           'border-[var(--learn-correct)]/50 bg-[var(--learn-correct-soft)]',
                         showWrong &&
@@ -216,9 +214,7 @@ export default function ResultDetailPage() {
                           'border-[var(--line)]',
                       )}
                     >
-                      <span className="option-label-latin mr-2" lang="en">
-                        {opt.label}.
-                      </span>
+                      <span className="mr-2 font-semibold">{opt.label}.</span>
                       {opt.content}
                       {selected ? (
                         <span className="ml-2 text-xs font-semibold text-[var(--muted-strong)]">
@@ -235,7 +231,7 @@ export default function ResultDetailPage() {
                 })}
               </div>
               {data.answersVisible && item.explanation ? (
-                <p className="explanation-text rounded-[var(--radius-sm)] border border-[var(--line)] bg-[var(--bg-desk)] px-3 py-2 text-[var(--ink-soft)]">
+                <p className="rounded-[var(--radius-sm)] border border-[var(--line)] bg-[var(--bg-desk)] px-3 py-2 text-sm text-[var(--ink-soft)]">
                   <span className="font-semibold text-[var(--ink)]">Explanation: </span>
                   {item.explanation}
                 </p>

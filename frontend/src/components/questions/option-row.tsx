@@ -42,14 +42,13 @@ export function OptionRow({ label, content, state, disabled, onSelect }: Props) 
     >
       <span
         className={cn(
-          'option-label-latin mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-xs',
+          'mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-xs font-bold',
           state === 'idle' && 'bg-[var(--bg-muted)] text-[var(--muted-strong)]',
           state === 'selected' && 'bg-[var(--learn-selected)] text-[var(--accent-fg)]',
           state === 'correct' && 'bg-[var(--learn-correct)] text-white',
           state === 'incorrect' && 'bg-[var(--learn-incorrect)] text-white',
           state === 'missed' && 'bg-[var(--learn-correct)] text-white',
         )}
-        lang="en"
         aria-hidden
       >
         {showCorrect ? <Check className="h-3.5 w-3.5" strokeWidth={2.5} /> : null}
@@ -58,7 +57,7 @@ export function OptionRow({ label, content, state, disabled, onSelect }: Props) 
       </span>
       <span className="min-w-0 flex-1">
         <span className="sr-only">{label}. </span>
-        <span className="option-text text-[var(--ink-soft)]">{content}</span>
+        <span className="type-mcq-option text-[var(--ink-soft)]">{content}</span>
         {state === 'correct' ? (
           <span className="mt-1 block text-xs font-semibold text-[var(--success-fg)]">
             Correct answer

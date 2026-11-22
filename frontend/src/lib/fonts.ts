@@ -1,46 +1,39 @@
-import { Hind_Siliguri, Inter } from 'next/font/google';
+import { Inter, Noto_Sans_Bengali } from 'next/font/google';
 
 /**
  * Platform typography (DEC-037):
- * - English / Latin UI: Inter (`--font-inter`)
- * - Bengali (Unicode): Hind Siliguri (`--font-bangla`)
- * - Fallback: Noto Sans Bengali (stack string only — not loaded separately)
+ * - English / Latin UI: Inter
+ * - Bengali (Unicode): Noto Sans Bengali — clear digits including ১
  *
- * SutonnyMJ is ANSI/Bijoy-only and cannot render Unicode Bengali on the web.
- * Stack Latin → Bangla so browsers pick Inter for Latin and Hind for Bn code points.
- * Reading / Q&A stack prefers Bangla first.
+ * SutonnyMJ is ANSI/Bijoy-only and cannot render Unicode Bengali on the web;
+ * Noto Sans Bengali is the Unicode web standard that keeps Bn numerals readable.
+ * Stack Latin → Bengali so browsers pick Inter for Latin and Noto for Bn code points.
  */
-export const fontInter = Inter({
+export const fontLatin = Inter({
   subsets: ['latin'],
-  variable: '--font-inter',
+  variable: '--font-latin',
   display: 'swap',
   weight: ['400', '500', '600', '700', '800'],
 });
 
-export const fontBangla = Hind_Siliguri({
-  subsets: ['bengali', 'latin'],
-  variable: '--font-bangla',
+export const fontBengali = Noto_Sans_Bengali({
+  subsets: ['bengali'],
+  variable: '--font-bengali',
   display: 'swap',
-  weight: ['400', '500', '600', '700'],
+  weight: 'variable',
 });
 
-/** @deprecated Prefer `fontInter` / `--font-inter`. */
-export const fontLatin = fontInter;
+/** Same face as `fontBengali` — educational Q&A / serials use the Bengali stack. */
+export const fontReading = fontBengali;
 
-/** @deprecated Prefer `fontBangla` / `--font-bangla`. */
-export const fontBengali = fontBangla;
-
-/** Same face as Bangla — educational Q&A / serials use the reading stack. */
-export const fontReading = fontBangla;
-
-/** @deprecated Alias — site-wide stack is Inter + Hind Siliguri. */
-export const fontMarketingLatin = fontInter;
+/** @deprecated Alias — site-wide stack is Inter + Noto (no separate marketing face). */
+export const fontMarketingLatin = fontLatin;
 
 /** Apply CSS variables on <html>. */
-export const fontVariableClassName = `${fontInter.variable} ${fontBangla.variable}`;
+export const fontVariableClassName = `${fontLatin.variable} ${fontBengali.variable}`;
 
 /** @deprecated Prefer role-specific exports / CSS stacks. */
-export const fontPrimary = fontInter;
-export const fontSans = fontInter;
-export const fontDisplay = fontInter;
-export const fontLearner = fontInter;
+export const fontPrimary = fontLatin;
+export const fontSans = fontLatin;
+export const fontDisplay = fontLatin;
+export const fontLearner = fontLatin;

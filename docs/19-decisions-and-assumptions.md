@@ -32,7 +32,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | DEC-020 | pnpm workspaces + Turborepo | CONFIRMED |
 | DEC-026 | MCQ Save to Collection folders | CONFIRMED |
 | DEC-027 | Learner Orbit dark charcoal theme | CONFIRMED |
-| DEC-037 | Platform-wide Inter + Hind Siliguri bilingual typography | CONFIRMED |
+| DEC-037 | Platform-wide Inter + Noto Sans Bengali bilingual typography | CONFIRMED |
 | DEC-038 | Homepage CMS (draft + published) | CONFIRMED |
 | DEC-028 | Learner dashboard light/dark toggle | CONFIRMED |
 | DEC-029 | Real-time support messaging (Socket.IO) | CONFIRMED |
@@ -376,18 +376,18 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Field | Value |
 |-------|-------|
 | Question | Should the student app use a premium dark charcoal dashboard (Orbit-style reference)? |
-| Decision | **Yes for `(app)` learner routes only.** Theme via `.learner-theme` CSS variable overrides (cool navy-charcoal surfaces, not flat black). Marketing, auth, and admin remain light navy/red. Color roles: brand red primary CTAs; soft blue secondary/selection/focus; soft green correct/progress; soft red incorrect; amber warning; purple insight/review; gold bookmarks. Learning aliases `--learn-*` and chart aliases `--viz-*`. **Typography (DEC-037):** platform-wide **Inter + Hind Siliguri**. Collapsible sidebar persisted in `localStorage`. No mock KPIs. |
+| Decision | **Yes for `(app)` learner routes only.** Theme via `.learner-theme` CSS variable overrides (cool navy-charcoal surfaces, not flat black). Marketing, auth, and admin remain light navy/red. Color roles: brand red primary CTAs; soft blue secondary/selection/focus; soft green correct/progress; soft red incorrect; amber warning; purple insight/review; gold bookmarks. Learning aliases `--learn-*` and chart aliases `--viz-*`. **Typography (DEC-037):** platform-wide **Inter + Noto Sans Bengali**. Collapsible sidebar persisted in `localStorage`. No mock KPIs. |
 | Impact | `globals.css` learner tokens, `(app)/layout`, sidebar/header, OptionRow/Badge statuses, dashboard KPI/chart tones, home remapped to Orbit layout |
 | Status | **CONFIRMED** (product request 2026-11-12) |
 
-### DEC-037 — Platform-wide Inter + Hind Siliguri bilingual typography
+### DEC-037 — Platform-wide Inter + Noto Sans Bengali bilingual typography
 
 | Field | Value |
 |-------|-------|
 | Question | How should Bengali and English UI/educational text share a consistent type system? |
-| Decision | **Site-wide bilingual stack:** (1) **Inter** (`--font-inter`) for English/Latin UI. (2) **Hind Siliguri** (`--font-bangla`) for Unicode Bengali (UI + educational Q&A). Stack = Inter → Hind → Noto name fallback (`--font-stack`); reading stack prefers Hind first (`--font-reading-stack`). Loaded via `next/font` with `display: swap`. **Q&A tokens:** `.question-text`, `.option-text`, `.option-label`, `.option-label-latin` (tabular-nums for Latin A–D only), `.explanation-text`, `.question-heading` (legacy `.type-prose*` / `.type-mcq-option` / `.type-bn-serial` alias). **letter-spacing: 0** everywhere Bn may appear (body + Tailwind `tracking-*` neutralized). **Never** apply `tabular-nums` / synthetic bold to Bengali reading text / `.type-bn-serial`. Body keeps Bn-safe OpenType (`font-feature-settings: normal`); Latin chrome may use `.type-latin-ui`. **SutonnyMJ rejected for web:** ANSI/Bijoy only — cannot render Unicode Bengali in DB/CMS. No separate homepage marketing face. |
-| Impact | `frontend/src/lib/fonts.ts`, `globals.css` (Q&A layer + tracking resets), public MCQ/written cards, exam/practice/result views, `docs/21-design-system.md` |
-| Status | **CONFIRMED** (product request 2026-11-14; upgraded pairing same day; homepage marketing stack exception 2026-11-22; Bn digit serial fix 2026-11-22; Inter + Hind Siliguri + Q&A token layer 2026-11-22) |
+| Decision | **Site-wide bilingual stack:** (1) **Inter** for English/Latin UI. (2) **Noto Sans Bengali** for Unicode Bengali (UI + educational Q&A) — clear digits including **১**. Stack = Inter → Noto (`--font-stack`); reading stack prefers Noto first (`--font-reading-stack`). Loaded via `next/font` with `display: swap`. **letter-spacing: 0** everywhere Bn may appear (body + Tailwind `tracking-*` neutralized) — tracking splits conjuncts/digits. **Never** apply Latin OpenType numeric features (`tabular-nums` / `tnum` / `lnum`) or synthetic bold to Bengali reading text / `.type-bn-serial`. **SutonnyMJ rejected for web:** it is an ANSI/Bijoy font and cannot render Unicode Bengali stored in this product’s DB/CMS; embedding it would break Bn text. Noto Sans Bengali is the Unicode web equivalent for readable Bn numerals. No separate homepage marketing face — `.homepage-shell` uses the same stack. |
+| Impact | `frontend/src/lib/fonts.ts`, `globals.css` (`.type-prose*`, `.type-bn-serial`, tracking resets), public MCQ/written cards, `docs/21-design-system.md` |
+| Status | **CONFIRMED** (product request 2026-11-14; upgraded pairing same day; homepage marketing stack exception 2026-11-22; Bn digit serial fix 2026-11-22; Inter + Noto Sans Bengali site-wide + SutonnyMJ Unicode note 2026-11-22) |
 
 ### DEC-038 — Homepage CMS (draft + published)
 

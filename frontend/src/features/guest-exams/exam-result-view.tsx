@@ -138,10 +138,10 @@ export function ExamResultView({ result }: Props) {
               key={item.id}
               className="rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] p-3.5 sm:p-5"
             >
-              <p className="type-latin-ui text-xs font-semibold text-[var(--muted)]">
-                Question {index + 1}
-              </p>
-              <h3 className="question-text mt-1 break-words">{item.questionText}</h3>
+              <p className="text-xs font-semibold text-[var(--muted)]">Question {index + 1}</p>
+              <h3 className="mt-1 font-reading text-[0.9375rem] leading-relaxed font-medium break-words text-[var(--ink)] sm:text-base">
+                {item.questionText}
+              </h3>
               <ul className="mt-3 space-y-1.5">
                 {item.options.map((option, optIdx) => {
                   const isSelected = item.selectedAnswer === option;
@@ -151,7 +151,7 @@ export function ExamResultView({ result }: Props) {
                     <li
                       key={`${item.id}-opt-${optIdx}`}
                       className={cn(
-                        'option-text rounded-[var(--radius)] border px-2.5 py-2 break-words sm:px-3',
+                        'rounded-[var(--radius)] border px-2.5 py-2 text-sm break-words font-reading sm:px-3',
                         isCorrect &&
                           'border-[var(--success)] bg-[var(--success-soft)] text-[var(--success-fg)]',
                         isSelected &&
@@ -160,9 +160,7 @@ export function ExamResultView({ result }: Props) {
                         !isSelected && !isCorrect && 'border-transparent text-[var(--ink-soft)]',
                       )}
                     >
-                      <span className="option-label-latin mr-2 opacity-70" lang="en">
-                        {letter}.
-                      </span>
+                      <span className="mr-2 font-semibold opacity-70">{letter}.</span>
                       {option}
                       {isSelected ? (
                         <span className="mt-1 block text-xs font-semibold sm:mt-0 sm:ml-2 sm:inline">
@@ -182,7 +180,7 @@ export function ExamResultView({ result }: Props) {
                 <p className="mt-2 text-xs font-semibold text-[var(--warning-fg)]">Skipped</p>
               ) : null}
               {item.explanation ? (
-                <p className="explanation-text mt-3 break-words text-[var(--muted-strong)]">
+                <p className="mt-3 text-sm leading-relaxed break-words text-[var(--muted-strong)]">
                   <span className="font-semibold text-[var(--ink)]">Explanation: </span>
                   {item.explanation}
                 </p>

@@ -118,22 +118,18 @@
 
   /*
     Typography (DEC-037):
-    - English / Latin: Inter (--font-inter)
-    - Bengali (Unicode): Hind Siliguri (--font-bangla)
-    - Fallback name: Noto Sans Bengali (stack only; not separately loaded)
+    - English / Latin: Inter
+    - Bengali (Unicode): Noto Sans Bengali (clear digits ০–৯, including ১)
     SutonnyMJ is ANSI/Bijoy and cannot render Unicode Bn on the web.
     letter-spacing must stay 0 on Bn / mixed educational text — tracking splits digits.
   */
-  /* Compat aliases if older CSS references remain. */
-  --font-latin: var(--font-inter);
-  --font-bengali: var(--font-bangla);
   --font-stack:
-    var(--font-inter), var(--font-bangla), 'Inter', 'Hind Siliguri', 'Noto Sans Bengali',
-    ui-sans-serif, system-ui, sans-serif;
-  /* Reading: Bangla face first so stems/options/serials prefer Hind for Bn glyphs. */
+    var(--font-latin), var(--font-bengali), 'Inter', 'Noto Sans Bengali', ui-sans-serif, system-ui,
+    sans-serif;
+  /* Reading: Bengali face first so stems/options/serials prefer Noto for Bn glyphs. */
   --font-reading-stack:
-    var(--font-bangla), var(--font-inter), 'Hind Siliguri', 'Inter', 'Noto Sans Bengali',
-    ui-sans-serif, system-ui, sans-serif;
+    var(--font-bengali), var(--font-latin), 'Noto Sans Bengali', 'Inter', ui-sans-serif, system-ui,
+    sans-serif;
   /* Site-wide consistency — homepage uses the same bilingual stack. */
   --font-marketing-stack: var(--font-stack);
   --font-sans: var(--font-stack);
@@ -141,9 +137,8 @@
   --font-reading: var(--font-reading-stack);
   --font-learner: var(--font-stack);
   --font-primary: var(--font-stack);
-  --font-bangla-family: var(--font-reading-stack);
 
-  --leading-reading: 1.75;
+  --leading-reading: 1.85;
 
   --text-xs: 0.8125rem;
   --text-sm: 0.9375rem;
@@ -180,7 +175,6 @@
   --font-sans: var(--font-stack);
   --font-display: var(--font-stack);
   --font-reading: var(--font-reading-stack);
-  --font-bangla: var(--font-reading-stack);
 }
 
 * {
@@ -786,11 +780,6 @@ body {
 }
 
 .learner-theme .font-reading,
-.learner-theme .question-text,
-.learner-theme .option-text,
-.learner-theme .option-label,
-.learner-theme .explanation-text,
-.learner-theme .question-heading,
 .learner-theme .type-prose,
 .learner-theme .type-prose-title,
 .learner-theme .type-mcq-option {
@@ -1296,12 +1285,7 @@ input:disabled {
   font-family: var(--font-stack);
 }
 
-/* Educational Q&A — Hind Siliguri first; never apply Latin OpenType numeric features */
-.question-text,
-.option-text,
-.option-label,
-.explanation-text,
-.question-heading,
+/* Educational Q&A — Noto Sans Bengali; never apply Latin OpenType numeric features */
 .type-prose,
 .type-prose-title,
 .type-mcq-option,
@@ -1314,90 +1298,34 @@ input:disabled {
   letter-spacing: 0;
 }
 
-/**
- * Question typography layer (mixed Bn/En educational content).
- * Semantic names preferred; legacy `.type-*` aliases map here.
- */
-.question-text,
+/* Educational Q&A — Noto Sans Bengali, regular weight, long-form comfort.
+   letter-spacing must stay 0 — even tiny tracking splits Bn conjuncts/digits. */
 .type-prose {
   font-family: var(--font-reading-stack);
-  font-size: 1.0625rem; /* ~17px mobile */
-  line-height: 1.75;
+  font-size: 1.125rem;
+  line-height: var(--leading-reading);
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.type-prose-title {
+  font-family: var(--font-reading-stack);
+  font-size: clamp(1.125rem, 2.4vw, 1.3125rem);
+  line-height: 1.55;
   font-weight: 500;
   letter-spacing: 0;
 }
 
-@media (min-width: 640px) {
-  .question-text,
-  .type-prose {
-    font-size: 1.125rem; /* 18px */
-  }
-}
-
-@media (min-width: 1024px) {
-  .question-text,
-  .type-prose {
-    font-size: 1.25rem; /* 20px */
-  }
-}
-
-.question-heading,
-.type-prose-title {
-  font-family: var(--font-reading-stack);
-  font-size: clamp(1.0625rem, 2.4vw, 1.25rem);
-  line-height: 1.4;
-  font-weight: 600;
-  letter-spacing: 0;
-}
-
-.option-text,
 .type-mcq-option {
   font-family: var(--font-reading-stack);
-  font-size: 1rem; /* 16px */
-  line-height: 1.65;
+  font-size: 1.0625rem;
+  line-height: var(--leading-reading);
   font-weight: 400;
   letter-spacing: 0;
-}
-
-@media (min-width: 640px) {
-  .option-text,
-  .type-mcq-option {
-    font-size: 1.0625rem; /* 17px */
-  }
-}
-
-.option-label {
-  font-family: var(--font-reading-stack);
-  font-weight: 600;
-  font-style: normal;
-  letter-spacing: 0;
-  line-height: 1.35;
-  font-variant-numeric: normal;
-  font-feature-settings: normal;
-  font-synthesis: none;
-}
-
-/* Latin A–D / English digits only — never on Bn serials or mixed Q stems. */
-.option-label-latin {
-  font-family: var(--font-inter), var(--font-stack);
-  font-weight: 600;
-  letter-spacing: 0;
-  line-height: 1.35;
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: 'tnum' 1, 'kern' 1, 'liga' 1;
-}
-
-.explanation-text {
-  font-family: var(--font-reading-stack);
-  font-size: 1rem;
-  line-height: 1.8;
-  font-weight: 400;
-  letter-spacing: 0;
-  max-width: 70ch;
 }
 
 /**
- * Bengali question serials (০–৯) — Hind Siliguri semibold.
+ * Bengali question serials (০–৯) — Noto Sans Bengali semibold.
  * Do NOT use tabular-nums / font-bold / tracking-tight: those Latin features
  * fragment Bn digits (১, ২, ৩ especially).
  */
@@ -1411,14 +1339,6 @@ input:disabled {
   font-variant-numeric: normal;
   font-feature-settings: normal;
   font-synthesis: none;
-}
-
-/* Latin-only UI chrome may enable liga/kern without touching Bn reading text. */
-.type-latin-ui {
-  font-family: var(--font-inter), var(--font-stack);
-  font-feature-settings: 'liga' 1, 'kern' 1;
-  font-kerning: normal;
-  text-rendering: optimizeLegibility;
 }
 
 /*
@@ -2925,7 +2845,7 @@ a.site-footer-social-link:focus-visible {
 /*
   Homepage visual system — premium modern craft (60-30-10).
   Cool desk canvas, luminous surfaces, single brand-red accent.
-  Typography: site-wide Inter + Hind Siliguri (DEC-037).
+  Typography: site-wide Inter + Noto Sans Bengali (DEC-037).
 */
 .homepage-shell {
   --hp-radius: 1.15rem;

@@ -163,10 +163,10 @@ function QuestionDetailContent() {
       />
 
       <header className="motion-rise space-y-4 border-b border-[var(--line)] pb-6">
-        <h1 className="question-heading text-[clamp(1.75rem,3.5vw,2.5rem)] font-bold">
+        <h1 className="font-display text-[clamp(1.75rem,3.5vw,2.5rem)] font-bold tracking-tight">
           {data.title}
         </h1>
-        <p className="question-text break-words text-[var(--ink-soft)]">{data.content}</p>
+        <p className="type-prose break-words text-[var(--ink-soft)]">{data.content}</p>
       </header>
 
       <div className="grid gap-2.5" role="radiogroup" aria-label="Answer options">
@@ -208,10 +208,10 @@ function QuestionDetailContent() {
 
       {checked && data.explanation ? (
         <Surface elevated className="motion-rise border-l-[3px] border-l-[var(--info)] p-5 sm:p-6">
-          <h2 className="type-latin-ui text-xs font-semibold text-[var(--muted)] uppercase">
+          <h2 className="text-xs font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
             Explanation
           </h2>
-          <p className="explanation-text mt-3 text-[var(--ink-soft)]">{data.explanation}</p>
+          <p className="type-prose mt-3 text-[var(--ink-soft)]">{data.explanation}</p>
         </Surface>
       ) : null}
 

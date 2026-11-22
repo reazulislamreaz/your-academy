@@ -76,19 +76,20 @@ Apply `data-theme` + Sun/Moon toggle on `(app)` and `(admin)` Orbit shells only 
 
 **Bilingual typography (DEC-037):**
 
-1. **English / Latin — Inter** (`--font-inter`). Headings, nav, buttons, dashboards, marketing.
-2. **Bengali (Unicode) — Hind Siliguri** (`--font-bangla`). UI Bangla + educational Q&A (stems, options, answers, explanations, `.type-bn-serial`).
-3. **Stacks:** `--font-stack` = Inter → Hind → Noto name fallback; `--font-reading-stack` = Hind → Inter. Homepage uses the same stacks (no separate marketing face).
+1. **English / Latin — Inter** (`--font-latin`). Headings, nav, buttons, dashboards, marketing.
+2. **Bengali (Unicode) — Noto Sans Bengali** (`--font-bengali`). UI Bangla + educational Q&A (stems, options, answers, explanations, `.type-bn-serial`). Clear digits including **১**.
+3. **Stacks:** `--font-stack` = Inter → Noto; `--font-reading-stack` = Noto → Inter. Homepage uses the same stacks (no separate marketing face).
 4. **Do not embed SutonnyMJ** — ANSI/Bijoy only; this product stores Unicode Bengali.
 
 | Role | Family | CSS var / class |
 |------|--------|-----------------|
-| UI / body (all shells) | **Inter** + Hind | `--font-sans` / `.font-sans` |
-| Brand / headings | **Inter** 700–800 (+ Hind for Bn) | `--font-display` / `.font-display` |
+| UI / body (all shells) | **Inter** + Noto | `--font-sans` / `.font-sans` |
+| Brand / headings | **Inter** 700–800 (+ Noto for Bn) | `--font-display` / `.font-display` |
 | Learner shell UI | same stack | `--font-learner` |
-| Educational Q&A / MCQ / explanations | **Hind Siliguri** | `--font-reading` / `.question-text`, `.option-text`, `.explanation-text`, `.type-bn-serial` |
+| Educational Q&A / MCQ / explanations | **Noto Sans Bengali** | `--font-reading` / `.type-prose`, `.type-mcq-option`, `.type-bn-serial` |
 
-**Q&A scale:** `.question-text` 17–20px / weight 500 / lh 1.75; `.option-text` 16–17px / lh 1.65; `.option-label` (ক–ঘ) weight 600; `.option-label-latin` (A–D) weight 600 + `tabular-nums`; `.explanation-text` 16px / lh 1.8 / max 70ch; `.question-heading` weight 600 / lh 1.4. Legacy `.type-prose*` / `.type-mcq-option` alias the same rules.  
+**Scale / leading:** UI leading 1.32–1.8; reading `--leading-reading` **1.85**.  
+Utilities: `.type-prose`, `.type-prose-title` (weight 500), `.type-mcq-option` (weight 400), `.type-bn-serial` (weight 600, Bn digits), `.ya-control`.  
 `font-display: swap`. **letter-spacing: 0** (body + Tailwind `tracking-*` neutralized). Never `tabular-nums` or synthetic bold on Bengali reading text.
 
 ---
