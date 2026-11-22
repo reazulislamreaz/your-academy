@@ -51,7 +51,7 @@ export class SocialLinksService {
     try {
       const row = await this.prisma.socialLink.create({
         data: {
-          platform: dto.platform,
+          platform: dto.platform as SocialPlatform,
           url,
           label,
           enabled,

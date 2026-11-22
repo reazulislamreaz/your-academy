@@ -1,7 +1,45 @@
-import { PrismaClient, UserRole, UserStatus } from '@prisma/client';
+import { PrismaClient, SocialPlatform, UserRole, UserStatus } from '@prisma/client';
 import * as argon2 from 'argon2';
 
 const prisma = new PrismaClient();
+
+/** Default footer socials (DEC-046). Create-if-missing so re-seed never overwrites admin edits. */
+const BOOTSTRAP_SOCIAL_LINKS: Array<{
+  platform: SocialPlatform;
+  url: string;
+  sortOrder: number;
+}> = [
+  {
+    platform: SocialPlatform.FACEBOOK,
+    url: 'https://www.facebook.com/profile.php?id=61595289935829',
+    sortOrder: 0,
+  },
+  {
+    platform: SocialPlatform.INSTAGRAM,
+    url: 'https://www.instagram.com/youracademy.demo',
+    sortOrder: 1,
+  },
+  {
+    platform: SocialPlatform.YOUTUBE,
+    url: 'https://www.youtube.com/@youracademy.demo',
+    sortOrder: 2,
+  },
+  {
+    platform: SocialPlatform.LINKEDIN,
+    url: 'https://www.linkedin.com/company/your-academy-demo',
+    sortOrder: 3,
+  },
+  {
+    platform: SocialPlatform.X,
+    url: 'https://x.com/youracademy_demo',
+    sortOrder: 4,
+  },
+  {
+    platform: SocialPlatform.TIKTOK,
+    url: 'https://www.tiktok.com/@youracademy.demo',
+    sortOrder: 5,
+  },
+];
 
 /**
  * Bootstrap only: admin + demo learner + Premium plan.
@@ -80,9 +118,24 @@ async function main() {
     },
   });
 
+  for (const link of BOOTSTRAP_SOCIAL_LINKS) {
+    const existing = await prisma.socialLink.findUnique({ where: { platform: link.platform } });
+    if (existing) continue;
+    await prisma.socialLink.create({
+      data: {
+        platform: link.platform,
+        url: link.url,
+        enabled: true,
+        sortOrder: link.sortOrder,
+        label: '',
+      },
+    });
+  }
+
   const catCount = await prisma.category.count();
+  const socialCount = await prisma.socialLink.count();
   console.log(
-    `Seeded admin=${admin.whatsappNumber}, learner=+8801711111111 / LearnerPass123 (bootstrap only; categories untouched=${catCount})`,
+    `Seeded admin=${admin.whatsappNumber}, learner=+8801711111111 / LearnerPass123 (bootstrap only; categories untouched=${catCount}; socialLinks=${socialCount})`,
   );
 }
 

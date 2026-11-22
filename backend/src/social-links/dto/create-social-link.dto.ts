@@ -2,7 +2,7 @@ import {
   ArrayMinSize,
   IsArray,
   IsBoolean,
-  IsEnum,
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
@@ -11,10 +11,11 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
-import { SocialPlatform } from '@prisma/client';
+import { SOCIAL_PLATFORMS, type SocialPlatform } from '@your-academy/shared';
 
 export class CreateSocialLinkDto {
-  @IsEnum(SocialPlatform)
+  /** Shared enum — avoids Nest compile failures when Prisma client lags behind migrate. */
+  @IsIn([...SOCIAL_PLATFORMS])
   platform!: SocialPlatform;
 
   @IsUrl({ require_protocol: true, protocols: ['http', 'https'] })

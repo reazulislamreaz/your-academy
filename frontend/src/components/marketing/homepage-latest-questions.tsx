@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight, CalendarDays, FolderOpen } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import type { HomepagePayload } from '@your-academy/shared';
 import { ListCardSkeleton, LoadError } from '@/components/loading';
 import { Button } from '@/components/ui/button';
@@ -37,12 +37,12 @@ export function HomepageLatestQuestions({ latest }: Props) {
 
   return (
     <section className="hp-section hp-section-tone">
-      <HomepageReveal className="marketing-container space-y-10 md:space-y-12" staggerChildren>
+      <HomepageReveal className="marketing-container space-y-8 md:space-y-10" staggerChildren>
         <div
           className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between sm:gap-8"
           data-hp-stagger
         >
-          <div className="max-w-xl space-y-3">
+          <div className="max-w-xl space-y-2.5 sm:space-y-3">
             <span className="hp-mark" aria-hidden />
             <h2 className="hp-heading text-[1.5rem] sm:text-2xl md:text-[1.9rem]">
               {latest.heading}
@@ -60,13 +60,14 @@ export function HomepageLatestQuestions({ latest }: Props) {
                 {latest.cta.label}
                 <ArrowRight
                   className="size-4 transition-transform duration-200 group-hover:translate-x-0.5"
+                  aria-hidden
                 />
               </Button>
             </Link>
           ) : null}
         </div>
 
-        {list.isLoading ? <ListCardSkeleton rows={3} /> : null}
+        {list.isLoading ? <ListCardSkeleton rows={4} /> : null}
 
         {list.isError ? (
           <LoadError
@@ -85,28 +86,18 @@ export function HomepageLatestQuestions({ latest }: Props) {
         ) : null}
 
         {items.length > 0 ? (
-          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5">
+          <ul className="flex flex-col gap-3 sm:gap-3.5">
             {items.map((set) => (
               <li key={set.id} data-hp-stagger className="min-w-0">
                 <Link
                   href={`/preli-question-bank/${set.id}`}
-                  className="group flex h-full min-h-[9.5rem] flex-col rounded-2xl border border-[var(--hp-panel-border)] bg-[var(--bg-elevated)] p-5 shadow-[var(--hp-shadow)] ring-1 ring-black/[0.03] transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--ink)_12%,var(--line))] hover:shadow-[var(--hp-shadow-hover)] sm:p-6"
+                  className="group block w-full min-w-0 rounded-2xl border border-[var(--hp-panel-border)] bg-[var(--bg-elevated)] px-5 py-4 shadow-[var(--hp-shadow)] ring-1 ring-black/[0.03] transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--ink)_12%,var(--line))] hover:shadow-[var(--hp-shadow-hover)] sm:px-6 sm:py-5"
                 >
-                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--hp-panel-border)] bg-[var(--bg-muted)] text-[var(--ink-soft)] transition-[border-color,background-color,color] duration-200 group-hover:border-[color-mix(in_srgb,var(--highlight)_22%,var(--line))] group-hover:bg-[var(--highlight-soft)] group-hover:text-[var(--highlight)]">
-                    <FolderOpen className="h-4 w-4" aria-hidden />
-                  </span>
-
-                  <h3 className="mt-4 line-clamp-3 font-display text-[0.975rem] font-semibold tracking-tight text-[var(--ink)] transition-colors duration-200 group-hover:text-[var(--highlight)] sm:text-base">
+                  <h3 className="break-words font-display text-[0.975rem] font-bold leading-snug tracking-tight text-[var(--ink)] transition-colors duration-200 group-hover:text-[var(--highlight)] sm:text-base md:text-[1.05rem]">
                     {set.title}
                   </h3>
-
-                  <p className="mt-auto flex items-center gap-2 pt-4 text-xs font-medium text-[var(--muted)] sm:text-[0.8125rem]">
-                    <CalendarDays className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                    <span className="min-w-0 truncate">{formatUploadDate(set.uploadedAt)}</span>
-                    <ArrowRight
-                      className="ml-auto h-4 w-4 shrink-0 text-[var(--muted)] opacity-0 transition-[opacity,transform,color] duration-200 group-hover:translate-x-0.5 group-hover:text-[var(--highlight)] group-hover:opacity-100"
-                      aria-hidden
-                    />
+                  <p className="mt-1.5 text-sm leading-relaxed text-[var(--muted)] sm:mt-2 sm:text-[0.875rem]">
+                    {formatUploadDate(set.uploadedAt)}
                   </p>
                 </Link>
               </li>

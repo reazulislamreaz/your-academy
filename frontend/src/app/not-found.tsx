@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { MarketingShell } from '@/components/layout/marketing-shell';
+import { SiteFooter } from '@/components/layout/site-footer';
 import { NotFoundView } from '@/components/marketing/not-found-view';
 
 export const metadata: Metadata = {
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function NotFoundPage() {
   return (
-    <MarketingShell>
+    <MarketingShell footer={<SiteFooter />}>
       <NotFoundView />
     </MarketingShell>
   );

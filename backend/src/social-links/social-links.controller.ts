@@ -50,6 +50,14 @@ export class SocialLinksController {
     return createSuccessResponse(await this.socialLinks.create(body), newRequestId());
   }
 
+  /** Declare before `:id` routes so Nest never treats `reorder` as a UUID. */
+  @Put('admin/social-links/reorder')
+  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
+  @Roles(UserRole.ADMIN)
+  async reorder(@Body() body: ReorderSocialLinksDto) {
+    return createSuccessResponse(await this.socialLinks.reorder(body.orderedIds), newRequestId());
+  }
+
   @Patch('admin/social-links/:id')
   @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
   @Roles(UserRole.ADMIN)
@@ -62,12 +70,5 @@ export class SocialLinksController {
   @Roles(UserRole.ADMIN)
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     return createSuccessResponse(await this.socialLinks.remove(id), newRequestId());
-  }
-
-  @Put('admin/social-links/reorder')
-  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
-  @Roles(UserRole.ADMIN)
-  async reorder(@Body() body: ReorderSocialLinksDto) {
-    return createSuccessResponse(await this.socialLinks.reorder(body.orderedIds), newRequestId());
   }
 }

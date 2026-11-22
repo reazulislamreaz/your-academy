@@ -2,9 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
-import type { SocialLinkPublic } from '@your-academy/shared';
 import { MarketingHeader } from '@/components/layout/marketing-header';
-import { SiteFooter } from '@/components/layout/site-footer';
 import { PageShell } from '@/components/motion/page-shell';
 import { SupportWidget } from '@/features/support/support-widget';
 import { cn } from '@/lib/utils';
@@ -28,13 +26,16 @@ function isLiveExamTakePath(pathname: string): boolean {
  * Public marketing chrome: sticky-bottom footer.
  * Short pages (`/news` empty, empty banks, directories) keep the footer below the
  * fold via `min-h-dvh` + `main.flex-1` — never let the footer ride up mid-viewport.
+ *
+ * `footer` is a Server Component slot from the marketing layout so social links
+ * stay server-fetched (DEC-046) and are not imported into this client bundle.
  */
 export function MarketingShell({
   children,
-  socialLinks = [],
+  footer = null,
 }: {
   children: ReactNode;
-  socialLinks?: SocialLinkPublic[];
+  footer?: ReactNode;
 }) {
   const pathname = usePathname();
   const reader = isDocumentReaderPath(pathname);
@@ -67,7 +68,7 @@ export function MarketingShell({
           {children}
         </PageShell>
       </main>
-      {!reader ? <SiteFooter socialLinks={socialLinks} /> : null}
+      {!reader ? footer : null}
       {!liveExam ? <SupportWidget mode="guest" /> : null}
     </div>
   );
