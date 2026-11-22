@@ -73,7 +73,7 @@ export function UserMenu({
       <Skeleton
         className={cn(
           'shrink-0 rounded-full',
-          variant === 'header' || loginOnly ? 'size-9' : compact ? 'h-9 w-24' : 'h-10 w-28',
+          variant === 'header' || loginOnly ? 'size-11' : compact ? 'h-11 w-28' : 'h-11 w-28',
         )}
       />
     );
@@ -185,7 +185,7 @@ export function UserMenu({
         aria-label="Account menu"
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          'flex size-9 cursor-pointer items-center justify-center rounded-full',
+          'flex size-11 cursor-pointer items-center justify-center rounded-full',
           'transition-[box-shadow,transform,opacity] duration-[var(--duration-fast)] ease-[var(--ease-out)]',
           'hover:opacity-90 hover:ring-2 hover:ring-[var(--accent)]/25 focus-visible:outline-none',
           'focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2',

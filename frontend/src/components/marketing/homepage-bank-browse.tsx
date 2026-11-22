@@ -103,7 +103,7 @@ export function HomepageBankBrowseCategories({ categories }: CategoriesProps) {
       ctaHref={categoriesCtaHref}
       toneLabel={categories.eyebrow?.trim() || 'Preliminary'}
     >
-      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-3.5 xl:grid-cols-5">
+      <ul className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 sm:grid-cols-3 sm:gap-3.5 xl:grid-cols-5">
         {previewCategories.map((tile) => (
           <li key={tile.id}>
             <HomepageTileCard
@@ -156,7 +156,7 @@ export function HomepageBankBrowseWrittenCategories({ writtenCategories }: Writt
             No Written titles published yet. Admins promote Written categories in Written Bank
             Categories — use Others to browse anytime.
           </p>
-          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-3.5 xl:grid-cols-5">
+          <ul className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 sm:grid-cols-3 sm:gap-3.5 xl:grid-cols-5">
             <li>
               <HomepageOthersTile
                 href={othersHref}
@@ -168,7 +168,7 @@ export function HomepageBankBrowseWrittenCategories({ writtenCategories }: Writt
           </ul>
         </div>
       ) : (
-        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-3.5 xl:grid-cols-5">
+        <ul className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 sm:grid-cols-3 sm:gap-3.5 xl:grid-cols-5">
           {preview.map((tile) => (
             <li key={tile.id}>
               <HomepageTileCard
@@ -247,7 +247,7 @@ export function HomepageBankBrowseTopics({ topics }: TopicsProps) {
             No topic categories yet. Admins add Topic Base categories under Taxonomy → Topics — use
             Others to open the folder explorer anytime.
           </p>
-          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-3.5 xl:grid-cols-5">
+          <ul className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 sm:grid-cols-3 sm:gap-3.5 xl:grid-cols-5">
             <li>
               <HomepageOthersTile
                 href={topicsOthersHref}
@@ -259,7 +259,7 @@ export function HomepageBankBrowseTopics({ topics }: TopicsProps) {
           </ul>
         </div>
       ) : (
-        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-3.5 xl:grid-cols-5">
+        <ul className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 sm:grid-cols-3 sm:gap-3.5 xl:grid-cols-5">
           {previewTopics.map((tile) => (
             <li key={tile.id}>
               <HomepageTileCard

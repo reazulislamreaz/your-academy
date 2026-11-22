@@ -94,7 +94,7 @@ export function LearnerMobileNav() {
           headerExtra={
             <div className="flex items-center justify-between gap-3">
               <p className="text-xs font-medium text-[var(--muted)]">Appearance</p>
-              <LearnerThemeToggle className="size-9 rounded-full border-[var(--line)] bg-[var(--bg-muted)] shadow-none" />
+              <LearnerThemeToggle className="size-11 rounded-full border-[var(--line)] bg-[var(--bg-muted)] shadow-none" />
             </div>
           }
         >

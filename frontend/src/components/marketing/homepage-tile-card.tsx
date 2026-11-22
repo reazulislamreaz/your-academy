@@ -41,7 +41,7 @@ export function HomepageTileCard({
           )}
         </span>
         <ArrowUpRight
-          className="h-3.5 w-3.5 text-[var(--muted)] opacity-0 transition-[opacity,transform,color] duration-200 group-hover:translate-x-0 group-hover:text-[var(--highlight)] group-hover:opacity-100"
+          className="h-3.5 w-3.5 text-[var(--muted)] opacity-70 transition-[opacity,transform,color] duration-200 group-hover:translate-x-0.5 group-hover:text-[var(--highlight)] group-hover:opacity-100"
           aria-hidden
         />
       </span>

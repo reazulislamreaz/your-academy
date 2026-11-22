@@ -157,7 +157,7 @@ export function SupportWidget({
     <div className={cn('pointer-events-none fixed inset-x-0 bottom-0 z-50', className)}>
       <div className="pointer-events-auto absolute right-3.5 bottom-[max(1rem,env(safe-area-inset-bottom))] flex flex-col items-end gap-3 sm:right-6 sm:bottom-6">
         {open ? (
-          <div className="flex h-[min(32rem,calc(100vh-6rem))] w-[min(24rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-[1.25rem] border border-[var(--line)] bg-[var(--bg-elevated)] shadow-[var(--shadow-lg)]">
+          <div className="flex h-[min(32rem,calc(100dvh-6rem))] max-h-[calc(100dvh-5.5rem)] w-[min(24rem,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-[1.25rem] border border-[var(--line)] bg-[var(--bg-elevated)] shadow-[var(--shadow-lg)]">
             {booting ? (
               <div className="flex flex-1 items-center justify-center p-6 text-sm text-[var(--muted)]">
                 Connecting…
@@ -175,7 +175,7 @@ export function SupportWidget({
                     type="button"
                     aria-label="Close"
                     onClick={() => setOpen(false)}
-                    className="rounded-lg p-1.5 text-[var(--muted)] hover:bg-[var(--bg-muted)]"
+                    className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-[var(--muted)] hover:bg-[var(--bg-muted)]"
                   >
                     <X className="size-4" />
                   </button>
@@ -195,6 +195,8 @@ export function SupportWidget({
                   <Label htmlFor="support-guest-wa">WhatsApp</Label>
                   <Input
                     id="support-guest-wa"
+                    type="tel"
+                    inputMode="tel"
                     value={guestWhatsapp}
                     onChange={(e) => setGuestWhatsapp(e.target.value)}
                     placeholder="+8801…"

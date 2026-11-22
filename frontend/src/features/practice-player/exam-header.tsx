@@ -98,7 +98,7 @@ export function ExamHeader({
           type="button"
           variant="outline"
           size="sm"
-          className="min-h-10 cursor-pointer border-[var(--danger)]/35 text-[var(--danger-fg)] hover:bg-[var(--danger-soft)]"
+          className="min-h-11 cursor-pointer border-[var(--danger)]/35 text-[var(--danger-fg)] hover:bg-[var(--danger-soft)]"
           disabled={endDisabled}
           onClick={onEndExam}
         >

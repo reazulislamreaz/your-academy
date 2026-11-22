@@ -114,7 +114,7 @@ function AppHeaderInner() {
         <Link
           href="/bookmarks"
           aria-label="Saved MCQs"
-          className="hidden size-10 items-center justify-center rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-muted)] text-[var(--ink-soft)] transition-colors hover:bg-[var(--bg-soft)] hover:text-[var(--ink)] md:inline-flex lg:h-10 lg:w-auto lg:gap-2 lg:px-3.5"
+          className="hidden size-11 items-center justify-center rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-muted)] text-[var(--ink-soft)] transition-colors hover:bg-[var(--bg-soft)] hover:text-[var(--ink)] md:inline-flex lg:h-11 lg:w-auto lg:gap-2 lg:px-3.5"
         >
           <Bookmark className="size-4 shrink-0" aria-hidden strokeWidth={2} />
           <span className="hidden text-sm font-semibold lg:inline">Saved</span>
@@ -123,7 +123,7 @@ function AppHeaderInner() {
         <Link
           href="/questions"
           aria-label="Search questions"
-          className="flex size-10 items-center justify-center rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-muted)] text-[var(--ink-soft)] transition-colors hover:bg-[var(--bg-soft)] hover:text-[var(--ink)] sm:hidden"
+          className="flex size-11 items-center justify-center rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-muted)] text-[var(--ink-soft)] transition-colors hover:bg-[var(--bg-soft)] hover:text-[var(--ink)] sm:hidden"
         >
           <Search className="size-[18px]" aria-hidden strokeWidth={1.75} />
         </Link>

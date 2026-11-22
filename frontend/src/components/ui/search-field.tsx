@@ -62,12 +62,13 @@ export function SearchField({
           'disabled:cursor-not-allowed disabled:opacity-60',
           // Hide native search clear so we use a consistent X control.
           '[&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden',
+          // text-base (≥16px) on mobile avoids iOS focus zoom; sm:text-sm on larger screens.
           variant === 'default' &&
-            'ya-control h-10 rounded-[var(--radius)] py-0 pr-10 pl-9 text-base shadow-[var(--shadow-sm)] sm:text-sm',
+            'ya-control min-h-11 rounded-[var(--radius)] py-0 pr-11 pl-9 text-base shadow-[var(--shadow-sm)] sm:text-sm',
           variant === 'pill' &&
-            'min-h-12 rounded-full py-2 pr-11 pl-11 text-sm leading-normal',
+            'min-h-12 rounded-full py-2 pr-12 pl-11 text-base leading-normal sm:text-sm',
           variant === 'header' &&
-            'h-10 rounded-full py-0 pr-10 pl-9 text-sm',
+            'min-h-11 rounded-full py-0 pr-11 pl-9 text-base sm:text-sm',
         )}
         {...props}
       />
@@ -77,10 +78,10 @@ export function SearchField({
           aria-label="Clear search"
           disabled={disabled}
           className={cn(
-            'absolute top-1/2 flex -translate-y-1/2 cursor-pointer items-center justify-center rounded-full',
+            'absolute top-1/2 flex min-h-11 min-w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full',
             'text-[var(--muted)] transition-colors hover:bg-[var(--bg-soft)] hover:text-[var(--ink)]',
             'disabled:pointer-events-none',
-            variant === 'pill' ? 'right-3 size-7' : 'right-2 size-7',
+            variant === 'pill' ? 'right-1.5' : 'right-0.5',
           )}
           onClick={clear}
         >

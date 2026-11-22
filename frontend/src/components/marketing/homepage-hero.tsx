@@ -190,7 +190,7 @@ export function HomepageHero({ hero, heroImageUrl, liveStats = null }: Props) {
                 <li key={pill.href}>
                   <Link
                     href={pill.href}
-                    className="inline-flex min-h-10 items-center rounded-full border border-[var(--hp-panel-border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.95),var(--bg-elevated))] px-3.5 text-xs font-semibold text-[var(--ink-soft)] shadow-[var(--shadow-sm)] transition-[transform,border-color,color,background-color,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--highlight)_30%,var(--line))] hover:text-[var(--highlight)] hover:shadow-[var(--hp-shadow)] active:translate-y-0"
+                    className="inline-flex min-h-11 items-center rounded-full border border-[var(--hp-panel-border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.95),var(--bg-elevated))] px-3.5 text-xs font-semibold text-[var(--ink-soft)] shadow-[var(--shadow-sm)] transition-[transform,border-color,color,background-color,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--highlight)_30%,var(--line))] hover:text-[var(--highlight)] hover:shadow-[var(--hp-shadow)] active:translate-y-0"
                   >
                     {pill.label}
                   </Link>

@@ -198,7 +198,7 @@ export function QuestionBankCategoriesDirectory({ heading, subtitle, tiles }: Pr
               />
             ) : (
               <Reveal>
-                <ul className="motion-stagger grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 lg:gap-4 xl:grid-cols-6">
+                <ul className="motion-stagger grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 lg:gap-4 xl:grid-cols-6">
                   {filtered.map((card) => (
                     <li key={card.key}>
                       <HomepageTileCard

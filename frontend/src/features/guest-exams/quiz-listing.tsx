@@ -133,7 +133,7 @@ export function QuizListing({ basePath = '/exams', embedded = false }: Props) {
                         <Link href={`${takeBase}/${exam.slug}`} className="block">
                           <Button
                             size="sm"
-                            className="min-h-11 w-full sm:min-h-9 sm:w-auto sm:px-3.5"
+                            className="min-h-11 w-full sm:w-auto sm:px-3.5"
                           >
                             Start
                           </Button>

@@ -200,6 +200,8 @@ body {
   line-height: var(--leading-normal);
   /* 0 — any positive tracking splits Bengali conjuncts and digits (১). */
   letter-spacing: 0;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
   -webkit-font-smoothing: antialiased;
   /* optimizeLegibility can distort complex-script shaping in some browsers. */
   text-rendering: auto;
@@ -1821,7 +1823,7 @@ a.site-footer-social-link:focus-visible {
 }
 
 .learner-mobile-nav-link {
-  min-height: 2.85rem;
+  min-height: 2.75rem;
   padding: 0.55rem 0.75rem;
   border-radius: 0.75rem;
   font-size: 0.9375rem;

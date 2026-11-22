@@ -27,8 +27,8 @@ const buttonVariants = cva(
           'ya-btn-sweep--soft bg-[var(--highlight-soft)] text-[var(--highlight)] hover:text-[var(--highlight)]',
       },
       size: {
-        /* min-height + py so Bengali matras are not clipped */
-        sm: 'min-h-9 px-3.5 py-1.5 text-xs',
+        /* Touch-friendly ≥44px; py keeps Bengali matras from clipping */
+        sm: 'min-h-11 px-3.5 py-1.5 text-sm',
         md: 'min-h-11 px-4.5 py-2',
         lg: 'min-h-12 px-6 py-2.5 text-base',
         icon: 'min-h-11 min-w-11 p-2',

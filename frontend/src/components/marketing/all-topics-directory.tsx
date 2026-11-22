@@ -284,7 +284,7 @@ export function AllTopicsDirectory({
       ) : (
         <div className="space-y-8">
           {folderTiles.length > 0 ? (
-            <ul className="motion-stagger grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 lg:gap-4">
+            <ul className="motion-stagger grid grid-cols-1 gap-2.5 min-[360px]:grid-cols-2 sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-5 lg:gap-4 xl:grid-cols-6">
               {folderTiles.map((tile) => (
                 <li key={tile.id}>
                   <HomepageTileCard

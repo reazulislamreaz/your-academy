@@ -11,7 +11,7 @@ import { LEARNER_THEME_BOOT_SCRIPT, LEARNER_THEME_DEFAULT } from '@/lib/learner-
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <div
-      className="learner-theme admin-theme desk-canvas flex min-h-screen overflow-x-clip"
+      className="learner-theme admin-theme desk-canvas flex min-h-dvh overflow-x-clip"
       data-theme={LEARNER_THEME_DEFAULT}
       suppressHydrationWarning
     >

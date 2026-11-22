@@ -23,7 +23,7 @@ export function LearnerThemeToggle({ className, showLabel = false }: Props) {
       aria-pressed={isDark}
       title={isDark ? 'Dark mode · switch to light' : 'Light mode · switch to dark'}
       className={cn(
-        'inline-flex size-10 items-center justify-center rounded-[12px] border border-[var(--line)] bg-[var(--bg-muted)] text-[var(--ink-soft)] transition-colors hover:border-[var(--line-strong)] hover:bg-[var(--bg-soft)] hover:text-[var(--ink)]',
+        'inline-flex size-11 items-center justify-center rounded-[12px] border border-[var(--line)] bg-[var(--bg-muted)] text-[var(--ink-soft)] transition-colors hover:border-[var(--line-strong)] hover:bg-[var(--bg-soft)] hover:text-[var(--ink)]',
         showLabel && 'w-auto gap-2 px-2.5 sm:px-3',
         className,
       )}
