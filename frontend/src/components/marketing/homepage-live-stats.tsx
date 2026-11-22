@@ -1,6 +1,5 @@
 'use client';
 
-import type { CSSProperties } from 'react';
 import Link from 'next/link';
 import { BookOpen, FolderTree, Layers, Newspaper, type LucideIcon } from 'lucide-react';
 import type { HomepagePayload } from '@your-academy/shared';
@@ -49,6 +48,10 @@ const ITEMS: Array<{
 /** Verified platform counts from the API — never fabricated. */
 export function HomepageLiveStats({ stats, content }: Props) {
   const heading = content?.heading?.trim() || 'Live platform library';
+  const eyebrow = content?.eyebrow?.trim() || 'Live data';
+  const subtitle =
+    content?.subtitle?.trim() ||
+    'Live counts from published content — not marketing estimates.';
 
   return (
     <section
@@ -56,71 +59,57 @@ export function HomepageLiveStats({ stats, content }: Props) {
       aria-labelledby="stats-heading"
       className="hp-section hp-section-tone hp-library-pair-top"
     >
-      <HomepageReveal className="marketing-container" staggerChildren>
-        <div className="hp-library-band relative z-[1] p-5 sm:p-7 lg:p-8" data-hp-stagger>
-          <div className="relative z-[1] flex flex-col gap-8 lg:gap-10">
-            <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between sm:gap-10">
-              <div className="max-w-xl space-y-3">
-                <div className="flex items-center gap-3">
-                  <span className="hp-mark mb-0" aria-hidden />
-                  <span className="hp-live-badge" aria-live="polite">
-                    <span className="relative flex h-2 w-2 shrink-0" aria-hidden>
-                      <span className="hp-live-ping absolute inline-flex h-full w-full rounded-full bg-[var(--highlight)] opacity-45" />
-                      <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--highlight)]" />
-                    </span>
-                    Live data
-                  </span>
-                </div>
-                <h2
-                  id="stats-heading"
-                  className="hp-heading text-[1.5rem] sm:text-2xl md:text-[1.9rem]"
-                >
-                  {heading}
-                </h2>
-                <p className="hp-lede text-sm sm:text-[0.975rem]">
-                  Live counts from published content — not marketing estimates.
-                </p>
-              </div>
-            </div>
-
-            <ul className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-              {ITEMS.map((item, index) => {
-                const raw = stats?.[item.key];
-                const Icon = item.Icon;
-                const delayStyle = {
-                  '--hp-stat-delay': `${index * 0.35}s`,
-                } as CSSProperties;
-
-                return (
-                  <li key={item.key} data-hp-stagger className="min-w-0" style={delayStyle}>
-                    <Link href={item.href} className="hp-stat-card group block h-full p-4 sm:p-5">
-                      <div className="flex items-start justify-between gap-3">
-                        <span className="hp-icon-chip h-10 w-10">
-                          <Icon className="h-[1.125rem] w-[1.125rem]" aria-hidden />
-                        </span>
-                        <span className="hp-stat-signal" aria-hidden />
-                      </div>
-
-                      <p className="mt-4 text-[0.7rem] font-semibold tracking-[0.04em] text-[var(--muted)]">
-                        {item.label}
-                      </p>
-                      <p className="mt-1.5 font-display text-[1.85rem] font-bold tracking-tight text-[var(--ink)] transition-colors duration-200 group-hover:text-[var(--highlight)] sm:text-[2.15rem]">
-                        {raw == null ? (
-                          <span className="tabular-nums" aria-label="Count unavailable">
-                            —
-                          </span>
-                        ) : (
-                          <HomepageCountUp value={raw} />
-                        )}
-                      </p>
-                      <span className="hp-stat-bar" aria-hidden />
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
+      <HomepageReveal className="marketing-container space-y-5 sm:space-y-6" staggerChildren>
+        <div className="max-w-xl space-y-2" data-hp-stagger>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="hp-mark mb-0" aria-hidden />
+            <span className="hp-live-badge" aria-live="polite">
+              <span className="relative flex h-1.5 w-1.5 shrink-0" aria-hidden>
+                <span className="hp-live-ping absolute inline-flex h-full w-full rounded-full bg-[var(--highlight)] opacity-40" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[var(--highlight)]" />
+              </span>
+              {eyebrow}
+            </span>
           </div>
+          <h2 id="stats-heading" className="hp-heading text-[1.25rem] sm:text-xl md:text-[1.65rem]">
+            {heading}
+          </h2>
+          {subtitle ? <p className="hp-lede text-sm">{subtitle}</p> : null}
         </div>
+
+        <ul className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
+          {ITEMS.map((item) => {
+            const raw = stats?.[item.key];
+            const Icon = item.Icon;
+
+            return (
+              <li key={item.key} data-hp-stagger className="min-w-0">
+                <Link
+                  href={item.href}
+                  className="hp-stat-card group flex h-full min-h-11 flex-col gap-2 p-3 sm:p-3.5"
+                >
+                  <span className="hp-icon-chip h-8 w-8">
+                    <Icon className="h-3.5 w-3.5" aria-hidden />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-[0.65rem] font-semibold leading-snug tracking-[0.03em] text-[var(--muted)] text-pretty">
+                      {item.label}
+                    </p>
+                    <p className="mt-0.5 font-display text-[1.35rem] font-bold tracking-tight text-[var(--ink)] transition-colors duration-200 group-hover:text-[var(--highlight)] sm:text-[1.5rem]">
+                      {raw == null ? (
+                        <span className="tabular-nums" aria-label="Count unavailable">
+                          —
+                        </span>
+                      ) : (
+                        <HomepageCountUp value={raw} />
+                      )}
+                    </p>
+                  </div>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
       </HomepageReveal>
     </section>
   );

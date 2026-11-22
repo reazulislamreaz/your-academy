@@ -74,22 +74,23 @@ Apply `data-theme` + Sun/Moon toggle on `(app)` and `(admin)` Orbit shells only 
 
 ## 3. Typography (`lib/fonts.ts` + `next/font`)
 
-**Two-tier typography (DEC-037):**
+**Bilingual typography (DEC-037):**
 
-1. **UI / brand — Anek Latin + Anek Bangla** (matched multi-script). `--font-stack` = Latin → Bangla. Headings, nav, buttons, dashboards.
-2. **Questions & answers — Hind Siliguri** (simple Bn+Latin reading face). `--font-reading-stack` / `.font-reading`, `.type-prose*`, `.type-mcq-option`, `.type-bn-serial`. Regular weight (400); medium (500–600) for stems/serials. **letter-spacing: 0**. Never `tabular-nums` / synthetic bold on Bengali.
-3. **Marketing homepage exception — Plus Jakarta Sans + Hind Siliguri** under `.homepage-shell` (`--font-marketing-stack`). Clearer Bengali numerals on the public homepage; learner/admin remain on Anek.
+1. **English / Latin — Inter** (`--font-latin`). Headings, nav, buttons, dashboards, marketing.
+2. **Bengali (Unicode) — Noto Sans Bengali** (`--font-bengali`). UI Bangla + educational Q&A (stems, options, answers, explanations, `.type-bn-serial`). Clear digits including **১**.
+3. **Stacks:** `--font-stack` = Inter → Noto; `--font-reading-stack` = Noto → Inter. Homepage uses the same stacks (no separate marketing face).
+4. **Do not embed SutonnyMJ** — ANSI/Bijoy only; this product stores Unicode Bengali.
 
 | Role | Family | CSS var / class |
 |------|--------|-----------------|
-| UI / body (all shells) | **Anek** stack | `--font-sans` / `.font-sans` |
-| Brand / headings | **Anek** 700–800 | `--font-display` / `.font-display` |
-| Learner shell UI | **Anek** stack | `--font-learner` |
-| Educational Q&A / MCQ / explanations | **Hind Siliguri** | `--font-reading` / `.type-prose`, `.type-mcq-option`, `.type-bn-serial` |
+| UI / body (all shells) | **Inter** + Noto | `--font-sans` / `.font-sans` |
+| Brand / headings | **Inter** 700–800 (+ Noto for Bn) | `--font-display` / `.font-display` |
+| Learner shell UI | same stack | `--font-learner` |
+| Educational Q&A / MCQ / explanations | **Noto Sans Bengali** | `--font-reading` / `.type-prose`, `.type-mcq-option`, `.type-bn-serial` |
 
 **Scale / leading:** UI leading 1.32–1.8; reading `--leading-reading` **1.85**.  
 Utilities: `.type-prose`, `.type-prose-title` (weight 500), `.type-mcq-option` (weight 400), `.type-bn-serial` (weight 600, Bn digits), `.ya-control`.  
-`font-display: swap`. No decorative fonts on educational content. Never `tabular-nums` or letter-spacing on Bengali reading text.
+`font-display: swap`. **letter-spacing: 0** (body + Tailwind `tracking-*` neutralized). Never `tabular-nums` or synthetic bold on Bengali reading text.
 
 ---
 

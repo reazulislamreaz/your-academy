@@ -40,7 +40,7 @@ export function HomepageProductFeatures({ content }: Props) {
       <HomepageReveal className="marketing-container space-y-10 md:space-y-12" staggerChildren>
         <div className="mx-auto max-w-2xl space-y-3 text-center sm:mx-0 sm:max-w-xl sm:text-left" data-hp-stagger>
           <span className="hp-mark mx-auto sm:mx-0" aria-hidden />
-          <p className="hp-eyebrow mx-auto sm:mx-0">Product</p>
+          <p className="hp-eyebrow mx-auto sm:mx-0">{data.eyebrow?.trim() || 'Product'}</p>
           <h2
             id="features-heading"
             className="hp-heading text-[1.5rem] sm:text-2xl md:text-[1.9rem]"

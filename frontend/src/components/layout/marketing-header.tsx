@@ -15,10 +15,7 @@ import Link from 'next/link';
 import { BrandMark } from './brand-mark';
 import { MobileNav } from './mobile-nav';
 import { UserMenu } from './user-menu';
-import {
-  marketingNavItems,
-  resolveActiveMarketingNavId,
-} from './marketing-nav';
+import { marketingNavItems, resolveActiveMarketingNavId } from './marketing-nav';
 import { Button } from '@/components/ui/button';
 import { useMe } from '@/features/auth/use-auth';
 
@@ -46,9 +43,7 @@ function MarketingNavLinks({ activeId }: { activeId: string | null }) {
       ready: true,
     };
     setPill((prev) =>
-      prev.x === next.x && prev.width === next.width && prev.ready === next.ready
-        ? prev
-        : next,
+      prev.x === next.x && prev.width === next.width && prev.ready === next.ready ? prev : next,
     );
   }, [activeId]);
 
@@ -66,8 +61,7 @@ function MarketingNavLinks({ activeId }: { activeId: string | null }) {
     window.addEventListener('resize', onResize);
     nav.addEventListener('scroll', onResize, { passive: true });
 
-    const ro =
-      typeof ResizeObserver !== 'undefined' ? new ResizeObserver(onResize) : null;
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(onResize) : null;
     ro?.observe(nav);
     for (const el of itemRefs.current.values()) ro?.observe(el);
 
@@ -138,8 +132,7 @@ function MarketingHeaderInner() {
         {
           '--header-h': '64px',
           // Used by MarketingShell main min-height so short pages keep footer below the fold.
-          '--marketing-header-offset':
-            'calc(4.5rem + env(safe-area-inset-top, 0px))',
+          '--marketing-header-offset': 'calc(4.5rem + env(safe-area-inset-top, 0px))',
         } as CSSProperties
       }
       data-marketing-menubar
@@ -166,7 +159,7 @@ function MarketingHeaderInner() {
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="marketing-nav-action cursor-pointer rounded-full px-2.5 sm:px-3.5"
+                  className="marketing-nav-action min-h-11 cursor-pointer rounded-full px-2.5 sm:px-3.5"
                 >
                   <LogIn className="size-4" aria-hidden />
                   <span className="hidden min-[380px]:inline">Login</span>
@@ -183,7 +176,10 @@ function MarketingHeaderInner() {
                 me.data ? null : (
                   <>
                     <Link href="/login" className="block w-full">
-                      <Button variant="outline" className="marketing-nav-action w-full rounded-full">
+                      <Button
+                        variant="outline"
+                        className="marketing-nav-action w-full rounded-full"
+                      >
                         <LogIn className="size-4" aria-hidden />
                         Sign in
                       </Button>
@@ -238,8 +234,7 @@ export function MarketingHeader() {
           style={
             {
               '--header-h': '64px',
-              '--marketing-header-offset':
-                'calc(4.5rem + env(safe-area-inset-top, 0px))',
+              '--marketing-header-offset': 'calc(4.5rem + env(safe-area-inset-top, 0px))',
             } as CSSProperties
           }
         >

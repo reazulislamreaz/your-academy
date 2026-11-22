@@ -86,9 +86,7 @@ export function HomepageCms() {
   const [heroImageAssetId, setHeroImageAssetId] = useState<string | null>(null);
   const [heroPreviewUrl, setHeroPreviewUrl] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
-  const [message, setMessage] = useState<{ tone: 'success' | 'danger'; text: string } | null>(
-    null,
-  );
+  const [message, setMessage] = useState<{ tone: 'success' | 'danger'; text: string } | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [selectedId, setSelectedId] = useState<string>('hero');
   const [dragIndex, setDragIndex] = useState<number | null>(null);
@@ -154,7 +152,10 @@ export function HomepageCms() {
       return true;
     }
     setFieldErrors(result.errors);
-    setMessage({ tone: 'danger', text: result.summary ?? 'Could not save — fix highlighted fields.' });
+    setMessage({
+      tone: 'danger',
+      text: result.summary ?? 'Could not save — fix highlighted fields.',
+    });
     if (Object.keys(result.errors).some((k) => k.startsWith('hero.'))) {
       setSelectedId('hero');
     }
@@ -209,17 +210,16 @@ export function HomepageCms() {
         ...prev.customSections,
         {
           id,
+          eyebrow: '',
           heading: 'New section',
           body: 'Describe this block for learners.',
           cta: { label: 'Learn more', href: '/register', visible: true },
+          layout: 'stack' as const,
           visible: true,
         },
       ],
       layout: {
-        sections: [
-          ...prev.layout.sections,
-          { id: toCustomLayoutId(id), visible: true },
-        ],
+        sections: [...prev.layout.sections, { id: toCustomLayoutId(id), visible: true }],
       },
     }));
     setSelectedId(toCustomLayoutId(id));
@@ -388,10 +388,7 @@ export function HomepageCms() {
     },
   });
 
-  const visibleCount = useMemo(
-    () => sections.filter((s) => s.visible).length,
-    [sections],
-  );
+  const visibleCount = useMemo(() => sections.filter((s) => s.visible).length, [sections]);
 
   if (adminQ.isLoading) {
     return (
@@ -525,12 +522,7 @@ export function HomepageCms() {
             <p className="text-xs text-[var(--muted)]">
               Drag to reorder. Use the eye icon or the editor checkbox to show/hide sections.
             </p>
-            <Stagger
-              stepMs={30}
-              className="space-y-1.5"
-              role="list"
-              aria-label="Homepage sections"
-            >
+            <Stagger stepMs={30} className="space-y-1.5" role="list" aria-label="Homepage sections">
               {sections.map((entry, index) => (
                 <div
                   key={entry.id}
@@ -588,7 +580,9 @@ export function HomepageCms() {
                 Revisions
               </h3>
               {(revisionsQ.data ?? []).length === 0 ? (
-                <p className="text-xs text-[var(--muted)]">No snapshots yet. Publish to create one.</p>
+                <p className="text-xs text-[var(--muted)]">
+                  No snapshots yet. Publish to create one.
+                </p>
               ) : (
                 <ul className="max-h-48 space-y-1 overflow-y-auto text-xs">
                   {(revisionsQ.data ?? []).map((rev) => (
@@ -806,8 +800,8 @@ function SectionEditor({
     return (
       <div className="space-y-4">
         <Alert variant="info">
-          Hero fields map 1:1 to the live homepage. After editing, Save draft then Publish — then use
-          View live homepage to confirm.
+          Hero fields map 1:1 to the live homepage. After editing, Save draft then Publish — then
+          use View live homepage to confirm.
         </Alert>
         <Field label="Eyebrow / badge" error={fieldErrors['hero.eyebrow']}>
           <Input
@@ -917,11 +911,7 @@ function SectionEditor({
     );
   }
 
-  if (
-    sectionId === 'categories' ||
-    sectionId === 'writtenCategories' ||
-    sectionId === 'topics'
-  ) {
+  if (sectionId === 'categories' || sectionId === 'writtenCategories' || sectionId === 'topics') {
     const block =
       sectionId === 'categories'
         ? payload.categories
@@ -936,6 +926,28 @@ function SectionEditor({
           : 'Topic';
     return (
       <div className="space-y-4">
+        <Field label="Eyebrow label">
+          <Input
+            value={'eyebrow' in block ? (block.eyebrow ?? '') : ''}
+            onChange={(e) =>
+              onPatch((p) => {
+                if (sectionId === 'categories') {
+                  return { ...p, categories: { ...p.categories, eyebrow: e.target.value } };
+                }
+                if (sectionId === 'writtenCategories') {
+                  return {
+                    ...p,
+                    writtenCategories: {
+                      ...p.writtenCategories,
+                      eyebrow: e.target.value,
+                    },
+                  };
+                }
+                return { ...p, topics: { ...p.topics, eyebrow: e.target.value } };
+              })
+            }
+          />
+        </Field>
         <Field label="Heading">
           <Input
             value={block.heading}
@@ -1057,6 +1069,14 @@ function SectionEditor({
     const b = payload.howItWorks;
     return (
       <div className="space-y-4">
+        <Field label="Eyebrow">
+          <Input
+            value={b.eyebrow ?? ''}
+            onChange={(e) =>
+              onPatch((p) => ({ ...p, howItWorks: { ...p.howItWorks, eyebrow: e.target.value } }))
+            }
+          />
+        </Field>
         <Field label="Heading">
           <Input
             value={b.heading}
@@ -1171,12 +1191,16 @@ function SectionEditor({
   if (sectionId === 'why') {
     return (
       <div className="space-y-4">
+        <Field label="Eyebrow">
+          <Input
+            value={payload.why.eyebrow ?? ''}
+            onChange={(e) => onPatch((p) => ({ ...p, why: { ...p.why, eyebrow: e.target.value } }))}
+          />
+        </Field>
         <Field label="Heading">
           <Input
             value={payload.why.heading}
-            onChange={(e) =>
-              onPatch((p) => ({ ...p, why: { ...p.why, heading: e.target.value } }))
-            }
+            onChange={(e) => onPatch((p) => ({ ...p, why: { ...p.why, heading: e.target.value } }))}
           />
         </Field>
         <Field label="Points (one per line)">
@@ -1242,6 +1266,14 @@ function SectionEditor({
     };
     return (
       <div className="space-y-4">
+        <Field label="Eyebrow">
+          <Input
+            value={b.eyebrow ?? ''}
+            onChange={(e) =>
+              onPatch((p) => ({ ...p, accessFaq: { ...p.accessFaq, eyebrow: e.target.value } }))
+            }
+          />
+        </Field>
         <Field label="Heading">
           <Input
             value={b.heading}
@@ -1295,9 +1327,7 @@ function SectionEditor({
         </Field>
         <div className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm font-medium text-[var(--ink)]">
-              FAQ items ({b.faqs.length}/20)
-            </p>
+            <p className="text-sm font-medium text-[var(--ink)]">FAQ items ({b.faqs.length}/20)</p>
             <Button
               type="button"
               variant="outline"
@@ -1414,6 +1444,19 @@ function SectionEditor({
     if (!block) return <p className="text-sm text-[var(--muted)]">Custom block missing.</p>;
     return (
       <div className="space-y-4">
+        <Field label="Eyebrow (optional)">
+          <Input
+            value={block.eyebrow ?? ''}
+            onChange={(e) =>
+              onPatch((p) => ({
+                ...p,
+                customSections: p.customSections.map((c) =>
+                  c.id === customId ? { ...c, eyebrow: e.target.value } : c,
+                ),
+              }))
+            }
+          />
+        </Field>
         <Field label="Heading">
           <Input
             value={block.heading}
@@ -1441,15 +1484,32 @@ function SectionEditor({
             }
           />
         </Field>
+        <Field label="Layout">
+          <select
+            className="ya-control w-full rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] px-3 py-2 text-sm"
+            value={block.layout ?? 'stack'}
+            onChange={(e) =>
+              onPatch((p) => ({
+                ...p,
+                customSections: p.customSections.map((c) =>
+                  c.id === customId
+                    ? { ...c, layout: e.target.value === 'band' ? 'band' : 'stack' }
+                    : c,
+                ),
+              }))
+            }
+          >
+            <option value="stack">Compact stack</option>
+            <option value="band">Highlighted band</option>
+          </select>
+        </Field>
         <CtaFields
           label="Button"
           cta={block.cta}
           onChange={(cta) =>
             onPatch((p) => ({
               ...p,
-              customSections: p.customSections.map((c) =>
-                c.id === customId ? { ...c, cta } : c,
-              ),
+              customSections: p.customSections.map((c) => (c.id === customId ? { ...c, cta } : c)),
             }))
           }
         />
@@ -1477,6 +1537,14 @@ function SectionEditor({
   if (sectionId === 'latest') {
     return (
       <div className="space-y-4">
+        <Field label="Eyebrow">
+          <Input
+            value={payload.latest.eyebrow ?? ''}
+            onChange={(e) =>
+              onPatch((p) => ({ ...p, latest: { ...p.latest, eyebrow: e.target.value } }))
+            }
+          />
+        </Field>
         <Field label="Heading">
           <Input
             value={payload.latest.heading}
@@ -1506,6 +1574,14 @@ function SectionEditor({
     const b = payload.newsStrip;
     return (
       <div className="space-y-4">
+        <Field label="Eyebrow">
+          <Input
+            value={b.eyebrow ?? ''}
+            onChange={(e) =>
+              onPatch((p) => ({ ...p, newsStrip: { ...p.newsStrip, eyebrow: e.target.value } }))
+            }
+          />
+        </Field>
         <Field label="Heading">
           <Input
             value={b.heading}
@@ -1535,6 +1611,17 @@ function SectionEditor({
     const b = payload.dashboardPreview;
     return (
       <div className="space-y-4">
+        <Field label="Eyebrow">
+          <Input
+            value={b.eyebrow ?? ''}
+            onChange={(e) =>
+              onPatch((p) => ({
+                ...p,
+                dashboardPreview: { ...p.dashboardPreview, eyebrow: e.target.value },
+              }))
+            }
+          />
+        </Field>
         <Field label="Heading">
           <Input
             value={b.heading}
@@ -1585,6 +1672,17 @@ function SectionEditor({
   if (sectionId === 'productFeatures') {
     return (
       <div className="space-y-4">
+        <Field label="Eyebrow">
+          <Input
+            value={payload.productFeatures.eyebrow ?? ''}
+            onChange={(e) =>
+              onPatch((p) => ({
+                ...p,
+                productFeatures: { ...p.productFeatures, eyebrow: e.target.value },
+              }))
+            }
+          />
+        </Field>
         <Field label="Heading">
           <Input
             value={payload.productFeatures.heading}
@@ -1655,6 +1753,25 @@ function SectionEditor({
                 })
               }
             />
+            <Field label="Icon key">
+              <select
+                className="ya-control w-full rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] px-3 py-2 text-sm"
+                value={item.iconKey}
+                onChange={(e) =>
+                  onPatch((p) => {
+                    const items = [...p.productFeatures.items];
+                    items[i] = { ...items[i]!, iconKey: e.target.value };
+                    return { ...p, productFeatures: { ...p.productFeatures, items } };
+                  })
+                }
+              >
+                {['book', 'pen', 'clipboard', 'file', 'chart', 'newspaper'].map((key) => (
+                  <option key={key} value={key}>
+                    {key}
+                  </option>
+                ))}
+              </select>
+            </Field>
           </div>
         ))}
       </div>
@@ -1669,17 +1786,46 @@ function SectionEditor({
           {sectionId === 'liveStats' ? ' (platform counts)' : ' (published MCQs)'}.
         </p>
         {sectionId === 'liveStats' ? (
-          <Field label="Optional heading override">
-            <Input
-              value={payload.liveStats.heading ?? ''}
-              onChange={(e) =>
-                onPatch((p) => ({
-                  ...p,
-                  liveStats: { ...p.liveStats, heading: e.target.value },
-                }))
-              }
-            />
-          </Field>
+          <>
+            <Field label="Eyebrow (live badge)">
+              <Input
+                value={payload.liveStats.eyebrow ?? ''}
+                onChange={(e) =>
+                  onPatch((p) => ({
+                    ...p,
+                    liveStats: { ...p.liveStats, eyebrow: e.target.value },
+                  }))
+                }
+              />
+            </Field>
+            <Field label="Heading">
+              <Input
+                value={payload.liveStats.heading ?? ''}
+                placeholder="Live platform library"
+                onChange={(e) =>
+                  onPatch((p) => ({
+                    ...p,
+                    liveStats: { ...p.liveStats, heading: e.target.value },
+                  }))
+                }
+              />
+            </Field>
+            <Field label="Supporting text">
+              <Textarea
+                rows={2}
+                value={payload.liveStats.subtitle ?? ''}
+                onChange={(e) =>
+                  onPatch((p) => ({
+                    ...p,
+                    liveStats: { ...p.liveStats, subtitle: e.target.value },
+                  }))
+                }
+              />
+            </Field>
+            <p className="text-xs text-[var(--muted)]">
+              Stat numbers always come from live published platform counts.
+            </p>
+          </>
         ) : (
           <>
             <Field label="Eyebrow">
@@ -1730,15 +1876,7 @@ function SectionEditor({
   );
 }
 
-function Field({
-  label,
-  error,
-  children,
-}: {
-  label: string;
-  error?: string;
-  children: ReactNode;
-}) {
+function Field({ label, error, children }: { label: string; error?: string; children: ReactNode }) {
   return (
     <div className="space-y-2">
       <Label>{label}</Label>

@@ -16,10 +16,7 @@ import { RegisterPageSkeleton } from '@/components/skeletons';
 import { PasswordField } from '@/features/auth/password-field';
 import { PasswordStrength } from '@/features/auth/password-strength';
 import { meQueryKey } from '@/features/auth/use-auth';
-import {
-  WhatsappField,
-  toAuthWhatsappPayload,
-} from '@/features/auth/whatsapp-field';
+import { WhatsappField, toAuthWhatsappPayload } from '@/features/auth/whatsapp-field';
 import {
   clearGuestResultLink,
   loadGuestResultLink,
@@ -126,7 +123,11 @@ function RegisterForm() {
         <form onSubmit={onSubmit} className="space-y-3 lg:space-y-3" noValidate>
           <Field className="space-y-1.5">
             <Label htmlFor="name" className="auth-label-row">
-              <User className="size-3.5 text-[var(--muted-strong)]" aria-hidden strokeWidth={2.25} />
+              <User
+                className="size-3.5 text-[var(--muted-strong)]"
+                aria-hidden
+                strokeWidth={2.25}
+              />
               Full name
             </Label>
             <Input
@@ -172,7 +173,11 @@ function RegisterForm() {
 
           <Field className="space-y-1.5">
             <Label htmlFor="password" className="auth-label-row">
-              <Lock className="size-3.5 text-[var(--muted-strong)]" aria-hidden strokeWidth={2.25} />
+              <Lock
+                className="size-3.5 text-[var(--muted-strong)]"
+                aria-hidden
+                strokeWidth={2.25}
+              />
               Password
             </Label>
             <PasswordField
@@ -189,7 +194,11 @@ function RegisterForm() {
 
           <Field className="space-y-1.5">
             <Label htmlFor="confirmPassword" className="auth-label-row">
-              <Lock className="size-3.5 text-[var(--muted-strong)]" aria-hidden strokeWidth={2.25} />
+              <Lock
+                className="size-3.5 text-[var(--muted-strong)]"
+                aria-hidden
+                strokeWidth={2.25}
+              />
               Confirm password
             </Label>
             <PasswordField
@@ -233,7 +242,7 @@ function RegisterForm() {
               ? `/login?next=${encodeURIComponent(searchParams.get('next')!)}`
               : '/login'
           }
-          className="font-bold text-[var(--highlight)] underline-offset-2 hover:underline"
+          className="inline-flex min-h-11 items-center font-bold text-[var(--highlight)] underline-offset-2 hover:underline"
         >
           Sign in
         </Link>

@@ -1,49 +1,36 @@
-import { Anek_Bangla, Anek_Latin, Hind_Siliguri, Plus_Jakarta_Sans } from 'next/font/google';
+import { Inter, Noto_Sans_Bengali } from 'next/font/google';
 
 /**
- * UI chrome — Anek Latin + Anek Bangla (premium multi-script brand voice).
- * Variable load; CSS stack Latin → Bangla. See DEC-037.
+ * Platform typography (DEC-037):
+ * - English / Latin UI: Inter
+ * - Bengali (Unicode): Noto Sans Bengali — clear digits including ১
+ *
+ * SutonnyMJ is ANSI/Bijoy-only and cannot render Unicode Bengali on the web;
+ * Noto Sans Bengali is the Unicode web standard that keeps Bn numerals readable.
+ * Stack Latin → Bengali so browsers pick Inter for Latin and Noto for Bn code points.
  */
-export const fontLatin = Anek_Latin({
+export const fontLatin = Inter({
   subsets: ['latin'],
   variable: '--font-latin',
   display: 'swap',
-  weight: 'variable',
+  weight: ['400', '500', '600', '700', '800'],
 });
 
-export const fontBengali = Anek_Bangla({
+export const fontBengali = Noto_Sans_Bengali({
   subsets: ['bengali'],
   variable: '--font-bengali',
   display: 'swap',
   weight: 'variable',
 });
 
-/**
- * Educational reading — Hind Siliguri (simple Bn+Latin).
- * Used for MCQ stems, options, answers, explanations, and Bn serials (`.type-bn-serial`).
- * Never pair with `tabular-nums` / synthetic bold — those fragment digits ১/২/৩.
- * Also used under `.homepage-shell` for clear Bn digits (DEC-037).
- */
-export const fontReading = Hind_Siliguri({
-  subsets: ['latin', 'bengali'],
-  variable: '--font-reading-face',
-  display: 'swap',
-  weight: ['400', '500', '600', '700'],
-});
+/** Same face as `fontBengali` — educational Q&A / serials use the Bengali stack. */
+export const fontReading = fontBengali;
 
-/**
- * Marketing homepage Latin face (DEC-037 homepage exception).
- * Scoped to `.homepage-shell` only — learner/admin stay on Anek.
- */
-export const fontMarketingLatin = Plus_Jakarta_Sans({
-  subsets: ['latin'],
-  variable: '--font-marketing-latin',
-  display: 'swap',
-  weight: ['400', '500', '600', '700', '800'],
-});
+/** @deprecated Alias — site-wide stack is Inter + Noto (no separate marketing face). */
+export const fontMarketingLatin = fontLatin;
 
-/** Apply all CSS variables on <html>. */
-export const fontVariableClassName = `${fontLatin.variable} ${fontBengali.variable} ${fontReading.variable} ${fontMarketingLatin.variable}`;
+/** Apply CSS variables on <html>. */
+export const fontVariableClassName = `${fontLatin.variable} ${fontBengali.variable}`;
 
 /** @deprecated Prefer role-specific exports / CSS stacks. */
 export const fontPrimary = fontLatin;

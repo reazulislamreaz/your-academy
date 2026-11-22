@@ -57,10 +57,8 @@ export function HomepageHero({ hero, heroImageUrl, liveStats = null }: Props) {
   const highlight = hero.titleHighlight.trim();
   const sideLabel = hero.titleAfter?.trim() || '';
   const tagline =
-    hero.description.trim() ||
-    'Practice published MCQs for BCS, Bank, NTRCA, and government jobs.';
-  const eyebrow =
-    hero.eyebrow.trim() || 'BCS · Bank · NTRCA · Primary · Government Jobs';
+    hero.description.trim() || 'Practice published MCQs for BCS, Bank, NTRCA, and government jobs.';
+  const eyebrow = hero.eyebrow.trim() || 'BCS · Bank · NTRCA · Primary · Government Jobs';
 
   const primaryLabel = resolveCtaLabel(hero.primaryCta.label, 'Browse MCQ Bank');
   const primaryHref = resolveCtaHref(hero.primaryCta.href, '/preli-question-bank');
@@ -83,18 +81,18 @@ export function HomepageHero({ hero, heroImageUrl, liveStats = null }: Props) {
         <div className="hero-mesh absolute inset-0" />
       </div>
 
-      <div className="relative mx-auto grid w-full min-w-0 max-w-[var(--marketing-content-max)] items-center gap-9 px-4 py-11 sm:gap-11 sm:px-6 sm:py-14 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-12 lg:px-8 lg:py-[4.5rem] xl:gap-16 xl:py-24">
+      <div className="relative mx-auto grid w-full min-w-0 max-w-[var(--marketing-content-max)] items-center gap-8 px-3.5 py-9 sm:gap-11 sm:px-6 sm:py-14 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-12 lg:px-8 lg:py-[4.5rem] xl:gap-16 xl:py-24">
         {/* Left — trust, value, action */}
         <HomepageHeroEntrance className="relative z-10 flex min-w-0 flex-col items-stretch gap-5 sm:gap-6 lg:items-start lg:pr-2">
           <div
             data-hp-hero
-            className="inline-flex max-w-full items-center gap-2.5 self-start rounded-full border border-[var(--hp-panel-border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.95),var(--bg-elevated))] px-3.5 py-1.5 shadow-[var(--hp-shadow)] backdrop-blur-sm"
+            className="inline-flex max-w-full items-start gap-2.5 self-start rounded-full border border-[var(--hp-panel-border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.95),var(--bg-elevated))] px-3 py-1.5 shadow-[var(--hp-shadow)] backdrop-blur-sm sm:items-center sm:px-3.5"
           >
-            <span className="relative flex h-2 w-2 shrink-0" aria-hidden>
+            <span className="relative mt-1.5 flex h-2 w-2 shrink-0 sm:mt-0" aria-hidden>
               <span className="hero-live-ping absolute inline-flex h-full w-full rounded-full bg-[var(--highlight)] opacity-40" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--highlight)]" />
             </span>
-            <p className="min-w-0 text-[0.75rem] leading-snug text-[var(--muted-strong)] sm:text-[0.8125rem]">
+            <p className="min-w-0 text-pretty break-words text-[0.72rem] leading-snug text-[var(--muted-strong)] sm:text-[0.8125rem]">
               {hasLiveCounts ? (
                 <>
                   {mcqCount != null ? (
@@ -131,7 +129,7 @@ export function HomepageHero({ hero, heroImageUrl, liveStats = null }: Props) {
             ) : null}
             <h1
               id="homepage-hero-heading"
-              className="font-display max-w-[15ch] text-[clamp(2.15rem,5.5vw,3.65rem)] leading-[1.05] font-bold tracking-tight text-balance"
+              className="font-display max-w-[15ch] text-[clamp(1.85rem,7.2vw,3.65rem)] leading-[1.05] font-bold tracking-tight text-balance"
             >
               <span className="block text-[var(--ink)]">{brand}</span>
               {highlight ? (
@@ -146,9 +144,7 @@ export function HomepageHero({ hero, heroImageUrl, liveStats = null }: Props) {
               ) : null}
             </h1>
             {highlight && sideLabel && sideLabel !== highlight ? (
-              <p className="max-w-md text-sm font-medium text-[var(--muted-strong)]">
-                {sideLabel}
-              </p>
+              <p className="max-w-md text-sm font-medium text-[var(--muted-strong)]">{sideLabel}</p>
             ) : null}
             <p className="max-w-md text-[0.95rem] leading-relaxed text-pretty text-[var(--muted-strong)] sm:text-base line-clamp-3">
               {tagline}

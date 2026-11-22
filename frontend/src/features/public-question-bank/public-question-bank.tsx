@@ -15,10 +15,7 @@ import {
   flattenSubcategories,
   publicCategoriesQueryKey,
 } from '@/lib/api/categories';
-import {
-  listPublicQuestionSetYears,
-  listPublicQuestionSets,
-} from '@/lib/api/public-questions';
+import { listPublicQuestionSetYears, listPublicQuestionSets } from '@/lib/api/public-questions';
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import { cn } from '@/lib/utils';
 
@@ -120,19 +117,13 @@ export function PublicQuestionBank({ className }: Props) {
 
   const yearOptions = useMemo(() => {
     const fromApi = (yearsQ.data ?? []).map((y) => y.trim()).filter(Boolean);
-    return [...new Set(fromApi)].sort(
-      (a, b) => Number(b) - Number(a) || b.localeCompare(a),
-    );
+    return [...new Set(fromApi)].sort((a, b) => Number(b) - Number(a) || b.localeCompare(a));
   }, [yearsQ.data]);
 
   // Drop invalid subcategory once catalog loads (keeps shareable URLs honest).
   useEffect(() => {
     if (categories.isLoading || categories.isError) return;
-    if (
-      appliedSubcategoryId &&
-      subcategoryOptions.length > 0 &&
-      !selectedSubcategory
-    ) {
+    if (appliedSubcategoryId && subcategoryOptions.length > 0 && !selectedSubcategory) {
       router.replace(
         buildBankHref(pathname, {
           q: appliedQ || undefined,
@@ -205,9 +196,7 @@ export function PublicQuestionBank({ className }: Props) {
   const sets = list.data?.pages.flatMap((p) => p.data) ?? [];
   const total = list.data?.pages[0]?.pagination?.total;
   const showListSkeleton = list.isLoading && !list.isPlaceholderData;
-  const hasFilters = Boolean(
-    appliedQ || appliedCategoryId || appliedSubcategoryId || appliedYear,
-  );
+  const hasFilters = Boolean(appliedQ || appliedCategoryId || appliedSubcategoryId || appliedYear);
 
   const replaceFilters = (next: {
     q?: string;
@@ -248,7 +237,7 @@ export function PublicQuestionBank({ className }: Props) {
               }}
             />
 
-            <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:shrink-0">
+            <div className="grid w-full grid-cols-1 gap-2 min-[420px]:grid-cols-2 lg:flex lg:w-auto lg:shrink-0 lg:flex-wrap lg:items-center">
               <label htmlFor="preli-subcategory" className="sr-only">
                 Filter by subcategory
               </label>
@@ -267,7 +256,7 @@ export function PublicQuestionBank({ className }: Props) {
                 disabled={categories.isLoading}
                 className={cn(
                   filterControlClass,
-                  'flex-1 sm:min-w-[12rem] lg:w-[16rem] lg:flex-none',
+                  'w-full min-[420px]:min-w-0 lg:w-[16rem] lg:flex-none',
                   appliedSubcategoryId &&
                     'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]',
                 )}
@@ -299,7 +288,7 @@ export function PublicQuestionBank({ className }: Props) {
                 disabled={yearsQ.isLoading}
                 className={cn(
                   filterControlClass,
-                  'flex-1 sm:min-w-[9rem] lg:w-[11rem] lg:flex-none',
+                  'w-full min-[420px]:min-w-0 lg:w-[11rem] lg:flex-none',
                   appliedYear &&
                     'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]',
                 )}
@@ -318,7 +307,7 @@ export function PublicQuestionBank({ className }: Props) {
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="shrink-0 cursor-pointer rounded-full"
+                  className="min-h-11 w-full cursor-pointer rounded-full min-[420px]:col-span-2 lg:col-span-1 lg:w-auto lg:shrink-0"
                   onClick={clearFilters}
                 >
                   Clear

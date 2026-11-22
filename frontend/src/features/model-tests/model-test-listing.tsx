@@ -34,8 +34,7 @@ export function ModelTestListing() {
   const [categoryId, setCategoryId] = useState('');
   const debouncedQ = useDebouncedValue(q.trim(), 300);
   const yearNum = year ? Number(year) : undefined;
-  const yearFilter =
-    yearNum != null && Number.isFinite(yearNum) ? yearNum : undefined;
+  const yearFilter = yearNum != null && Number.isFinite(yearNum) ? yearNum : undefined;
 
   const years = useQuery({
     queryKey: ['public-model-test-years'],
@@ -54,12 +53,7 @@ export function ModelTestListing() {
   });
 
   const list = useInfiniteQuery({
-    queryKey: [
-      'public-model-tests',
-      debouncedQ,
-      yearFilter ?? null,
-      categoryId || null,
-    ],
+    queryKey: ['public-model-tests', debouncedQ, yearFilter ?? null, categoryId || null],
     initialPageParam: undefined as string | undefined,
     queryFn: ({ pageParam }) =>
       listPublicModelTests({
@@ -104,7 +98,7 @@ export function ModelTestListing() {
                 className="min-w-0 flex-1"
               />
 
-              <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:shrink-0">
+              <div className="grid w-full grid-cols-1 gap-2 min-[420px]:grid-cols-2 lg:flex lg:w-auto lg:shrink-0 lg:flex-wrap lg:items-center">
                 <Label htmlFor="mt-category" className="sr-only">
                   Filter by category
                 </Label>
@@ -115,7 +109,7 @@ export function ModelTestListing() {
                   disabled={categories.isLoading}
                   className={cn(
                     filterSelectClass,
-                    'flex-1 sm:min-w-[12rem] lg:w-[15rem] lg:flex-none',
+                    'w-full min-[420px]:min-w-0 lg:w-[15rem] lg:flex-none',
                     categoryId &&
                       'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]',
                   )}
@@ -139,9 +133,8 @@ export function ModelTestListing() {
                   disabled={years.isLoading}
                   className={cn(
                     filterSelectClass,
-                    'flex-1 sm:min-w-[9rem] lg:w-[11rem] lg:flex-none',
-                    year &&
-                      'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]',
+                    'w-full min-[420px]:min-w-0 lg:w-[11rem] lg:flex-none',
+                    year && 'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]',
                   )}
                   aria-label="Filter by year"
                 >
@@ -208,7 +201,10 @@ export function ModelTestListing() {
                       </div>
                       <div className="mt-auto pt-2.5">
                         <Link href={`/model-test/${item.slug}`} className="block">
-                          <Button size="sm" className="h-8 w-full text-xs sm:w-auto sm:px-3.5">
+                          <Button
+                            size="sm"
+                            className="min-h-11 w-full sm:min-h-9 sm:w-auto sm:px-3.5"
+                          >
                             Start
                           </Button>
                         </Link>

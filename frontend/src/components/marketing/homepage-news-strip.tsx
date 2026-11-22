@@ -7,15 +7,13 @@ import { Button } from '@/components/ui/button';
 import { ListCardSkeleton, LoadError } from '@/components/loading';
 import { EmptyState } from '@/components/ui/empty-state';
 import { HomepageReveal } from '@/components/marketing/homepage-gsap';
-import {
-  listPublicDocuments,
-  type PublicDocumentListItem,
-} from '@/lib/api/public-documents';
+import { listPublicDocuments, type PublicDocumentListItem } from '@/lib/api/public-documents';
 import type { ApiResult } from '@/lib/api/client';
 
 type Props = {
   initial?: ApiResult<PublicDocumentListItem[]> | null;
   content?: {
+    eyebrow?: string;
     heading?: string;
     subtitle?: string;
     cta?: { label: string; href: string; visible: boolean };
@@ -35,16 +33,12 @@ export function HomepageNewsStrip({ initial = null, content }: Props) {
   const showSkeleton = list.isLoading && items.length === 0;
 
   return (
-    <section
-      id="newspaper"
-      aria-labelledby="newspaper-heading"
-      className="hp-section"
-    >
+    <section id="newspaper" aria-labelledby="newspaper-heading" className="hp-section">
       <HomepageReveal className="marketing-container space-y-8">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="max-w-2xl space-y-3">
             <span className="hp-mark" aria-hidden />
-            <p className="hp-eyebrow">Newspaper</p>
+            <p className="hp-eyebrow">{content?.eyebrow?.trim() || 'Newspaper'}</p>
             <h2 id="newspaper-heading" className="hp-heading text-[1.5rem] sm:text-[1.85rem]">
               {content?.heading || 'পত্রিকার গুরুত্বপূর্ণ কলাম'}
             </h2>

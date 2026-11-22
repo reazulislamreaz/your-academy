@@ -24,8 +24,8 @@ export function SiteFooterView({ socialLinks }: Props) {
     <footer id="contact" className="site-footer mt-auto shrink-0 text-white">
       <div aria-hidden className="site-footer-glow pointer-events-none absolute inset-0" />
 
-      <div className="marketing-container relative px-4 py-11 sm:px-6 sm:py-14 lg:py-16">
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,0.9fr)] lg:gap-12 xl:gap-16">
+      <div className="marketing-container relative py-10 sm:py-14 lg:py-16">
+        <div className="grid gap-9 sm:grid-cols-2 sm:gap-10 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,0.9fr)] lg:gap-12 xl:gap-16">
           <div className="max-w-md space-y-5 sm:col-span-2 lg:col-span-1">
             <BrandMark inverse />
             <p className="text-sm leading-relaxed text-slate-300/90 sm:text-[0.9375rem]">

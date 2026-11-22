@@ -19,7 +19,7 @@ export function HomepageMidSections({ why }: Props) {
         <div className="hp-band relative z-[1] p-6 sm:p-8 lg:p-10" data-hp-stagger>
           <div className="relative z-[1] max-w-3xl">
             <span className="hp-mark mb-2" aria-hidden />
-            <p className="hp-eyebrow mb-2">Why us</p>
+            <p className="hp-eyebrow mb-2">{why.eyebrow?.trim() || 'Why us'}</p>
             <h2 id="why-heading" className="hp-heading text-[1.5rem] sm:text-[1.85rem]">
               {why.heading}
             </h2>

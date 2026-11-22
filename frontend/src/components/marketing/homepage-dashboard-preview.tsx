@@ -30,7 +30,7 @@ export function HomepageDashboardPreview({ content }: Props) {
       <HomepageReveal className="marketing-container grid items-center gap-10 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:gap-14 xl:gap-16">
         <div className="space-y-5 lg:max-w-md">
           <span className="hp-mark" aria-hidden />
-          <p className="hp-eyebrow">Learner desk</p>
+          <p className="hp-eyebrow">{data.eyebrow?.trim() || 'Learner desk'}</p>
           <div className="space-y-3">
             <h2
               id="dashboard-preview-heading"

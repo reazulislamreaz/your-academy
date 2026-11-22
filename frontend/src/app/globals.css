@@ -118,19 +118,20 @@
 
   /*
     Typography (DEC-037):
-    - UI / brand: Anek Latin + Anek Bangla
-    - Questions & answers: Hind Siliguri (simple bilingual reading)
-    - Homepage shell exception: Plus Jakarta Sans + Hind Siliguri (clear Bn digits)
+    - English / Latin: Inter
+    - Bengali (Unicode): Noto Sans Bengali (clear digits ০–৯, including ১)
+    SutonnyMJ is ANSI/Bijoy and cannot render Unicode Bn on the web.
+    letter-spacing must stay 0 on Bn / mixed educational text — tracking splits digits.
   */
   --font-stack:
-    var(--font-latin), var(--font-bengali), 'Anek Latin', 'Anek Bangla', ui-sans-serif, system-ui,
+    var(--font-latin), var(--font-bengali), 'Inter', 'Noto Sans Bengali', ui-sans-serif, system-ui,
     sans-serif;
-  /* Hind Siliguri only — do not fall back to Anek Bangla mid-string (mixed glyphs). */
+  /* Reading: Bengali face first so stems/options/serials prefer Noto for Bn glyphs. */
   --font-reading-stack:
-    var(--font-reading-face), 'Hind Siliguri', ui-sans-serif, system-ui, sans-serif;
-  --font-marketing-stack:
-    var(--font-marketing-latin), var(--font-reading-face), 'Plus Jakarta Sans', 'Hind Siliguri',
-    ui-sans-serif, system-ui, sans-serif;
+    var(--font-bengali), var(--font-latin), 'Noto Sans Bengali', 'Inter', ui-sans-serif, system-ui,
+    sans-serif;
+  /* Site-wide consistency — homepage uses the same bilingual stack. */
+  --font-marketing-stack: var(--font-stack);
   --font-sans: var(--font-stack);
   --font-display: var(--font-stack);
   --font-reading: var(--font-reading-stack);
@@ -197,12 +198,15 @@ body {
   font-family: var(--font-stack);
   font-size: var(--text-base);
   line-height: var(--leading-normal);
-  letter-spacing: var(--tracking-ui);
+  /* 0 — any positive tracking splits Bengali conjuncts and digits (১). */
+  letter-spacing: 0;
   -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
-  font-feature-settings:
-    'kern' 1,
-    'liga' 1;
+  /* optimizeLegibility can distort complex-script shaping in some browsers. */
+  text-rendering: auto;
+  font-kerning: normal;
+  font-variant-numeric: normal;
+  font-feature-settings: normal;
+  font-synthesis: none;
 }
 
 /* Shared marketing content rail (navbar routes + homepage sections). */
@@ -210,9 +214,16 @@ body {
   width: 100%;
   max-width: var(--marketing-content-max);
   margin-inline: auto;
-  padding-inline: max(0.875rem, env(safe-area-inset-left, 0px))
-    max(0.875rem, env(safe-area-inset-right, 0px));
+  padding-inline: max(0.75rem, env(safe-area-inset-left, 0px))
+    max(0.75rem, env(safe-area-inset-right, 0px));
   min-width: 0;
+}
+
+@media (min-width: 400px) {
+  .marketing-container {
+    padding-inline: max(0.875rem, env(safe-area-inset-left, 0px))
+      max(0.875rem, env(safe-area-inset-right, 0px));
+  }
 }
 
 @media (min-width: 640px) {
@@ -461,7 +472,7 @@ body {
   padding: 0.55rem 1rem;
   font-size: 0.8125rem;
   font-weight: 600;
-  letter-spacing: -0.015em;
+  letter-spacing: 0;
   line-height: 1.2;
   color: var(--ink-soft);
   outline: none;
@@ -1258,7 +1269,8 @@ input:disabled {
 
 .font-display {
   font-family: var(--font-stack);
-  letter-spacing: var(--tracking-display);
+  /* Latin display only — keep 0 so mixed Bn headings stay intact. */
+  letter-spacing: 0;
   line-height: var(--leading-snug);
   font-weight: 700;
 }
@@ -1273,7 +1285,7 @@ input:disabled {
   font-family: var(--font-stack);
 }
 
-/* Educational Q&A — Hind Siliguri; never apply Latin OpenType numeric features */
+/* Educational Q&A — Noto Sans Bengali; never apply Latin OpenType numeric features */
 .type-prose,
 .type-prose-title,
 .type-mcq-option,
@@ -1283,9 +1295,10 @@ input:disabled {
   font-feature-settings: normal;
   font-synthesis: none;
   font-kerning: normal;
+  letter-spacing: 0;
 }
 
-/* Educational Q&A — simple Hind Siliguri, regular weight, long-form comfort.
+/* Educational Q&A — Noto Sans Bengali, regular weight, long-form comfort.
    letter-spacing must stay 0 — even tiny tracking splits Bn conjuncts/digits. */
 .type-prose {
   font-family: var(--font-reading-stack);
@@ -1312,9 +1325,9 @@ input:disabled {
 }
 
 /**
- * Bengali question serials (০–৯) — Hind Siliguri medium.
+ * Bengali question serials (০–৯) — Noto Sans Bengali semibold.
  * Do NOT use tabular-nums / font-bold / tracking-tight: those Latin features
- * fragment Bn digits (১, ২, ৩ especially) under Hind Siliguri + Anek fallbacks.
+ * fragment Bn digits (১, ২, ৩ especially).
  */
 .type-bn-serial {
   font-family: var(--font-reading-stack);
@@ -1323,6 +1336,23 @@ input:disabled {
   letter-spacing: 0;
   line-height: 1.35;
   white-space: nowrap;
+  font-variant-numeric: normal;
+  font-feature-settings: normal;
+  font-synthesis: none;
+}
+
+/*
+  Neutralize Tailwind tracking utilities — root lang is bn; negative/positive
+  tracking fragments Bengali digits (১) and conjuncts across the whole app.
+*/
+.tracking-tighter,
+.tracking-tight,
+.tracking-snug,
+.tracking-normal,
+.tracking-wide,
+.tracking-wider,
+.tracking-widest {
+  letter-spacing: 0;
 }
 
 .type-meta {
@@ -1591,10 +1621,10 @@ input:disabled {
 
 .site-footer-heading {
   margin-bottom: 0.85rem;
-  font-family: var(--font-marketing-stack, var(--font-display));
+  font-family: var(--font-stack);
   font-size: 0.72rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0;
   text-transform: uppercase;
   color: rgb(148 163 184);
 }
@@ -1613,9 +1643,9 @@ input:disabled {
   width: fit-content;
   max-width: 100%;
   align-items: center;
-  min-height: 2.1rem;
+  min-height: 2.75rem;
   border-radius: 0.5rem;
-  padding: 0.2rem 0.35rem 0.2rem 0;
+  padding: 0.35rem 0.35rem 0.35rem 0;
   font-size: 0.9rem;
   font-weight: 500;
   line-height: 1.35;
@@ -1744,7 +1774,7 @@ a.site-footer-social-link:focus-visible {
   padding: 0 0.75rem;
   font-size: 0.6875rem;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0;
   text-transform: uppercase;
   color: var(--muted);
 }
@@ -2241,7 +2271,7 @@ a.site-footer-social-link:focus-visible {
 }
 
 .auth-promo-headline {
-  letter-spacing: -0.025em;
+  letter-spacing: 0;
   color: #ffffff;
   text-shadow:
     0 1px 2px rgba(0, 10, 28, 0.65),
@@ -2798,7 +2828,7 @@ a.site-footer-social-link:focus-visible {
   gap: 0.5rem;
   font-size: 0.75rem;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0;
   text-transform: uppercase;
   color: var(--highlight);
 }
@@ -2815,7 +2845,7 @@ a.site-footer-social-link:focus-visible {
 /*
   Homepage visual system — premium modern craft (60-30-10).
   Cool desk canvas, luminous surfaces, single brand-red accent.
-  Typography: Plus Jakarta Sans + Hind Siliguri (DEC-037 homepage exception).
+  Typography: site-wide Inter + Noto Sans Bengali (DEC-037).
 */
 .homepage-shell {
   --hp-radius: 1.15rem;
@@ -2834,9 +2864,9 @@ a.site-footer-social-link:focus-visible {
     transparent 70%
   );
   --hp-cta-shadow: 0 12px 28px -14px rgba(227, 30, 36, 0.45);
-  --font-sans: var(--font-marketing-stack);
-  --font-display: var(--font-marketing-stack);
-  font-family: var(--font-marketing-stack);
+  --font-sans: var(--font-stack);
+  --font-display: var(--font-stack);
+  font-family: var(--font-stack);
   position: relative;
   isolation: isolate;
   background-color: #f7f9fc;
@@ -2887,7 +2917,13 @@ a.site-footer-social-link:focus-visible {
 /* Section rhythm — spacing + tone only; never hairline section borders */
 .hp-section {
   scroll-margin-top: 6rem;
-  padding-block: 4.25rem;
+  padding-block: 3.25rem;
+}
+
+@media (min-width: 480px) {
+  .hp-section {
+    padding-block: 4.25rem;
+  }
 }
 
 @media (min-width: 768px) {
@@ -2935,9 +2971,9 @@ a.site-footer-social-link:focus-visible {
 }
 
 .hp-heading {
-  font-family: var(--font-marketing-stack);
+  font-family: var(--font-stack);
   font-weight: 700;
-  letter-spacing: -0.035em;
+  letter-spacing: 0;
   line-height: 1.15;
   color: var(--ink);
   text-wrap: balance;
@@ -2946,13 +2982,15 @@ a.site-footer-social-link:focus-visible {
 .hp-lede {
   color: var(--muted-strong);
   line-height: 1.7;
+  letter-spacing: 0;
   text-wrap: pretty;
 }
 
 .hp-eyebrow {
   font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  /* 0 — CMS eyebrows may be Bengali; tracking splits Bn digits/conjuncts. */
+  letter-spacing: 0;
   text-transform: uppercase;
   color: var(--muted);
 }
@@ -3087,11 +3125,21 @@ a.site-footer-social-link:focus-visible {
 
 /* Live Platform Library + Latest Collections — paired library strips */
 .hp-library-pair-top {
-  padding-bottom: 1.75rem;
+  padding-bottom: 1.25rem;
 }
 
 .hp-library-pair-bottom {
-  padding-top: 1.75rem;
+  padding-top: 1.25rem;
+}
+
+@media (min-width: 480px) {
+  .hp-library-pair-top {
+    padding-bottom: 1.75rem;
+  }
+
+  .hp-library-pair-bottom {
+    padding-top: 1.75rem;
+  }
 }
 
 @media (min-width: 768px) {
@@ -3104,117 +3152,42 @@ a.site-footer-social-link:focus-visible {
   }
 }
 
-.hp-library-band {
-  position: relative;
-  overflow: hidden;
-  border: 1px solid var(--hp-panel-border);
-  background: linear-gradient(
-    155deg,
-    color-mix(in srgb, var(--bg-elevated) 92%, white),
-    color-mix(in srgb, var(--bg-muted) 28%, var(--bg-elevated))
-  );
-  border-radius: var(--hp-radius-lg);
-  box-shadow: var(--hp-shadow);
-}
-
-.hp-library-band::before {
-  content: '';
-  pointer-events: none;
-  position: absolute;
-  inset: 0 0 auto;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    color-mix(in srgb, white 85%, transparent),
-    transparent
-  );
-  opacity: 0.95;
-}
-
-.hp-library-band::after {
-  content: '';
-  pointer-events: none;
-  position: absolute;
-  inset: auto -18% -42%;
-  height: 72%;
-  background: radial-gradient(
-    ellipse at center,
-    color-mix(in srgb, var(--highlight) 7%, transparent),
-    transparent 68%
-  );
-}
-
 .hp-live-badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.35rem;
   border-radius: 999px;
   border: 1px solid var(--hp-panel-border);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), var(--bg-elevated));
-  padding: 0.28rem 0.7rem 0.28rem 0.55rem;
-  font-size: 0.68rem;
+  background: var(--bg-elevated);
+  padding: 0.2rem 0.55rem 0.2rem 0.45rem;
+  font-size: 0.625rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0;
   text-transform: uppercase;
-  color: var(--muted-strong);
-  box-shadow: var(--shadow-sm);
+  color: var(--muted);
 }
 
 .hp-stat-card {
   position: relative;
   overflow: hidden;
   border: 1px solid var(--hp-panel-border);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.97), var(--bg-elevated));
-  border-radius: var(--hp-radius);
+  background: var(--bg-elevated);
+  border-radius: var(--radius);
   box-shadow: var(--shadow-sm);
   transition:
-    transform 240ms cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 240ms var(--ease-out),
-    border-color 200ms var(--ease-out);
+    transform 200ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 200ms var(--ease-out),
+    border-color 180ms var(--ease-out);
 }
 
 .hp-stat-card:hover {
-  transform: translateY(-3px);
+  transform: translateY(-2px);
   border-color: var(--hp-panel-border-strong);
-  box-shadow: var(--hp-shadow-hover);
+  box-shadow: var(--hp-shadow);
 }
 
 .hp-stat-card:active {
   transform: translateY(-1px);
-}
-
-.hp-stat-signal {
-  width: 0.4rem;
-  height: 0.4rem;
-  border-radius: 999px;
-  background: var(--highlight);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--highlight) 16%, transparent);
-  opacity: 0.85;
-}
-
-.hp-stat-bar {
-  display: block;
-  margin-top: 1rem;
-  height: 2px;
-  width: 100%;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--line) 80%, transparent);
-  overflow: hidden;
-}
-
-.hp-stat-bar::after {
-  content: '';
-  display: block;
-  height: 100%;
-  width: 42%;
-  border-radius: inherit;
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--highlight) 55%, transparent),
-    var(--highlight)
-  );
-  transform-origin: left center;
 }
 
 .hp-collection-index {
@@ -3234,47 +3207,13 @@ a.site-footer-social-link:focus-visible {
   }
 }
 
-@keyframes hp-stat-bar-pulse {
-  0%,
-  100% {
-    transform: scaleX(0.55);
-    opacity: 0.7;
-  }
-  50% {
-    transform: scaleX(1);
-    opacity: 1;
-  }
-}
-
-@keyframes hp-stat-signal-breathe {
-  0%,
-  100% {
-    transform: scale(1);
-    opacity: 0.75;
-  }
-  50% {
-    transform: scale(1.15);
-    opacity: 1;
-  }
-}
-
 @media (prefers-reduced-motion: no-preference) {
   .hp-live-ping {
     animation: hp-live-ping 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
   }
 
-  .hp-stat-signal {
-    animation: hp-stat-signal-breathe 2.4s ease-in-out infinite;
-    animation-delay: var(--hp-stat-delay, 0s);
-  }
-
-  .hp-stat-bar::after {
-    animation: hp-stat-bar-pulse 3.2s ease-in-out infinite;
-    animation-delay: var(--hp-stat-delay, 0s);
-  }
-
   .homepage-shell .hp-stat-card:hover {
-    transform: translateY(-3px);
+    transform: translateY(-2px);
   }
 
   .homepage-shell .hp-stat-card:active {
@@ -3283,9 +3222,7 @@ a.site-footer-social-link:focus-visible {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hp-live-ping,
-  .hp-stat-signal,
-  .hp-stat-bar::after {
+  .hp-live-ping {
     animation: none !important;
   }
 
@@ -3294,10 +3231,6 @@ a.site-footer-social-link:focus-visible {
   .homepage-shell .hp-stat-card:hover,
   .homepage-shell .hp-stat-card:active {
     transform: none;
-  }
-
-  .hp-stat-bar::after {
-    width: 55%;
   }
 }
 

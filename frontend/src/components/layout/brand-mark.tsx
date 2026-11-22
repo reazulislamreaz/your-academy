@@ -38,7 +38,8 @@ export function BrandMark({ className, href = '/', inverse, markOnly, priority =
     <Link
       href={href}
       className={cn(
-        'group inline-flex shrink-0 cursor-pointer items-center rounded-[var(--radius-sm)]',
+        'group inline-flex min-h-11 shrink-0 cursor-pointer items-center rounded-[var(--radius-sm)]',
+        markOnly ? 'min-w-11 justify-center' : null,
         'transition-[opacity,transform] duration-[var(--duration-fast)] ease-[var(--ease-out)]',
         'hover:opacity-80 active:scale-[0.98]',
         className,

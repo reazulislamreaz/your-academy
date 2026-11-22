@@ -48,7 +48,7 @@ export function HomepageLatestQuestions({ latest }: Props) {
         >
           <div className="max-w-xl space-y-2.5 sm:space-y-3">
             <span className="hp-mark" aria-hidden />
-            <p className="hp-eyebrow">Uploads</p>
+            <p className="hp-eyebrow">{latest.eyebrow?.trim() || 'Uploads'}</p>
             <h2
               id="latest-collections-heading"
               className="hp-heading text-[1.5rem] sm:text-2xl md:text-[1.9rem]"
@@ -96,7 +96,7 @@ export function HomepageLatestQuestions({ latest }: Props) {
               <li key={set.id} data-hp-stagger className="min-w-0">
                 <Link
                   href={`/preli-question-bank/${set.id}`}
-                  className="hp-list-link group flex w-full min-w-0 items-center gap-4 px-5 py-4 sm:gap-5 sm:px-6 sm:py-5"
+                  className="hp-list-link group flex w-full min-w-0 items-center gap-3 px-4 py-4 sm:gap-5 sm:px-6 sm:py-5"
                 >
                   <span
                     className="hp-collection-index type-bn-serial hidden shrink-0 sm:inline-flex"

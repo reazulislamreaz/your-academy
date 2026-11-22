@@ -26,7 +26,7 @@ export function HomepageHowItWorks({ content }: Props) {
         >
           <div className="max-w-xl space-y-3">
             <span className="hp-mark" aria-hidden />
-            <p className="hp-eyebrow">Workflow</p>
+            <p className="hp-eyebrow">{data.eyebrow?.trim() || 'Workflow'}</p>
             <h2
               id="how-heading"
               className="hp-heading text-[1.5rem] sm:text-2xl md:text-[1.9rem]"

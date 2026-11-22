@@ -14,14 +14,8 @@ import {
 } from '@your-academy/shared';
 import { Button } from '@/components/ui/button';
 import { HomepageReveal } from '@/components/marketing/homepage-gsap';
-import {
-  HomepageOthersTile,
-  HomepageTileCard,
-} from '@/components/marketing/homepage-tile-card';
-import {
-  fetchPublicCategories,
-  publicCategoriesQueryKey,
-} from '@/lib/api/categories';
+import { HomepageOthersTile, HomepageTileCard } from '@/components/marketing/homepage-tile-card';
+import { fetchPublicCategories, publicCategoriesQueryKey } from '@/lib/api/categories';
 import {
   ALL_TOPICS_PATH,
   QUESTION_BANK_CATEGORIES_PATH,
@@ -61,13 +55,13 @@ function BankSectionShell({
   return (
     <section className={cn('hp-section', className)} aria-labelledby={id}>
       <HomepageReveal
-        className="marketing-container grid items-start gap-8 sm:gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,2.1fr)] lg:gap-12"
+        className="marketing-container grid min-w-0 items-start gap-7 sm:gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,2.1fr)] lg:gap-12"
         staggerChildren
       >
-        <div className="space-y-3.5 sm:space-y-4" data-hp-stagger>
+        <div className="min-w-0 space-y-3 sm:space-y-4" data-hp-stagger>
           <span className="hp-mark" aria-hidden />
           {toneLabel ? <p className="hp-eyebrow">{toneLabel}</p> : null}
-          <h2 id={id} className="hp-heading text-[1.4rem] sm:text-2xl md:text-[1.85rem]">
+          <h2 id={id} className="hp-heading text-[1.35rem] sm:text-2xl md:text-[1.85rem]">
             {heading}
           </h2>
           {subtitle.trim() ? (
@@ -94,8 +88,7 @@ export function HomepageBankBrowseCategories({ categories }: CategoriesProps) {
     .filter((t) => t.visible && !isHomepageOthersTile(t))
     .slice(0, HOMEPAGE_EDITABLE_PREVIEW_SLOTS);
   const categoriesOthers =
-    categorySplit.others ??
-    createDefaultOthersCategoryTile(QUESTION_BANK_CATEGORIES_PATH);
+    categorySplit.others ?? createDefaultOthersCategoryTile(QUESTION_BANK_CATEGORIES_PATH);
   const categoriesCtaHref = categories.cta.href || QUESTION_BANK_CATEGORIES_PATH;
   const categoriesOthersHref = QUESTION_BANK_CATEGORIES_PATH;
 
@@ -108,7 +101,7 @@ export function HomepageBankBrowseCategories({ categories }: CategoriesProps) {
       subtitle={categories.subtitle}
       cta={categories.cta}
       ctaHref={categoriesCtaHref}
-      toneLabel="Preliminary"
+      toneLabel={categories.eyebrow?.trim() || 'Preliminary'}
     >
       <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-3.5 xl:grid-cols-5">
         {previewCategories.map((tile) => (
@@ -136,15 +129,12 @@ export function HomepageBankBrowseCategories({ categories }: CategoriesProps) {
   );
 }
 
-export function HomepageBankBrowseWrittenCategories({
-  writtenCategories,
-}: WrittenCategoriesProps) {
+export function HomepageBankBrowseWrittenCategories({ writtenCategories }: WrittenCategoriesProps) {
   const split = splitHomepageSectionTiles(writtenCategories.tiles);
   const preview = split.top
     .filter((t) => t.visible && !isHomepageOthersTile(t))
     .slice(0, HOMEPAGE_EDITABLE_PREVIEW_SLOTS);
-  const others =
-    split.others ?? createDefaultOthersCategoryTile(WRITTEN_SUBCATEGORIES_PATH);
+  const others = split.others ?? createDefaultOthersCategoryTile(WRITTEN_SUBCATEGORIES_PATH);
   const ctaHref = writtenCategories.cta.href || WRITTEN_SUBCATEGORIES_PATH;
   const othersHref = WRITTEN_SUBCATEGORIES_PATH;
 
@@ -158,7 +148,7 @@ export function HomepageBankBrowseWrittenCategories({
       cta={writtenCategories.cta}
       ctaHref={ctaHref}
       className="hp-section-tone"
-      toneLabel="Written"
+      toneLabel={writtenCategories.eyebrow?.trim() || 'Written'}
     >
       {preview.length === 0 ? (
         <div className="space-y-3" data-hp-stagger>
@@ -224,8 +214,7 @@ export function HomepageBankBrowseTopics({ topics }: TopicsProps) {
     href: topicExplorerHref({ categoryId: root.id }),
   }));
   const topicSplit = splitHomepageSectionTiles(topics.tiles);
-  const topicsOthers =
-    topicSplit.others ?? createDefaultOthersTopicTile(ALL_TOPICS_PATH);
+  const topicsOthers = topicSplit.others ?? createDefaultOthersTopicTile(ALL_TOPICS_PATH);
   const topicsCtaHref = ALL_TOPICS_PATH;
   const topicsOthersHref = ALL_TOPICS_PATH;
 
@@ -243,7 +232,7 @@ export function HomepageBankBrowseTopics({ topics }: TopicsProps) {
       subtitle={topicsLede}
       cta={topics.cta}
       ctaHref={topicsCtaHref}
-      toneLabel="Topic analysis"
+      toneLabel={topics.eyebrow?.trim() || 'Topic analysis'}
     >
       {topicTree.isLoading ? (
         <p
@@ -255,8 +244,8 @@ export function HomepageBankBrowseTopics({ topics }: TopicsProps) {
       ) : previewTopics.length === 0 ? (
         <div className="space-y-3" data-hp-stagger>
           <p className="rounded-[var(--radius-lg)] border border-dashed border-[var(--line)] bg-[var(--bg-elevated)] px-4 py-5 text-sm text-[var(--muted-strong)]">
-            No topic categories yet. Admins add Topic Base categories under Taxonomy → Topics —
-            use Others to open the folder explorer anytime.
+            No topic categories yet. Admins add Topic Base categories under Taxonomy → Topics — use
+            Others to open the folder explorer anytime.
           </p>
           <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-3.5 xl:grid-cols-5">
             <li>

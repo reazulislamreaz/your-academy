@@ -45,12 +45,12 @@ export function HomepageTileCard({
           aria-hidden
         />
       </span>
-      <span className="relative z-[1] min-w-0">
-        <span className="block truncate font-display text-sm leading-snug font-semibold tracking-tight text-[var(--ink)] sm:text-[0.9375rem]">
+      <span className="relative z-[1] min-w-0 w-full">
+        <span className="line-clamp-2 block break-words font-display text-sm leading-snug font-semibold tracking-tight text-[var(--ink)] sm:text-[0.9375rem]">
           {title}
         </span>
         {subtitle ? (
-          <span className="mt-0.5 line-clamp-2 block text-xs leading-snug text-[var(--muted-strong)]">
+          <span className="mt-0.5 line-clamp-2 block break-words text-xs leading-snug text-[var(--muted-strong)]">
             {subtitle}
           </span>
         ) : null}
@@ -92,8 +92,8 @@ export function HomepageOthersTile({
           </span>
         )}
       </span>
-      <span className="relative z-[1] flex w-full items-center justify-between gap-2">
-        <span className="font-display text-sm font-semibold tracking-tight text-[var(--ink)] sm:text-[0.9375rem]">
+      <span className="relative z-[1] flex w-full min-w-0 items-center justify-between gap-2">
+        <span className="min-w-0 line-clamp-2 break-words font-display text-sm font-semibold tracking-tight text-[var(--ink)] sm:text-[0.9375rem]">
           {title}
         </span>
         <ArrowUpRight

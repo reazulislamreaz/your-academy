@@ -11,18 +11,14 @@ type Props = {
 export function HomepageAccessFaq({ content }: Props) {
   const data = content ?? createDefaultExtendedSections().accessFaq;
   return (
-    <section
-      id="access"
-      aria-labelledby="access-heading"
-      className="hp-section hp-section-tone"
-    >
-      <HomepageReveal className="marketing-container grid gap-12 lg:grid-cols-2 lg:gap-16">
-        <div className="space-y-5">
+    <section id="access" aria-labelledby="access-heading" className="hp-section hp-section-tone">
+      <HomepageReveal className="marketing-container grid min-w-0 gap-8 sm:gap-10 lg:grid-cols-2 lg:gap-16">
+        <div className="min-w-0 space-y-4 sm:space-y-5">
           <span className="hp-mark" aria-hidden />
-          <p className="hp-eyebrow">Access</p>
+          <p className="hp-eyebrow">{data.eyebrow?.trim() || 'Access'}</p>
           <h2
             id="access-heading"
-            className="hp-heading text-[1.4rem] sm:text-2xl md:text-[1.85rem]"
+            className="hp-heading text-[1.35rem] sm:text-2xl md:text-[1.85rem]"
           >
             {data.heading}
           </h2>

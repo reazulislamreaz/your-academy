@@ -15,10 +15,7 @@ import { LoginPageSkeleton } from '@/components/skeletons';
 import { PasswordField } from '@/features/auth/password-field';
 import { postLoginPath } from '@/features/auth/post-login-path';
 import { meQueryKey } from '@/features/auth/use-auth';
-import {
-  WhatsappField,
-  toAuthWhatsappPayload,
-} from '@/features/auth/whatsapp-field';
+import { WhatsappField, toAuthWhatsappPayload } from '@/features/auth/whatsapp-field';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import type { MeUser } from '@/lib/api/types';
 
@@ -99,7 +96,11 @@ function LoginForm() {
           <Field className="space-y-1.5">
             <div className="flex items-center justify-between gap-2">
               <Label htmlFor="password" className="auth-label-row">
-                <Lock className="size-3.5 text-[var(--muted-strong)]" aria-hidden strokeWidth={2.25} />
+                <Lock
+                  className="size-3.5 text-[var(--muted-strong)]"
+                  aria-hidden
+                  strokeWidth={2.25}
+                />
                 Password
               </Label>
               <Link
@@ -138,7 +139,7 @@ function LoginForm() {
         New to Your Academy?{' '}
         <Link
           href="/register"
-          className="font-bold text-[var(--highlight)] underline-offset-2 hover:underline"
+          className="inline-flex min-h-11 items-center font-bold text-[var(--highlight)] underline-offset-2 hover:underline"
         >
           Create Account
         </Link>

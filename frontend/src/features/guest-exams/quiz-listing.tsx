@@ -108,7 +108,10 @@ export function QuizListing() {
                       </div>
                       <div className="mt-auto pt-2.5">
                         <Link href={`/exams/${exam.slug}`} className="block">
-                          <Button size="sm" className="h-8 w-full text-xs sm:w-auto sm:px-3.5">
+                          <Button
+                            size="sm"
+                            className="min-h-11 w-full sm:min-h-9 sm:w-auto sm:px-3.5"
+                          >
                             Start
                           </Button>
                         </Link>

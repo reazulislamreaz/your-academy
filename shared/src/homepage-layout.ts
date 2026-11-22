@@ -226,9 +226,18 @@ export const homepageExtendedSectionsSchema = z.object({
   liveStats: z
     .object({
       visible: z.boolean().default(true),
+      eyebrow: shortText.optional().default('Live data'),
       heading: mediumText.optional().default(''),
+      subtitle: mediumText.optional().default(
+        'Live counts from published content — not marketing estimates.',
+      ),
     })
-    .default({ visible: true, heading: '' }),
+    .default({
+      visible: true,
+      eyebrow: 'Live data',
+      heading: '',
+      subtitle: 'Live counts from published content — not marketing estimates.',
+    }),
   sampleMcq: z
     .object({
       visible: z.boolean().default(true),
@@ -245,12 +254,14 @@ export const homepageExtendedSectionsSchema = z.object({
   productFeatures: z
     .object({
       visible: z.boolean().default(true),
+      eyebrow: shortText.optional().default('Product'),
       heading: mediumText,
       subtitle: mediumText.optional().default(''),
       items: z.array(featureItemSchema).max(12).default([]),
     })
     .default({
       visible: true,
+      eyebrow: 'Product',
       heading: 'What you can do on Your Academy',
       subtitle: '',
       items: [
@@ -307,6 +318,7 @@ export const homepageExtendedSectionsSchema = z.object({
   howItWorks: z
     .object({
       visible: z.boolean().default(true),
+      eyebrow: shortText.optional().default('Workflow'),
       heading: mediumText,
       subtitle: mediumText,
       cta: ctaSchema,
@@ -314,6 +326,7 @@ export const homepageExtendedSectionsSchema = z.object({
     })
     .default({
       visible: true,
+      eyebrow: 'Workflow',
       heading: 'How Your Academy works',
       subtitle: 'A clear path from first visit to daily practice.',
       cta: { label: 'Create account', href: '/register', visible: true },
@@ -338,6 +351,7 @@ export const homepageExtendedSectionsSchema = z.object({
   dashboardPreview: z
     .object({
       visible: z.boolean().default(true),
+      eyebrow: shortText.optional().default('Learner desk'),
       heading: mediumText,
       body: longText,
       primaryCta: ctaSchema,
@@ -345,6 +359,7 @@ export const homepageExtendedSectionsSchema = z.object({
     })
     .default({
       visible: true,
+      eyebrow: 'Learner desk',
       heading: 'Your study desk, after you sign in',
       body: 'Bookmarks, attempt history, timed practice, and accuracy come from your real activity — we never show placeholder scores on this page.',
       primaryCta: { label: 'Create free account', href: '/register', visible: true },
@@ -353,12 +368,14 @@ export const homepageExtendedSectionsSchema = z.object({
   newsStrip: z
     .object({
       visible: z.boolean().default(true),
+      eyebrow: shortText.optional().default(''),
       heading: mediumText,
       subtitle: mediumText,
       cta: ctaSchema,
     })
     .default({
       visible: true,
+      eyebrow: '',
       heading: 'পত্রিকার গুরুত্বপূর্ণ কলাম',
       subtitle: 'Published newspaper PDF columns from the admin library.',
       cta: { label: 'View all columns', href: '/news', visible: true },
@@ -366,6 +383,7 @@ export const homepageExtendedSectionsSchema = z.object({
   accessFaq: z
     .object({
       visible: z.boolean().default(true),
+      eyebrow: shortText.optional().default('Access'),
       heading: mediumText,
       body: longText,
       highlights: z.array(mediumText).max(8).default([]),
@@ -375,6 +393,7 @@ export const homepageExtendedSectionsSchema = z.object({
     })
     .default({
       visible: true,
+      eyebrow: 'Access',
       heading: 'Access & pricing',
       body: 'Honest entitlements only. No invented student counts, success rates, or subscription prices.',
       highlights: [
@@ -415,9 +434,12 @@ export const homepageExtendedSectionsSchema = z.object({
     .array(
       z.object({
         id: z.string().min(1).max(64),
+        eyebrow: shortText.optional().default(''),
         heading: mediumText,
         body: longText,
         cta: ctaSchema,
+        /** Compact stack (default) or wider band layout on the marketing homepage. */
+        layout: z.enum(['stack', 'band']).default('stack'),
         visible: z.boolean().default(true),
       }),
     )

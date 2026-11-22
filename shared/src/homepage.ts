@@ -422,6 +422,7 @@ const coreHomepagePayloadSchema = z.object({
   }),
   categories: z.object({
     visible: z.boolean().default(true),
+    eyebrow: shortText.optional().default('Preliminary'),
     heading: mediumText,
     subtitle: mediumText,
     cta: ctaSchema,
@@ -435,6 +436,7 @@ const coreHomepagePayloadSchema = z.object({
   writtenCategories: z
     .object({
       visible: z.boolean().default(true),
+      eyebrow: shortText.optional().default('Written'),
       heading: mediumText,
       subtitle: mediumText,
       cta: ctaSchema,
@@ -442,6 +444,7 @@ const coreHomepagePayloadSchema = z.object({
     })
     .default({
       visible: true,
+      eyebrow: 'Written',
       heading: 'Written exam categories',
       subtitle: 'Browse the Written bank by the exams you are preparing for',
       cta: {
@@ -504,6 +507,7 @@ const coreHomepagePayloadSchema = z.object({
     }),
   topics: z.object({
     visible: z.boolean().default(true),
+    eyebrow: shortText.optional().default('Topic analysis'),
     heading: mediumText,
     /**
      * Legacy short tagline (no longer rendered). Kept for older drafts;
@@ -517,6 +521,7 @@ const coreHomepagePayloadSchema = z.object({
   }),
   why: z.object({
     visible: z.boolean().default(true),
+    eyebrow: shortText.optional().default('Why us'),
     heading: mediumText,
     points: z.array(mediumText).max(20).default([]),
   }),
@@ -534,6 +539,7 @@ const coreHomepagePayloadSchema = z.object({
   }),
   latest: z.object({
     visible: z.boolean().default(true),
+    eyebrow: shortText.optional().default('Uploads'),
     heading: mediumText,
     subtitle: mediumText,
     cta: ctaSchema,
@@ -765,6 +771,7 @@ export function createDefaultHomepagePayload(): HomepagePayload {
     },
     why: {
       visible: true,
+      eyebrow: 'Why us',
       heading: 'Why Your Academy?',
       points: [
         'Published Preli MCQs you can browse without logging in',
@@ -790,6 +797,7 @@ export function createDefaultHomepagePayload(): HomepagePayload {
     },
     latest: {
       visible: true,
+      eyebrow: 'Uploads',
       heading: 'Latest question collections',
       subtitle: 'Newest published uploads from the Preli bank.',
       cta: { label: 'Open Preli Question Bank', href: '/preli-question-bank', visible: true },
