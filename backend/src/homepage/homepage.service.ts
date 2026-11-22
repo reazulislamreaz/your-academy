@@ -409,8 +409,12 @@ export class HomepageService {
           ? 'private'
           : 'upload';
     // Public homepage hero uses upload delivery; signed URLs not required.
+    // Serve a sized, auto-format transform so browsers never download the raw upload.
     if (type !== 'upload') return null;
-    return `https://res.cloudinary.com/${cloud}/${resource}/upload/${asset.publicId}`;
+    if (resource === 'raw') {
+      return `https://res.cloudinary.com/${cloud}/raw/upload/${asset.publicId}`;
+    }
+    return `https://res.cloudinary.com/${cloud}/image/upload/c_fill,w_880,h_924,q_auto:good,f_auto/${asset.publicId}`;
   }
 
   /** Public delivery with fit transform so oversized logos stay crisp at 256px. */
@@ -422,7 +426,8 @@ export class HomepageService {
     const cloud = process.env.CLOUDINARY_CLOUD_NAME?.trim();
     if (!cloud || cloud === 'demo') return null;
     if (asset.resourceType === 'RAW' || asset.deliveryType !== 'UPLOAD') return null;
-    return `https://res.cloudinary.com/${cloud}/image/upload/c_fit,w_256,h_256,q_auto:good,f_auto/${asset.publicId}`;
+    // Tiles render ~28×28 CSS px — 64px source is enough for 2× retina.
+    return `https://res.cloudinary.com/${cloud}/image/upload/c_fit,w_64,h_64,q_auto:good,f_auto/${asset.publicId}`;
   }
 
   /** Idempotent seed of DRAFT + PUBLISHED with default marketing copy. */

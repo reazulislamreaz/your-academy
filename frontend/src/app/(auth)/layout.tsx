@@ -4,7 +4,7 @@ import { Home } from 'lucide-react';
 import { BrandMark } from '@/components/layout/brand-mark';
 import { PageShell } from '@/components/motion/page-shell';
 import { AuthPromoPanel } from '@/features/auth/auth-promo-panel';
-import { SupportWidget } from '@/features/support/support-widget';
+import { SupportWidgetLazy } from '@/features/support/support-widget-lazy';
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
@@ -26,11 +26,14 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           </Link>
         </header>
 
-        <main className="relative z-[1] mx-auto flex w-full max-w-[26rem] flex-1 flex-col justify-center px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-6 lg:max-w-[27rem] lg:px-10 lg:py-2">
+        <main
+          id="main-content"
+          className="relative z-[1] mx-auto flex w-full max-w-[26rem] flex-1 flex-col justify-center px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-6 lg:max-w-[27rem] lg:px-10 lg:py-2"
+        >
           <PageShell motionClassName="motion-page auth-form-enter">{children}</PageShell>
         </main>
       </div>
-      <SupportWidget mode="guest" />
+      <SupportWidgetLazy mode="guest" />
     </div>
   );
 }

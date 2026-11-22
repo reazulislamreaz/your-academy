@@ -170,7 +170,7 @@ describe('HomepageService', () => {
     expect(savedPayload.categories.tiles[0]?.logoAssetId).toBe(logoId);
     expect(savedPayload.categories.tiles[0]?.logoUrl).toBeUndefined();
     expect(result.payload.categories.tiles[0]?.logoUrl).toContain(
-      'res.cloudinary.com/demo-cloud/image/upload/c_fit,w_256,h_256',
+      'res.cloudinary.com/demo-cloud/image/upload/c_fit,w_64,h_64',
     );
   });
 

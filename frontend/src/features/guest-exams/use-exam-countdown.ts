@@ -46,7 +46,8 @@ export function useExamCountdown(opts: {
     const tick = () => {
       const elapsed = Math.floor((Date.now() - opts.startedAtMs!) / 1000);
       const next = Math.max(0, total - elapsed);
-      setRemaining(next);
+      // Only re-render when the whole second changes (interval can be finer for expire accuracy).
+      setRemaining((prev) => (prev === next ? prev : next));
       if (next <= 0 && !expiredRef.current) {
         expiredRef.current = true;
         onExpireRef.current();
@@ -54,7 +55,7 @@ export function useExamCountdown(opts: {
     };
 
     tick();
-    const id = window.setInterval(tick, 250);
+    const id = window.setInterval(tick, 1000);
     const onVisibility = () => {
       if (document.visibilityState === 'visible') tick();
     };

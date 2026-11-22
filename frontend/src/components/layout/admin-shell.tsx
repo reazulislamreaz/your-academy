@@ -41,6 +41,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
         <AdminMobileNav themeToggle={<LearnerThemeToggle />} />
 
         <main
+          id="main-content"
           className={cn(
             'flex min-w-0 flex-1 flex-col',
             isMessaging

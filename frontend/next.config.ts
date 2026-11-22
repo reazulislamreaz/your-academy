@@ -1,6 +1,10 @@
 import type { NextConfig } from 'next';
 
 const apiOrigin = process.env.API_INTERNAL_URL ?? 'http://localhost:5000';
+const cloudName =
+  process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME?.trim() ||
+  process.env.CLOUDINARY_CLOUD_NAME?.trim() ||
+  '';
 
 const nextConfig: NextConfig = {
   output: 'standalone',
@@ -10,6 +14,40 @@ const nextConfig: NextConfig = {
   eslint: { ignoreDuringBuilds: true },
   // Socket.IO polling hits `/socket.io/?EIO=…`; don't 308-strip the trailing slash.
   skipTrailingSlashRedirect: true,
+  images: {
+    formats: ['image/avif', 'image/webp'],
+    deviceSizes: [384, 640, 750, 828, 1080, 1200, 1920],
+    imageSizes: [64, 96, 128, 160, 256, 384],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+        pathname: cloudName ? `/${cloudName}/**` : '/**',
+      },
+    ],
+  },
+  async headers() {
+    return [
+      {
+        source: '/images/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=86400, stale-while-revalidate=604800',
+          },
+        ],
+      },
+      {
+        source: '/:path*.(woff2|woff|ttf|otf)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+    ];
+  },
   webpack: (config) => {
     // react-pdf / pdfjs optional native deps are unused in the browser bundle.
     config.resolve.alias = {

@@ -59,7 +59,7 @@ Multipart to API → validate → `StorageService.upload` → DB. Use for admin 
 |-------|----------------|
 | MIME allowlist | Images: jpeg/png/webp; tile logos also svg+xml; Documents: application/pdf |
 | Size | Avatar ≤ 2 MB; homepage tile logo ≤ 2 MB; images ≤ 8 MB; PDF ≤ 40 MB (configurable) |
-| Tile logo transform | Purpose `homepage-tile-logo` signs Cloudinary eager `c_fit,w_256,h_256,q_auto:good,f_auto` (backend-driven resize; aspect preserved) |
+| Tile logo transform | Purpose `homepage-tile-logo` signs Cloudinary eager `c_fit,w_64,h_64,q_auto:good,f_auto` (backend-driven resize for ~28px CSS tiles; aspect preserved) |
 | Ownership | confirm/delete only by uploader or ADMIN |
 | Filename | Sanitize; do not trust client path |
 | Purpose | Folder prefix per purpose: `your-academy/avatars/…` |

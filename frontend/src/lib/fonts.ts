@@ -13,7 +13,9 @@ export const fontLatin = Inter({
   subsets: ['latin'],
   variable: '--font-latin',
   display: 'swap',
-  weight: ['400', '500', '600', '700', '800'],
+  // 800 unused in UI (headings use 700) — drop to shrink font download.
+  weight: ['400', '500', '600', '700'],
+  preload: true,
 });
 
 export const fontBengali = Noto_Sans_Bengali({

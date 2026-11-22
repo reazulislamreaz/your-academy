@@ -1267,6 +1267,37 @@ input:disabled {
   outline-offset: 2px;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  html[data-scroll-behavior='smooth'] {
+    scroll-behavior: auto;
+  }
+}
+
+/* WCAG 2.4.1 Bypass Blocks — visible on keyboard focus only */
+.skip-to-content {
+  position: absolute;
+  left: 0.75rem;
+  top: 0.75rem;
+  z-index: 100;
+  padding: 0.625rem 1rem;
+  border-radius: var(--radius-sm, 0.5rem);
+  background: var(--bg-inverse);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: var(--shadow);
+  transform: translateY(-200%);
+  transition: transform 160ms var(--ease-out, ease);
+}
+
+.skip-to-content:focus,
+.skip-to-content:focus-visible {
+  transform: translateY(0);
+  outline: 2px solid var(--highlight);
+  outline-offset: 2px;
+}
+
 .font-display {
   font-family: var(--font-stack);
   /* Latin display only — keep 0 so mixed Bn headings stay intact. */
@@ -3421,17 +3452,16 @@ a.site-footer-social-link:focus-visible {
     color 200ms var(--ease-out);
 }
 
+/* Visible by default — never blank LCP/sections when JS is slow or disabled.
+   GSAP enhances with a subtle transform once ScrollTrigger fires. */
 .homepage-gsap-reveal {
-  opacity: 0;
-  transform: translate3d(0, 16px, 0);
-  will-change: transform, opacity;
+  will-change: auto;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .homepage-gsap-reveal {
-    opacity: 1 !important;
     transform: none !important;
-    will-change: auto;
+    opacity: 1 !important;
   }
 }
 

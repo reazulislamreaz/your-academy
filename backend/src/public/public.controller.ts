@@ -15,13 +15,16 @@ export class PublicController {
     private readonly documentsService: DocumentsService,
   ) {}
 
+  /** Public aggregate counters — short shared cache (no user-specific data). */
   @Get('stats')
+  @Header('Cache-Control', 'public, max-age=30, s-maxage=60, stale-while-revalidate=120')
   async stats() {
     return createSuccessResponse(await this.publicService.stats(), newRequestId());
   }
 
   /** Published PUBLIC documents for পত্রিকার গুরুত্বপূর্ণ কলাম (no login). */
   @Get('documents')
+  @Header('Cache-Control', 'public, max-age=30, s-maxage=60, stale-while-revalidate=120')
   async listDocuments(
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
@@ -69,12 +72,14 @@ export class PublicController {
 
   /** Distinct published exam years for Preli bank year chips (dynamic; no hard-coded list). */
   @Get('question-sets/years')
+  @Header('Cache-Control', 'public, max-age=60, s-maxage=120, stale-while-revalidate=300')
   async questionSetYears() {
     return createSuccessResponse(await this.publicService.listQuestionSetYears(), newRequestId());
   }
 
   /** Upload-based Question Sets (one per admin import batch). */
   @Get('question-sets')
+  @Header('Cache-Control', 'public, max-age=30, s-maxage=60, stale-while-revalidate=120')
   async questionSets(
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
@@ -126,6 +131,7 @@ export class PublicController {
 
   /** DEC-040 — Written Question Bank years */
   @Get('written-question-sets/years')
+  @Header('Cache-Control', 'public, max-age=60, s-maxage=120, stale-while-revalidate=300')
   async writtenQuestionSetYears() {
     return createSuccessResponse(
       await this.publicService.listWrittenQuestionSetYears(),
@@ -134,6 +140,7 @@ export class PublicController {
   }
 
   @Get('written-question-sets')
+  @Header('Cache-Control', 'public, max-age=30, s-maxage=60, stale-while-revalidate=120')
   async writtenQuestionSets(
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
@@ -188,6 +195,7 @@ export class PublicController {
 
   /** Topic Base Question Analysis directory (DEC-042). */
   @Get('topic-directory')
+  @Header('Cache-Control', 'public, max-age=60, s-maxage=120, stale-while-revalidate=300')
   async topicDirectory() {
     return createSuccessResponse(await this.publicService.listTopicDirectory(), newRequestId());
   }
@@ -264,6 +272,7 @@ export class PublicController {
   }
 
   @Get('questions')
+  @Header('Cache-Control', 'public, max-age=30, s-maxage=60, stale-while-revalidate=120')
   async questions(
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,

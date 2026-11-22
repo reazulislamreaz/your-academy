@@ -26,6 +26,7 @@ export function AppMain({ children }: Props) {
 
   return (
     <main
+      id="main-content"
       className={cn(
         'mx-auto w-full min-w-0 flex-1 overflow-x-clip',
         immersive

@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { MarketingHeader } from '@/components/layout/marketing-header';
 import { PageShell } from '@/components/motion/page-shell';
-import { SupportWidget } from '@/features/support/support-widget';
+import { SupportWidgetLazy } from '@/features/support/support-widget-lazy';
 import { cn } from '@/lib/utils';
 
 /**
@@ -50,6 +50,7 @@ export function MarketingShell({
     >
       <MarketingHeader />
       <main
+        id="main-content"
         className={cn(
           // Grow to fill leftover viewport under the header so short pages
           // don't leave the footer mid-screen.
@@ -69,7 +70,7 @@ export function MarketingShell({
         </PageShell>
       </main>
       {!reader ? footer : null}
-      {!liveExam ? <SupportWidget mode="guest" /> : null}
+      {!liveExam ? <SupportWidgetLazy mode="guest" /> : null}
     </div>
   );
 }

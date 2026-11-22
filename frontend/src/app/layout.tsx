@@ -4,7 +4,10 @@ import { Providers } from '@/components/providers';
 import { fontVariableClassName } from '@/lib/fonts';
 import './globals.css';
 
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://youracademy.com.bd';
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
     default: 'Your Academy',
     template: '%s · Your Academy',
@@ -24,6 +27,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       className={`h-full ${fontVariableClassName}`}
     >
       <body className="flex min-h-dvh flex-col font-sans antialiased">
+        <a href="#main-content" className="skip-to-content">
+          Skip to main content
+        </a>
         <Providers>{children}</Providers>
       </body>
     </html>

@@ -139,8 +139,9 @@ function MarketingHeaderInner() {
     >
       <div className="marketing-nav-shell mx-auto h-14 max-w-[var(--marketing-content-max)] px-3 sm:h-16 sm:px-6">
         <div className="flex shrink-0 items-center gap-2">
+          {/* One priority logo only — dual priority caused competing LCP candidates. */}
           <BrandMark markOnly className="shrink-0 lg:hidden [&_img]:h-8" priority />
-          <BrandMark className="hidden shrink-0 lg:inline-flex [&_img]:h-10" priority />
+          <BrandMark className="hidden shrink-0 lg:inline-flex [&_img]:h-10" />
         </div>
 
         {/* Desktop-only primary nav — never shown below xl (CSS must not force display). */}
@@ -155,11 +156,12 @@ function MarketingHeaderInner() {
             {me.data ? (
               <UserMenu variant="header" />
             ) : (
-              <Link href="/login" className="shrink-0">
+              <Link href="/login" className="shrink-0" aria-label="Login">
                 <Button
                   size="sm"
                   variant="ghost"
                   className="marketing-nav-action min-h-11 cursor-pointer rounded-full px-2.5 sm:px-3.5"
+                  aria-label="Login"
                 >
                   <LogIn className="size-4" aria-hidden />
                   <span className="hidden min-[380px]:inline">Login</span>

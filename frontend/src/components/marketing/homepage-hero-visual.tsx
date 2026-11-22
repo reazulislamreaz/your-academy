@@ -41,9 +41,12 @@ export const HERO_SLIDES: HeroSlide[] = [
 
 const INTERVAL_MS = 4000;
 const SWIPE_THRESHOLD_PX = 48;
-/** Request ~2× of the 440px card so retina stays sharp. */
-const SIZES = '(min-width: 1024px) 880px, 100vw';
-const IMAGE_QUALITY = 92;
+/**
+ * Card is max ~440px wide (340px on small screens). Request ~2× for retina
+ * without shipping a full-viewport decode (old `100vw` hurt LCP on mobile).
+ */
+const SIZES = '(min-width: 1024px) 440px, (min-width: 640px) 340px, 90vw';
+const IMAGE_QUALITY = 80;
 
 type Props = {
   /** CMS hero image — becomes the first slide when provided (deduped). */
@@ -233,11 +236,11 @@ export function HomepageHeroVisual({ primarySrc }: Props) {
                       alt={active ? slide.alt : ''}
                       fill
                       priority={i === 0}
+                      fetchPriority={i === 0 ? 'high' : 'auto'}
                       loading={i === 0 ? 'eager' : 'lazy'}
                       sizes={SIZES}
                       quality={IMAGE_QUALITY}
                       className="object-cover object-center"
-                      unoptimized={slide.src.startsWith('http')}
                       draggable={false}
                     />
                   </div>
@@ -261,11 +264,19 @@ export function HomepageHeroVisual({ primarySrc }: Props) {
                           aria-selected={active}
                           aria-label={`Show slide ${i + 1}: ${slide.alt}`}
                           className={cn(
-                            'h-2 rounded-full transition-[width,background-color] duration-300 ease-out',
-                            active ? 'w-6 bg-white' : 'w-2 bg-white/50 hover:bg-white/75',
+                            // Visual dot stays small; hit area meets WCAG 2.5.8 (≥24×24, prefer 44).
+                            'flex min-h-11 min-w-11 items-center justify-center rounded-full',
                           )}
                           onClick={() => goTo(i)}
-                        />
+                        >
+                          <span
+                            aria-hidden
+                            className={cn(
+                              'rounded-full transition-[width,background-color] duration-300 ease-out',
+                              active ? 'h-2 w-6 bg-white' : 'size-2 bg-white/50 hover:bg-white/75',
+                            )}
+                          />
+                        </button>
                       );
                     })}
                   </div>
