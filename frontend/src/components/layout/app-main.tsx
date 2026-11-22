@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
+import { GsapScrollRefresh } from '@/components/motion/gsap-scroll-refresh';
 import { PageShell } from '@/components/motion/page-shell';
 import { cn } from '@/lib/utils';
 
@@ -35,6 +36,7 @@ export function AppMain({ children }: Props) {
             'max-w-[var(--app-content-max,72rem)] px-3.5 py-4 pb-[max(5.5rem,calc(env(safe-area-inset-bottom)+4.5rem))] sm:px-5 sm:py-6 sm:pb-[max(2rem,env(safe-area-inset-bottom))] md:px-6 lg:px-8 lg:py-7',
       )}
     >
+      <GsapScrollRefresh />
       {immersive ? children : <PageShell>{children}</PageShell>}
     </main>
   );

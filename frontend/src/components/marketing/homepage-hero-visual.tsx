@@ -42,11 +42,13 @@ export const HERO_SLIDES: HeroSlide[] = [
 const INTERVAL_MS = 4000;
 const SWIPE_THRESHOLD_PX = 48;
 /**
- * Card is max ~440px wide (340px on small screens). Request ~2× for retina
- * without shipping a full-viewport decode (old `100vw` hurt LCP on mobile).
+ * Hero media must stay at full authored quality (no recompression).
+ * Request ~2× of the framed card on large screens; full viewport width on smaller
+ * devices so retina phones still decode a sharp source.
  */
-const SIZES = '(min-width: 1024px) 440px, (min-width: 640px) 340px, 90vw';
-const IMAGE_QUALITY = 80;
+const SIZES = '(min-width: 1024px) 880px, 100vw';
+/** Next Image max — used when optimization runs; local/CMS heroes use `unoptimized`. */
+const IMAGE_QUALITY = 100;
 
 type Props = {
   /** CMS hero image — becomes the first slide when provided (deduped). */
@@ -240,6 +242,8 @@ export function HomepageHeroVisual({ primarySrc }: Props) {
                       loading={i === 0 ? 'eager' : 'lazy'}
                       sizes={SIZES}
                       quality={IMAGE_QUALITY}
+                      // Serve original AVIF/WebP / CMS bytes — never re-encode or down-quality the hero.
+                      unoptimized
                       className="object-cover object-center"
                       draggable={false}
                     />

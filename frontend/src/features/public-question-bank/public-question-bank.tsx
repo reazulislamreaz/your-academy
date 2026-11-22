@@ -6,6 +6,7 @@ import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-qu
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ListCardSkeleton, LoadError } from '@/components/loading';
 import { GoForExamCta } from '@/components/marketing/go-for-exam-cta';
+import { GsapReveal } from '@/components/motion/gsap-reveal';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { SearchField } from '@/components/ui/search-field';
@@ -240,7 +241,7 @@ export function PublicQuestionBank({
     <div className={cn('space-y-5', className)}>
       {embedded ? null : <GoForExamCta />}
 
-      <div className="rounded-[1.25rem] border border-[var(--line)] bg-white p-3 shadow-[var(--shadow-sm)] sm:p-4">
+      <GsapReveal className="rounded-[1.25rem] border border-[var(--line)] bg-white p-3 shadow-[var(--shadow-sm)] sm:p-4">
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
             <SearchField
@@ -349,7 +350,7 @@ export function PublicQuestionBank({
             </p>
           ) : null}
         </div>
-      </div>
+      </GsapReveal>
 
       {showListSkeleton ? <ListCardSkeleton rows={5} /> : null}
 
@@ -372,53 +373,55 @@ export function PublicQuestionBank({
         />
       ) : null}
 
-      <ul
-        className={cn(
-          'space-y-3 transition-opacity duration-150',
-          list.isFetching && !list.isFetchingNextPage && list.isPlaceholderData
-            ? 'opacity-60'
-            : 'opacity-100',
-        )}
-        aria-busy={list.isFetching && !list.isFetchingNextPage}
-      >
-        {sets.map((set) => {
-          const cardClass =
-            'block w-full rounded-[1rem] border border-[var(--line)] bg-white px-5 py-4 text-left shadow-[var(--shadow-sm)] transition-all hover:-translate-y-0.5 hover:border-[var(--highlight)] hover:shadow-[var(--shadow)]';
-          return (
-            <li key={set.id}>
-              {timedPractice ? (
-                <button
-                  type="button"
-                  className={cardClass}
-                  onClick={() =>
-                    setPracticeSet({
-                      id: set.id,
-                      title: set.title,
-                      questionCount: set.questionCount,
-                    })
-                  }
-                >
-                  <h2 className="font-display text-lg font-bold tracking-tight text-[var(--ink)] sm:text-xl">
-                    {set.title}
-                  </h2>
-                  <p className="mt-1 text-sm text-[var(--muted-strong)]">
-                    <span className="tabular-nums font-semibold text-[var(--ink-soft)]">
-                      {set.questionCount}
-                    </span>{' '}
-                    MCQ{set.questionCount === 1 ? '' : 's'} · Tap to set time & start
-                  </p>
-                </button>
-              ) : (
-                <Link href={`${bankRoot}/${set.id}`} className={cardClass}>
-                  <h2 className="font-display text-lg font-bold tracking-tight text-[var(--ink)] sm:text-xl">
-                    {set.title}
-                  </h2>
-                </Link>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+      <GsapReveal staggerChildren y={12}>
+        <ul
+          className={cn(
+            'space-y-3 transition-opacity duration-150',
+            list.isFetching && !list.isFetchingNextPage && list.isPlaceholderData
+              ? 'opacity-60'
+              : 'opacity-100',
+          )}
+          aria-busy={list.isFetching && !list.isFetchingNextPage}
+        >
+          {sets.map((set) => {
+            const cardClass =
+              'motion-hover-lift block w-full rounded-[1rem] border border-[var(--line)] bg-white px-5 py-4 text-left shadow-[var(--shadow-sm)] transition-all hover:border-[var(--highlight)] hover:shadow-[var(--shadow)]';
+            return (
+              <li key={set.id} data-gsap-stagger>
+                {timedPractice ? (
+                  <button
+                    type="button"
+                    className={cardClass}
+                    onClick={() =>
+                      setPracticeSet({
+                        id: set.id,
+                        title: set.title,
+                        questionCount: set.questionCount,
+                      })
+                    }
+                  >
+                    <h2 className="font-display text-lg font-bold tracking-tight text-[var(--ink)] sm:text-xl">
+                      {set.title}
+                    </h2>
+                    <p className="mt-1 text-sm text-[var(--muted-strong)]">
+                      <span className="tabular-nums font-semibold text-[var(--ink-soft)]">
+                        {set.questionCount}
+                      </span>{' '}
+                      MCQ{set.questionCount === 1 ? '' : 's'} · Tap to set time & start
+                    </p>
+                  </button>
+                ) : (
+                  <Link href={`${bankRoot}/${set.id}`} className={cardClass}>
+                    <h2 className="font-display text-lg font-bold tracking-tight text-[var(--ink)] sm:text-xl">
+                      {set.title}
+                    </h2>
+                  </Link>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </GsapReveal>
 
       {list.hasNextPage ? (
         <div className="flex justify-center pt-2">

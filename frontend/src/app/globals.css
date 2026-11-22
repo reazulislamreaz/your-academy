@@ -3454,12 +3454,16 @@ a.site-footer-social-link:focus-visible {
 
 /* Visible by default — never blank LCP/sections when JS is slow or disabled.
    GSAP enhances with a subtle transform once ScrollTrigger fires. */
-.homepage-gsap-reveal {
+.homepage-gsap-reveal,
+.gsap-reveal,
+.gsap-stagger {
   will-change: auto;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .homepage-gsap-reveal {
+  .homepage-gsap-reveal,
+  .gsap-reveal,
+  .gsap-stagger {
     transform: none !important;
     opacity: 1 !important;
   }

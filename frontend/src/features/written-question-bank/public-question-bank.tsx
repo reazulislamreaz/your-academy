@@ -6,6 +6,7 @@ import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-qu
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ListCardSkeleton, LoadError } from '@/components/loading';
 import { GoForExamCta } from '@/components/marketing/go-for-exam-cta';
+import { GsapReveal } from '@/components/motion/gsap-reveal';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { SearchField } from '@/components/ui/search-field';
@@ -228,7 +229,7 @@ export function WrittenQuestionBank({
     <div className={cn('space-y-5', className)}>
       {embedded ? null : <GoForExamCta />}
 
-      <div className="relative z-10 rounded-[1.25rem] border border-[var(--line)] bg-[var(--bg-elevated)] p-3 shadow-[var(--shadow-sm)] sm:p-4">
+      <GsapReveal className="relative z-10 rounded-[1.25rem] border border-[var(--line)] bg-[var(--bg-elevated)] p-3 shadow-[var(--shadow-sm)] sm:p-4">
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
             <SearchField
@@ -337,7 +338,7 @@ export function WrittenQuestionBank({
             </p>
           ) : null}
         </div>
-      </div>
+      </GsapReveal>
 
       {showListSkeleton ? <ListCardSkeleton rows={5} /> : null}
 
@@ -360,28 +361,30 @@ export function WrittenQuestionBank({
         />
       ) : null}
 
-      <ul
-        className={cn(
-          'space-y-3 transition-opacity duration-150',
-          list.isFetching && !list.isFetchingNextPage && list.isPlaceholderData
-            ? 'opacity-60'
-            : 'opacity-100',
-        )}
-        aria-busy={list.isFetching && !list.isFetchingNextPage}
-      >
-        {sets.map((set) => (
-          <li key={set.id}>
-            <Link
-              href={`${bankRoot}/${set.id}`}
-              className="block cursor-pointer rounded-[1rem] border border-[var(--line)] bg-[var(--bg-elevated)] px-5 py-4 shadow-[var(--shadow-sm)] transition-all hover:-translate-y-0.5 hover:border-[var(--highlight)] hover:shadow-[var(--shadow)]"
-            >
-              <h2 className="font-display text-lg font-bold tracking-tight text-[var(--ink)] sm:text-xl">
-                {set.title}
-              </h2>
-            </Link>
-          </li>
-        ))}
-      </ul>
+      <GsapReveal staggerChildren y={12}>
+        <ul
+          className={cn(
+            'space-y-3 transition-opacity duration-150',
+            list.isFetching && !list.isFetchingNextPage && list.isPlaceholderData
+              ? 'opacity-60'
+              : 'opacity-100',
+          )}
+          aria-busy={list.isFetching && !list.isFetchingNextPage}
+        >
+          {sets.map((set) => (
+            <li key={set.id} data-gsap-stagger>
+              <Link
+                href={`${bankRoot}/${set.id}`}
+                className="motion-hover-lift block cursor-pointer rounded-[1rem] border border-[var(--line)] bg-[var(--bg-elevated)] px-5 py-4 shadow-[var(--shadow-sm)] transition-all hover:border-[var(--highlight)] hover:shadow-[var(--shadow)]"
+              >
+                <h2 className="font-display text-lg font-bold tracking-tight text-[var(--ink)] sm:text-xl">
+                  {set.title}
+                </h2>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </GsapReveal>
 
       {list.hasNextPage ? (
         <div className="flex justify-center pt-2">

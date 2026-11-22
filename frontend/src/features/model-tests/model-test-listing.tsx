@@ -9,6 +9,7 @@ import {
   DEFAULT_MODEL_TEST_GUIDE_TITLE,
   type ModelTestGuideConfig,
 } from '@your-academy/shared';
+import { GsapEntrance } from '@/components/motion/gsap-entrance';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Label } from '@/components/ui/label';
@@ -80,7 +81,9 @@ export function ModelTestListing({ basePath = '/model-test', embedded = false }:
   const guideConfig = resolveGuide(guide.data);
 
   return (
-    <div
+    <GsapEntrance
+      y={10}
+      duration={0.36}
       className={cn(
         'w-full overflow-x-clip',
         embedded ? '' : 'marketing-container py-7 sm:py-10',
@@ -257,7 +260,7 @@ export function ModelTestListing({ basePath = '/model-test', embedded = false }:
           </div>
         </aside>
       </div>
-    </div>
+    </GsapEntrance>
   );
 }
 

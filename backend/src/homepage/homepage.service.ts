@@ -409,12 +409,9 @@ export class HomepageService {
           ? 'private'
           : 'upload';
     // Public homepage hero uses upload delivery; signed URLs not required.
-    // Serve a sized, auto-format transform so browsers never download the raw upload.
+    // Deliver the original upload (no resize/compress) so the hero keeps full visual quality.
     if (type !== 'upload') return null;
-    if (resource === 'raw') {
-      return `https://res.cloudinary.com/${cloud}/raw/upload/${asset.publicId}`;
-    }
-    return `https://res.cloudinary.com/${cloud}/image/upload/c_fill,w_880,h_924,q_auto:good,f_auto/${asset.publicId}`;
+    return `https://res.cloudinary.com/${cloud}/${resource}/upload/${asset.publicId}`;
   }
 
   /** Public delivery with fit transform so oversized logos stay crisp at 256px. */

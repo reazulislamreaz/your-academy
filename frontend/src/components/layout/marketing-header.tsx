@@ -16,6 +16,7 @@ import { BrandMark } from './brand-mark';
 import { MobileNav } from './mobile-nav';
 import { UserMenu } from './user-menu';
 import { marketingNavItems, resolveActiveMarketingNavId } from './marketing-nav';
+import { GsapEntrance } from '@/components/motion/gsap-entrance';
 import { Button } from '@/components/ui/button';
 import { useMe } from '@/features/auth/use-auth';
 
@@ -77,6 +78,7 @@ function MarketingNavLinks({ activeId }: { activeId: string | null }) {
   return (
     <nav
       ref={navRef}
+      data-gsap-nav
       className="marketing-nav-rail hidden min-w-0 justify-self-center xl:flex"
       aria-label="Primary"
     >
@@ -137,8 +139,13 @@ function MarketingHeaderInner() {
       }
       data-marketing-menubar
     >
-      <div className="marketing-nav-shell mx-auto h-14 max-w-[var(--marketing-content-max)] px-3 sm:h-16 sm:px-6">
-        <div className="flex shrink-0 items-center gap-2">
+      <GsapEntrance
+        className="marketing-nav-shell mx-auto h-14 max-w-[var(--marketing-content-max)] px-3 sm:h-16 sm:px-6"
+        childSelector="[data-gsap-nav]"
+        y={8}
+        duration={0.36}
+      >
+        <div data-gsap-nav className="flex shrink-0 items-center gap-2">
           {/* One priority logo only — dual priority caused competing LCP candidates. */}
           <BrandMark markOnly className="shrink-0 lg:hidden [&_img]:h-8" priority />
           <BrandMark className="hidden shrink-0 lg:inline-flex [&_img]:h-10" />
@@ -147,7 +154,7 @@ function MarketingHeaderInner() {
         {/* Desktop-only primary nav — never shown below xl (CSS must not force display). */}
         <MarketingNavLinks activeId={activeId} />
 
-        <div className="marketing-nav-tools gap-1.5 sm:gap-2">
+        <div data-gsap-nav className="marketing-nav-tools gap-1.5 sm:gap-2">
           <div className="hidden items-center gap-2 md:flex">
             {me.data ? <UserMenu variant="header" /> : <UserMenu loginOnly />}
           </div>
@@ -222,7 +229,7 @@ function MarketingHeaderInner() {
             }
           />
         </div>
-      </div>
+      </GsapEntrance>
     </header>
   );
 }

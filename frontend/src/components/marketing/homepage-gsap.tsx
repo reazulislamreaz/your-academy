@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect, useRef, type ReactNode } from 'react';
+import { GsapReveal } from '@/components/motion/gsap-reveal';
+import {
+  loadGsap,
+  loadScrollTrigger,
+  prefersReducedMotion,
+  YA_MOTION,
+} from '@/lib/motion/gsap-client';
 import { cn } from '@/lib/utils';
-
-function prefersReducedMotion(): boolean {
-  if (typeof window === 'undefined') return false;
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-}
 
 type RevealProps = {
   children: ReactNode;
@@ -17,91 +19,26 @@ type RevealProps = {
 };
 
 /**
- * Homepage scroll reveal — transform-first (content stays visible without JS).
- * GSAP is loaded on demand so it stays out of the critical path.
+ * Homepage scroll reveal — thin wrapper over shared GsapReveal.
+ * Keeps `data-hp-stagger` for existing homepage section markup.
  */
 export function HomepageReveal({
   children,
   className,
   delay = 0,
   staggerChildren = false,
-  y = 12,
+  y = YA_MOTION.fromY,
 }: RevealProps) {
-  const ref = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const node = ref.current;
-    if (!node) return;
-    if (prefersReducedMotion()) return;
-
-    let cancelled = false;
-    let revert: (() => void) | undefined;
-
-    void (async () => {
-      const [{ default: gsap }, { ScrollTrigger }] = await Promise.all([
-        import('gsap'),
-        import('gsap/ScrollTrigger'),
-      ]);
-      if (cancelled) return;
-      gsap.registerPlugin(ScrollTrigger);
-
-      const ctx = gsap.context(() => {
-        if (staggerChildren) {
-          const items = node.querySelectorAll('[data-hp-stagger]');
-          const targets = items.length > 0 ? items : node.children;
-          // Keep opacity ≥ 0.92 so LCP/no-JS and slow networks never show blank sections.
-          gsap.fromTo(
-            targets,
-            { opacity: 0.92, y },
-            {
-              opacity: 1,
-              y: 0,
-              duration: 0.42,
-              delay,
-              stagger: 0.04,
-              ease: 'power3.out',
-              clearProps: 'transform,opacity',
-              scrollTrigger: {
-                trigger: node,
-                start: 'top 90%',
-                once: true,
-              },
-            },
-          );
-        } else {
-          gsap.fromTo(
-            node,
-            { opacity: 0.92, y },
-            {
-              opacity: 1,
-              y: 0,
-              duration: 0.45,
-              delay,
-              ease: 'power3.out',
-              clearProps: 'transform,opacity',
-              scrollTrigger: {
-                trigger: node,
-                start: 'top 90%',
-                once: true,
-              },
-            },
-          );
-        }
-      }, node);
-
-      revert = () => ctx.revert();
-    })();
-
-    return () => {
-      cancelled = true;
-      revert?.();
-    };
-  }, [delay, staggerChildren, y]);
-
   return (
-    <div ref={ref} className={cn(!staggerChildren && 'homepage-gsap-reveal', className)}>
+    <GsapReveal
+      className={cn(className)}
+      delay={delay}
+      staggerChildren={staggerChildren}
+      y={y}
+      staggerSelector="[data-hp-stagger]"
+    >
       {children}
-    </div>
+    </GsapReveal>
   );
 }
 
@@ -135,12 +72,8 @@ export function HomepageCountUp({
     let revert: (() => void) | undefined;
 
     void (async () => {
-      const [{ default: gsap }, { ScrollTrigger }] = await Promise.all([
-        import('gsap'),
-        import('gsap/ScrollTrigger'),
-      ]);
+      const { gsap } = await loadScrollTrigger();
       if (cancelled || !ref.current) return;
-      gsap.registerPlugin(ScrollTrigger);
 
       const state = { n: 0 };
       const ctx = gsap.context(() => {
@@ -156,7 +89,6 @@ export function HomepageCountUp({
             }
           },
           onStart: () => {
-            // Reset only when the scroll-triggered animation actually begins.
             if (ref.current) ref.current.textContent = '0';
           },
           scrollTrigger: {
@@ -207,18 +139,18 @@ export function HomepageHeroEntrance({ children, className }: HeroEntranceProps)
     let revert: (() => void) | undefined;
 
     void (async () => {
-      const { default: gsap } = await import('gsap');
+      const gsap = await loadGsap();
       if (cancelled) return;
 
       const ctx = gsap.context(() => {
         gsap.fromTo(
           items,
-          { y: 10 },
+          { y: YA_MOTION.heroY },
           {
             y: 0,
             duration: 0.4,
-            stagger: 0.04,
-            ease: 'power3.out',
+            stagger: YA_MOTION.stagger,
+            ease: YA_MOTION.ease,
             clearProps: 'transform',
           },
         );

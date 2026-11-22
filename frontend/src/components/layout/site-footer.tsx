@@ -1,3 +1,4 @@
+import { GsapReveal } from '@/components/motion/gsap-reveal';
 import { getPublicSocialLinks } from '@/lib/api/social-links';
 import { SiteFooterView } from './site-footer-view';
 
@@ -8,5 +9,9 @@ import { SiteFooterView } from './site-footer-view';
  */
 export async function SiteFooter() {
   const socialLinks = await getPublicSocialLinks();
-  return <SiteFooterView socialLinks={socialLinks} />;
+  return (
+    <GsapReveal y={16} start="top 96%">
+      <SiteFooterView socialLinks={socialLinks} />
+    </GsapReveal>
+  );
 }

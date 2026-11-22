@@ -9,6 +9,7 @@ import {
   DEFAULT_EXAM_GUIDE_TITLE,
   type ExamGuideConfig,
 } from '@your-academy/shared';
+import { GsapEntrance } from '@/components/motion/gsap-entrance';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { SearchField } from '@/components/ui/search-field';
@@ -52,7 +53,9 @@ export function QuizListing({ basePath = '/exams', embedded = false }: Props) {
   const guideConfig = resolveGuide(guide.data);
 
   return (
-    <div
+    <GsapEntrance
+      y={10}
+      duration={0.36}
       className={cn(
         'w-full overflow-x-clip',
         embedded ? '' : 'marketing-container py-7 sm:py-10',
@@ -164,7 +167,7 @@ export function QuizListing({ basePath = '/exams', embedded = false }: Props) {
           </div>
         </aside>
       </div>
-    </div>
+    </GsapEntrance>
   );
 }
 

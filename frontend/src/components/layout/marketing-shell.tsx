@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { MarketingHeader } from '@/components/layout/marketing-header';
+import { GsapScrollRefresh } from '@/components/motion/gsap-scroll-refresh';
 import { PageShell } from '@/components/motion/page-shell';
 import { SupportWidgetLazy } from '@/features/support/support-widget-lazy';
 import { cn } from '@/lib/utils';
@@ -48,6 +49,7 @@ export function MarketingShell({
         reader && 'h-dvh max-h-dvh overflow-hidden',
       )}
     >
+      <GsapScrollRefresh />
       <MarketingHeader />
       <main
         id="main-content"
