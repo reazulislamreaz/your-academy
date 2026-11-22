@@ -37,6 +37,8 @@ type PanelProps = {
   onClose: () => void;
   /** Optional title above the scroll region (defaults to Menu). */
   title?: string;
+  /** Subtitle under the title. Pass `null` to hide. */
+  subtitle?: string | null;
   /** Extra chrome under the header (e.g. search). */
   headerExtra?: ReactNode;
   /** Use inverse (light) brand mark on dark Orbit shells. */
@@ -56,6 +58,7 @@ export function MobileDrawerPanel({
   side = 'right',
   onClose,
   title = 'Menu',
+  subtitle = 'Your Academy',
   headerExtra,
   inverseLogo = false,
 }: PanelProps) {
@@ -69,7 +72,7 @@ export function MobileDrawerPanel({
       data-mobile-drawer-panel=""
       data-scroll-lock-scrollable=""
       className={cn(
-        'fixed inset-y-0 z-[60] flex w-[min(100vw-2.5rem,21rem)] flex-col',
+        'fixed inset-y-0 z-[60] flex w-[min(100vw-2.25rem,20.5rem)] flex-col',
         'border-[var(--line)] bg-[var(--bg-elevated)] text-[var(--ink)] shadow-[var(--shadow-lg)]',
         'pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)]',
         side === 'right'
@@ -78,31 +81,33 @@ export function MobileDrawerPanel({
         className,
       )}
     >
-      <div className="flex shrink-0 items-center gap-3 border-b border-[var(--line)] px-4 py-3.5">
+      <div className="flex shrink-0 items-center gap-3 border-b border-[var(--line)]/80 px-4 py-3">
         <BrandMark markOnly inverse={inverseLogo} className="shrink-0 [&_img]:h-8" />
         <div className="min-w-0 flex-1">
-          <p className="truncate font-display text-sm font-bold tracking-tight text-[var(--ink)]">
+          <p className="truncate font-display text-[0.9375rem] font-bold tracking-tight text-[var(--ink)]">
             {title}
           </p>
-          <p className="truncate text-[11px] font-medium text-[var(--muted)]">Your Academy</p>
+          {subtitle ? (
+            <p className="truncate text-[0.6875rem] font-medium text-[var(--muted)]">{subtitle}</p>
+          ) : null}
         </div>
         <Button
           type="button"
           variant="ghost"
           size="icon"
-          className="size-11 shrink-0 rounded-full"
+          className="size-10 shrink-0 rounded-full"
           aria-label="Close menu"
           onClick={onClose}
         >
-          <X className="size-5" strokeWidth={2.25} />
+          <X className="size-[1.125rem]" strokeWidth={2.25} />
         </Button>
       </div>
 
       {headerExtra ? (
-        <div className="shrink-0 border-b border-[var(--line)] px-4 py-3">{headerExtra}</div>
+        <div className="shrink-0 border-b border-[var(--line)]/70 px-4 py-2.5">{headerExtra}</div>
       ) : null}
 
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4">{children}</div>
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3.5 py-4">{children}</div>
     </div>
   );
 }

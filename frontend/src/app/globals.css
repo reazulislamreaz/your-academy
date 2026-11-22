@@ -1779,6 +1779,55 @@ a.site-footer-social-link:focus-visible {
   color: var(--muted);
 }
 
+/* Mobile study drawer — quieter section labels + roomier taps */
+.learner-mobile-nav-title {
+  margin: 0 0 0.4rem;
+  padding: 0 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--muted);
+}
+
+.learner-mobile-nav-link {
+  min-height: 2.85rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.75rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--ink-soft);
+}
+
+.learner-mobile-nav-link::before {
+  left: 0.15rem;
+}
+
+.learner-mobile-drawer .learner-nav-link[aria-current='page'],
+.learner-mobile-drawer .learner-nav-link[data-active='true'] {
+  box-shadow: none;
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg-muted));
+  color: var(--ink);
+}
+
+.learner-mobile-drawer .learner-nav-link[aria-current='page']::after,
+.learner-mobile-drawer .learner-nav-link[data-active='true']::after {
+  opacity: 0;
+}
+
+.learner-mobile-drawer .learner-nav-link:hover {
+  box-shadow: none;
+  background: var(--bg-muted);
+}
+
+.learner-mobile-drawer .learner-nav-link:hover::after {
+  opacity: 0;
+}
+
+.learner-mobile-drawer .learner-nav-link[aria-current='page'] .learner-nav-icon,
+.learner-mobile-drawer .learner-nav-link[data-active='true'] .learner-nav-icon {
+  box-shadow: none;
+}
+
 .learner-nav-group-rule {
   width: 1.35rem;
   height: 1px;

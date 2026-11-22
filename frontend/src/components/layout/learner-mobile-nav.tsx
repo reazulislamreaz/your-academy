@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bell, Bookmark, Headset } from 'lucide-react';
+import { Headset } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { LearnerThemePortal } from '@/components/theme/learner-theme-portal';
@@ -19,7 +19,7 @@ import { UserMenu } from './user-menu';
 import { learnerLinkActive, learnerNavGroups } from './learner-nav';
 import { cn } from '@/lib/utils';
 
-/** Grouped drawer matching desktop sidebar IA (lg:hidden). */
+/** Clean mobile study drawer — nav first, utilities in the footer. */
 export function LearnerMobileNav() {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -85,49 +85,24 @@ export function LearnerMobileNav() {
           id={panelId}
           label="Study navigation"
           panelRef={panelRef}
-          title="Study desk"
+          title="Menu"
+          subtitle={null}
           side="left"
           onClose={() => setOpen(false)}
-          className="lg:hidden"
+          className="learner-mobile-drawer lg:hidden"
           inverseLogo={inverseLogo}
+          headerExtra={
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs font-medium text-[var(--muted)]">Appearance</p>
+              <LearnerThemeToggle className="size-9 rounded-full border-[var(--line)] bg-[var(--bg-muted)] shadow-none" />
+            </div>
+          }
         >
-          <div className="mb-4 grid grid-cols-2 gap-2 rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-muted)] p-3">
-            <LearnerThemeToggle showLabel className="col-span-2 bg-[var(--bg-elevated)]" />
-            <Link
-              href="/bookmarks"
-              className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] px-3 text-sm font-semibold text-[var(--ink-soft)] transition-colors hover:bg-[var(--bg-muted)] hover:text-[var(--ink)]"
-              onClick={() => setOpen(false)}
-            >
-              <Bookmark className="size-4" aria-hidden strokeWidth={1.75} />
-              Saved
-            </Link>
-            <Link
-              href="/news"
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] px-3 text-sm font-semibold text-[var(--ink-soft)] transition-colors hover:bg-[var(--bg-muted)] hover:text-[var(--ink)]"
-              onClick={() => setOpen(false)}
-            >
-              <Bell className="size-4" aria-hidden strokeWidth={1.75} />
-              News
-            </Link>
-            <button
-              type="button"
-              className="col-span-2 inline-flex h-11 items-center justify-center gap-2 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-elevated)] px-3 text-sm font-semibold text-[var(--ink-soft)] transition-colors hover:bg-[var(--bg-muted)] hover:text-[var(--ink)]"
-              aria-label="Open support"
-              onClick={() => {
-                setOpen(false);
-                support.setOpen(true);
-              }}
-            >
-              <Headset className="size-4" aria-hidden strokeWidth={1.75} />
-              Support
-            </button>
-          </div>
-
-          <nav className="flex flex-col gap-5" aria-label="Mobile study">
+          <nav className="learner-mobile-nav flex flex-col gap-6" aria-label="Mobile study">
             {learnerNavGroups.map((group) => (
               <div key={group.title} className="learner-nav-group">
-                <p className="learner-nav-group-title">{group.title}</p>
-                <div className="flex flex-col gap-1">
+                <p className="learner-mobile-nav-title">{group.title}</p>
+                <div className="flex flex-col gap-0.5">
                   {group.items.map((item) => {
                     const Icon = item.icon;
                     const active = learnerLinkActive(pathname, item);
@@ -138,7 +113,7 @@ export function LearnerMobileNav() {
                         aria-current={active ? 'page' : undefined}
                         data-active={active ? 'true' : 'false'}
                         onClick={() => setOpen(false)}
-                        className="learner-nav-link motion-nav-indicator min-h-12 text-base"
+                        className="learner-nav-link learner-mobile-nav-link motion-nav-indicator"
                       >
                         <span className="learner-nav-icon" aria-hidden>
                           <Icon className="size-4" strokeWidth={1.75} />
@@ -151,7 +126,20 @@ export function LearnerMobileNav() {
               </div>
             ))}
           </nav>
-          <div className="mt-6 border-t border-[var(--line)] pt-4">
+
+          <div className="mt-8 space-y-3 border-t border-[var(--line)]/80 pt-4">
+            <button
+              type="button"
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-[var(--radius)] text-sm font-semibold text-[var(--ink-soft)] transition-colors hover:bg-[var(--bg-muted)] hover:text-[var(--ink)]"
+              aria-label="Open support"
+              onClick={() => {
+                setOpen(false);
+                support.setOpen(true);
+              }}
+            >
+              <Headset className="size-4" aria-hidden strokeWidth={1.75} />
+              Support
+            </button>
             <UserMenu compact />
           </div>
         </MobileDrawerPanel>
