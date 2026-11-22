@@ -31,7 +31,7 @@ function MetaItem({
         <p className="text-[0.6875rem] font-semibold tracking-[0.08em] text-[var(--muted)] uppercase">
           {label}
         </p>
-        <p className="mt-0.5 text-sm font-semibold leading-snug text-[var(--ink)] sm:text-[0.9375rem]">
+        <p className="font-reading mt-0.5 text-sm font-semibold leading-snug tracking-normal text-[var(--ink)] sm:text-[0.9375rem]">
           {value}
         </p>
       </div>
@@ -110,7 +110,7 @@ export function ExamInfoCard({ preamble, className }: Props) {
         </p>
         {parsed.examName ? (
           <div className="mt-3">
-            <span className="inline-flex max-w-full items-center rounded-full border border-[var(--accent)]/20 bg-white/90 px-3.5 py-1.5 text-sm font-bold tracking-wide text-[var(--accent)] shadow-sm">
+            <span className="font-reading inline-flex max-w-full items-center rounded-full border border-[var(--accent)]/20 bg-white/90 px-3.5 py-1.5 text-sm font-semibold tracking-normal text-[var(--accent)] shadow-sm">
               {parsed.examName}
             </span>
           </div>

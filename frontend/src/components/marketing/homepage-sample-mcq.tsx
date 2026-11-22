@@ -26,10 +26,10 @@ function McqPreviewCard({ question }: { question: PublicQuestionCard }) {
     .join(' · ');
 
   return (
-    <article className="relative overflow-hidden rounded-[1.35rem] border border-[var(--hp-panel-border)] bg-[var(--bg-elevated)] shadow-[0_1px_2px_rgba(15,23,42,0.04),0_24px_48px_-24px_rgba(15,23,42,0.22)] ring-1 ring-black/[0.03] sm:rounded-[1.5rem]">
+    <article className="hp-panel relative overflow-hidden rounded-[var(--hp-radius-lg)] ring-1 ring-black/[0.03]">
       <div
         aria-hidden
-        className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[color-mix(in_srgb,var(--highlight)_55%,transparent)] to-transparent"
+        className="absolute inset-x-0 top-0 z-[1] h-px bg-gradient-to-r from-transparent via-[color-mix(in_srgb,var(--highlight)_55%,transparent)] to-transparent"
       />
 
       <header className="flex items-start justify-between gap-3 border-b border-[var(--hp-panel-border)] bg-[color-mix(in_srgb,var(--bg-muted)_45%,var(--bg-elevated))] px-4 py-3.5 sm:px-5">
@@ -181,6 +181,7 @@ export function HomepageSampleMcq({ initial = null, content }: Props) {
       <HomepageReveal className="marketing-container relative grid items-center gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-14 xl:gap-16">
         <div className="space-y-5 lg:max-w-md">
           <span className="hp-mark" aria-hidden />
+          <p className="hp-eyebrow">Live preview</p>
           <div className="space-y-3">
             <h2
               id="mcq-preview-heading"
@@ -208,7 +209,7 @@ export function HomepageSampleMcq({ initial = null, content }: Props) {
           </ul>
 
           <Link href={content?.ctaHref || '/preli-question-bank'} className="inline-flex pt-1">
-            <Button className="min-h-11 rounded-full px-6 font-semibold shadow-[0_10px_28px_-14px_rgba(227,30,36,0.45)]">
+            <Button className="min-h-11 rounded-full px-6 font-semibold shadow-[var(--hp-cta-shadow)]">
               {content?.ctaLabel || 'Explore Question Bank'}
               <ArrowRight className="h-4 w-4" aria-hidden />
             </Button>

@@ -66,11 +66,7 @@ function BankSectionShell({
       >
         <div className="space-y-3.5 sm:space-y-4" data-hp-stagger>
           <span className="hp-mark" aria-hidden />
-          {toneLabel ? (
-            <p className="text-[0.68rem] font-semibold tracking-[0.11em] text-[var(--muted)] uppercase">
-              {toneLabel}
-            </p>
-          ) : null}
+          {toneLabel ? <p className="hp-eyebrow">{toneLabel}</p> : null}
           <h2 id={id} className="hp-heading text-[1.4rem] sm:text-2xl md:text-[1.85rem]">
             {heading}
           </h2>
@@ -79,7 +75,7 @@ function BankSectionShell({
           ) : null}
           {cta.visible ? (
             <Link href={ctaHref} className="inline-flex w-full pt-1 sm:w-auto">
-              <Button className="min-h-11 w-full rounded-full px-6 font-semibold shadow-[0_10px_28px_-14px_rgba(227,30,36,0.35)] sm:w-auto">
+              <Button className="min-h-11 w-full rounded-full px-6 font-semibold shadow-[var(--hp-cta-shadow)] sm:w-auto">
                 {cta.label}
                 <ArrowRight className="h-4 w-4" />
               </Button>

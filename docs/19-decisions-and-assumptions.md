@@ -385,9 +385,9 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Field | Value |
 |-------|-------|
 | Question | How should Bengali and English UI/educational text share a consistent type system? |
-| Decision | **Two-tier typography:** (1) **Anek Latin + Anek Bangla** for UI/brand (headings, nav, buttons, dashboards). (2) **Hind Siliguri** for educational Q&A (MCQ stems, options, answers, explanations, exam prose) — regular 400 / medium 500, reading line-height ~1.85. Loaded via `next/font`; CSS `--font-stack` vs `--font-reading-stack`. **Homepage exception (2026-11-22):** `.homepage-shell` uses **Plus Jakarta Sans** (`--font-marketing-latin`) + **Hind Siliguri** so Bengali digits (especially **১**) stay clear on marketing copy without changing learner/admin Anek stacks. |
-| Impact | `frontend/src/lib/fonts.ts`, `globals.css`, shared UI controls, MCQ/reading surfaces, `docs/21-design-system.md` |
-| Status | **CONFIRMED** (product request 2026-11-14; upgraded pairing same day; homepage marketing stack exception 2026-11-22) |
+| Decision | **Two-tier typography:** (1) **Anek Latin + Anek Bangla** for UI/brand (headings, nav, buttons, dashboards). (2) **Hind Siliguri** for educational Q&A (MCQ stems, options, answers, explanations, exam prose) — regular 400 / medium 500–600, reading line-height ~1.85, **letter-spacing 0** (tracking splits Bn conjuncts/digits). Loaded via `next/font`; CSS `--font-stack` vs `--font-reading-stack`. **Never** apply Latin OpenType numeric features (`tabular-nums` / `tnum` / `lnum`) or synthetic bold to Bengali reading text — they fragment digits **১/২/৩**. Question serials use `.type-bn-serial` (Hind Siliguri 600). **Homepage exception (2026-11-22):** `.homepage-shell` uses **Plus Jakarta Sans** + **Hind Siliguri**. |
+| Impact | `frontend/src/lib/fonts.ts`, `globals.css` (`.type-prose*`, `.type-bn-serial`), public MCQ/written cards, `docs/21-design-system.md` |
+| Status | **CONFIRMED** (product request 2026-11-14; upgraded pairing same day; homepage marketing stack exception 2026-11-22; Bn digit serial fix 2026-11-22) |
 
 ### DEC-038 — Homepage CMS (draft + published)
 

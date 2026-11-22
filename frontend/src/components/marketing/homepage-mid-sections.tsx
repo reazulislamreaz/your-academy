@@ -16,9 +16,10 @@ export function HomepageMidSections({ why }: Props) {
       className="hp-section"
     >
       <HomepageReveal className="marketing-container" staggerChildren>
-        <div className="hp-band p-6 sm:p-8 lg:p-10" data-hp-stagger>
-          <div className="max-w-3xl">
+        <div className="hp-band relative z-[1] p-6 sm:p-8 lg:p-10" data-hp-stagger>
+          <div className="relative z-[1] max-w-3xl">
             <span className="hp-mark mb-2" aria-hidden />
+            <p className="hp-eyebrow mb-2">Why us</p>
             <h2 id="why-heading" className="hp-heading text-[1.5rem] sm:text-[1.85rem]">
               {why.heading}
             </h2>
@@ -27,9 +28,9 @@ export function HomepageMidSections({ why }: Props) {
                 <li
                   key={point}
                   data-hp-stagger
-                  className="flex items-start gap-2.5 text-sm font-medium text-[var(--ink-soft)]"
+                  className="flex items-start gap-2.5 rounded-xl border border-transparent bg-[color-mix(in_srgb,var(--bg-elevated)_70%,transparent)] px-3 py-2.5 text-sm font-medium text-[var(--ink-soft)] transition-[border-color,background-color] duration-200 hover:border-[var(--hp-panel-border)] hover:bg-[var(--bg-elevated)]"
                 >
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--highlight)] text-white">
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--highlight)] text-white shadow-[0_0_12px_-2px_color-mix(in_srgb,var(--highlight)_55%,transparent)]">
                     <Check className="h-3 w-3" strokeWidth={3} aria-hidden />
                   </span>
                   {point}

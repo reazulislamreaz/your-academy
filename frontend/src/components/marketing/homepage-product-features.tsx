@@ -40,6 +40,7 @@ export function HomepageProductFeatures({ content }: Props) {
       <HomepageReveal className="marketing-container space-y-10 md:space-y-12" staggerChildren>
         <div className="mx-auto max-w-2xl space-y-3 text-center sm:mx-0 sm:max-w-xl sm:text-left" data-hp-stagger>
           <span className="hp-mark mx-auto sm:mx-0" aria-hidden />
+          <p className="hp-eyebrow mx-auto sm:mx-0">Product</p>
           <h2
             id="features-heading"
             className="hp-heading text-[1.5rem] sm:text-2xl md:text-[1.9rem]"
@@ -58,9 +59,9 @@ export function HomepageProductFeatures({ content }: Props) {
               <li key={feature.id} data-hp-stagger className="min-w-0">
                 <Link
                   href={feature.href}
-                  className="group flex h-full flex-col rounded-2xl border border-[var(--hp-panel-border)] bg-[var(--bg-elevated)] p-5 shadow-[var(--hp-shadow)] ring-1 ring-black/[0.03] transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--ink)_12%,var(--line))] hover:shadow-[var(--hp-shadow-hover)] sm:p-6"
+                  className="hp-card hp-card-interactive group flex h-full flex-col p-5 sm:p-6"
                 >
-                  <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-[var(--hp-panel-border)] bg-[var(--bg-muted)] text-[var(--ink-soft)] transition-[border-color,background-color,color] duration-200 group-hover:border-[color-mix(in_srgb,var(--highlight)_22%,var(--line))] group-hover:bg-[var(--highlight-soft)] group-hover:text-[var(--highlight)]">
+                  <span className="hp-icon-chip h-11 w-11">
                     <Icon className="h-5 w-5" aria-hidden />
                   </span>
 

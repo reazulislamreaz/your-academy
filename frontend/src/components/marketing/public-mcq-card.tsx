@@ -47,7 +47,7 @@ export function PublicMcqCard({
       <div className="relative z-[1] space-y-3">
         <h2 className="type-prose-title text-[var(--ink)]">
           {question.sourceSerial ? (
-            <span className="mr-2 font-bold text-[var(--highlight)] tabular-nums">
+            <span className="type-bn-serial mr-2 text-[var(--highlight)]" lang="bn">
               {question.sourceSerial}.
             </span>
           ) : null}

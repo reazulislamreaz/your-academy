@@ -21,7 +21,7 @@ export function PublicWrittenCard({ question, className }: Props) {
       <div className="relative z-[1] flex flex-wrap items-start justify-between gap-3">
         <h2 className="type-prose-title min-w-0 flex-1 text-[var(--ink)]">
           {question.sourceSerial ? (
-            <span className="mr-2 font-bold text-[var(--highlight)] tabular-nums">
+            <span className="type-bn-serial mr-2 text-[var(--highlight)]" lang="bn">
               {question.sourceSerial}.
             </span>
           ) : null}

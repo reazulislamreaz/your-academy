@@ -27,14 +27,14 @@ export function HomepageTileCard({
       href={href}
       data-hp-stagger
       className={cn(
-        'hp-tile motion-hover-lift relative group flex h-full min-h-[6.75rem] touch-manipulation flex-col items-start justify-between gap-3 overflow-hidden rounded-2xl border border-[var(--hp-panel-border)] bg-[var(--bg-elevated)] px-3.5 py-3.5 text-left shadow-[var(--hp-shadow)] transition-[border-color,box-shadow,transform] duration-200 sm:min-h-[7.5rem] sm:px-4 sm:py-4',
+        'hp-tile motion-hover-lift relative group flex h-full min-h-[6.75rem] touch-manipulation flex-col items-start justify-between gap-3 overflow-hidden px-3.5 py-3.5 text-left transition-[border-color,box-shadow,transform] duration-200 sm:min-h-[7.5rem] sm:px-4 sm:py-4',
         className,
       )}
     >
       <span className="relative z-[1] flex w-full items-start justify-between gap-2">
-        <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--hp-panel-border)] bg-[var(--bg-muted)] text-[var(--ink-soft)] transition-[border-color,background-color,color] duration-200 group-hover:border-[color-mix(in_srgb,var(--highlight)_22%,var(--line))] group-hover:bg-[var(--highlight-soft)] group-hover:text-[var(--highlight)]">
+        <span className="hp-icon-chip flex h-10 w-10">
           {logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element -- CMS Cloudinary URLs; sized explicitly for CLS
+            // CMS Cloudinary URLs; sized explicitly for CLS (plain <img> — no next/image remote allowlist needed)
             <img src={logoUrl} alt="" width={28} height={28} className="h-7 w-7 object-contain" />
           ) : (
             <HomepageIcon iconKey={iconKey} className="h-5 w-5" />
@@ -83,7 +83,6 @@ export function HomepageOthersTile({
     >
       <span className="relative z-[1] flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--hp-panel-border)] bg-[var(--bg-elevated)] text-[var(--ink-soft)]">
         {logoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
           <img src={logoUrl} alt="" width={28} height={28} className="h-7 w-7 object-contain" />
         ) : iconKey !== 'gear' ? (
           <HomepageIcon iconKey={iconKey} className="h-5 w-5" />

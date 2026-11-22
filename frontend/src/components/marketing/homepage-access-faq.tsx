@@ -19,6 +19,7 @@ export function HomepageAccessFaq({ content }: Props) {
       <HomepageReveal className="marketing-container grid gap-12 lg:grid-cols-2 lg:gap-16">
         <div className="space-y-5">
           <span className="hp-mark" aria-hidden />
+          <p className="hp-eyebrow">Access</p>
           <h2
             id="access-heading"
             className="hp-heading text-[1.4rem] sm:text-2xl md:text-[1.85rem]"
@@ -30,7 +31,7 @@ export function HomepageAccessFaq({ content }: Props) {
             {data.highlights.map((item) => (
               <li key={item} className="flex items-start gap-2.5">
                 <span
-                  className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--highlight)]"
+                  className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--highlight)] shadow-[0_0_10px_-1px_color-mix(in_srgb,var(--highlight)_60%,transparent)]"
                   aria-hidden
                 />
                 <span>
@@ -51,7 +52,7 @@ export function HomepageAccessFaq({ content }: Props) {
           </ul>
           {data.cta.visible ? (
             <Link href={data.cta.href} className="inline-flex w-full sm:w-auto">
-              <Button className="min-h-11 w-full rounded-full px-6 font-semibold shadow-[0_10px_28px_-14px_rgba(227,30,36,0.35)] sm:w-auto">
+              <Button className="min-h-11 w-full rounded-full px-6 font-semibold shadow-[var(--hp-cta-shadow)] sm:w-auto">
                 {data.cta.label}
                 <ArrowRight className="h-4 w-4" aria-hidden />
               </Button>

@@ -44,6 +44,7 @@ export function HomepageNewsStrip({ initial = null, content }: Props) {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="max-w-2xl space-y-3">
             <span className="hp-mark" aria-hidden />
+            <p className="hp-eyebrow">Newspaper</p>
             <h2 id="newspaper-heading" className="hp-heading text-[1.5rem] sm:text-[1.85rem]">
               {content?.heading || 'পত্রিকার গুরুত্বপূর্ণ কলাম'}
             </h2>
@@ -53,7 +54,7 @@ export function HomepageNewsStrip({ initial = null, content }: Props) {
           </div>
           {content?.cta?.visible === false ? null : (
             <Link href={content?.cta?.href || '/news'}>
-              <Button className="min-h-11 rounded-full px-6 font-semibold shadow-[0_10px_28px_-14px_rgba(227,30,36,0.35)]">
+              <Button className="min-h-11 rounded-full px-6 font-semibold shadow-[var(--hp-cta-shadow)]">
                 {content?.cta?.label || 'All columns'}
                 <ArrowRight className="h-4 w-4" aria-hidden />
               </Button>

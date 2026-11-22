@@ -77,7 +77,7 @@ Apply `data-theme` + Sun/Moon toggle on `(app)` and `(admin)` Orbit shells only 
 **Two-tier typography (DEC-037):**
 
 1. **UI / brand — Anek Latin + Anek Bangla** (matched multi-script). `--font-stack` = Latin → Bangla. Headings, nav, buttons, dashboards.
-2. **Questions & answers — Hind Siliguri** (simple Bn+Latin reading face). `--font-reading-stack` / `.font-reading`, `.type-prose*`, `.type-mcq-option`. Regular weight (400); medium (500) only for stems.
+2. **Questions & answers — Hind Siliguri** (simple Bn+Latin reading face). `--font-reading-stack` / `.font-reading`, `.type-prose*`, `.type-mcq-option`, `.type-bn-serial`. Regular weight (400); medium (500–600) for stems/serials. **letter-spacing: 0**. Never `tabular-nums` / synthetic bold on Bengali.
 3. **Marketing homepage exception — Plus Jakarta Sans + Hind Siliguri** under `.homepage-shell` (`--font-marketing-stack`). Clearer Bengali numerals on the public homepage; learner/admin remain on Anek.
 
 | Role | Family | CSS var / class |
@@ -85,11 +85,11 @@ Apply `data-theme` + Sun/Moon toggle on `(app)` and `(admin)` Orbit shells only 
 | UI / body (all shells) | **Anek** stack | `--font-sans` / `.font-sans` |
 | Brand / headings | **Anek** 700–800 | `--font-display` / `.font-display` |
 | Learner shell UI | **Anek** stack | `--font-learner` |
-| Educational Q&A / MCQ / explanations | **Hind Siliguri** | `--font-reading` / `.type-prose`, `.type-mcq-option` |
+| Educational Q&A / MCQ / explanations | **Hind Siliguri** | `--font-reading` / `.type-prose`, `.type-mcq-option`, `.type-bn-serial` |
 
 **Scale / leading:** UI leading 1.32–1.8; reading `--leading-reading` **1.85**.  
-Utilities: `.type-prose`, `.type-prose-title` (weight 500), `.type-mcq-option` (weight 400), `.ya-control`.  
-`font-display: swap`. No decorative fonts on educational content.
+Utilities: `.type-prose`, `.type-prose-title` (weight 500), `.type-mcq-option` (weight 400), `.type-bn-serial` (weight 600, Bn digits), `.ya-control`.  
+`font-display: swap`. No decorative fonts on educational content. Never `tabular-nums` or letter-spacing on Bengali reading text.
 
 ---
 

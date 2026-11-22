@@ -19,7 +19,7 @@ export function HomepageCustomSection({ section }: Props) {
         <p className="hp-lede text-sm whitespace-pre-wrap sm:text-[0.975rem]">{section.body}</p>
         {section.cta.visible ? (
           <Link href={section.cta.href} className="inline-flex pt-1">
-            <Button className="min-h-11 rounded-full px-6 font-semibold shadow-[0_10px_28px_-14px_rgba(227,30,36,0.35)]">
+            <Button className="min-h-11 rounded-full px-6 font-semibold shadow-[var(--hp-cta-shadow)]">
               {section.cta.label}
               <ArrowRight className="h-4 w-4" aria-hidden />
             </Button>

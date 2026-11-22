@@ -88,7 +88,7 @@ export function HomepageHero({ hero, heroImageUrl, liveStats = null }: Props) {
         <HomepageHeroEntrance className="relative z-10 flex min-w-0 flex-col items-stretch gap-5 sm:gap-6 lg:items-start lg:pr-2">
           <div
             data-hp-hero
-            className="inline-flex max-w-full items-center gap-2.5 self-start rounded-full border border-[var(--hp-panel-border)] bg-[var(--bg-elevated)] px-3.5 py-1.5 shadow-[var(--shadow-sm)]"
+            className="inline-flex max-w-full items-center gap-2.5 self-start rounded-full border border-[var(--hp-panel-border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.95),var(--bg-elevated))] px-3.5 py-1.5 shadow-[var(--hp-shadow)] backdrop-blur-sm"
           >
             <span className="relative flex h-2 w-2 shrink-0" aria-hidden>
               <span className="hero-live-ping absolute inline-flex h-full w-full rounded-full bg-[var(--highlight)] opacity-40" />
@@ -195,7 +195,7 @@ export function HomepageHero({ hero, heroImageUrl, liveStats = null }: Props) {
                 <li key={pill.href}>
                   <Link
                     href={pill.href}
-                    className="inline-flex min-h-10 items-center rounded-full border border-[var(--hp-panel-border)] bg-[var(--bg-elevated)] px-3.5 text-xs font-semibold text-[var(--ink-soft)] transition-[transform,border-color,color,background-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--highlight)_30%,var(--line))] hover:text-[var(--highlight)] active:translate-y-0"
+                    className="inline-flex min-h-10 items-center rounded-full border border-[var(--hp-panel-border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.95),var(--bg-elevated))] px-3.5 text-xs font-semibold text-[var(--ink-soft)] shadow-[var(--shadow-sm)] transition-[transform,border-color,color,background-color,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--highlight)_30%,var(--line))] hover:text-[var(--highlight)] hover:shadow-[var(--hp-shadow)] active:translate-y-0"
                   >
                     {pill.label}
                   </Link>
@@ -214,9 +214,9 @@ export function HomepageHero({ hero, heroImageUrl, liveStats = null }: Props) {
             />
             <figure
               className={cn(
-                'relative overflow-hidden rounded-2xl border border-[var(--hp-panel-border)] bg-[var(--bg-elevated)]',
-                'shadow-[0_1px_2px_rgba(15,23,42,0.04),0_24px_48px_-28px_rgba(15,23,42,0.28)]',
-                'ring-1 ring-black/[0.03] sm:rounded-[1.35rem]',
+                'relative overflow-hidden rounded-[var(--hp-radius-lg)] border border-[var(--hp-panel-border)] bg-[var(--bg-elevated)]',
+                'shadow-[var(--hp-shadow)] ring-1 ring-black/[0.03]',
+                'before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:z-[1] before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/80 before:to-transparent',
               )}
             >
               <div className="relative aspect-[3/2] w-full bg-[var(--bg-muted)]">

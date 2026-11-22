@@ -20,8 +20,9 @@ export const fontBengali = Anek_Bangla({
 
 /**
  * Educational reading — Hind Siliguri (simple Bn+Latin).
- * Used for MCQ stems, options, answers, explanations — prioritize long-form comfort
- * over decorative UI letterforms. Also used under `.homepage-shell` for clear Bn digits.
+ * Used for MCQ stems, options, answers, explanations, and Bn serials (`.type-bn-serial`).
+ * Never pair with `tabular-nums` / synthetic bold — those fragment digits ১/২/৩.
+ * Also used under `.homepage-shell` for clear Bn digits (DEC-037).
  */
 export const fontReading = Hind_Siliguri({
   subsets: ['latin', 'bengali'],

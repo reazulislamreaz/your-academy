@@ -44,7 +44,7 @@ export function NewsletterBar({ newsletter }: Props) {
 
         {newsletter.cta.visible ? (
           <Link href={newsletter.cta.href} className="w-full shrink-0 sm:w-auto lg:justify-self-end">
-            <Button className="group h-11 w-full rounded-full px-7 font-semibold shadow-[0_12px_28px_-12px_rgba(227,30,36,0.55)] transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 sm:w-auto">
+            <Button className="group h-11 w-full rounded-full px-7 font-semibold shadow-[var(--hp-cta-shadow)] transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 sm:w-auto">
               {newsletter.cta.label}
               <ArrowRight
                 className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5"

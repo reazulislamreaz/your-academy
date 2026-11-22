@@ -16,6 +16,7 @@ export const HOMEPAGE_BUILTIN_SECTION_IDS = [
   'hero',
   'trialStrip',
   'liveStats',
+  'latest',
   'categories',
   'writtenCategories',
   'topics',
@@ -24,7 +25,6 @@ export const HOMEPAGE_BUILTIN_SECTION_IDS = [
   'howItWorks',
   'dashboardPreview',
   'why',
-  'latest',
   'newsStrip',
   'accessFaq',
   'ctaBanner',
@@ -86,6 +86,23 @@ function pinWrittenCategoriesAfterPreli(
   if (!written) return sections;
   const newCatIdx = next.findIndex((s) => s.id === 'categories');
   next.splice(newCatIdx + 1, 0, written);
+  return next;
+}
+
+/**
+ * Keep Latest collections immediately under Live platform library so the
+ * library + uploads pair stays back-to-back on the marketing homepage.
+ */
+function pinLatestAfterLiveStats(sections: HomepageLayout['sections']): HomepageLayout['sections'] {
+  const liveIdx = sections.findIndex((s) => s.id === 'liveStats');
+  const latestIdx = sections.findIndex((s) => s.id === 'latest');
+  if (liveIdx < 0 || latestIdx < 0 || latestIdx === liveIdx + 1) return sections;
+
+  const next = [...sections];
+  const [latest] = next.splice(latestIdx, 1);
+  if (!latest) return sections;
+  const newLiveIdx = next.findIndex((s) => s.id === 'liveStats');
+  next.splice(newLiveIdx + 1, 0, latest);
   return next;
 }
 
@@ -152,7 +169,9 @@ export function normalizeHomepageLayout(
     seen.add(id);
   }
 
-  return { sections: pinWrittenCategoriesAfterPreli(next) };
+  return {
+    sections: pinLatestAfterLiveStats(pinWrittenCategoriesAfterPreli(next)),
+  };
 }
 
 export function isCustomLayoutSectionId(id: string): boolean {

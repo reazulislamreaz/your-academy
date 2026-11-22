@@ -30,6 +30,7 @@ export function HomepageDashboardPreview({ content }: Props) {
       <HomepageReveal className="marketing-container grid items-center gap-10 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:gap-14 xl:gap-16">
         <div className="space-y-5 lg:max-w-md">
           <span className="hp-mark" aria-hidden />
+          <p className="hp-eyebrow">Learner desk</p>
           <div className="space-y-3">
             <h2
               id="dashboard-preview-heading"
@@ -43,7 +44,7 @@ export function HomepageDashboardPreview({ content }: Props) {
           <div className="flex w-full flex-col gap-2.5 pt-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
             {data.primaryCta.visible ? (
               <Link href={data.primaryCta.href} className="w-full sm:w-auto">
-                <Button className="group min-h-11 w-full rounded-full px-6 font-semibold shadow-[0_10px_28px_-14px_rgba(227,30,36,0.4)] sm:w-auto">
+                <Button className="group min-h-11 w-full rounded-full px-6 font-semibold shadow-[var(--hp-cta-shadow)] sm:w-auto">
                   {data.primaryCta.label}
                   <ArrowRight
                     className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5"
@@ -56,7 +57,7 @@ export function HomepageDashboardPreview({ content }: Props) {
               <Link href={data.secondaryCta.href} className="w-full sm:w-auto">
                 <Button
                   variant="outline"
-                  className="min-h-11 w-full rounded-full border-[var(--hp-panel-border)] bg-[var(--bg-elevated)] px-6 font-semibold shadow-[var(--shadow-sm)] transition-[transform,border-color,background-color] duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--ink)_14%,var(--line))] sm:w-auto"
+                  className="min-h-11 w-full rounded-full border-[var(--hp-panel-border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.95),var(--bg-elevated))] px-6 font-semibold shadow-[var(--shadow-sm)] transition-[transform,border-color,background-color] duration-200 hover:-translate-y-0.5 hover:border-[var(--hp-panel-border-strong)] sm:w-auto"
                 >
                   {data.secondaryCta.label}
                 </Button>
@@ -72,7 +73,7 @@ export function HomepageDashboardPreview({ content }: Props) {
           />
 
           <div
-            className="relative overflow-hidden rounded-2xl border border-[var(--hp-panel-border)] bg-[var(--bg-elevated)] shadow-[var(--hp-shadow)] ring-1 ring-black/[0.03] sm:rounded-[1.35rem]"
+            className="hp-panel relative overflow-hidden rounded-[var(--hp-radius-lg)] ring-1 ring-black/[0.03]"
             aria-hidden
           >
             <div className="flex items-center gap-2 border-b border-[var(--hp-panel-border)] bg-[color-mix(in_srgb,var(--bg-muted)_70%,var(--bg-elevated))] px-4 py-3">
@@ -93,9 +94,9 @@ export function HomepageDashboardPreview({ content }: Props) {
                 return (
                   <div
                     key={tile.label}
-                    className="rounded-xl border border-[var(--hp-panel-border)] bg-[var(--bg)] p-4 shadow-[var(--shadow-sm)] transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--ink)_10%,var(--line))] hover:shadow-[var(--hp-shadow)]"
+                    className="rounded-[0.9rem] border border-[var(--hp-panel-border)] bg-[var(--bg)] p-4 shadow-[var(--shadow-sm)] transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-[var(--hp-panel-border-strong)] hover:shadow-[var(--hp-shadow)]"
                   >
-                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--hp-panel-border)] bg-[var(--bg-muted)] text-[var(--ink-soft)]">
+                    <span className="hp-icon-chip h-9 w-9">
                       <Icon className="h-4 w-4" />
                     </span>
                     <p className="mt-3 text-sm font-semibold tracking-tight text-[var(--ink)]">
