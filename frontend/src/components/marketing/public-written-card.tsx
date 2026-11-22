@@ -19,16 +19,16 @@ export function PublicWrittenCard({ question, className }: Props) {
       )}
     >
       <div className="relative z-[1] flex flex-wrap items-start justify-between gap-3">
-        <h2 className="type-prose-title min-w-0 flex-1 text-[var(--ink)]">
+        <h2 className="question-text min-w-0 flex-1" lang="bn">
           {question.sourceSerial ? (
-            <span className="type-bn-serial mr-2 text-[var(--highlight)]" lang="bn">
+            <span className="type-bn-serial mr-2 text-[var(--highlight)]">
               {question.sourceSerial}.
             </span>
           ) : null}
           <span className="whitespace-pre-wrap break-words">{question.content}</span>
         </h2>
         {question.marks != null ? (
-          <span className="shrink-0 rounded-full border border-[var(--line)] bg-[var(--bg-muted)] px-3 py-1 text-xs font-semibold tabular-nums text-[var(--ink-soft)]">
+          <span className="option-label-latin shrink-0 rounded-full border border-[var(--line)] bg-[var(--bg-muted)] px-3 py-1 text-xs text-[var(--ink-soft)]">
             {question.marks} marks
           </span>
         ) : null}

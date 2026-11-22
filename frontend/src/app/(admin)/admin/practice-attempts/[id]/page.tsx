@@ -121,13 +121,15 @@ export default function AdminPracticeAttemptDetailPage() {
                     : 'Incorrect'}
               </Badge>
             </div>
-            <p className="type-prose whitespace-pre-wrap text-[var(--ink-soft)]">{item.content}</p>
+            <p className="question-text whitespace-pre-wrap text-[var(--ink-soft)]">
+              {item.content}
+            </p>
             <ul className="grid gap-1.5">
               {item.options.map((opt) => (
                 <li
                   key={opt.id}
                   className={cn(
-                    'rounded-[var(--radius-sm)] border px-3 py-2 text-sm',
+                    'option-text rounded-[var(--radius-sm)] border px-3 py-2',
                     opt.isCorrect && 'border-[var(--success)]/40 bg-[var(--success-soft)]',
                     item.selectedOptionId === opt.id &&
                       !opt.isCorrect &&
@@ -135,13 +137,16 @@ export default function AdminPracticeAttemptDetailPage() {
                     item.selectedOptionId !== opt.id && !opt.isCorrect && 'border-[var(--line)]',
                   )}
                 >
-                  <span className="font-semibold">{opt.label}.</span> {opt.content}
+                  <span className="option-label-latin" lang="en">
+                    {opt.label}.
+                  </span>{' '}
+                  {opt.content}
                   {item.selectedOptionId === opt.id ? ' (selected)' : null}
                 </li>
               ))}
             </ul>
             {item.explanation ? (
-              <p className="text-sm text-[var(--ink-soft)]">
+              <p className="explanation-text text-[var(--ink-soft)]">
                 <span className="font-semibold">Explanation:</span> {item.explanation}
               </p>
             ) : null}

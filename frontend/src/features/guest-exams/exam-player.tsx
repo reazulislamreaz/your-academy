@@ -227,9 +227,7 @@ export function GuestExamPlayer({ exam }: Props) {
                   )}
                 </div>
 
-                <h2 className="type-prose-title mt-3 break-words font-reading text-[1.05rem] leading-relaxed font-medium text-[var(--ink)] sm:mt-4 sm:text-xl">
-                  {question.questionText}
-                </h2>
+                <h2 className="question-text mt-3 break-words sm:mt-4">{question.questionText}</h2>
 
                 <div
                   className="mt-4 grid gap-2.5 sm:mt-5"
@@ -256,16 +254,17 @@ export function GuestExamPlayer({ exam }: Props) {
                       >
                         <span
                           className={cn(
-                            'mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-bold sm:size-7',
+                            'option-label-latin mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full text-xs sm:size-7',
                             isSelected
                               ? 'bg-[var(--accent)] text-[var(--accent-fg)]'
                               : 'bg-[var(--bg-muted)] text-[var(--muted-strong)]',
                           )}
+                          lang="en"
                           aria-hidden
                         >
                           {label}
                         </span>
-                        <span className="type-mcq-option min-w-0 flex-1 break-words font-reading text-[0.9375rem] leading-relaxed text-[var(--ink)] sm:text-[0.95rem]">
+                        <span className="option-text min-w-0 flex-1 break-words text-[var(--ink)]">
                           {option}
                         </span>
                       </button>

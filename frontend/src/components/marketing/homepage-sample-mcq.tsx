@@ -58,13 +58,11 @@ function McqPreviewCard({ question }: { question: PublicQuestionCard }) {
         </div>
 
         <div className="space-y-2">
-          <p className="inline-flex items-center gap-1.5 text-[0.7rem] font-semibold tracking-[0.06em] text-[var(--muted)] uppercase">
+          <p className="type-latin-ui inline-flex items-center gap-1.5 text-[0.7rem] font-semibold text-[var(--muted)] uppercase">
             <CircleHelp className="h-3.5 w-3.5 text-[var(--highlight)]" aria-hidden />
             Question
           </p>
-          <p className="font-reading type-prose text-[1.02rem] leading-relaxed text-[var(--ink)] sm:text-[1.05rem]">
-            {question.content}
-          </p>
+          <p className="question-text text-[var(--ink)]">{question.content}</p>
         </div>
 
         <ul className="space-y-2.5" role="list">
@@ -79,7 +77,7 @@ function McqPreviewCard({ question }: { question: PublicQuestionCard }) {
                   onClick={() => setPicked(opt.id)}
                   disabled={picked != null}
                   className={cn(
-                    'font-reading group/opt flex w-full min-h-12 gap-3 rounded-2xl border px-3.5 py-3 text-left text-sm transition-[transform,border-color,background-color,box-shadow] duration-200',
+                    'option-text group/opt flex w-full min-h-12 gap-3 rounded-2xl border px-3.5 py-3 text-left transition-[transform,border-color,background-color,box-shadow] duration-200',
                     !revealed &&
                       'border-[var(--hp-panel-border)] bg-[var(--bg)] text-[var(--ink-soft)] hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--highlight)_28%,var(--line))] hover:bg-[var(--bg-elevated)] hover:shadow-[var(--shadow-sm)]',
                     revealed &&
@@ -97,17 +95,18 @@ function McqPreviewCard({ question }: { question: PublicQuestionCard }) {
                 >
                   <span
                     className={cn(
-                      'mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[0.72rem] font-bold transition-colors',
+                      'option-label-latin mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[0.72rem] transition-colors',
                       revealed && isCorrect
                         ? 'bg-[var(--success)] text-white'
                         : selected
                           ? 'bg-[var(--highlight)] text-white'
                           : 'bg-[var(--bg-muted)] text-[var(--muted-strong)] group-hover/opt:bg-[var(--highlight-soft)] group-hover/opt:text-[var(--highlight)]',
                     )}
+                    lang="en"
                   >
                     {opt.label || String.fromCharCode(65 + idx)}
                   </span>
-                  <span className="min-w-0 flex-1 leading-relaxed">{opt.content}</span>
+                  <span className="min-w-0 flex-1">{opt.content}</span>
                   {revealed && isCorrect ? (
                     <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-[var(--success)]" />
                   ) : null}
