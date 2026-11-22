@@ -15,12 +15,23 @@ import {
   flattenSubcategories,
   publicCategoriesQueryKey,
 } from '@/lib/api/categories';
+import { PreliPracticeStartModal } from '@/features/preli-practice/preli-practice-start-modal';
+import { savePreliPracticeSession } from '@/features/preli-practice/preli-practice-session';
 import { listPublicQuestionSetYears, listPublicQuestionSets } from '@/lib/api/public-questions';
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import { cn } from '@/lib/utils';
 
 type Props = {
   className?: string;
+  /** Listing + set routes root. Marketing default; learner uses `/preliminary`. */
+  basePath?: string;
+  /** Hide homepage marketing CTAs when nested in the learner shell. */
+  embedded?: boolean;
+  /**
+   * Learner Preli Practice: clicking a set opens the timed-exam start modal
+   * instead of navigating to the browse view.
+   */
+  timedPractice?: boolean;
 };
 
 const filterControlClass =
@@ -45,10 +56,22 @@ function buildBankHref(
 }
 
 /** Preli landing: Exam Sets only (name + upload date). Questions live on the set page. */
-export function PublicQuestionBank({ className }: Props) {
+export function PublicQuestionBank({
+  className,
+  basePath = '/preli-question-bank',
+  embedded = false,
+  timedPractice = false,
+}: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const bankRoot = basePath.replace(/\/$/, '') || '/preli-question-bank';
+  const [practiceSet, setPracticeSet] = useState<{
+    id: string;
+    title: string;
+    questionCount: number;
+  } | null>(null);
+  const [starting, setStarting] = useState(false);
 
   // URL is the source of truth for applied filters (category/topic links, back/forward, refresh).
   const appliedQ = searchParams.get('q') ?? '';
@@ -215,7 +238,7 @@ export function PublicQuestionBank({ className }: Props) {
 
   return (
     <div className={cn('space-y-5', className)}>
-      <GoForExamCta />
+      {embedded ? null : <GoForExamCta />}
 
       <div className="rounded-[1.25rem] border border-[var(--line)] bg-white p-3 shadow-[var(--shadow-sm)] sm:p-4">
         <div className="flex flex-col gap-3">
@@ -358,18 +381,43 @@ export function PublicQuestionBank({ className }: Props) {
         )}
         aria-busy={list.isFetching && !list.isFetchingNextPage}
       >
-        {sets.map((set) => (
-          <li key={set.id}>
-            <Link
-              href={`/preli-question-bank/${set.id}`}
-              className="block rounded-[1rem] border border-[var(--line)] bg-white px-5 py-4 shadow-[var(--shadow-sm)] transition-all hover:-translate-y-0.5 hover:border-[var(--highlight)] hover:shadow-[var(--shadow)]"
-            >
-              <h2 className="font-display text-lg font-bold tracking-tight text-[var(--ink)] sm:text-xl">
-                {set.title}
-              </h2>
-            </Link>
-          </li>
-        ))}
+        {sets.map((set) => {
+          const cardClass =
+            'block w-full rounded-[1rem] border border-[var(--line)] bg-white px-5 py-4 text-left shadow-[var(--shadow-sm)] transition-all hover:-translate-y-0.5 hover:border-[var(--highlight)] hover:shadow-[var(--shadow)]';
+          return (
+            <li key={set.id}>
+              {timedPractice ? (
+                <button
+                  type="button"
+                  className={cardClass}
+                  onClick={() =>
+                    setPracticeSet({
+                      id: set.id,
+                      title: set.title,
+                      questionCount: set.questionCount,
+                    })
+                  }
+                >
+                  <h2 className="font-display text-lg font-bold tracking-tight text-[var(--ink)] sm:text-xl">
+                    {set.title}
+                  </h2>
+                  <p className="mt-1 text-sm text-[var(--muted-strong)]">
+                    <span className="tabular-nums font-semibold text-[var(--ink-soft)]">
+                      {set.questionCount}
+                    </span>{' '}
+                    MCQ{set.questionCount === 1 ? '' : 's'} · Tap to set time & start
+                  </p>
+                </button>
+              ) : (
+                <Link href={`${bankRoot}/${set.id}`} className={cardClass}>
+                  <h2 className="font-display text-lg font-bold tracking-tight text-[var(--ink)] sm:text-xl">
+                    {set.title}
+                  </h2>
+                </Link>
+              )}
+            </li>
+          );
+        })}
       </ul>
 
       {list.hasNextPage ? (
@@ -384,6 +432,30 @@ export function PublicQuestionBank({ className }: Props) {
             {list.isFetchingNextPage ? 'Loading…' : 'Load more'}
           </Button>
         </div>
+      ) : null}
+
+      {timedPractice ? (
+        <PreliPracticeStartModal
+          open={Boolean(practiceSet)}
+          setTitle={practiceSet?.title ?? ''}
+          questionCount={practiceSet?.questionCount ?? 0}
+          pending={starting}
+          onClose={() => {
+            if (!starting) setPracticeSet(null);
+          }}
+          onStart={(durationMinutes) => {
+            if (!practiceSet) return;
+            setStarting(true);
+            savePreliPracticeSession({
+              setId: practiceSet.id,
+              setTitle: practiceSet.title,
+              durationMinutes,
+              startedAtMs: Date.now(),
+              answers: {},
+            });
+            router.push(`${bankRoot}/${encodeURIComponent(practiceSet.id)}/take`);
+          }}
+        />
       ) : null}
     </div>
   );

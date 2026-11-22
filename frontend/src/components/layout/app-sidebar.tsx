@@ -81,9 +81,9 @@ function SidebarNav() {
         )}
       >
         {collapsed ? (
-          <BrandMark href="/" markOnly inverse={inverseLogo} className="[&_img]:h-8" />
+          <BrandMark href="/home" markOnly inverse={inverseLogo} className="[&_img]:h-8" />
         ) : (
-          <BrandMark href="/" inverse={inverseLogo} className="[&_img]:h-9" />
+          <BrandMark href="/home" inverse={inverseLogo} className="[&_img]:h-9" />
         )}
         {!collapsed ? (
           <button

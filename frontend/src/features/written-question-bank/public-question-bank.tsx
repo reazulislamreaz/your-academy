@@ -24,6 +24,10 @@ import { cn } from '@/lib/utils';
 
 type Props = {
   className?: string;
+  /** Listing + set routes root. Marketing default; learner uses `/written`. */
+  basePath?: string;
+  /** Hide homepage marketing CTAs when nested in the learner shell. */
+  embedded?: boolean;
 };
 
 const filterControlClass =
@@ -48,10 +52,15 @@ function buildBankHref(
 }
 
 /** Written bank landing: question sets only (name + upload date). Questions live on the set page. */
-export function WrittenQuestionBank({ className }: Props) {
+export function WrittenQuestionBank({
+  className,
+  basePath = '/written-question-bank',
+  embedded = false,
+}: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const bankRoot = basePath.replace(/\/$/, '') || '/written-question-bank';
 
   // URL is the source of truth (navbar subcategory/category links, back/forward, refresh).
   // Category filter UI is intentionally omitted — subcategory + year only (same as Preli).
@@ -217,7 +226,7 @@ export function WrittenQuestionBank({ className }: Props) {
 
   return (
     <div className={cn('space-y-5', className)}>
-      <GoForExamCta />
+      {embedded ? null : <GoForExamCta />}
 
       <div className="relative z-10 rounded-[1.25rem] border border-[var(--line)] bg-[var(--bg-elevated)] p-3 shadow-[var(--shadow-sm)] sm:p-4">
         <div className="flex flex-col gap-3">
@@ -363,7 +372,7 @@ export function WrittenQuestionBank({ className }: Props) {
         {sets.map((set) => (
           <li key={set.id}>
             <Link
-              href={`/written-question-bank/${set.id}`}
+              href={`${bankRoot}/${set.id}`}
               className="block cursor-pointer rounded-[1rem] border border-[var(--line)] bg-[var(--bg-elevated)] px-5 py-4 shadow-[var(--shadow-sm)] transition-all hover:-translate-y-0.5 hover:border-[var(--highlight)] hover:shadow-[var(--shadow)]"
             >
               <h2 className="font-display text-lg font-bold tracking-tight text-[var(--ink)] sm:text-xl">

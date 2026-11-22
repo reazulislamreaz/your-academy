@@ -37,12 +37,21 @@ export function RecommendedExams({ practiceSets, publicExams, loading }: Props) 
             Jump into the newest published sets
           </p>
         </div>
-        <div className="flex gap-3 text-xs font-semibold">
+        <div className="flex flex-wrap gap-3 text-xs font-semibold">
           <Link href="/quizzes" className="text-[var(--accent)] underline-offset-2 hover:underline">
-            Quiz center
+            Quiz
           </Link>
-          <Link href="/exams" className="text-[var(--accent)] underline-offset-2 hover:underline">
-            Live exams
+          <Link
+            href="/live-quizzes"
+            className="text-[var(--accent)] underline-offset-2 hover:underline"
+          >
+            Exams
+          </Link>
+          <Link
+            href="/live-model-tests"
+            className="text-[var(--accent)] underline-offset-2 hover:underline"
+          >
+            Model Tests
           </Link>
         </div>
       </div>
@@ -123,7 +132,7 @@ export function RecommendedExams({ practiceSets, publicExams, loading }: Props) 
                 </span>
               </div>
               <div className="mt-auto pt-4">
-                <Link href={`/exams/${exam.slug}`}>
+                <Link href={`/live-quizzes/${exam.slug}`}>
                   <Button size="sm" variant="outline" className="h-10 w-full">
                     Start exam
                   </Button>

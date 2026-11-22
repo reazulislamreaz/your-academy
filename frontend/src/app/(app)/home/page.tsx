@@ -3,11 +3,13 @@
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import {
-  BookOpen,
+  BookOpenText,
   ClipboardCheck,
   ClipboardList,
-  FileText,
+  FilePenLine,
   Flame,
+  Folders,
+  Layers3,
   Sparkles,
   Target,
   Trophy,
@@ -174,7 +176,7 @@ export default function StudyHomePage() {
   const newsItems = (news.data ?? []).slice(0, 4);
   const resumeHref = last
     ? `/questions/${last.id}${last.filterQs ? `?${last.filterQs}` : ''}`
-    : '/questions';
+    : '/preliminary';
 
   const progressLine =
     exams && exams.totalExamsCompleted > 0
@@ -257,7 +259,7 @@ export default function StudyHomePage() {
 
       <Reveal delayMs={80} className="grid gap-4 lg:grid-cols-5">
         <Surface elevated className="space-y-5 overflow-x-clip p-3.5 sm:p-5 lg:col-span-3">
-          <SectionTitle title="Continue practice" href="/questions" linkLabel="Question bank" />
+          <SectionTitle title="Continue practice" href="/preliminary" linkLabel="Preliminary" />
           {last ? (
             <div className="rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-muted)]/50 p-4">
               <p className="text-[0.6875rem] font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
@@ -280,8 +282,8 @@ export default function StudyHomePage() {
               title="No practice history yet"
               description="Open any MCQ and press Check answer. Accuracy and subject progress will appear here."
               action={
-                <Link href="/questions">
-                  <Button size="sm">Browse questions</Button>
+                <Link href="/preliminary">
+                  <Button size="sm">Browse preliminary</Button>
                 </Link>
               }
             />
@@ -289,36 +291,44 @@ export default function StudyHomePage() {
 
           <div>
             <h3 className="mb-3 text-[0.6875rem] font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
-              Quick actions
+              Quick access
             </h3>
             <Stagger className="grid gap-2.5 sm:grid-cols-2" stepMs={55}>
               <QuickLink
-                href="/questions"
-                title="Question bank"
-                description="Subject, topic, and exam-track MCQs"
-                icon={BookOpen}
+                href="/quizzes"
+                title="Quiz"
+                description="Daily, subject, and topic quizzes"
+                icon={Sparkles}
               />
               <QuickLink
-                href="/model-tests"
-                title="Model tests"
-                description="Timed mocks with score review"
+                href="/live-quizzes"
+                title="Exams"
+                description="Timed public exams with score review"
                 icon={ClipboardList}
               />
               <QuickLink
-                href="/exam-tracks"
-                title="Govt job prep"
-                description="BCS, bank, NTRCA, and more"
-                icon={FileText}
+                href="/live-model-tests"
+                title="Model Tests"
+                description="Full-length timed mocks"
+                icon={Layers3}
               />
               <QuickLink
-                href="/quizzes"
-                title="Quiz center"
-                description={
-                  preferredIds.length
-                    ? `${preferredIds.length} preferred subjects ready`
-                    : 'Daily, subject, and topic quizzes'
-                }
-                icon={Sparkles}
+                href="/preliminary"
+                title="Preli Practice"
+                description="Timed practice from preliminary MCQ sets"
+                icon={BookOpenText}
+              />
+              <QuickLink
+                href="/written"
+                title="Written Questions"
+                description="Written exam collections by topic"
+                icon={FilePenLine}
+              />
+              <QuickLink
+                href="/topics"
+                title="Topic-Based Questions"
+                description="Browse Topic Base folders and sets"
+                icon={Folders}
               />
             </Stagger>
           </div>

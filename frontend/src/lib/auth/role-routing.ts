@@ -20,6 +20,9 @@ export const LEARNER_APP_PREFIXES = [
   '/live-quizzes',
   '/exam-tracks',
   '/previous-year',
+  '/preliminary',
+  '/written',
+  '/topics',
 ] as const;
 
 /** Public marketing surfaces — never soft-gated by auth middleware. */

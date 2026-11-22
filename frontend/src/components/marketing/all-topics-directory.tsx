@@ -17,15 +17,18 @@ import {
   publicCategoriesQueryKey,
 } from '@/lib/api/categories';
 import type { CategoryLeaf, CategoryNode } from '@/lib/api/types';
-import {
-  ALL_TOPICS_PATH,
-  guessHomepageIconKey,
-  topicExplorerHref,
-} from '@/lib/homepage-tile-links';
+import { ALL_TOPICS_PATH, guessHomepageIconKey } from '@/lib/homepage-tile-links';
+import { cn } from '@/lib/utils';
 
 type Props = {
   heading?: string;
   breadcrumbLabel?: string;
+  /** Explorer root path. Marketing default; learner uses `/topics`. */
+  basePath?: string;
+  /** Collection question view root. Marketing default; learner uses `/topics/sets`. */
+  setBasePath?: string;
+  /** Skip marketing chrome when nested under the learner PageHeader. */
+  embedded?: boolean;
 };
 
 type FolderTile = {
@@ -43,6 +46,22 @@ function childCount(node: CategoryLeaf | CategoryNode): number {
   return node.children?.length ?? 0;
 }
 
+function explorerHref(
+  root: string,
+  opts?: {
+    categoryId?: string | null;
+    subcategoryId?: string | null;
+    childCategoryId?: string | null;
+  },
+): string {
+  const sp = new URLSearchParams();
+  if (opts?.categoryId) sp.set('categoryId', opts.categoryId);
+  if (opts?.subcategoryId) sp.set('subcategoryId', opts.subcategoryId);
+  if (opts?.childCategoryId) sp.set('childCategoryId', opts.childCategoryId);
+  const q = sp.toString();
+  return q ? `${root}?${q}` : root;
+}
+
 /**
  * Folder-style Topic Base explorer (DEC-042):
  * Category → Sub Category → Child Category.
@@ -51,9 +70,14 @@ function childCount(node: CategoryLeaf | CategoryNode): number {
 export function AllTopicsDirectory({
   heading = 'All Topics',
   breadcrumbLabel = 'Topic Base Question Analysis',
+  basePath = ALL_TOPICS_PATH,
+  setBasePath = '/topic-base/sets',
+  embedded = false,
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const topicsRoot = basePath.replace(/\/$/, '') || ALL_TOPICS_PATH;
+  const setRoot = setBasePath.replace(/\/$/, '') || '/topic-base/sets';
 
   const categoryId = searchParams.get('categoryId')?.trim() || '';
   const subcategoryId = searchParams.get('subcategoryId')?.trim() || '';
@@ -92,7 +116,7 @@ export function AllTopicsDirectory({
         id: root.id,
         name: root.name,
         iconKey: asIcon(root.iconKey, root.name),
-        href: topicExplorerHref({ categoryId: root.id }),
+        href: explorerHref(topicsRoot, { categoryId: root.id }),
       }));
     }
     if (selectedCategory && !subcategoryId) {
@@ -100,7 +124,7 @@ export function AllTopicsDirectory({
         id: sub.id,
         name: sub.name,
         iconKey: asIcon(sub.iconKey || selectedCategory.iconKey, sub.name),
-        href: topicExplorerHref({
+        href: explorerHref(topicsRoot, {
           categoryId: selectedCategory.id,
           subcategoryId: sub.id,
         }),
@@ -114,7 +138,7 @@ export function AllTopicsDirectory({
           child.iconKey || selectedSubcategory.iconKey || selectedCategory.iconKey,
           child.name,
         ),
-        href: topicExplorerHref({
+        href: explorerHref(topicsRoot, {
           categoryId: selectedCategory.id,
           subcategoryId: selectedSubcategory.id,
           childCategoryId: child.id,
@@ -129,22 +153,23 @@ export function AllTopicsDirectory({
     childCategoryId,
     selectedCategory,
     selectedSubcategory,
+    topicsRoot,
   ]);
 
   const crumbs = useMemo(() => {
     const items: Array<{ label: string; href: string }> = [
-      { label: 'All Topics', href: ALL_TOPICS_PATH },
+      { label: 'All Topics', href: topicsRoot },
     ];
     if (selectedCategory) {
       items.push({
         label: selectedCategory.name,
-        href: topicExplorerHref({ categoryId: selectedCategory.id }),
+        href: explorerHref(topicsRoot, { categoryId: selectedCategory.id }),
       });
     }
     if (selectedCategory && selectedSubcategory) {
       items.push({
         label: selectedSubcategory.name,
-        href: topicExplorerHref({
+        href: explorerHref(topicsRoot, {
           categoryId: selectedCategory.id,
           subcategoryId: selectedSubcategory.id,
         }),
@@ -153,7 +178,7 @@ export function AllTopicsDirectory({
     if (selectedCategory && selectedSubcategory && selectedChild) {
       items.push({
         label: selectedChild.name,
-        href: topicExplorerHref({
+        href: explorerHref(topicsRoot, {
           categoryId: selectedCategory.id,
           subcategoryId: selectedSubcategory.id,
           childCategoryId: selectedChild.id,
@@ -161,10 +186,10 @@ export function AllTopicsDirectory({
       });
     }
     return items;
-  }, [selectedCategory, selectedSubcategory, selectedChild]);
+  }, [selectedCategory, selectedSubcategory, selectedChild, topicsRoot]);
 
   const parentHref =
-    crumbs.length > 1 ? crumbs[crumbs.length - 2]!.href : ALL_TOPICS_PATH;
+    crumbs.length > 1 ? crumbs[crumbs.length - 2]!.href : topicsRoot;
 
   // Leaf = Child Category, or Sub Category with no nested children.
   const leafFolderId = useMemo(() => {
@@ -178,16 +203,16 @@ export function AllTopicsDirectory({
   useEffect(() => {
     if (tree.isLoading || tree.isError) return;
     if (categoryId && !selectedCategory) {
-      router.replace(ALL_TOPICS_PATH);
+      router.replace(topicsRoot);
       return;
     }
     if (subcategoryId && selectedCategory && !selectedSubcategory) {
-      router.replace(topicExplorerHref({ categoryId: selectedCategory.id }));
+      router.replace(explorerHref(topicsRoot, { categoryId: selectedCategory.id }));
       return;
     }
     if (childCategoryId && selectedCategory && selectedSubcategory && !selectedChild) {
       router.replace(
-        topicExplorerHref({
+        explorerHref(topicsRoot, {
           categoryId: selectedCategory.id,
           subcategoryId: selectedSubcategory.id,
         }),
@@ -203,14 +228,11 @@ export function AllTopicsDirectory({
     selectedSubcategory,
     selectedChild,
     router,
+    topicsRoot,
   ]);
 
-  return (
-    <DirectoryPageShell
-      heading={activeFolderName ?? heading}
-      breadcrumbLabel={breadcrumbLabel}
-      backLabel="Back to homepage"
-    >
+  const body = (
+    <div className={cn(embedded ? 'space-y-5' : 'space-y-8')}>
       <nav aria-label="Topic folder path" className="space-y-3">
         <ol className="flex flex-wrap items-center gap-1.5 text-sm text-[var(--muted-strong)]">
           {crumbs.map((crumb, index) => {
@@ -275,9 +297,34 @@ export function AllTopicsDirectory({
             </ul>
           ) : null}
 
-          {leafFolderId ? <TopicSetList folderId={leafFolderId} /> : null}
+          {leafFolderId ? (
+            <TopicSetList folderId={leafFolderId} setBasePath={setRoot} />
+          ) : null}
         </div>
       )}
+    </div>
+  );
+
+  if (embedded) {
+    return (
+      <div className="min-w-0 space-y-4">
+        {activeFolderName ? (
+          <h2 className="font-display text-base font-semibold tracking-tight text-[var(--ink)] sm:text-lg">
+            {activeFolderName}
+          </h2>
+        ) : null}
+        {body}
+      </div>
+    );
+  }
+
+  return (
+    <DirectoryPageShell
+      heading={activeFolderName ?? heading}
+      breadcrumbLabel={breadcrumbLabel}
+      backLabel="Back to homepage"
+    >
+      {body}
     </DirectoryPageShell>
   );
 }

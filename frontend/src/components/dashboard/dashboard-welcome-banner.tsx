@@ -52,12 +52,12 @@ export function DashboardWelcomeBanner({
               <ArrowRight className="size-4 shrink-0" aria-hidden />
             </Button>
           </Link>
-          <Link href="/exams" className="min-w-0 sm:flex-none">
+          <Link href="/live-quizzes" className="min-w-0 sm:flex-none">
             <Button
               variant="outline"
               className="motion-press h-11 w-full whitespace-nowrap px-4 text-sm sm:h-10 sm:w-auto sm:px-5"
             >
-              Live exams
+              Exams
             </Button>
           </Link>
         </div>

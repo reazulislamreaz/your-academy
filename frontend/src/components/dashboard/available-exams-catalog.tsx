@@ -210,8 +210,8 @@ export function AvailableExamsCatalog() {
     <div className="flex flex-col gap-4 sm:gap-5" id="available-exams">
       <ExamSection
         kind="quiz"
-        title="Quizzes"
-        subtitle="All published live quizzes — same exam system as the homepage"
+        title="Exams"
+        subtitle="All published timed exams — same system as the public site"
         viewAllHref="/live-quizzes"
         viewAllLabel="Browse all"
         loading={quizzes.isLoading}
@@ -221,13 +221,13 @@ export function AvailableExamsCatalog() {
         isFetchingNextPage={quizzes.isFetchingNextPage}
         onLoadMore={() => void quizzes.fetchNextPage()}
         onRetry={() => void quizzes.refetch()}
-        emptyTitle="No quizzes yet"
-        emptyDescription="New quizzes appear here automatically when an admin publishes them."
+        emptyTitle="No exams yet"
+        emptyDescription="New exams appear here automatically when an admin publishes them."
       >
         {quizItems.map((item) => (
           <li key={item.id} className="min-w-0">
             <CatalogCard
-              kindLabel="Quiz"
+              kindLabel="Exam"
               title={item.title}
               href={`/live-quizzes/${item.slug}`}
               durationInMinutes={item.durationInMinutes}

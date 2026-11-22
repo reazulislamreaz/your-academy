@@ -24,9 +24,19 @@ import { cn } from '@/lib/utils';
 type Props = {
   setId: string;
   className?: string;
+  /** Listing root for back navigation. Marketing default; learner uses `/preliminary`. */
+  basePath?: string;
+  /** Hide homepage marketing CTAs when nested in the learner shell. */
+  embedded?: boolean;
 };
 
-export function PublicQuestionSetView({ setId, className }: Props) {
+export function PublicQuestionSetView({
+  setId,
+  className,
+  basePath = '/preli-question-bank',
+  embedded = false,
+}: Props) {
+  const bankRoot = basePath.replace(/\/$/, '') || '/preli-question-bank';
   const [qInput, setQInput] = useState('');
   const q = useDebouncedValue(qInput.trim(), 350);
   const visibility = useAnswerVisibility();
@@ -55,7 +65,7 @@ export function PublicQuestionSetView({ setId, className }: Props) {
     <div className={cn('space-y-6', className)}>
       <div className="flex flex-wrap items-center gap-3">
         <Link
-          href="/preli-question-bank"
+          href={bankRoot}
           className="inline-flex items-center gap-1.5 text-sm font-medium text-[var(--muted-strong)] hover:text-[var(--highlight)]"
         >
           <ArrowLeft className="size-4" aria-hidden />
@@ -63,7 +73,7 @@ export function PublicQuestionSetView({ setId, className }: Props) {
         </Link>
       </div>
 
-      <GoForExamCta compact />
+      {embedded ? null : <GoForExamCta compact />}
 
       {setQry.isLoading ? (
         <div className="space-y-3 rounded-[1rem] border border-[var(--line)] bg-[var(--bg-elevated)] px-5 py-5 shadow-[var(--shadow-sm)]">

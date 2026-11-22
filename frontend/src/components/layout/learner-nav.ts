@@ -1,14 +1,13 @@
 import {
   BookMarked,
-  BookOpen,
-  Building2,
+  BookOpenText,
   ClipboardList,
+  FilePenLine,
   FileText,
+  Folders,
   History,
   LayoutDashboard,
-  Library,
-  Newspaper,
-  Target,
+  Layers3,
   Sparkles,
   UserRound,
   type LucideIcon,
@@ -26,31 +25,29 @@ export type LearnerNavGroup = { title: string; items: LearnerNavLink[] };
 /** Single source of truth for learner sidebar + mobile drawer IA. */
 export const learnerNavGroups: LearnerNavGroup[] = [
   {
-    title: 'Overview',
+    title: 'Main',
     items: [
       { href: '/home', label: 'Dashboard', icon: LayoutDashboard, match: 'exact' },
-      { href: '/results', label: 'My results', icon: History, match: 'prefix' },
-      { href: '/profile', label: 'Profile & settings', icon: UserRound, match: 'prefix' },
+      { href: '/profile', label: 'My Profile', icon: UserRound, match: 'prefix' },
     ],
   },
   {
-    title: 'Prepare',
+    title: 'Practice & Learning',
     items: [
-      { href: '/questions', label: 'Question bank', icon: BookOpen, match: 'prefix' },
-      { href: '/subjects', label: 'Subject practice', icon: Library, match: 'prefix' },
-      { href: '/quizzes', label: 'Quiz center', icon: Sparkles, match: 'prefix' },
-      { href: '/daily-quiz', label: 'Daily quiz', icon: Target, match: 'prefix' },
-      { href: '/model-tests', label: 'Model tests', icon: ClipboardList, match: 'prefix' },
-      { href: '/exam-tracks', label: 'Govt job prep', icon: Building2, match: 'prefix' },
-      { href: '/previous-year', label: 'Previous-year style', icon: FileText, match: 'prefix' },
+      { href: '/quizzes', label: 'Quiz', icon: Sparkles, match: 'prefix' },
+      { href: '/live-quizzes', label: 'Exams', icon: ClipboardList, match: 'prefix' },
+      { href: '/live-model-tests', label: 'Model Tests', icon: Layers3, match: 'prefix' },
+      { href: '/preliminary', label: 'Preli Practice', icon: BookOpenText, match: 'prefix' },
+      { href: '/written', label: 'Written Questions', icon: FilePenLine, match: 'prefix' },
+      { href: '/topics', label: 'Topic-Based Questions', icon: Folders, match: 'prefix' },
     ],
   },
   {
     title: 'Library',
     items: [
+      { href: '/results', label: 'My results', icon: History, match: 'prefix' },
+      { href: '/bookmarks', label: 'Saved items', icon: BookMarked, match: 'prefix' },
       { href: '/documents', label: 'Study resources', icon: FileText, match: 'prefix' },
-      { href: '/bookmarks', label: 'Questions & PDFs', icon: BookMarked, match: 'prefix' },
-      { href: '/news', label: 'News & updates', icon: Newspaper, match: 'prefix' },
     ],
   },
 ];
@@ -61,5 +58,7 @@ export function learnerLinkActive(pathname: string, item: LearnerNavLink): boole
   if (pathOnly === '/questions') {
     return pathname === '/questions' || pathname.startsWith('/questions/');
   }
+  // Avoid /topics matching /topics/sets incorrectly overlapping other prefixes —
+  // prefix match is intentional for nested bank routes.
   return pathname === pathOnly || pathname.startsWith(`${pathOnly}/`);
 }

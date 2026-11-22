@@ -50,10 +50,10 @@ export function RecentExamAttempts({ recentExams }: Props) {
           title="No exams yet"
           description="Take a quiz or model test to build your history and unlock answer-sheet review."
           action={
-            <Link href="/exams">
+            <Link href="/live-quizzes">
               <Button size="sm" className="min-h-10">
                 <ClipboardList className="size-4" aria-hidden />
-                Explore quizzes
+                Explore exams
               </Button>
             </Link>
           }

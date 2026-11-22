@@ -14,15 +14,37 @@ import { AnswerVisibilityToggle } from '@/features/public-question-bank/answer-v
 import { useAnswerVisibility } from '@/features/public-question-bank/use-answer-visibility';
 import { getTopicSet, listTopicSetQuestions } from '@/lib/api/topic-questions';
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
-import { ALL_TOPICS_PATH, topicExplorerHref } from '@/lib/homepage-tile-links';
 import { cn } from '@/lib/utils';
+
+function explorerHref(
+  root: string,
+  opts?: {
+    categoryId?: string | null;
+    subcategoryId?: string | null;
+    childCategoryId?: string | null;
+  },
+): string {
+  const sp = new URLSearchParams();
+  if (opts?.categoryId) sp.set('categoryId', opts.categoryId);
+  if (opts?.subcategoryId) sp.set('subcategoryId', opts.subcategoryId);
+  if (opts?.childCategoryId) sp.set('childCategoryId', opts.childCategoryId);
+  const q = sp.toString();
+  return q ? `${root}?${q}` : root;
+}
 
 type Props = {
   batchId: string;
   className?: string;
+  /** Topics explorer root for back links. Marketing default; learner uses `/topics`. */
+  topicsBasePath?: string;
 };
 
-export function TopicSetView({ batchId, className }: Props) {
+export function TopicSetView({
+  batchId,
+  className,
+  topicsBasePath = '/topic-categories',
+}: Props) {
+  const topicsRoot = topicsBasePath.replace(/\/$/, '') || '/topic-categories';
   const [qInput, setQInput] = useState('');
   const q = useDebouncedValue(qInput.trim(), 350);
   const visibility = useAnswerVisibility();
@@ -48,12 +70,12 @@ export function TopicSetView({ batchId, className }: Props) {
   const individualMode = visibility.mode === 'hide-all';
 
   const backHref = setQry.data
-    ? topicExplorerHref({
+    ? explorerHref(topicsRoot, {
         categoryId: setQry.data.categoryId,
         subcategoryId: setQry.data.subcategoryId,
         childCategoryId: setQry.data.childCategoryId,
       })
-    : ALL_TOPICS_PATH;
+    : topicsRoot;
 
   const pathLabel = setQry.data
     ? [

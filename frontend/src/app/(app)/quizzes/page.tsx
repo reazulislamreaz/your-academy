@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/layout/page-header';
 import { LearnerPage, LearnerSection } from '@/components/layout/learner-page';
 import { PracticeSetList } from '@/components/practice/practice-set-list';
 import { PracticeBrowsePageSkeleton } from '@/components/skeletons';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 type QuizTab = 'daily' | 'subject' | 'topic';
@@ -36,9 +37,16 @@ function QuizzesContent() {
   return (
     <LearnerPage dense>
       <PageHeader
-        eyebrow="Quiz center"
-        title="Quizzes"
+        eyebrow="Practice & Learning"
+        title="Quiz"
         description="Daily, subject, and topic quizzes with instant scoring after submit."
+        actions={
+          <Link href="/results">
+            <Button variant="outline" size="sm" className="min-h-10">
+              Previous attempts
+            </Button>
+          </Link>
+        }
       />
 
       {filteredKind ? (
