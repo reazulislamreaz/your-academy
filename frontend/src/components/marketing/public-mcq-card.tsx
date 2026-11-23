@@ -7,6 +7,7 @@ import { SaveToCollectionDialog } from '@/features/bookmarks/save-to-collection-
 import { useMe, isUnauthorized } from '@/features/auth/use-auth';
 import type { PublicQuestionCard } from '@/lib/api/public-questions';
 import { cn } from '@/lib/utils';
+import { AnswersLockedNote } from './answers-locked-note';
 
 const BN_OPTION: Record<string, string> = {
   A: 'ক',
@@ -32,6 +33,9 @@ export function PublicMcqCard({
   allowIndividualToggle = false,
 }: Props) {
   const me = useMe();
+  // DEC-051: the API omits the key unless the viewer is entitled.
+  const hasAnswer = Boolean(question.correctAnswerLabel);
+  const showAnswer = answerVisible && hasAnswer;
   const loggedIn = Boolean(me.data) && !isUnauthorized(me.error);
   const [saveOpen, setSaveOpen] = useState(false);
   const loginHref = `/login?next=${encodeURIComponent(`/preli-question-bank#q-${question.id}`)}`;
@@ -57,8 +61,8 @@ export function PublicMcqCard({
 
       <ul className="relative z-[1] mt-5 grid gap-2.5 sm:grid-cols-2">
         {question.options.map((opt) => {
-          const isCorrect = opt.label === question.correctAnswerLabel;
-          const highlight = answerVisible && isCorrect;
+          const isCorrect = hasAnswer && opt.label === question.correctAnswerLabel;
+          const highlight = showAnswer && isCorrect;
           return (
             <li
               key={opt.id}
@@ -99,7 +103,9 @@ export function PublicMcqCard({
         )}
 
         <div className="flex flex-wrap items-center gap-2">
-          {allowIndividualToggle && onToggleAnswer ? (
+          {!hasAnswer ? <AnswersLockedNote variant="inline" /> : null}
+
+          {hasAnswer && allowIndividualToggle && onToggleAnswer ? (
             <button
               type="button"
               onClick={onToggleAnswer}
@@ -122,13 +128,13 @@ export function PublicMcqCard({
           <span
             className={cn(
               'inline-flex items-center rounded-full px-3.5 py-1.5 text-sm font-semibold transition-all duration-200',
-              answerVisible
+              showAnswer
                 ? 'bg-[var(--success-soft)] text-[var(--success)] opacity-100'
                 : 'pointer-events-none max-h-0 overflow-hidden bg-transparent px-0 py-0 opacity-0',
             )}
-            aria-hidden={!answerVisible}
+            aria-hidden={!showAnswer}
           >
-            {answerVisible
+            {showAnswer
               ? `উত্তর: ${question.correctAnswerBn || question.correctAnswerLabel}`
               : null}
           </span>

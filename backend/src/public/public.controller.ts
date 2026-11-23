@@ -1,19 +1,53 @@
-import { Controller, Get, Header, Param, Query, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Header,
+  HttpCode,
+  Param,
+  Post,
+  Query,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { Difficulty } from '@prisma/client';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import { createSuccessResponse, cursorPaginationMeta } from '@your-academy/shared';
+import type { RequestUser } from '../auth/auth.types';
+import { OptionalJwtAuthGuard } from '../common/guards/optional-jwt-auth.guard';
 import { newRequestId } from '../common/request-id';
 import { DocumentsService } from '../documents/documents.service';
 import { parseLimit } from '../common/pagination';
-import { PublicService } from './public.service';
+import { AccessControlService } from '../subscriptions/access-control.service';
+import { ScorePracticeDto } from './dto/score-practice.dto';
+import { PublicService, type AnswerViewOptions } from './public.service';
+import { setViewerCacheHeaders } from './viewer-cache';
 
-/** Unauthenticated marketing + public question bank (DEC-031). */
+type ViewerRequest = Request & { user?: RequestUser | null };
+
+/**
+ * Unauthenticated marketing + public question bank (DEC-031).
+ * Answer keys / model answers are subscriber-only (DEC-051): answer-bearing routes read
+ * the optional session and ask AccessControlService.
+ */
 @Controller('api/v1/public')
 export class PublicController {
   constructor(
     private readonly publicService: PublicService,
     private readonly documentsService: DocumentsService,
+    private readonly access: AccessControlService,
   ) {}
+
+  private async answerView(
+    req: ViewerRequest,
+    res: Response,
+    anonymousCacheControl?: string,
+  ): Promise<AnswerViewOptions> {
+    setViewerCacheHeaders(res, req.user, anonymousCacheControl);
+    return { canViewAnswers: await this.access.canViewerSeeAnswers(req.user) };
+  }
 
   /** Public aggregate counters — short shared cache (no user-specific data). */
   @Get('stats')
@@ -110,22 +144,52 @@ export class PublicController {
   }
 
   @Get('question-sets/:id/questions')
+  @UseGuards(OptionalJwtAuthGuard)
   async questionSetQuestions(
     @Param('id') id: string,
+    @Req() req: ViewerRequest,
+    @Res({ passthrough: true }) res: Response,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
     @Query('q') q?: string,
   ) {
     const take = Math.min(Math.max(Number(limit) || 20, 1), 100);
-    const data = await this.publicService.listSetQuestions(id, {
-      cursor,
-      limit: take,
-      q,
-    });
+    const view = await this.answerView(req, res);
+    const data = await this.publicService.listSetQuestions(
+      id,
+      {
+        cursor,
+        limit: take,
+        q,
+      },
+      view,
+    );
     return createSuccessResponse(
       data.items,
       newRequestId(),
       cursorPaginationMeta(data.nextCursor, take, data.total),
+    );
+  }
+
+  /**
+   * DEC-051 — score a Preli Practice run server-side. Everyone gets totals + own selections;
+   * per-question correctness / key only for entitled viewers. Throttled: any score is a
+   * weak answer oracle (residual risk documented in DEC-051).
+   */
+  @Post('question-sets/:id/practice-score')
+  @HttpCode(200)
+  @UseGuards(OptionalJwtAuthGuard, ThrottlerGuard)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  async scoreQuestionSetPractice(
+    @Param('id') id: string,
+    @Body() dto: ScorePracticeDto,
+    @Req() req: ViewerRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const view = await this.answerView(req, res, 'no-store');
+    return createSuccessResponse(
+      await this.publicService.scoreSetPractice(id, dto.answers ?? {}, view),
+      newRequestId(),
     );
   }
 
@@ -174,18 +238,26 @@ export class PublicController {
   }
 
   @Get('written-question-sets/:id/questions')
+  @UseGuards(OptionalJwtAuthGuard)
   async writtenQuestionSetQuestions(
     @Param('id') id: string,
+    @Req() req: ViewerRequest,
+    @Res({ passthrough: true }) res: Response,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
     @Query('q') q?: string,
   ) {
     const take = Math.min(Math.max(Number(limit) || 20, 1), 100);
-    const data = await this.publicService.listWrittenSetQuestions(id, {
-      cursor,
-      limit: take,
-      q,
-    });
+    const view = await this.answerView(req, res);
+    const data = await this.publicService.listWrittenSetQuestions(
+      id,
+      {
+        cursor,
+        limit: take,
+        q,
+      },
+      view,
+    );
     return createSuccessResponse(
       data.items,
       newRequestId(),
@@ -209,19 +281,26 @@ export class PublicController {
   }
 
   @Get('topic-subcategories/:id/questions')
+  @UseGuards(OptionalJwtAuthGuard)
   async topicQuestions(
     @Param('id') id: string,
+    @Req() req: ViewerRequest,
+    @Res({ passthrough: true }) res: Response,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
     @Query('q') q?: string,
   ) {
     const take = Math.min(Math.max(Number(limit) || 20, 1), 100);
-    const data = await this.publicService.listTopicQuestions({
-      subcategoryId: id,
-      cursor,
-      limit: take,
-      q,
-    });
+    const view = await this.answerView(req, res);
+    const data = await this.publicService.listTopicQuestions(
+      {
+        subcategoryId: id,
+        cursor,
+        limit: take,
+        q,
+      },
+      view,
+    );
     return createSuccessResponse(
       data.items,
       newRequestId(),
@@ -251,19 +330,26 @@ export class PublicController {
   }
 
   @Get('topic-sets/:id/questions')
+  @UseGuards(OptionalJwtAuthGuard)
   async topicSetQuestions(
     @Param('id') id: string,
+    @Req() req: ViewerRequest,
+    @Res({ passthrough: true }) res: Response,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
     @Query('q') q?: string,
   ) {
     const take = Math.min(Math.max(Number(limit) || 20, 1), 100);
-    const data = await this.publicService.listTopicSetQuestions({
-      batchId: id,
-      cursor,
-      limit: take,
-      q,
-    });
+    const view = await this.answerView(req, res);
+    const data = await this.publicService.listTopicSetQuestions(
+      {
+        batchId: id,
+        cursor,
+        limit: take,
+        q,
+      },
+      view,
+    );
     return createSuccessResponse(
       data.items,
       newRequestId(),
@@ -271,9 +357,12 @@ export class PublicController {
     );
   }
 
+  /** Anonymous responses keep the shared cache; signed-in ones are private (DEC-051). */
   @Get('questions')
-  @Header('Cache-Control', 'public, max-age=30, s-maxage=60, stale-while-revalidate=120')
+  @UseGuards(OptionalJwtAuthGuard)
   async questions(
+    @Req() req: ViewerRequest,
+    @Res({ passthrough: true }) res: Response,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
     @Query('categoryId') categoryId?: string,
@@ -284,16 +373,24 @@ export class PublicController {
     @Query('uploadBatchId') uploadBatchId?: string,
   ) {
     const take = Math.min(Math.max(Number(limit) || 20, 1), 100);
-    const data = await this.publicService.listPublishedQuestions({
-      cursor,
-      limit: take,
-      categoryId,
-      subcategoryId,
-      difficulty,
-      q,
-      examTag,
-      uploadBatchId,
-    });
+    const view = await this.answerView(
+      req,
+      res,
+      'public, max-age=30, s-maxage=60, stale-while-revalidate=120',
+    );
+    const data = await this.publicService.listPublishedQuestions(
+      {
+        cursor,
+        limit: take,
+        categoryId,
+        subcategoryId,
+        difficulty,
+        q,
+        examTag,
+        uploadBatchId,
+      },
+      view,
+    );
     return createSuccessResponse(
       data.items,
       newRequestId(),

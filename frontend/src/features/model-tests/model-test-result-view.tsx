@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import type { ModelTestAttemptResult } from '@your-academy/shared';
+import { AnswersLockedNote } from '@/components/marketing/answers-locked-note';
 import { Button } from '@/components/ui/button';
 import { useMe } from '@/features/auth/use-auth';
 import { GuestRegisterCta } from '@/features/guest-exams/guest-register-cta';
@@ -23,6 +24,8 @@ export function ModelTestResultView({ result, basePath = '/model-test' }: Props)
   const progress = Math.min(100, Math.max(0, result.percent));
   const dash = (progress / 100) * circumference;
   const takeBase = basePath.replace(/\/$/, '') || '/model-test';
+  // DEC-051: non-entitled viewers get score + own selections only.
+  const answersVisible = result.answersVisible !== false;
   const resultPath = `${takeBase}/${encodeURIComponent(result.modelTest.slug)}/result/${encodeURIComponent(result.attemptId)}`;
 
   useEffect(() => {
@@ -123,6 +126,13 @@ export function ModelTestResultView({ result, basePath = '/model-test' }: Props)
         />
       ) : null}
 
+      {!answersVisible ? (
+        <AnswersLockedNote
+          className="mt-4 sm:mt-6"
+          detail="Your score and selected answers are shown in the review."
+        />
+      ) : null}
+
       <div className="mt-4 flex justify-center sm:mt-6">
         <Button
           type="button"
@@ -149,7 +159,8 @@ export function ModelTestResultView({ result, basePath = '/model-test' }: Props)
               <ul className="mt-3 space-y-1.5">
                 {item.options.map((option, optIdx) => {
                   const isSelected = item.selectedAnswer === option;
-                  const isCorrect = item.correctAnswer === option;
+                  const isCorrect =
+                    answersVisible && item.correctAnswer != null && item.correctAnswer === option;
                   const letter = ['ক', 'খ', 'গ', 'ঘ'][optIdx] ?? String.fromCharCode(65 + optIdx);
                   return (
                     <li
@@ -160,7 +171,11 @@ export function ModelTestResultView({ result, basePath = '/model-test' }: Props)
                           'border-[var(--success)] bg-[var(--success-soft)] text-[var(--success-fg)]',
                         isSelected &&
                           !isCorrect &&
+                          answersVisible &&
                           'border-[var(--danger)] bg-[var(--danger-soft)] text-[var(--danger-fg)]',
+                        isSelected &&
+                          !answersVisible &&
+                          'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--ink)]',
                         !isSelected && !isCorrect && 'border-transparent text-[var(--ink-soft)]',
                       )}
                     >

@@ -1,18 +1,23 @@
-import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { createSuccessResponse, cursorPaginationMeta } from '@your-academy/shared';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 import type { RequestUser } from '../auth/auth.types';
 import { OptionalJwtAuthGuard } from '../common/guards/optional-jwt-auth.guard';
 import { newRequestId } from '../common/request-id';
 import { parseLimit } from '../common/pagination';
+import { setViewerCacheHeaders } from '../public/viewer-cache';
+import { AccessControlService } from '../subscriptions/access-control.service';
 import { SubmitModelTestAttemptDto } from './dto/submit-model-test-attempt.dto';
 import { ModelTestsService } from './model-tests.service';
 
 /** Guest Model Tests; optional JWT links attempt to account (DEC-045). */
 @Controller('api/v1/public/model-tests')
 export class PublicModelTestsController {
-  constructor(private readonly modelTests: ModelTestsService) {}
+  constructor(
+    private readonly modelTests: ModelTestsService,
+    private readonly access: AccessControlService,
+  ) {}
 
   @Get()
   async list(
@@ -56,10 +61,18 @@ export class PublicModelTestsController {
     return createSuccessResponse(await this.modelTests.getGuide(), newRequestId());
   }
 
+  /** DEC-051: answer key / explanations only for entitled viewers. */
   @Get('attempts/:attemptId')
-  async attemptResult(@Param('attemptId') attemptId: string) {
+  @UseGuards(OptionalJwtAuthGuard)
+  async attemptResult(
+    @Param('attemptId') attemptId: string,
+    @Req() req: Request & { user?: RequestUser | null },
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    setViewerCacheHeaders(res, req.user, 'no-store');
+    const canViewAnswers = await this.access.canViewerSeeAnswers(req.user);
     return createSuccessResponse(
-      await this.modelTests.getAttemptResult(attemptId),
+      await this.modelTests.getAttemptResult(attemptId, { canViewAnswers }),
       newRequestId(),
     );
   }

@@ -85,3 +85,57 @@ describe('AccessControlService', () => {
     expect('explanation' in stripped).toBe(false);
   });
 });
+
+describe('AccessControlService.canViewerSeeAnswers (DEC-051)', () => {
+  const prisma = {
+    user: { findUnique: jest.fn() },
+    userSubscription: { findFirst: jest.fn() },
+  };
+  const service = new AccessControlService(prisma as never);
+  const user = {
+    id: 'u1',
+    role: UserRole.USER,
+    status: UserStatus.ACTIVE,
+    trialStartedAt: new Date(),
+    trialEndsAt: new Date(),
+    deletedAt: null,
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    prisma.userSubscription.findFirst.mockResolvedValue(null);
+  });
+
+  it('is false for anonymous viewers without touching the database', async () => {
+    await expect(service.canViewerSeeAnswers(null)).resolves.toBe(false);
+    await expect(service.canViewerSeeAnswers(undefined)).resolves.toBe(false);
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('is false for free users and true with an active subscription', async () => {
+    prisma.user.findUnique.mockResolvedValue(user);
+    await expect(service.canViewerSeeAnswers({ userId: 'u1' })).resolves.toBe(false);
+    prisma.userSubscription.findFirst.mockResolvedValue({ id: 'sub' });
+    await expect(service.canViewerSeeAnswers({ userId: 'u1' })).resolves.toBe(true);
+  });
+
+  it('is true for admins', async () => {
+    prisma.user.findUnique.mockResolvedValue({ ...user, role: UserRole.ADMIN });
+    await expect(service.canViewerSeeAnswers({ userId: 'u1' })).resolves.toBe(true);
+  });
+
+  it('is false for moderators without a subscription (answer bypass is Admin-only)', async () => {
+    prisma.user.findUnique.mockResolvedValue({ ...user, role: UserRole.MODERATOR });
+    await expect(service.canViewerSeeAnswers({ userId: 'u1' })).resolves.toBe(false);
+  });
+
+  it('is false for suspended or deleted accounts', async () => {
+    prisma.userSubscription.findFirst.mockResolvedValue({ id: 'sub' });
+    prisma.user.findUnique.mockResolvedValue({ ...user, status: UserStatus.SUSPENDED });
+    await expect(service.canViewerSeeAnswers({ userId: 'u1' })).resolves.toBe(false);
+    prisma.user.findUnique.mockResolvedValue({ ...user, deletedAt: new Date() });
+    await expect(service.canViewerSeeAnswers({ userId: 'u1' })).resolves.toBe(false);
+    prisma.user.findUnique.mockResolvedValue(null);
+    await expect(service.canViewerSeeAnswers({ userId: 'u1' })).resolves.toBe(false);
+  });
+});

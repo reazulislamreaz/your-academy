@@ -3,6 +3,7 @@ import {
   DocumentVisibility,
   SubscriptionStatus,
   UserRole,
+  UserStatus,
   type User,
 } from '@prisma/client';
 import { Entitlement } from '@your-academy/shared';
@@ -66,6 +67,27 @@ export class AccessControlService {
 
   async canViewAnswers(user: AccessUser): Promise<boolean> {
     return this.can(user, Entitlement.VIEW_ANSWERS);
+  }
+
+  /**
+   * DEC-051: answer gate for routes where the viewer is optional (public banks,
+   * guest exam results). Anonymous, unknown, inactive or deleted viewers are never entitled.
+   */
+  async canViewerSeeAnswers(viewer: { userId: string } | null | undefined): Promise<boolean> {
+    if (!viewer?.userId) return false;
+    const user = await this.prisma.user.findUnique({
+      where: { id: viewer.userId },
+      select: {
+        id: true,
+        role: true,
+        status: true,
+        trialStartedAt: true,
+        trialEndsAt: true,
+        deletedAt: true,
+      },
+    });
+    if (!user || user.deletedAt || user.status !== UserStatus.ACTIVE) return false;
+    return this.canViewAnswers(user);
   }
 
   /**

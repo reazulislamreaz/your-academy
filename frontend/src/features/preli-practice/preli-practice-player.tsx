@@ -99,7 +99,7 @@ export function PreliPracticePlayer({ setId, basePath = '/preli-practice' }: Pro
   const setTitle = setQry.data?.title ?? 'Preli Practice';
 
   const submit = useCallback(
-    (timedOut: boolean, elapsedSeconds: number) => {
+    async (timedOut: boolean, elapsedSeconds: number) => {
       if (submittingRef.current) return;
       const duration = durationRef.current;
       if (duration == null) return;
@@ -112,7 +112,7 @@ export function PreliPracticePlayer({ setId, basePath = '/preli-practice' }: Pro
       setConfirmOpen(false);
       setError(null);
       try {
-        const result = scorePreliPractice({
+        const result = await scorePreliPractice({
           setId,
           setTitle,
           durationMinutes: duration,

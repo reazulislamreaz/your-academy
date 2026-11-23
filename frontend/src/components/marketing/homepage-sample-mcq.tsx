@@ -7,6 +7,7 @@ import { ArrowRight, CheckCircle2, CircleHelp, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ListCardSkeleton, LoadError } from '@/components/loading';
 import { EmptyState } from '@/components/ui/empty-state';
+import { AnswersLockedNote } from '@/components/marketing/answers-locked-note';
 import { HomepageReveal } from '@/components/marketing/homepage-gsap';
 import {
   listPublicQuestions,
@@ -17,7 +18,9 @@ import { cn } from '@/lib/utils';
 
 function McqPreviewCard({ question }: { question: PublicQuestionCard }) {
   const [picked, setPicked] = useState<string | null>(null);
+  // DEC-051: the key is omitted for non-subscribers — then picking only marks the choice.
   const correctLabel = question.correctAnswerLabel;
+  const hasAnswer = Boolean(correctLabel);
   const categoryLine = [
     question.category.name,
     question.subcategory?.name,
@@ -69,7 +72,7 @@ function McqPreviewCard({ question }: { question: PublicQuestionCard }) {
 
         <ul className="space-y-2.5" role="list">
           {question.options.map((opt, idx) => {
-            const isCorrect = opt.label === correctLabel;
+            const isCorrect = hasAnswer && opt.label === correctLabel;
             const selected = picked === opt.id;
             const revealed = picked != null;
             return (
@@ -111,7 +114,7 @@ function McqPreviewCard({ question }: { question: PublicQuestionCard }) {
                   {revealed && isCorrect ? (
                     <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-[var(--success)]" />
                   ) : null}
-                  {revealed && selected && !isCorrect ? (
+                  {revealed && selected && !isCorrect && hasAnswer ? (
                     <XCircle className="mt-1 h-4 w-4 shrink-0 text-[var(--highlight)]" />
                   ) : null}
                 </button>
@@ -120,7 +123,8 @@ function McqPreviewCard({ question }: { question: PublicQuestionCard }) {
           })}
         </ul>
 
-        {picked ? (
+        {picked && !hasAnswer ? <AnswersLockedNote /> : null}
+        {picked && hasAnswer ? (
           <p
             className={cn(
               'rounded-2xl px-3.5 py-3 text-sm font-semibold',
@@ -134,11 +138,12 @@ function McqPreviewCard({ question }: { question: PublicQuestionCard }) {
             Correct answer: {correctLabel}
             {question.correctAnswerBn ? ` — ${question.correctAnswerBn}` : ''}
           </p>
-        ) : (
+        ) : null}
+        {!picked ? (
           <p className="text-xs leading-relaxed text-[var(--muted)]">
-            Tap an option for instant feedback. This is a live published Preli question.
+            Tap an option to try it. This is a live published Preli question.
           </p>
-        )}
+        ) : null}
       </div>
     </article>
   );
@@ -195,7 +200,7 @@ export function HomepageSampleMcq({ initial = null, content }: Props) {
           <ul className="space-y-2.5 text-sm text-[var(--ink-soft)]">
             {[
               'Live question from the Preli bank',
-              'Tap an option for Correct / Wrong feedback',
+              'Tap an option to try it — answers with a subscription',
               'Same reading face used in practice mode',
             ].map((line) => (
               <li key={line} className="flex items-start gap-2.5">

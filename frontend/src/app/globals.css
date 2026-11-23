@@ -4204,3 +4204,76 @@ a.site-footer-social-link:focus-visible {
     display: none !important;
   }
 }
+
+/* Content protection deterrents (ProtectedContent) — UX friction only, not security. */
+.ya-protected-content {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.ya-protected-content :is(input, textarea, select, [contenteditable='true']) {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.ya-protected-content img {
+  -webkit-user-drag: none;
+}
+
+.ya-protected-watermark {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background-color: var(--ink);
+  opacity: 0.07;
+  mask-repeat: repeat;
+  -webkit-mask-repeat: repeat;
+  mask-size: 320px 180px;
+  -webkit-mask-size: 320px 180px;
+}
+
+.ya-protected-blur {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: color-mix(in srgb, var(--bg) 55%, transparent);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  color: var(--muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: center;
+  animation: ya-protected-fade 160ms ease-out;
+}
+
+@keyframes ya-protected-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ya-protected-blur {
+    animation: none;
+  }
+}
+
+@media print {
+  [data-protected-content] > * {
+    display: none !important;
+  }
+
+  [data-protected-content]::before {
+    content: 'Printing is disabled for this content.';
+    display: block;
+    padding: 2rem 0;
+    font-size: 1rem;
+    text-align: center;
+  }
+}

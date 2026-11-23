@@ -18,7 +18,8 @@ import {
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import { AnswerVisibilityToggle } from './answer-visibility-toggle';
 import { ExamInfoCard } from './exam-info-card';
-import { useAnswerVisibility } from './use-answer-visibility';
+import { hasAnyAnswerKey, useAnswerVisibility } from './use-answer-visibility';
+import { AnswersLockedNote } from '@/components/marketing/answers-locked-note';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -39,7 +40,6 @@ export function PublicQuestionSetView({
   const bankRoot = basePath.replace(/\/$/, '') || '/preli-question-bank';
   const [qInput, setQInput] = useState('');
   const q = useDebouncedValue(qInput.trim(), 350);
-  const visibility = useAnswerVisibility();
 
   const setQry = useQuery({
     queryKey: ['public-question-set', setId],
@@ -59,6 +59,9 @@ export function PublicQuestionSetView({
   });
 
   const items = list.data?.pages.flatMap((p) => p.data) ?? [];
+  // DEC-051: free viewers get no answer key — swap the toggle for a subscription note.
+  const answersLocked = items.length > 0 && !hasAnyAnswerKey(items);
+  const visibility = useAnswerVisibility({ answersAvailable: !answersLocked });
   const individualMode = visibility.mode === 'hide-all';
 
   return (
@@ -99,7 +102,11 @@ export function PublicQuestionSetView({
       ) : null}
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <AnswerVisibilityToggle mode={visibility.mode} onChange={visibility.setMode} />
+        {answersLocked ? (
+          <AnswersLockedNote />
+        ) : (
+          <AnswerVisibilityToggle mode={visibility.mode} onChange={visibility.setMode} />
+        )}
         <SearchField
           value={qInput}
           onChange={setQInput}

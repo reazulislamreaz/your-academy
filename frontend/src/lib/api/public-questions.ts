@@ -1,5 +1,6 @@
 import { apiFetch, apiFetchResult, serverApiBase } from './client';
 import type { ApiResult } from './client';
+import type { PublicPracticeScore } from '@your-academy/shared';
 
 export type PublicQuestionCard = {
   id: string;
@@ -15,8 +16,9 @@ export type PublicQuestionCard = {
   category: { id: string; name: string; slug: string };
   subcategory: { id: string; name: string; slug: string } | null;
   options: Array<{ id: string; label: string; content: string; sortOrder: number }>;
-  correctAnswerLabel: string;
-  correctAnswerBn: string;
+  /** DEC-051: omitted unless the viewer is entitled (admin / active subscription). */
+  correctAnswerLabel?: string;
+  correctAnswerBn?: string;
   createdAt: string;
   publishedAt: string | null;
   uploadBatchId?: string | null;
@@ -133,4 +135,16 @@ export async function getPublicQuestionsServer(params: {
   } catch {
     return null;
   }
+}
+
+/** DEC-051 — server-side Preli Practice scoring (answer key never ships to free viewers). */
+export async function scorePublicSetPractice(setId: string, answers: Record<string, string>) {
+  return apiFetch<PublicPracticeScore>(
+    `/public/question-sets/${encodeURIComponent(setId)}/practice-score`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ answers }),
+      skipRefresh: true,
+    },
+  );
 }

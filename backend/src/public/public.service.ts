@@ -6,7 +6,11 @@ import {
   QuestionStatus,
   QuestionUploadStatus,
 } from '@prisma/client';
-import { createErrorResponse } from '@your-academy/shared';
+import {
+  createErrorResponse,
+  type PublicPracticeScore,
+  type PublicPracticeScoreItem,
+} from '@your-academy/shared';
 import { newRequestId } from '../common/request-id';
 import { PrismaService } from '../database/prisma.service';
 
@@ -41,13 +45,17 @@ export type PublicQuestionCard = {
   category: { id: string; name: string; slug: string };
   subcategory: { id: string; name: string; slug: string } | null;
   options: Array<{ id: string; label: string; content: string; sortOrder: number }>;
-  correctAnswerLabel: string;
-  correctAnswerBn: string;
+  /** DEC-051: present only for entitled viewers (admin / active subscription). */
+  correctAnswerLabel?: string;
+  correctAnswerBn?: string;
   createdAt: string;
   publishedAt: string | null;
   uploadBatchId: string | null;
   rowNumber: number | null;
 };
+
+/** DEC-051: answer visibility resolved by the controller via AccessControlService. */
+export type AnswerViewOptions = { canViewAnswers: boolean };
 
 export type PublicQuestionSet = {
   id: string;
@@ -75,7 +83,8 @@ export type PublicWrittenQuestionCard = {
   id: string;
   title: string;
   content: string;
-  modelAnswer: string | null;
+  /** DEC-051: present only for entitled viewers (admin / active subscription). */
+  modelAnswer?: string | null;
   marks: string | null;
   sourceSerial: string | null;
   examYear: string | null;
@@ -434,63 +443,11 @@ export class PublicService {
   async listSetQuestions(
     batchId: string,
     params: { cursor?: string; limit?: number; q?: string },
+    view: AnswerViewOptions = { canViewAnswers: false },
   ) {
     await this.getQuestionSet(batchId);
     const limit = Math.min(Math.max(params.limit ?? 20, 1), 100);
-    const q = params.q?.trim();
-
-    // Preserve original upload order via import rowNumber when available.
-    const rows = await this.prisma.questionImportRow.findMany({
-      where: {
-        batchId,
-        createdQuestionId: { not: null },
-        createdQuestion: {
-          status: QuestionStatus.PUBLISHED,
-          deletedAt: null,
-          ...(q
-            ? {
-                OR: [
-                  { title: { contains: q, mode: 'insensitive' } },
-                  { content: { contains: q, mode: 'insensitive' } },
-                  { sourceNote: { contains: q, mode: 'insensitive' } },
-                ],
-              }
-            : {}),
-        },
-      },
-      orderBy: [{ rowNumber: 'asc' }],
-      select: {
-        rowNumber: true,
-        createdQuestionId: true,
-      },
-    });
-
-    const orderedIds = rows
-      .map((r) => r.createdQuestionId)
-      .filter((id): id is string => Boolean(id));
-
-    // Fallback: questions linked to batch without import-row pointer
-    const orphaned = await this.prisma.question.findMany({
-      where: {
-        uploadBatchId: batchId,
-        status: QuestionStatus.PUBLISHED,
-        deletedAt: null,
-        id: { notIn: orderedIds.length ? orderedIds : ['00000000-0000-0000-0000-000000000000'] },
-        ...(q
-          ? {
-              OR: [
-                { title: { contains: q, mode: 'insensitive' } },
-                { content: { contains: q, mode: 'insensitive' } },
-                { sourceNote: { contains: q, mode: 'insensitive' } },
-              ],
-            }
-          : {}),
-      },
-      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
-      select: { id: true },
-    });
-
-    const allIds = [...orderedIds, ...orphaned.map((o) => o.id)];
+    const { rows, allIds } = await this.resolveSetQuestionIds(batchId, params.q?.trim());
     const total = allIds.length;
 
     let start = 0;
@@ -548,10 +505,145 @@ export class PublicService {
       .map((id) => byId.get(id))
       .filter((q): q is NonNullable<typeof q> => Boolean(q))
       .map((q) =>
-        this.toCard(q, rowNumberById.get(q.id) ?? q.importRows[0]?.rowNumber ?? null),
+        this.toCard(
+          q,
+          rowNumberById.get(q.id) ?? q.importRows[0]?.rowNumber ?? null,
+          view.canViewAnswers,
+        ),
       );
 
     return { items, nextCursor, total };
+  }
+
+  /**
+   * DEC-051: score a Preli Practice run on the server so the public set never ships
+   * its answer key. Non-entitled viewers get totals + their own selections only.
+   */
+  async scoreSetPractice(
+    batchId: string,
+    answersRaw: Record<string, unknown>,
+    view: AnswerViewOptions,
+  ): Promise<PublicPracticeScore> {
+    await this.getQuestionSet(batchId);
+    const { allIds } = await this.resolveSetQuestionIds(batchId);
+    const questions = allIds.length
+      ? await this.prisma.question.findMany({
+          where: { id: { in: allIds } },
+          select: {
+            id: true,
+            options: {
+              orderBy: { sortOrder: 'asc' },
+              select: { id: true, label: true, isCorrect: true },
+            },
+          },
+        })
+      : [];
+    const byId = new Map(questions.map((q) => [q.id, q]));
+
+    let correctCount = 0;
+    let wrongCount = 0;
+    let skippedCount = 0;
+    const answerSheet: PublicPracticeScoreItem[] = [];
+
+    for (const id of allIds) {
+      const q = byId.get(id);
+      if (!q) continue;
+      const raw = answersRaw[id];
+      const candidate = typeof raw === 'string' ? raw.trim() : '';
+      // Ignore forged option ids that do not belong to this question.
+      const selectedOptionId = q.options.some((o) => o.id === candidate) ? candidate : null;
+      const correct = q.options.find((o) => o.isCorrect) ?? null;
+      const isSkipped = !selectedOptionId;
+      const isCorrect = Boolean(selectedOptionId && correct && selectedOptionId === correct.id);
+      if (isSkipped) skippedCount += 1;
+      else if (isCorrect) correctCount += 1;
+      else wrongCount += 1;
+
+      answerSheet.push({
+        id,
+        selectedOptionId,
+        isSkipped,
+        ...(view.canViewAnswers
+          ? {
+              isCorrect,
+              correctOptionId: correct?.id ?? null,
+              correctAnswerLabel: correct?.label ?? '',
+            }
+          : {}),
+      });
+    }
+
+    const totalQuestions = answerSheet.length;
+    return {
+      setId: batchId,
+      totalQuestions,
+      correctCount,
+      wrongCount,
+      skippedCount,
+      score: correctCount,
+      percent:
+        totalQuestions === 0 ? 0 : Math.round((correctCount / totalQuestions) * 1000) / 10,
+      answersVisible: view.canViewAnswers,
+      answerSheet,
+    };
+  }
+
+  /** Ordered published question ids for an upload set (import row order, then orphans). */
+  private async resolveSetQuestionIds(batchId: string, q?: string) {
+
+    // Preserve original upload order via import rowNumber when available.
+    const rows = await this.prisma.questionImportRow.findMany({
+      where: {
+        batchId,
+        createdQuestionId: { not: null },
+        createdQuestion: {
+          status: QuestionStatus.PUBLISHED,
+          deletedAt: null,
+          ...(q
+            ? {
+                OR: [
+                  { title: { contains: q, mode: 'insensitive' } },
+                  { content: { contains: q, mode: 'insensitive' } },
+                  { sourceNote: { contains: q, mode: 'insensitive' } },
+                ],
+              }
+            : {}),
+        },
+      },
+      orderBy: [{ rowNumber: 'asc' }],
+      select: {
+        rowNumber: true,
+        createdQuestionId: true,
+      },
+    });
+
+    const orderedIds = rows
+      .map((r) => r.createdQuestionId)
+      .filter((id): id is string => Boolean(id));
+
+    // Fallback: questions linked to batch without import-row pointer
+    const orphaned = await this.prisma.question.findMany({
+      where: {
+        uploadBatchId: batchId,
+        status: QuestionStatus.PUBLISHED,
+        deletedAt: null,
+        id: { notIn: orderedIds.length ? orderedIds : ['00000000-0000-0000-0000-000000000000'] },
+        ...(q
+          ? {
+              OR: [
+                { title: { contains: q, mode: 'insensitive' } },
+                { content: { contains: q, mode: 'insensitive' } },
+                { sourceNote: { contains: q, mode: 'insensitive' } },
+              ],
+            }
+          : {}),
+      },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      select: { id: true },
+    });
+
+    const allIds = [...orderedIds, ...orphaned.map((o) => o.id)];
+    return { rows, allIds };
   }
 
   async listPublishedQuestions(params: {
@@ -563,14 +655,18 @@ export class PublicService {
     q?: string;
     examTag?: string;
     uploadBatchId?: string;
-  }) {
+  }, view: AnswerViewOptions = { canViewAnswers: false }) {
     const limit = Math.min(Math.max(params.limit ?? 20, 1), 100);
     if (params.uploadBatchId) {
-      return this.listSetQuestions(params.uploadBatchId, {
-        cursor: params.cursor,
-        limit,
-        q: params.q,
-      });
+      return this.listSetQuestions(
+        params.uploadBatchId,
+        {
+          cursor: params.cursor,
+          limit,
+          q: params.q,
+        },
+        view,
+      );
     }
 
     const where = this.buildWhere(params);
@@ -616,7 +712,9 @@ export class PublicService {
     ]);
 
     const nextCursor = items.length > limit ? items.pop()!.id : null;
-    const cards = items.map((q) => this.toCard(q, q.importRows[0]?.rowNumber ?? null));
+    const cards = items.map((q) =>
+      this.toCard(q, q.importRows[0]?.rowNumber ?? null, view.canViewAnswers),
+    );
     return { items: cards, nextCursor, total };
   }
 
@@ -646,6 +744,7 @@ export class PublicService {
       importRows?: Array<{ serial?: string | null; sectionTitle?: string | null }>;
     },
     rowNumber: number | null,
+    canViewAnswers: boolean,
   ): PublicQuestionCard {
     const correct = q.options.find((o) => o.isCorrect);
     const correctAnswerLabel = correct?.label ?? '';
@@ -670,8 +769,13 @@ export class PublicService {
         content,
         sortOrder,
       })),
-      correctAnswerLabel,
-      correctAnswerBn: BN_LABEL[correctAnswerLabel] ?? correctAnswerLabel,
+      // DEC-051: omit (never fake) the key for non-entitled viewers.
+      ...(canViewAnswers
+        ? {
+            correctAnswerLabel,
+            correctAnswerBn: BN_LABEL[correctAnswerLabel] ?? correctAnswerLabel,
+          }
+        : {}),
       createdAt: q.createdAt.toISOString(),
       publishedAt: q.publishedAt?.toISOString() ?? null,
       uploadBatchId: q.uploadBatchId,
@@ -1000,6 +1104,7 @@ export class PublicService {
   async listWrittenSetQuestions(
     batchId: string,
     params: { cursor?: string; limit?: number; q?: string },
+    view: AnswerViewOptions = { canViewAnswers: false },
   ) {
     await this.getWrittenQuestionSet(batchId);
     const limit = Math.min(Math.max(params.limit ?? 20, 1), 100);
@@ -1017,7 +1122,10 @@ export class PublicService {
                 OR: [
                   { title: { contains: q, mode: 'insensitive' } },
                   { content: { contains: q, mode: 'insensitive' } },
-                  { modelAnswer: { contains: q, mode: 'insensitive' } },
+                  // DEC-051: searching model answers would be an answer oracle.
+                  ...(view.canViewAnswers
+                    ? [{ modelAnswer: { contains: q, mode: 'insensitive' as const } }]
+                    : []),
                   { sourceNote: { contains: q, mode: 'insensitive' } },
                 ],
               }
@@ -1043,7 +1151,9 @@ export class PublicService {
               OR: [
                 { title: { contains: q, mode: 'insensitive' } },
                 { content: { contains: q, mode: 'insensitive' } },
-                { modelAnswer: { contains: q, mode: 'insensitive' } },
+                ...(view.canViewAnswers
+                  ? [{ modelAnswer: { contains: q, mode: 'insensitive' as const } }]
+                  : []),
               ],
             }
           : {}),
@@ -1096,7 +1206,7 @@ export class PublicService {
         id: item.id,
         title: item.title,
         content: item.content,
-        modelAnswer: item.modelAnswer,
+        ...(view.canViewAnswers ? { modelAnswer: item.modelAnswer } : {}),
         marks: item.marks != null ? String(item.marks) : null,
         sourceSerial: item.sourceSerial,
         examYear: item.examYear,
@@ -1297,7 +1407,7 @@ export class PublicService {
     cursor?: string;
     limit: number;
     q?: string;
-  }) {
+  }, view: AnswerViewOptions = { canViewAnswers: false }) {
     const meta = await this.getTopicSubcategory(params.subcategoryId);
 
     // Folder selection includes nested Topic questions under that node.
@@ -1386,8 +1496,12 @@ export class PublicService {
             }
           : null,
         options,
-        correctAnswerLabel,
-        correctAnswerBn: correctAnswerLabel ? BN_LABEL[correctAnswerLabel] ?? '' : '',
+        ...(view.canViewAnswers
+          ? {
+              correctAnswerLabel,
+              correctAnswerBn: correctAnswerLabel ? BN_LABEL[correctAnswerLabel] ?? '' : '',
+            }
+          : {}),
         createdAt: q.createdAt.toISOString(),
         publishedAt: q.createdAt.toISOString(),
         uploadBatchId: q.batchId,
@@ -1526,7 +1640,7 @@ export class PublicService {
     cursor?: string;
     limit: number;
     q?: string;
-  }) {
+  }, view: AnswerViewOptions = { canViewAnswers: false }) {
     await this.getTopicSet(params.batchId);
 
     const where: Prisma.TopicQuestionWhereInput = {
@@ -1601,8 +1715,12 @@ export class PublicService {
             }
           : null,
         options,
-        correctAnswerLabel,
-        correctAnswerBn: correctAnswerLabel ? BN_LABEL[correctAnswerLabel] ?? '' : '',
+        ...(view.canViewAnswers
+          ? {
+              correctAnswerLabel,
+              correctAnswerBn: correctAnswerLabel ? BN_LABEL[correctAnswerLabel] ?? '' : '',
+            }
+          : {}),
         createdAt: q.createdAt.toISOString(),
         publishedAt: q.createdAt.toISOString(),
         uploadBatchId: q.batchId,

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { ExamResultView } from '@/features/guest-exams/exam-result-view';
+import { sessionCookieHeader } from '@/features/guest-exams/session-cookie-header';
 import { serverApiBase } from '@/lib/api/client';
 import type { ExamAttemptResult } from '@your-academy/shared';
 
@@ -10,7 +11,8 @@ async function fetchResult(attemptId: string): Promise<ExamAttemptResult | null>
   try {
     const res = await fetch(
       `${serverApiBase()}/public/exams/attempts/${encodeURIComponent(attemptId)}`,
-      { cache: 'no-store' },
+      // DEC-051: forward the session so entitled viewers get the answer key.
+      { cache: 'no-store', headers: await sessionCookieHeader() },
     );
     if (res.status === 404) return null;
     if (!res.ok) return null;

@@ -58,10 +58,11 @@ export type ModelTestAnswerSheetItem = {
   questionText: string;
   options: string[];
   selectedAnswer: string | null;
-  correctAnswer: string;
-  explanation: string | null;
-  isCorrect: boolean;
   isSkipped: boolean;
+  /** DEC-051: present only when the viewer is entitled (`answersVisible`). */
+  correctAnswer?: string;
+  explanation?: string | null;
+  isCorrect?: boolean;
 };
 
 export type ModelTestAttemptResult = {
@@ -83,6 +84,8 @@ export type ModelTestAttemptResult = {
     durationInMinutes: number;
     examYear: number | null;
   };
+  /** DEC-051: false → answer key, explanations and per-question correctness omitted. */
+  answersVisible: boolean;
   answerSheet: ModelTestAnswerSheetItem[];
 };
 

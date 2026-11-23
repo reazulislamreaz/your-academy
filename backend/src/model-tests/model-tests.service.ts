@@ -404,7 +404,14 @@ export class ModelTestsService {
     return { items, nextCursor };
   }
 
-  async getAttemptResult(attemptId: string) {
+  /**
+   * DEC-051: everyone sees score/totals and their own selections; the answer key,
+   * explanations and per-question correctness are for entitled viewers only.
+   */
+  async getAttemptResult(
+    attemptId: string,
+    view: { canViewAnswers: boolean } = { canViewAnswers: false },
+  ) {
     const attempt = await this.prisma.modelTestAttempt.findUnique({
       where: { id: attemptId },
       include: {
@@ -463,6 +470,7 @@ export class ModelTestsService {
         durationInMinutes: attempt.modelTest.durationInMinutes,
         examYear: attempt.modelTest.examYear,
       },
+      answersVisible: view.canViewAnswers,
       answerSheet: questions.map((q) => {
         const selected = userAnswers[q.id] ?? '';
         const options = asStringOptions(q.options);
@@ -472,10 +480,10 @@ export class ModelTestsService {
           questionText: q.questionText,
           options,
           selectedAnswer: selected || null,
-          correctAnswer: q.correctAnswer,
-          explanation: q.explanation,
-          isCorrect,
           isSkipped: !selected,
+          ...(view.canViewAnswers
+            ? { correctAnswer: q.correctAnswer, explanation: q.explanation, isCorrect }
+            : {}),
         };
       }),
     };

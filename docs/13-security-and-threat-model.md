@@ -110,6 +110,14 @@ Attack: call `GET /questions/:id` as expired trial user and inspect JSON for `is
 
 **Pass criteria:** fields absent; timing broadly similar; admin endpoints still 403 for non-admin.
 
+### Content protection deterrents
+
+Learner-facing question content (question detail, practice/exam players, Preli/Written/Topic sets, attempt results — public and in-app) is wrapped in `ProtectedContent` (`frontend/src/components/content-protection/`), applied via route-segment `layout.tsx` files. Never used under `/admin`.
+
+**Deterred (casual copying only):** text selection, copy/cut/context menu inside the content, image drag, Ctrl/Cmd + C/X/S/P/U/A while not typing in a field, printing (print CSS replaces the content with a notice), and a low-opacity watermark (masked WhatsApp + short user id + date for signed-in users; site name for guests) so leaked screenshots are attributable. Exam players optionally blur while the tab is hidden or the window loses focus. Learner app routes and attempt result URLs are `Disallow`ed in `robots.ts`; result segments also send `noindex, nofollow`.
+
+**Not prevented:** screenshots / screen recording, phone cameras, browser devtools / view-source via menus, disabling JavaScript or CSS, reader modes, extensions, scraping the public API, or retyping. These are UX friction, not security. The real boundary remains server-side answer gating (§5, `08-subscription-and-access-control.md`). Blocking OS-level screenshots (Android `FLAG_SECURE`) requires a native app — future option, not planned for v1.
+
 ## 6. Trial Abuse
 
 Unique WhatsApp is necessary but insufficient. Future options (document only until approved):
