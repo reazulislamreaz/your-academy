@@ -94,7 +94,7 @@ lib/api/auth.ts
 ```
 
 - Strict TypeScript types from shared package
-- Central handling for 401 → refresh → retry once
+- Central handling for 401 → refresh → retry once, including multipart admin uploads (`apiUploadForm` → `apiFetchResult`). Auth stays on HTTP-only cookies (`credentials: 'include'`); the client does not set `Content-Type` on `FormData`, so the multipart boundary cannot wipe CSRF. If refresh fails, the browser goes to `/login?reason=session-expired`.
 
 ## 9. Heartbeat Client
 

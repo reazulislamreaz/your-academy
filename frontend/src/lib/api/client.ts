@@ -62,6 +62,30 @@ async function parseJson<T>(res: Response): Promise<ApiEnvelope<T>> {
   }
 }
 
+const SESSION_EXPIRED_REASON = 'session-expired';
+
+/**
+ * Access JWTs are HTTP-only cookies (DEC-012), so callers cannot attach
+ * `Authorization` themselves. When refresh also fails, leave the admin form
+ * instead of a stuck 401 banner.
+ */
+export function redirectToLoginAfterSessionExpired(): void {
+  if (typeof window === 'undefined') return;
+  const path = window.location.pathname;
+  if (path === '/login' || path.startsWith('/login/')) return;
+  const params = new URLSearchParams();
+  params.set('reason', SESSION_EXPIRED_REASON);
+  const next = `${path}${window.location.search}`;
+  if (next.startsWith('/') && !next.startsWith('/login')) {
+    params.set('next', next);
+  }
+  window.location.assign(`/login?${params.toString()}`);
+}
+
+export function isSessionExpiredLoginReason(reason: string | null): boolean {
+  return reason === SESSION_EXPIRED_REASON;
+}
+
 function shouldAttemptRefresh(path: string, skipRefresh?: boolean): boolean {
   if (skipRefresh) return false;
   const p = path.split('?')[0];
@@ -85,6 +109,36 @@ function likelyHasSessionCookies(): boolean {
 /** Single-flight refresh + cooldown after failure (prevents throttle storms). */
 let refreshInFlight: Promise<boolean> | null = null;
 let refreshCooldownUntil = 0;
+
+function isFormDataBody(body: BodyInit | null | undefined): body is FormData {
+  return typeof FormData !== 'undefined' && body instanceof FormData;
+}
+
+/**
+ * A manual `Content-Type: multipart/form-data` omits the boundary and must not
+ * replace cookie auth. Leave the header unset so the browser sets the boundary.
+ * `credentials: 'include'` sends the HTTP-only access cookie.
+ */
+function applyBodyHeaders(headers: Headers, body: BodyInit | null | undefined): void {
+  if (!body) return;
+  if (isFormDataBody(body)) {
+    headers.delete('Content-Type');
+    return;
+  }
+  if (!headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+}
+
+/** FormData can be read only once by some fetch implementations — copy per attempt. */
+function cloneBody(body: BodyInit | null | undefined): BodyInit | null | undefined {
+  if (!isFormDataBody(body)) return body;
+  const copy = new FormData();
+  for (const [key, value] of body.entries()) {
+    copy.append(key, value);
+  }
+  return copy;
+}
 
 async function refreshSession(): Promise<boolean> {
   if (!likelyHasSessionCookies()) return false;
@@ -125,9 +179,7 @@ export async function apiFetchResult<T>(
   const { skipRefresh, timeoutMs = DEFAULT_FETCH_TIMEOUT_MS, signal, ...requestInit } = init;
   const method = (requestInit.method ?? 'GET').toUpperCase();
   const headers = new Headers(requestInit.headers);
-  if (!headers.has('Content-Type') && requestInit.body) {
-    headers.set('Content-Type', 'application/json');
-  }
+  applyBodyHeaders(headers, requestInit.body);
 
   if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
     const csrf = getCookie(process.env.NEXT_PUBLIC_CSRF_COOKIE_NAME ?? 'csrf_token');
@@ -149,6 +201,7 @@ export async function apiFetchResult<T>(
     try {
       return await fetch(`${API_BASE}${path}`, {
         ...requestInit,
+        body: cloneBody(requestInit.body),
         headers,
         credentials: 'include',
         signal: controller?.signal ?? signal,

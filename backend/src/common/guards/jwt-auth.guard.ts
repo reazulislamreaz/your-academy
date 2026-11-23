@@ -1,4 +1,4 @@
-import { ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ExecutionContext, HttpException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { createErrorResponse } from '@your-academy/shared';
 import { newRequestId } from '../request-id';
@@ -10,11 +10,11 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   }
 
   handleRequest<TUser>(err: Error | null, user: TUser): TUser {
-    if (err || !user) {
-      throw new UnauthorizedException(
-        createErrorResponse('UNAUTHORIZED', 'Authentication required', newRequestId()),
-      );
-    }
-    return user;
+    if (user) return user;
+    // Keep strategy messages such as "Session expired" instead of masking them.
+    if (err instanceof HttpException) throw err;
+    throw new UnauthorizedException(
+      createErrorResponse('UNAUTHORIZED', 'Authentication required', newRequestId()),
+    );
   }
 }

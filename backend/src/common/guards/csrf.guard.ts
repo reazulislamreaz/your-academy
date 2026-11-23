@@ -13,7 +13,14 @@ export class CsrfGuard implements CanActivate {
     if (SAFE.has(req.method.toUpperCase())) return true;
 
     const authHeader = req.headers.authorization;
-    if (authHeader?.startsWith('Bearer ') && !req.cookies?.access_token) {
+    const accessName = process.env.ACCESS_COOKIE_NAME ?? 'access_token';
+    const bearer = typeof authHeader === 'string' ? authHeader.trim() : '';
+    // Non-browser clients authenticate with Bearer only. Cookie sessions still need CSRF.
+    if (
+      bearer.startsWith('Bearer ') &&
+      bearer.length > 'Bearer '.length &&
+      !req.cookies?.[accessName]
+    ) {
       return true;
     }
 

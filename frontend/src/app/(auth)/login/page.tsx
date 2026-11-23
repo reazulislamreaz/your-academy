@@ -16,7 +16,7 @@ import { PasswordField } from '@/features/auth/password-field';
 import { postLoginPath } from '@/features/auth/post-login-path';
 import { meQueryKey } from '@/features/auth/use-auth';
 import { WhatsappField, toAuthWhatsappPayload } from '@/features/auth/whatsapp-field';
-import { ApiError, apiFetch } from '@/lib/api/client';
+import { ApiError, apiFetch, isSessionExpiredLoginReason } from '@/lib/api/client';
 import type { MeUser } from '@/lib/api/types';
 
 function LoginForm() {
@@ -27,6 +27,7 @@ function LoginForm() {
   const [password, setPassword] = useState('');
   const [touchedWa, setTouchedWa] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const sessionExpired = isSessionExpiredLoginReason(searchParams.get('reason'));
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
@@ -76,6 +77,9 @@ function LoginForm() {
         style={{ animationDelay: '50ms' }}
       >
         <form onSubmit={onSubmit} className="space-y-4" noValidate>
+          {sessionExpired ? (
+            <Alert variant="warning">Your session expired. Sign in again to continue.</Alert>
+          ) : null}
           <Field className="space-y-1.5">
             <Label htmlFor="whatsapp" className="auth-label-row">
               <MessageCircle className="size-3.5 text-[#25D366]" aria-hidden strokeWidth={2.25} />
