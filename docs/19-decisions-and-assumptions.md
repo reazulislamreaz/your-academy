@@ -493,9 +493,42 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Field | Value |
 |-------|-------|
 | Question | Should the marketing site publish a Privacy Policy, and what must it say? |
-| Decision | Static page at `/privacy-policy` under `(marketing)` (footer "Account" column link, sitemap, public marketing prefix). Content describes only data flows present in code: account fields, exam/quiz submissions (guest + linked), learning activity + heartbeats, support chat (guest name/WhatsApp, attachments), session IP/user-agent, audit logs, auth/CSRF/support-guest cookies, local/session storage keys, Cloudinary, SMTP email, VPS hosting. No analytics, ads, or payments. Bracketed placeholders (company, contact, jurisdiction, providers, retention, minimum age) must be filled by the business. Update the page whenever a cookie, vendor, or personal-data field changes. |
+| Decision | Public page at `/privacy-policy` under `(marketing)` (footer "Account" column link, sitemap, public marketing prefix, not in robots disallow). 17 sections. Content describes only data flows present in code/config. Update the page whenever a cookie, vendor, TTL, or personal-data field changes. |
 | Impact | `frontend/src/app/(marketing)/privacy-policy/page.tsx`, footer, sitemap, role-routing, social-links revalidate paths |
-| Status | **NEEDS APPROVAL** — draft wording and placeholders pending owner + legal review (2026-11-23) |
+| Status | **PUBLISHED — PROPOSED VALUES NEED OWNER + LEGAL APPROVAL** (2026-11-23). Owner supplied name, hosting provider, and proposed jurisdiction and authorised publishing. |
+
+**Verified from code / config (2026-11-23)**
+
+| Fact | Source |
+|------|--------|
+| Platform name: Your Academy; domain `youracademy.com.bd` | Owner; `robots.ts`, `.env.production` `WEB_ORIGIN` |
+| Hosting: BahariHost VPS (owner-supplied) running Docker Compose | Owner; `docs/22`, `docker-compose.prod.yml` |
+| Cloudflare in front (DNS, proxy, TLS, security) | `docs/22` §1, `scripts/cloudflare-prod-ssl.sh` |
+| Email: Gmail SMTP (`smtp.gmail.com`), sender `youracademy04@gmail.com` | `.env.production` |
+| Files: Cloudinary | `.env.production` (`CLOUDINARY_*` set), `StorageService` |
+| Cookies: access 15 min, refresh + CSRF 7 days, support guest 30 days | `.env.production` TTLs, `cookie.service.ts`, `support.types.ts` |
+| Password-reset link 1 hour, single use | `auth.service.ts` default (prod unset) |
+| Heartbeat every 30 s; IP + user-agent on `AuthSession`; IP on `AuditLog` | schema, DEC heartbeat |
+| No analytics, ads, payments, leaderboards, or self-service account deletion | code search |
+| Container logs rotated by size (json-file 10 MB × 5) | `docker-compose.prod.yml` |
+| DB backups: manual `scripts/backup-db.sh`; no schedule in repo | `scripts/` |
+
+**Proposed values (published; need approval / legal review)**
+
+| Item | Value | Why |
+|------|-------|-----|
+| Contact email | `youracademy04@gmail.com` | Only real platform address in the project. **Owner must confirm** it is monitored for privacy requests. |
+| Postal address | Omitted | Not in project; not invented. Legal review may require one. |
+| Jurisdiction | Bangladesh (laws "that apply to us"; no statute cited) | Owner-proposed; specific statute is for counsel. |
+| Server country | **Not stated** | Not verifiable (deploy host is a GitHub secret; baharihost.com refused automated fetch). Owner should confirm the data-centre location; add it to §8/§14 if wanted. |
+| Deletion after verified request | 30 days | Common practice; **manual process** (no endpoint). |
+| Guest exam results + support chats | up to 24 months from last activity | Balances support history vs. minimisation. **No purge job yet**: implement or clean up manually. |
+| Security / audit records | up to 12 months | Typical abuse-investigation window. **No purge job yet**. |
+| Backups | deleted data gone from backups within 90 days | **Backup rotation not automated**: implement before relying on it. |
+| Rights response time | 30 days | Common international benchmark. |
+| Minimum age | 13; under-18 with parent/guardian permission | Common floor; Bangladesh Children Act 2013 treats under-18 as children. **Not enforced at registration**. Legal review. |
+| Legal bases | service provision, legitimate interests, consent (optional fields), legal obligation | Standard framework; legal review. |
+| Cloudflare cookies (`__cf_bm`) | "may be set" | Depends on Cloudflare zone settings; not verifiable from repo. |
 
 ### Deferred / NEEDS APPROVAL (explicitly out of Phase 1)
 
