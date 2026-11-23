@@ -517,7 +517,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 
 | Item | Value | Why |
 |------|-------|-----|
-| Contact email | `youracademy04@gmail.com` | Only real platform address in the project. **Owner must confirm** it is monitored for privacy requests. |
+| Contact email | `support@youracademy.com.bd` | Forwarded to the team Gmail inbox by Cloudflare Email Routing (DEC-050). |
 | Postal address | Omitted | Not in project; not invented. Legal review may require one. |
 | Jurisdiction | Bangladesh (laws "that apply to us"; no statute cited) | Owner-proposed; specific statute is for counsel. |
 | Server country | **Not stated** | Not verifiable (deploy host is a GitHub secret; baharihost.com refused automated fetch). Owner should confirm the data-centre location; add it to §8/§14 if wanted. |
@@ -547,6 +547,15 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Decision | **No.** Keep the same faces (DEC-037) but self-host them with `next/font/local`: `frontend/src/fonts/inter-latin-wght.woff2` (Inter 400–700, latin, preloaded) and `noto-sans-bengali-bengali-wght.woff2` (Noto Sans Bengali 100–900, bengali unicode-range). Same CSS variables (`--font-latin`, `--font-bengali`). SIL OFL 1.1 — see `src/fonts/LICENSE.md`. No new npm dependency. |
 | Impact | `frontend/src/lib/fonts.ts`, `frontend/src/fonts/*`. Production builds no longer need outbound network for fonts. Inter Cyrillic/Greek/Vietnamese subsets are no longer bundled (unused by the product). |
 | Status | **CONFIRMED** (2026-11-23, CI fix) |
+
+### DEC-050 — Transactional email via Resend from our own domain
+
+| Field | Value |
+|-------|-------|
+| Question | Password reset emails land in spam. How should transactional email be sent? |
+| Decision | Send through **Resend** SMTP (`smtp.resend.com:465`, no new npm dependency — Nodemailer) from `Your Academy <support@youracademy.com.bd>`; `Reply-To: support@youracademy.com.bd` via **Cloudflare Email Routing** → team Gmail. DNS: Resend DKIM + `send.` SPF/MX, Cloudflare routing MX/SPF, DMARC `p=none` → `quarantine` after 2–4 weeks. One shared branded template (`worker/src/email/`) for reset + verification: multipart HTML/text, Message-ID on our domain, masked send logging. Token logic/TTL unchanged; the API only passes `expiresInMinutes` for display. Personal Gmail SMTP is retired. |
+| Impact | `worker/src/email/*`, `worker/src/main.ts`, `frontend/public/images/email-logo.png`, `.env.example`, docs 17 + 23. Server env must switch to Resend values. |
+| Status | **CONFIRMED** (owner chose Resend + Cloudflare routing, 2026-11-23). DNS + Resend account pending on owner. |
 
 ### Deferred / NEEDS APPROVAL (explicitly out of Phase 1)
 

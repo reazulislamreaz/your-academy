@@ -99,7 +99,7 @@ Store only in gitignored `.env` — never commit. Product file storage remains C
 | `SMTP_PORT` | worker | Production `465` (SSL); default `1025` (Mailhog) |
 | `SMTP_SECURE` | worker | Optional; defaults to `true` on port 465 |
 | `SMTP_USER` / `SMTP_PASS` | worker | Resend: user `resend`, password = API key (`re_…`) |
-| `EMAIL_FROM` | worker | Must be on our domain: `Your Academy <no-reply@youracademy.com.bd>` (worker warns on gmail.com etc.) |
+| `EMAIL_FROM` | worker | Must be on our domain: `Your Academy <support@youracademy.com.bd>` (worker warns on gmail.com etc.) |
 | `EMAIL_REPLY_TO` | worker | `support@youracademy.com.bd` (Cloudflare Email Routing → Gmail) |
 | `EMAIL_SUPPORT_ADDRESS` | worker | Footer contact; defaults to `EMAIL_REPLY_TO` |
 | `APP_PUBLIC_URL` | worker | Site for logo + footer links; defaults to `WEB_ORIGIN` |

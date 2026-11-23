@@ -6,7 +6,7 @@ import { emailVerificationEmail, passwordResetEmail } from './templates';
 const prodEnv = {
   NODE_ENV: 'production',
   WEB_ORIGIN: 'https://youracademy.com.bd',
-  EMAIL_FROM: 'Your Academy <no-reply@youracademy.com.bd>',
+  EMAIL_FROM: 'Your Academy <support@youracademy.com.bd>',
   EMAIL_REPLY_TO: 'support@youracademy.com.bd',
   SMTP_HOST: 'smtp.resend.com',
   SMTP_PORT: '465',

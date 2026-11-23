@@ -12,7 +12,7 @@ import { PageHeader } from '@/components/layout/page-header';
 
 const LAST_UPDATED = '2026-11-23';
 const LAST_UPDATED_LABEL = 'November 23, 2026';
-const CONTACT_EMAIL = 'youracademy04@gmail.com';
+const CONTACT_EMAIL = 'support@youracademy.com.bd';
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',

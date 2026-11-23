@@ -252,6 +252,7 @@ Forbidden without approval: microservices, GraphQL, alternate ORMs, payment prov
 | `docs/13`–`15` | Security, testing, Docker |
 | `docs/16`–`19` | Roadmap, env, coding standards, decisions |
 | `docs/20`–`22` | Production audit, design system, ops runbook |
+| `docs/23` | Email deliverability (Resend, SPF/DKIM/DMARC) |
 
 Cursor rules (always apply / path-scoped): `.cursor/rules/*.mdc`.
 

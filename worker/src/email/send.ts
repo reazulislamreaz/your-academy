@@ -63,7 +63,7 @@ export function emailConfigWarnings(config: EmailConfig, isProduction: boolean):
   const warnings: string[] = [];
   if (FREE_MAIL_DOMAINS.includes(config.fromDomain)) {
     warnings.push(
-      `EMAIL_FROM uses ${config.fromDomain}; send from your own domain (e.g. no-reply@youracademy.com.bd) so SPF/DKIM/DMARC align`,
+      `EMAIL_FROM uses ${config.fromDomain}; send from your own domain (e.g. support@youracademy.com.bd) so SPF/DKIM/DMARC align`,
     );
   }
   if (isProduction && !config.brand.siteUrl.startsWith('https://')) {
