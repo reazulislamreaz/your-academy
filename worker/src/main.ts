@@ -2,7 +2,8 @@ import { BrowsingSessionStatus, PrismaClient } from '@prisma/client';
 import { Queue, Worker } from 'bullmq';
 import { v2 as cloudinary } from 'cloudinary';
 import IORedis from 'ioredis';
-import nodemailer from 'nodemailer';
+import { createEmailSender, emailConfigWarnings, loadEmailConfig } from './email/send';
+import { emailVerificationEmail, passwordResetEmail } from './email/templates';
 
 const redisUrl = process.env.REDIS_URL ?? 'redis://127.0.0.1:6379';
 const service = process.env.APP_NAME ?? 'your-academy';
@@ -12,23 +13,26 @@ type PasswordResetJob = {
   to: string;
   resetUrl: string;
   userId: string;
+  /** Display only; token TTL is enforced by the API. Older jobs omit it. */
+  expiresInMinutes?: number;
 };
 
 type EmailVerificationJob = {
   to: string;
   verifyUrl: string;
   userId: string;
+  expiresInMinutes?: number;
 };
 
-type TransactionalEmail = {
-  kind: string;
-  to: string;
-  subject: string;
-  intro: string;
-  /** Bearer link (reset / verify) — logged only outside production. */
-  link: string;
-  outro: string;
-};
+const isProduction = process.env.NODE_ENV === 'production';
+const emailConfig = loadEmailConfig();
+for (const warning of emailConfigWarnings(emailConfig, isProduction)) {
+  console.warn(`[${service}-worker] email config: ${warning}`);
+}
+const sendEmail = createEmailSender(emailConfig, {
+  isProduction,
+  log: (m) => console.log(`[${service}-worker] ${m}`),
+});
 
 type DeleteAssetJob = {
   mediaAssetId: string;
@@ -54,74 +58,20 @@ function configureCloudinary() {
   return true;
 }
 
-async function sendTransactionalEmail(mail: TransactionalEmail) {
-  const host = process.env.SMTP_HOST?.trim();
-  const port = Number(process.env.SMTP_PORT ?? 1025);
-  const from = process.env.EMAIL_FROM ?? 'noreply@your-academy.local';
-
-  if (!host) {
-    // Never log links outside local development — they are bearer secrets.
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error(
-        `SMTP_HOST is required in production to deliver ${mail.kind} emails (refusing to log links)`,
-      );
-    }
-    console.log(`[${service}-worker] SMTP_HOST unset — logging ${mail.kind} for ${mail.to}`);
-    console.log(`[${service}-worker] link=${mail.link}`);
-    return;
-  }
-
-  const transporter = nodemailer.createTransport({
-    host,
-    port,
-    secure: port === 465,
-    auth:
-      process.env.SMTP_USER && process.env.SMTP_PASS
-        ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
-        : undefined,
-  });
-
-  try {
-    await transporter.sendMail({
-      from,
-      to: mail.to,
-      subject: mail.subject,
-      text: `${mail.intro}\n\n${mail.link}\n\n${mail.outro}`,
-      html: `<p>${mail.intro}</p><p><a href="${mail.link}">${mail.link}</a></p><p>${mail.outro}</p>`,
-    });
-    console.log(`[${service}-worker] ${mail.kind} email sent to ${mail.to}`);
-  } catch (err) {
-    if (process.env.NODE_ENV !== 'production') {
-      console.warn(
-        `[${service}-worker] SMTP send failed (${String(err)}); logging ${mail.kind} link for ${mail.to}`,
-      );
-      console.log(`[${service}-worker] link=${mail.link}`);
-      return;
-    }
-    throw err;
-  }
-}
-
 function sendPasswordResetEmail(data: PasswordResetJob) {
-  return sendTransactionalEmail({
-    kind: 'password-reset',
-    to: data.to,
-    subject: 'Reset your Your Academy password',
-    intro: 'Reset your password using this link. It expires in 30 minutes and works once:',
-    link: data.resetUrl,
-    outro: 'If you did not request this, ignore this email — your password stays the same.',
+  const email = passwordResetEmail(emailConfig.brand, {
+    resetUrl: data.resetUrl,
+    expiresInMinutes: data.expiresInMinutes ?? 30,
   });
+  return sendEmail('password-reset', data.to, email, data.resetUrl);
 }
 
 function sendEmailVerification(data: EmailVerificationJob) {
-  return sendTransactionalEmail({
-    kind: 'email-verification',
-    to: data.to,
-    subject: 'Confirm your Your Academy email address',
-    intro: 'Confirm this email address for your Your Academy account using this link:',
-    link: data.verifyUrl,
-    outro: 'If you did not add this email to an account, ignore this message.',
+  const email = emailVerificationEmail(emailConfig.brand, {
+    verifyUrl: data.verifyUrl,
+    expiresInMinutes: data.expiresInMinutes ?? 24 * 60,
   });
+  return sendEmail('email-verification', data.to, email, data.verifyUrl);
 }
 
 async function deleteCloudinaryAsset(data: DeleteAssetJob) {

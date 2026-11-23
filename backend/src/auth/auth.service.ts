@@ -242,7 +242,7 @@ export class AuthService {
       const resetUrl = `${base}?token=${token}`;
       try {
         await this.emailQueue.enqueuePasswordReset(
-          { to: email, resetUrl, userId: user.id },
+          { to: email, resetUrl, userId: user.id, expiresInMinutes: Math.round(ttl / 60) },
           tokenHash.slice(0, 32),
         );
       } catch (err) {

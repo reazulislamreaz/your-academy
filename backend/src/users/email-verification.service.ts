@@ -56,7 +56,7 @@ export class EmailVerificationService {
     const verifyUrl = `${verifyUrlBase()}?token=${token}`;
     try {
       await this.emailQueue.enqueueEmailVerification(
-        { to: user.email, verifyUrl, userId },
+        { to: user.email, verifyUrl, userId, expiresInMinutes: Math.round(ttl / 60) },
         tokenHash.slice(0, 32),
       );
     } catch (err) {

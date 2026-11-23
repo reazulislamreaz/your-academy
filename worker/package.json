@@ -9,7 +9,8 @@
     "start:prod": "node dist/main.js",
     "lint": "eslint \"src/**/*.ts\" --max-warnings=0",
     "typecheck": "prisma generate --schema ../backend/prisma/schema.prisma && tsc -p tsconfig.json --noEmit",
-    "test": "echo \"No worker tests yet\""
+    "test": "node --import tsx --test src/**/*.test.ts",
+    "email:test": "dotenv -e ../.env -- tsx src/email/send-test.ts"
   },
   "prisma": {
     "schema": "../backend/prisma/schema.prisma"

@@ -6,12 +6,15 @@ export type PasswordResetEmailJob = {
   to: string;
   resetUrl: string;
   userId: string;
+  /** Shown in the email copy; the API still enforces the token TTL. */
+  expiresInMinutes: number;
 };
 
 export type EmailVerificationJob = {
   to: string;
   verifyUrl: string;
   userId: string;
+  expiresInMinutes: number;
 };
 
 @Injectable()

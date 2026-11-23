@@ -95,16 +95,22 @@ Store only in gitignored `.env` — never commit. Product file storage remains C
 
 | Variable | Used by | Description |
 |----------|---------|-------------|
-| `SMTP_HOST` | worker | If unset, worker logs the reset URL |
-| `SMTP_PORT` | worker | Default `1025` (Mailhog) |
-| `SMTP_USER` / `SMTP_PASS` | worker | Optional auth |
-| `EMAIL_FROM` | worker | From address |
+| `SMTP_HOST` | worker | Production: `smtp.resend.com`. If unset, the worker logs links (dev only; refuses in production) |
+| `SMTP_PORT` | worker | Production `465` (SSL); default `1025` (Mailhog) |
+| `SMTP_SECURE` | worker | Optional; defaults to `true` on port 465 |
+| `SMTP_USER` / `SMTP_PASS` | worker | Resend: user `resend`, password = API key (`re_…`) |
+| `EMAIL_FROM` | worker | Must be on our domain: `Your Academy <no-reply@youracademy.com.bd>` (worker warns on gmail.com etc.) |
+| `EMAIL_REPLY_TO` | worker | `support@youracademy.com.bd` (Cloudflare Email Routing → Gmail) |
+| `EMAIL_SUPPORT_ADDRESS` | worker | Footer contact; defaults to `EMAIL_REPLY_TO` |
+| `APP_PUBLIC_URL` | worker | Site for logo + footer links; defaults to `WEB_ORIGIN` |
 | `PASSWORD_RESET_URL_BASE` | api | e.g. `http://localhost:3000/reset-password` |
 | `PASSWORD_RESET_TTL_SECONDS` | api | Default `1800` (30 min, DEC-048) |
 | `EMAIL_VERIFICATION_URL_BASE` | api | Confirmation link base; defaults to `${WEB_ORIGIN}/verify-email` |
 | `EMAIL_VERIFICATION_TTL_SECONDS` | api | Default `86400` (24 h) |
 
 Adding or changing an email in Account Settings enqueues an `email-verification` job on the same queue. Admins and Moderators only receive reset links at a **verified** email; learners keep the legacy rule (any email on the account).
+
+All emails share one branded template (`worker/src/email/`), are multipart (HTML + text), carry a Message-ID on the From domain, and log a masked recipient + SMTP response. DNS (SPF/DKIM/DMARC) and testing: `docs/23-email-deliverability.md`.
 
 Forgot-password enqueues a BullMQ `password-reset` job on `email-queue`. The worker sends via SMTP when reachable; in non-production it logs the reset URL if SMTP fails (e.g. Mailhog not running). The API also logs the link when `NODE_ENV !== production`.
 
