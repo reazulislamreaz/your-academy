@@ -12,6 +12,7 @@ import { Field } from '@/components/ui/field';
 import { Label } from '@/components/ui/label';
 import { Surface } from '@/components/ui/surface';
 import { LoginPageSkeleton } from '@/components/skeletons';
+import { AuthModeSwitch } from '@/features/auth/auth-mode-switch';
 import { PasswordField } from '@/features/auth/password-field';
 import { postLoginPath } from '@/features/auth/post-login-path';
 import { meQueryKey } from '@/features/auth/use-auth';
@@ -73,10 +74,11 @@ function LoginForm() {
 
       <Surface
         elevated
-        className="motion-rise auth-card-ref p-5 sm:p-6"
+        className="motion-rise auth-card-ref p-5 pt-6 sm:p-7 sm:pt-7"
         style={{ animationDelay: '50ms' }}
       >
-        <form onSubmit={onSubmit} className="space-y-4" noValidate>
+        <AuthModeSwitch active="login" />
+        <form onSubmit={onSubmit} className="mt-5 space-y-4" noValidate>
           {sessionExpired ? (
             <Alert variant="warning">Your session expired. Sign in again to continue.</Alert>
           ) : null}

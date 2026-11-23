@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Surface } from '@/components/ui/surface';
 import { RegisterPageSkeleton } from '@/components/skeletons';
+import { AuthModeSwitch } from '@/features/auth/auth-mode-switch';
 import { PasswordField } from '@/features/auth/password-field';
 import { PasswordStrength } from '@/features/auth/password-strength';
 import { meQueryKey } from '@/features/auth/use-auth';
@@ -117,10 +118,11 @@ function RegisterForm() {
 
       <Surface
         elevated
-        className="motion-rise auth-card-ref p-5 sm:p-6"
+        className="motion-rise auth-card-ref p-5 pt-6 sm:p-7 sm:pt-7"
         style={{ animationDelay: '50ms' }}
       >
-        <form onSubmit={onSubmit} className="space-y-3 lg:space-y-3" noValidate>
+        <AuthModeSwitch active="register" />
+        <form onSubmit={onSubmit} className="mt-5 space-y-3 lg:space-y-3" noValidate>
           <Field className="space-y-1.5">
             <Label htmlFor="name" className="auth-label-row">
               <User
