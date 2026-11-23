@@ -1,12 +1,9 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Clock3, ListChecks, Sparkles } from 'lucide-react';
-import { Alert } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Surface } from '@/components/ui/surface';
+import { ExamIntro, introIcons } from '@/features/exam-ui/exam-intro';
 import type { PracticeSetDetail } from '@/lib/api/types';
 import { examLabel, practiceKindLabel } from '@/lib/exam-tags';
 import { cn } from '@/lib/utils';
@@ -38,9 +35,7 @@ export function ExamPrestart({ set, starting, error, onStart }: Props) {
     setHasDuration ? 'default' : 'preset',
   );
   const [presetSeconds, setPresetSeconds] = useState(
-    setHasDuration
-      ? Math.min(set.durationSeconds!, 60 * 60)
-      : estimated * 60,
+    setHasDuration ? Math.min(set.durationSeconds!, 60 * 60) : estimated * 60,
   );
   const [customMinutes, setCustomMinutes] = useState(
     String(setMinutes ?? Math.min(estimated, TIMER_CUSTOM_MAX_MINUTES)),
@@ -69,14 +64,7 @@ export function ExamPrestart({ set, starting, error, onStart }: Props) {
     if (durationMode === 'default' && setHasDuration) return set.durationSeconds!;
     if (durationMode === 'preset') return presetSeconds;
     return customSeconds;
-  }, [
-    timed,
-    durationMode,
-    setHasDuration,
-    set.durationSeconds,
-    presetSeconds,
-    customSeconds,
-  ]);
+  }, [timed, durationMode, setHasDuration, set.durationSeconds, presetSeconds, customSeconds]);
 
   const canStart =
     !timed ||
@@ -92,53 +80,46 @@ export function ExamPrestart({ set, starting, error, onStart }: Props) {
     });
   };
 
+  const totalMarks = set.marksPerCorrect * set.questionCount;
+  const facts = [
+    { icon: introIcons.questions, label: 'Questions', value: set.questionCount },
+    { icon: introIcons.timer, label: 'Total marks', value: totalMarks },
+    {
+      icon: introIcons.duration,
+      label: 'Suggested time',
+      value: setHasDuration ? formatDurationMinutes(set.durationSeconds!) : `~${estimated} min`,
+    },
+  ];
+  const subject = set.subcategory?.name ?? set.category?.name;
+  const back = backLinkFor(set.kind);
+  const rules = [
+    set.negativeMarkPerWrong > 0
+      ? `Negative marking: −${set.negativeMarkPerWrong} for each wrong answer (${set.marksPerCorrect} per correct).`
+      : `${set.marksPerCorrect} mark${set.marksPerCorrect === 1 ? '' : 's'} per correct answer, no negative marking.`,
+    'Answers autosave to your account — refreshing resumes without resetting the timer.',
+    timed
+      ? 'Timed attempts submit automatically when the clock reaches zero.'
+      : 'Untimed attempts stay open until you submit.',
+    'Use 1–4 or A–D to pick an option and ←/→ to move between questions.',
+    ...(set.passMarkPercent != null ? [`Pass mark: ${set.passMarkPercent}%.`] : []),
+  ];
+
   return (
-    <Surface elevated className="motion-rise mx-auto max-w-2xl space-y-6 p-5 sm:p-7">
-      <div className="space-y-2">
-        <p className="text-[0.6875rem] font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
-          {practiceKindLabel(set.kind)}
-          {set.examTag ? ` · ${examLabel(set.examTag)}` : ''}
-        </p>
-        <h2 className="font-display text-2xl font-bold tracking-tight text-[var(--ink)] sm:text-[1.75rem]">
-          {set.title}
-        </h2>
-        {set.description ? (
-          <p className="text-sm leading-relaxed text-[var(--muted)]">{set.description}</p>
-        ) : null}
-      </div>
-
-      <dl className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-        <div className="rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-muted)]/40 px-3.5 py-3">
-          <dt className="flex items-center gap-1.5 text-xs text-[var(--muted)]">
-            <ListChecks className="size-3.5" aria-hidden />
-            Questions
-          </dt>
-          <dd className="mt-1 font-display text-xl font-bold tabular-nums text-[var(--ink)]">
-            {set.questionCount}
-          </dd>
-        </div>
-        <div className="rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-muted)]/40 px-3.5 py-3">
-          <dt className="flex items-center gap-1.5 text-xs text-[var(--muted)]">
-            <Sparkles className="size-3.5" aria-hidden />
-            Subject
-          </dt>
-          <dd className="mt-1 truncate font-semibold text-[var(--ink)]">
-            {set.category?.name ?? set.subcategory?.name ?? 'General'}
-          </dd>
-        </div>
-        <div className="col-span-2 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-muted)]/40 px-3.5 py-3 sm:col-span-1">
-          <dt className="flex items-center gap-1.5 text-xs text-[var(--muted)]">
-            <Clock3 className="size-3.5" aria-hidden />
-            Suggested
-          </dt>
-          <dd className="mt-1 font-semibold text-[var(--ink)]">
-            {setHasDuration
-              ? formatDurationMinutes(set.durationSeconds!)
-              : `~${estimated} min`}
-          </dd>
-        </div>
-      </dl>
-
+    <ExamIntro
+      eyebrow={practiceKindLabel(set.kind) + (set.examTag ? ` · ${examLabel(set.examTag)}` : '')}
+      title={set.title}
+      description={set.description}
+      tags={subject ? [subject] : []}
+      facts={facts}
+      rules={rules}
+      askName={false}
+      waiting={!canStart}
+      backHref={back.href}
+      backLabel={back.label}
+      starting={starting}
+      error={error ? 'Could not start the exam. Try again.' : null}
+      onStart={start}
+    >
       <div className="space-y-4">
         <div>
           <p className="text-sm font-semibold text-[var(--ink)]">Exam mode</p>
@@ -146,6 +127,7 @@ export function ExamPrestart({ set, starting, error, onStart }: Props) {
             <button
               type="button"
               onClick={() => setTimed(true)}
+              aria-pressed={timed}
               className={cn(
                 'cursor-pointer rounded-[var(--radius)] border px-3 py-3 text-left text-sm transition-colors',
                 timed
@@ -161,6 +143,7 @@ export function ExamPrestart({ set, starting, error, onStart }: Props) {
             <button
               type="button"
               onClick={() => setTimed(false)}
+              aria-pressed={!timed}
               className={cn(
                 'cursor-pointer rounded-[var(--radius)] border px-3 py-3 text-left text-sm transition-colors',
                 !timed
@@ -184,6 +167,7 @@ export function ExamPrestart({ set, starting, error, onStart }: Props) {
               <button
                 type="button"
                 onClick={() => setDurationMode('default')}
+                aria-pressed={durationMode === 'default'}
                 className={cn(
                   'flex w-full cursor-pointer items-center justify-between rounded-[var(--radius)] border px-3 py-2.5 text-left text-sm transition-colors',
                   durationMode === 'default'
@@ -205,6 +189,7 @@ export function ExamPrestart({ set, starting, error, onStart }: Props) {
                     <button
                       key={p.seconds}
                       type="button"
+                      aria-pressed={active}
                       onClick={() => {
                         setDurationMode('preset');
                         setPresetSeconds(p.seconds);
@@ -267,25 +252,13 @@ export function ExamPrestart({ set, starting, error, onStart }: Props) {
           </div>
         ) : null}
       </div>
-
-      <p className="text-xs leading-relaxed text-[var(--muted)]">
-        Answers autosave as you go. Mark questions for review and jump between them anytime.
-        {timed ? ' Timed exams auto-submit when the clock reaches zero.' : ''} Refreshing the page
-        resumes your attempt without resetting the timer.
-      </p>
-
-      {error ? <Alert variant="danger">Could not start the exam. Try again.</Alert> : null}
-
-      <Button
-        type="button"
-        size="lg"
-        className="w-full cursor-pointer sm:w-auto"
-        disabled={starting || !canStart}
-        loading={starting}
-        onClick={start}
-      >
-        {starting ? 'Starting…' : 'Start exam'}
-      </Button>
-    </Surface>
+    </ExamIntro>
   );
+}
+
+function backLinkFor(kind: PracticeSetDetail['kind']): { href: string; label: string } {
+  if (kind === 'MODEL_TEST') return { href: '/live-model-tests', label: 'Back to model tests' };
+  if (kind === 'PREVIOUS_YEAR_SET')
+    return { href: '/previous-year', label: 'Back to previous years' };
+  return { href: '/live-quizzes', label: 'Back to quizzes' };
 }

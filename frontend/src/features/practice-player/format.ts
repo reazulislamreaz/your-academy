@@ -1,9 +1,3 @@
-export function formatTimer(secs: number) {
-  const m = Math.floor(secs / 60);
-  const s = secs % 60;
-  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-}
-
 export function formatDurationMinutes(seconds: number) {
   const mins = Math.round(seconds / 60);
   return `${mins} min`;

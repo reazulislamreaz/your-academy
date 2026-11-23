@@ -5,6 +5,10 @@ export type ModelTestSession = {
   userName: string;
   startedAtMs: number;
   answers: Record<string, string>;
+  /** Optional UI progress (added later — older sessions omit them). */
+  marked?: Record<string, boolean>;
+  currentIndex?: number;
+  viewAll?: boolean;
 };
 
 function storageKey(modelTestId: string): string {
@@ -32,6 +36,12 @@ export function loadModelTestSession(modelTestId: string): ModelTestSession | nu
       userName: parsed.userName,
       startedAtMs: parsed.startedAtMs,
       answers: parsed.answers,
+      marked: isFlagRecord(parsed.marked) ? parsed.marked : undefined,
+      currentIndex:
+        typeof parsed.currentIndex === 'number' && Number.isInteger(parsed.currentIndex)
+          ? parsed.currentIndex
+          : undefined,
+      viewAll: typeof parsed.viewAll === 'boolean' ? parsed.viewAll : undefined,
     };
   } catch {
     return null;
@@ -54,4 +64,13 @@ export function clearModelTestSession(modelTestId: string): void {
   } catch {
     /* ignore */
   }
+}
+
+function isFlagRecord(value: unknown): value is Record<string, boolean> {
+  return (
+    Boolean(value) &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    Object.values(value as Record<string, unknown>).every((v) => typeof v === 'boolean')
+  );
 }

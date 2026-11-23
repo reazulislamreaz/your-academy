@@ -610,6 +610,15 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Impact | `backend/src/main.ts`, `app.module.ts`, `common/guards/app-throttler.guard.ts`. |
 | Status | **CONFIRMED** (owner request, 2026-11-23) |
 
+### DEC-056 — Shared exam UI for Quiz, Model Test and practice sets
+
+| Field | Value |
+|-------|-------|
+| Question | Quiz/Model Test pages were long single-page sheets without navigation, review marks or a start screen. |
+| Decision | One shared `frontend/src/features/exam-ui/` (start screen, one-question-at-a-time take screen with view-all toggle, sticky countdown + progress, navigator side panel / mobile bottom sheet, mark for review, clear answer, keyboard 1–4 / A–D / ←→, submit confirmation with unanswered count, result summary + All/Correct/Wrong/Skipped review). Behaviour changes: **Quiz may be submitted with unanswered questions** after the confirmation dialog (the API already accepted blanks; amends DEC-039's "answer every question" UI rule); **signed-in users press Start** before the timer begins (was: timer started on page open; amends DEC-045). Quiz "Wrong" is displayed as `wrongCount − skipped` so the three counts add up; scoring and API values are unchanged. Review correctness comes only from the API (`isCorrect` / `correctAnswer`), respecting DEC-051 locked answers. Progress stays in sessionStorage (survives refresh). |
+| Impact | `features/exam-ui/*`, guest-exams, model-tests, practice-player, practice-set cards/list, `results/[id]`. No backend change. |
+| Status | **CONFIRMED** (owner request, 2026-11-23) |
+
 ### Deferred / NEEDS APPROVAL (explicitly out of Phase 1)
 
 | Item | Notes |

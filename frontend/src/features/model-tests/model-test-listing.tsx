@@ -1,20 +1,26 @@
 'use client';
 
-import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { Clock3, ListChecks } from 'lucide-react';
 import {
   DEFAULT_MODEL_TEST_GUIDE_ITEMS,
   DEFAULT_MODEL_TEST_GUIDE_TITLE,
   type ModelTestGuideConfig,
 } from '@your-academy/shared';
 import { GsapEntrance } from '@/components/motion/gsap-entrance';
+import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Label } from '@/components/ui/label';
-import { SearchField } from '@/components/ui/search-field';
 import { Select } from '@/components/ui/select';
+import { ExamCard, ExamCardGridSkeleton } from '@/features/exam-ui/exam-card';
+import {
+  ExamListToolbar,
+  filterSelectClass,
+  sortExams,
+  type ExamSort,
+} from '@/features/exam-ui/exam-list-toolbar';
+import { useTimedExamStatus } from '@/features/exam-ui/use-exam-status';
 import {
   getPublicModelTestGuide,
   listPublicModelTestCategories,
@@ -24,10 +30,9 @@ import {
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import { cn } from '@/lib/utils';
 
-const filterSelectClass =
-  'h-10 min-h-10 border-[var(--line)] bg-[var(--bg-muted)] px-3.5 leading-normal shadow-none transition-[border-color,background-color,color] duration-150 hover:border-[var(--line-strong)] focus:border-[var(--accent)] focus:bg-[var(--bg-elevated)]';
-
 const PAGE_SIZE = 12;
+
+const activeFilterClass = 'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]';
 
 type Props = {
   /** Start-link prefix. Marketing `/model-test`; learner `/live-model-tests`. */
@@ -41,6 +46,7 @@ export function ModelTestListing({ basePath = '/model-test', embedded = false }:
   const [q, setQ] = useState('');
   const [year, setYear] = useState('');
   const [categoryId, setCategoryId] = useState('');
+  const [sort, setSort] = useState<ExamSort>('newest');
   const debouncedQ = useDebouncedValue(q.trim(), 300);
   const yearNum = year ? Number(year) : undefined;
   const yearFilter = yearNum != null && Number.isFinite(yearNum) ? yearNum : undefined;
@@ -77,17 +83,34 @@ export function ModelTestListing({ basePath = '/model-test', embedded = false }:
 
   const yearOptions = useMemo(() => years.data ?? [], [years.data]);
   const categoryOptions = useMemo(() => categories.data ?? [], [categories.data]);
-  const items = list.data?.pages.flatMap((p) => p.data) ?? [];
+  const items = useMemo(() => list.data?.pages.flatMap((p) => p.data) ?? [], [list.data]);
+  const sorted = useMemo(
+    () =>
+      sortExams(items, sort, (item) => ({
+        title: item.title,
+        createdAt: item.createdAt,
+        durationMinutes: item.durationInMinutes,
+        questionCount: item.totalQuestions,
+      })),
+    [items, sort],
+  );
+  const statusOf = useTimedExamStatus(
+    'model-test',
+    items.map((item) => item.id),
+  );
   const guideConfig = resolveGuide(guide.data);
+  const filtered = Boolean(debouncedQ || yearFilter != null || categoryId);
+  const clearFilters = () => {
+    setQ('');
+    setYear('');
+    setCategoryId('');
+  };
 
   return (
     <GsapEntrance
       y={10}
       duration={0.36}
-      className={cn(
-        'w-full overflow-x-clip',
-        embedded ? '' : 'marketing-container py-7 sm:py-10',
-      )}
+      className={cn('w-full overflow-x-clip', embedded ? '' : 'marketing-container py-7 sm:py-10')}
     >
       {embedded ? null : (
         <header className="min-w-0">
@@ -104,24 +127,15 @@ export function ModelTestListing({ basePath = '/model-test', embedded = false }:
         )}
       >
         <div className="min-w-0 space-y-4">
-          <div
-            className={cn(
-              'rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)]',
-              'p-3 shadow-[var(--shadow-sm)] sm:p-3.5',
-            )}
-          >
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-              <SearchField
-                id="mt-search"
-                value={q}
-                onChange={setQ}
-                placeholder="Search model tests…"
-                aria-label="Search model tests"
-                autoComplete="off"
-                className="min-w-0 flex-1"
-              />
-
-              <div className="grid w-full grid-cols-1 gap-2 min-[420px]:grid-cols-2 lg:flex lg:w-auto lg:shrink-0 lg:flex-wrap lg:items-center">
+          <ExamListToolbar
+            idPrefix="mt"
+            search={q}
+            onSearch={setQ}
+            searchPlaceholder="Search model tests…"
+            sort={sort}
+            onSort={setSort}
+            filters={
+              <>
                 <Label htmlFor="mt-category" className="sr-only">
                   Filter by category
                 </Label>
@@ -130,15 +144,9 @@ export function ModelTestListing({ basePath = '/model-test', embedded = false }:
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
                   disabled={categories.isLoading}
-                  className={cn(
-                    filterSelectClass,
-                    'w-full min-[420px]:min-w-0 lg:w-[15rem] lg:flex-none',
-                    categoryId &&
-                      'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]',
-                  )}
-                  aria-label="Filter by category"
+                  className={cn(filterSelectClass, 'lg:w-[13rem]', categoryId && activeFilterClass)}
                 >
-                  <option value="">All Categories</option>
+                  <option value="">All categories</option>
                   {categoryOptions.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
@@ -154,85 +162,81 @@ export function ModelTestListing({ basePath = '/model-test', embedded = false }:
                   value={year}
                   onChange={(e) => setYear(e.target.value)}
                   disabled={years.isLoading}
-                  className={cn(
-                    filterSelectClass,
-                    'w-full min-[420px]:min-w-0 lg:w-[11rem] lg:flex-none',
-                    year && 'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]',
-                  )}
-                  aria-label="Filter by year"
+                  className={cn(filterSelectClass, 'lg:w-[9rem]', year && activeFilterClass)}
                 >
-                  <option value="">All Years</option>
+                  <option value="">All years</option>
                   {yearOptions.map((y) => (
                     <option key={y} value={String(y)}>
                       {y}
                     </option>
                   ))}
                 </Select>
-              </div>
-            </div>
-          </div>
+              </>
+            }
+            summary={
+              list.isSuccess && items.length > 0 ? (
+                <>
+                  Showing {items.length} model test{items.length === 1 ? '' : 's'}
+                  {list.hasNextPage && sort !== 'newest' ? ' · sorted within loaded results' : ''}
+                  {filtered ? (
+                    <>
+                      {' · '}
+                      <button
+                        type="button"
+                        onClick={clearFilters}
+                        className="cursor-pointer font-semibold text-[var(--accent)] underline-offset-2 hover:underline"
+                      >
+                        Clear filters
+                      </button>
+                    </>
+                  ) : null}
+                </>
+              ) : null
+            }
+          />
 
           <aside className="rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] p-3.5 shadow-[var(--shadow-sm)] lg:hidden">
             <BanglaOverview guide={guideConfig} />
           </aside>
 
           {list.isLoading ? (
-            <p className="py-8 text-center text-sm text-[var(--muted)]">Loading…</p>
+            <ExamCardGridSkeleton count={6} />
+          ) : list.isError ? (
+            <Alert variant="danger">Could not load model tests. Please try again shortly.</Alert>
           ) : items.length === 0 ? (
-            <EmptyState align="center" title="No model tests found" />
+            <EmptyState
+              align="center"
+              title={filtered ? 'No model tests match these filters' : 'No model tests yet'}
+              description={
+                filtered
+                  ? 'Try another keyword, category or year.'
+                  : 'New model tests will appear here as soon as they are published.'
+              }
+              action={
+                filtered ? (
+                  <Button type="button" variant="outline" onClick={clearFilters}>
+                    Clear filters
+                  </Button>
+                ) : null
+              }
+            />
           ) : (
             <>
-              <ul className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
-                {items.map((item) => (
+              <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {sorted.map((item) => (
                   <li key={item.id}>
-                    <article
-                      className={cn(
-                        'flex h-full flex-col rounded-[var(--radius-lg)] border border-[var(--line)]',
-                        'bg-[var(--bg-elevated)] p-3 shadow-[var(--shadow-sm)] transition-colors',
-                        'hover:border-[color-mix(in_srgb,var(--accent)_42%,var(--line))]',
-                      )}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <Link
-                          href={`${takeBase}/${item.slug}`}
-                          className="min-w-0 font-display text-sm font-bold leading-snug tracking-tight break-words text-[var(--ink)] hover:text-[var(--accent)]"
-                        >
-                          {item.title}
-                        </Link>
-                        <div className="flex shrink-0 flex-col items-end gap-1">
-                          {item.category ? (
-                            <span className="rounded-[var(--radius-sm)] bg-[var(--accent-soft)] px-1.5 py-0.5 text-[0.6rem] font-semibold text-[var(--accent)]">
-                              {item.category.name}
-                            </span>
-                          ) : null}
-                          {item.examYear ? (
-                            <span className="rounded-[var(--radius-sm)] bg-[var(--bg-muted)] px-1.5 py-0.5 text-[0.6rem] font-semibold tabular-nums text-[var(--muted-strong)]">
-                              {item.examYear}
-                            </span>
-                          ) : null}
-                        </div>
-                      </div>
-                      <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[0.7rem] text-[var(--muted-strong)]">
-                        <span className="inline-flex items-center gap-1">
-                          <Clock3 className="size-3 shrink-0" aria-hidden />
-                          {item.durationInMinutes} min
-                        </span>
-                        <span className="inline-flex items-center gap-1">
-                          <ListChecks className="size-3 shrink-0" aria-hidden />
-                          {item.totalQuestions} Q
-                        </span>
-                      </div>
-                      <div className="mt-auto pt-2.5">
-                        <Link href={`${takeBase}/${item.slug}`} className="block">
-                          <Button
-                            size="sm"
-                            className="min-h-11 w-full sm:w-auto sm:px-3.5"
-                          >
-                            Start
-                          </Button>
-                        </Link>
-                      </div>
-                    </article>
+                    <ExamCard
+                      href={`${takeBase}/${item.slug}`}
+                      title={item.title}
+                      kindLabel="Model test"
+                      tags={[
+                        item.category?.name,
+                        item.examYear != null ? String(item.examYear) : null,
+                      ].filter((t): t is string => Boolean(t))}
+                      questionCount={item.totalQuestions}
+                      durationMinutes={item.durationInMinutes}
+                      status={statusOf(item)}
+                    />
                   </li>
                 ))}
               </ul>
@@ -242,7 +246,6 @@ export function ModelTestListing({ basePath = '/model-test', embedded = false }:
                   <Button
                     type="button"
                     variant="outline"
-                    className="h-9"
                     disabled={list.isFetchingNextPage}
                     onClick={() => void list.fetchNextPage()}
                   >

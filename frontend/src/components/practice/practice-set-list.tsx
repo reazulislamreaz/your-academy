@@ -4,8 +4,9 @@ import Link from 'next/link';
 import { Alert } from '@/components/ui/alert';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoadMoreButton } from '@/components/ui/load-more-button';
-import { PracticeSetGridSkeleton } from '@/components/skeletons';
 import { PracticeSetCard } from '@/components/practice/practice-set-card';
+import { ExamCardGridSkeleton } from '@/features/exam-ui/exam-card';
+import { usePracticeSetStatus } from '@/features/exam-ui/use-exam-status';
 import { ApiError } from '@/lib/api/client';
 import type { PracticeSetListItem } from '@/lib/api/types';
 import { useCursorList } from '@/lib/hooks/use-cursor-list';
@@ -43,9 +44,10 @@ export function PracticeSetList({
     },
     { retry: false },
   );
+  const statusOf = usePracticeSetStatus();
 
   if (list.isLoading) {
-    return <PracticeSetGridSkeleton count={4} />;
+    return <ExamCardGridSkeleton count={4} />;
   }
 
   if (list.error instanceof ApiError && (list.error.status === 401 || list.error.status === 403)) {
@@ -54,7 +56,10 @@ export function PracticeSetList({
         title="Sign in required"
         description="Practice sets are available after you sign in."
         action={
-          <Link href="/login" className="text-sm font-semibold text-[var(--highlight)] underline-offset-2 hover:underline">
+          <Link
+            href="/login"
+            className="text-sm font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
+          >
             Sign in
           </Link>
         }
@@ -72,11 +77,13 @@ export function PracticeSetList({
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-2">
+      <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {list.items.map((set) => (
-          <PracticeSetCard key={set.id} set={set} />
+          <li key={set.id}>
+            <PracticeSetCard set={set} status={statusOf(set.id)} />
+          </li>
         ))}
-      </div>
+      </ul>
       <LoadMoreButton
         hasNextPage={list.hasNextPage}
         isFetchingNextPage={list.isFetchingNextPage}

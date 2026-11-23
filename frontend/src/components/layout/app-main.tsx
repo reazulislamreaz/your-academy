@@ -10,6 +10,8 @@ import { cn } from '@/lib/utils';
 function isImmersivePath(pathname: string): boolean {
   if (/^\/documents\/[^/]+$/.test(pathname)) return true;
   if (/^\/practice\/[^/]+$/.test(pathname)) return true;
+  // Timed Quiz / Model Test sheets bring their own gutters + sticky chrome.
+  if (/^\/live-(quizzes|model-tests)\/[^/]+$/.test(pathname)) return true;
   return false;
 }
 

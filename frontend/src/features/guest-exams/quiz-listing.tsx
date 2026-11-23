@@ -1,18 +1,19 @@
 'use client';
 
-import Link from 'next/link';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { Clock3, ListChecks } from 'lucide-react';
 import {
   DEFAULT_EXAM_GUIDE_ITEMS,
   DEFAULT_EXAM_GUIDE_TITLE,
   type ExamGuideConfig,
 } from '@your-academy/shared';
 import { GsapEntrance } from '@/components/motion/gsap-entrance';
+import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
-import { SearchField } from '@/components/ui/search-field';
+import { ExamCard, ExamCardGridSkeleton } from '@/features/exam-ui/exam-card';
+import { ExamListToolbar, sortExams, type ExamSort } from '@/features/exam-ui/exam-list-toolbar';
+import { useTimedExamStatus } from '@/features/exam-ui/use-exam-status';
 import { getPublicExamGuide, listPublicExams } from '@/lib/api/exams';
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import { cn } from '@/lib/utils';
@@ -29,6 +30,7 @@ type Props = {
 export function QuizListing({ basePath = '/exams', embedded = false }: Props) {
   const takeBase = basePath.replace(/\/$/, '') || '/exams';
   const [q, setQ] = useState('');
+  const [sort, setSort] = useState<ExamSort>('newest');
   const debouncedQ = useDebouncedValue(q.trim(), 300);
 
   const guide = useQuery({
@@ -49,17 +51,28 @@ export function QuizListing({ basePath = '/exams', embedded = false }: Props) {
     getNextPageParam: (last) => last.pagination?.nextCursor ?? undefined,
   });
 
-  const items = list.data?.pages.flatMap((p) => p.data) ?? [];
+  const items = useMemo(() => list.data?.pages.flatMap((p) => p.data) ?? [], [list.data]);
+  const sorted = useMemo(
+    () =>
+      sortExams(items, sort, (exam) => ({
+        title: exam.title,
+        createdAt: exam.createdAt,
+        durationMinutes: exam.durationInMinutes,
+        questionCount: exam.totalQuestions,
+      })),
+    [items, sort],
+  );
+  const statusOf = useTimedExamStatus(
+    'exam',
+    items.map((exam) => exam.id),
+  );
   const guideConfig = resolveGuide(guide.data);
 
   return (
     <GsapEntrance
       y={10}
       duration={0.36}
-      className={cn(
-        'w-full overflow-x-clip',
-        embedded ? '' : 'marketing-container py-7 sm:py-10',
-      )}
+      className={cn('w-full overflow-x-clip', embedded ? '' : 'marketing-container py-7 sm:py-10')}
     >
       {embedded ? null : (
         <header className="min-w-0">
@@ -76,70 +89,61 @@ export function QuizListing({ basePath = '/exams', embedded = false }: Props) {
         )}
       >
         <div className="min-w-0 space-y-4">
-          <div
-            className={cn(
-              'rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)]',
-              'p-3 shadow-[var(--shadow-sm)] sm:p-3.5',
-            )}
-          >
-            <SearchField
-              id="quiz-search"
-              value={q}
-              onChange={setQ}
-              placeholder="Search quizzes…"
-              aria-label="Search quizzes"
-              autoComplete="off"
-              className="w-full"
-            />
-          </div>
+          <ExamListToolbar
+            idPrefix="quiz"
+            search={q}
+            onSearch={setQ}
+            searchPlaceholder="Search quizzes…"
+            sort={sort}
+            onSort={setSort}
+            summary={
+              list.isSuccess && items.length > 0 ? (
+                <>
+                  Showing {items.length} quiz{items.length === 1 ? '' : 'zes'}
+                  {list.hasNextPage && sort !== 'newest' ? ' · sorted within loaded results' : ''}
+                </>
+              ) : null
+            }
+          />
 
           <aside className="rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] p-3.5 shadow-[var(--shadow-sm)] lg:hidden">
             <QuizOverview guide={guideConfig} />
           </aside>
 
           {list.isLoading ? (
-            <p className="py-8 text-center text-sm text-[var(--muted)]">Loading…</p>
+            <ExamCardGridSkeleton count={6} />
+          ) : list.isError ? (
+            <Alert variant="danger">Could not load quizzes. Please try again shortly.</Alert>
           ) : items.length === 0 ? (
-            <EmptyState align="center" title="No quizzes found" />
+            <EmptyState
+              align="center"
+              title={debouncedQ ? 'No quizzes match your search' : 'No quizzes yet'}
+              description={
+                debouncedQ
+                  ? 'Try a different keyword or clear the search.'
+                  : 'New quizzes will appear here as soon as they are published.'
+              }
+              action={
+                debouncedQ ? (
+                  <Button type="button" variant="outline" onClick={() => setQ('')}>
+                    Clear search
+                  </Button>
+                ) : null
+              }
+            />
           ) : (
             <>
-              <ul className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
-                {items.map((exam) => (
+              <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {sorted.map((exam) => (
                   <li key={exam.id}>
-                    <article
-                      className={cn(
-                        'flex h-full flex-col rounded-[var(--radius-lg)] border border-[var(--line)]',
-                        'bg-[var(--bg-elevated)] p-3 shadow-[var(--shadow-sm)] transition-colors',
-                        'hover:border-[color-mix(in_srgb,var(--accent)_42%,var(--line))]',
-                      )}
-                    >
-                      <Link
-                        href={`${takeBase}/${exam.slug}`}
-                        className="min-w-0 font-display text-sm font-bold leading-snug tracking-tight break-words text-[var(--ink)] hover:text-[var(--accent)]"
-                      >
-                        {exam.title}
-                      </Link>
-                      <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[0.7rem] text-[var(--muted-strong)]">
-                        <span className="inline-flex items-center gap-1">
-                          <Clock3 className="size-3 shrink-0" aria-hidden />
-                          {exam.durationInMinutes} min
-                        </span>
-                        <span className="inline-flex items-center gap-1">
-                          <ListChecks className="size-3 shrink-0" aria-hidden />
-                          {exam.totalQuestions} Q
-                        </span>
-                      </div>
-                      <div className="mt-auto pt-2.5">
-                        <Link href={`${takeBase}/${exam.slug}`} className="block">
-                          <Button
-                            size="sm"
-                            className="min-h-11 w-full sm:w-auto sm:px-3.5"
-                          >
-                            Start
-                          </Button>
-                        </Link>
-                      </div>
-                    </article>
+                    <ExamCard
+                      href={`${takeBase}/${exam.slug}`}
+                      title={exam.title}
+                      kindLabel="Quiz"
+                      questionCount={exam.totalQuestions}
+                      durationMinutes={exam.durationInMinutes}
+                      status={statusOf(exam)}
+                    />
                   </li>
                 ))}
               </ul>
@@ -149,7 +153,6 @@ export function QuizListing({ basePath = '/exams', embedded = false }: Props) {
                   <Button
                     type="button"
                     variant="outline"
-                    className="h-9"
                     disabled={list.isFetchingNextPage}
                     onClick={() => void list.fetchNextPage()}
                   >
