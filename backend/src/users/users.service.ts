@@ -90,6 +90,7 @@ export class UsersService {
       whatsappNumber: dbUser.whatsappNumber,
       email: dbUser.email,
       emailVerified: Boolean(dbUser.email && dbUser.emailVerifiedAt),
+      mustChangePassword: dbUser.mustChangePassword,
       role: dbUser.role,
       status: dbUser.status,
       createdAt: dbUser.createdAt.toISOString(),

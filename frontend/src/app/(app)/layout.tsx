@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { AppHeader } from '@/components/layout/app-header';
 import { AppMain } from '@/components/layout/app-main';
@@ -5,8 +6,12 @@ import { AppSidebar } from '@/components/layout/app-sidebar';
 import { LearnerThemeProvider } from '@/components/theme/learner-theme-provider';
 import { BrowsingHeartbeat } from '@/features/analytics/browsing-heartbeat';
 import { LearnerGate } from '@/features/auth/learner-gate';
+import { NoEmailReminder } from '@/features/auth/no-email-reminder';
 import { SupportChatProvider } from '@/features/support/support-chat-provider';
 import { LEARNER_THEME_BOOT_SCRIPT, LEARNER_THEME_DEFAULT } from '@/lib/learner-theme';
+
+/** Learner dashboard pages are personal and partly premium — keep them out of search. */
+export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
@@ -31,6 +36,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             </div>
             <div className="flex min-w-0 flex-1 flex-col overflow-x-clip">
               <AppHeader />
+              <NoEmailReminder />
               <AppMain>{children}</AppMain>
             </div>
           </SupportChatProvider>

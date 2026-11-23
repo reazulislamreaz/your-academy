@@ -67,12 +67,13 @@ Forbidden without approval: microservices, GraphQL, alternate ORMs, payment prov
 | Without entitlement | Login, homepage, browse/search/filter questions, titles/content/options, save MCQs, profile, bookmarks, activity, news, **published PDFs** (DEC-001) |
 | Answers gated | Correct answers, indicators, explanations — **omit from API** unless admin or active subscription |
 | Questions CRUD | **Admin or Moderator** (content sections only — DEC-048) |
-| Question browse | Public Preli bank + homepage via `/api/v1/public/questions` (DEC-031); learner practice `/questions*` remains authenticated (DEC-003) |
-| Payments | Not in v1; keep subscription tables modular |
+| Question browse | Public Preli / Written / Topic banks + homepage via `/api/v1/public/*` (DEC-031/040/042) — text + options public, **answers / model answers subscriber-only** (omitted unless Admin or active subscription, DEC-051); learner practice `/questions*` remains authenticated (DEC-003) |
+| Payments | Not in v1; keep subscription tables modular. Admins grant/revoke subscriptions manually (DEC-052) |
 | Register fields | name, WhatsApp (unique), password; avatar optional; email optional at register |
-| Password reset | **Email** only (DEC-004); needs email on account; no enumeration |
+| Password reset | Self-service by **email** (DEC-004, no enumeration); Admin-assisted email link / WhatsApp link / temporary password for accounts without email (DEC-054) |
+| Sessions | **One device at a time** for learners (DEC-053): new login revokes others → `401 SESSION_REPLACED`; staff opt-in via `SINGLE_SESSION_STAFF` |
 | Web auth | HTTP-only cookies + CSRF (DEC-012); never `localStorage` for tokens |
-| Guest exams | Public timed `Exam` / `ExamQuestion` / `ExamAttempt` (DEC-039); separate from bank `Question` + PracticeSet; answers only after submit |
+| Guest exams | Public timed `Exam` / `ExamQuestion` / `ExamAttempt` (DEC-039) + Model Tests; separate from bank `Question` + PracticeSet; results show score + own selections to everyone, **answer key / explanations / correctness subscriber-only** (DEC-051) |
 | Dashboard roles | `ADMIN` (everything) / `MODERATOR` (Preli, Written, Topic, Quiz, Model Test, Newspaper only). Permissions in `shared/src/permissions.ts`; every `/admin/*` route needs `@RequirePermission` (DEC-048). Staff accounts are Admin-created only |
 
 ---
@@ -245,6 +246,7 @@ Forbidden without approval: microservices, GraphQL, alternate ORMs, payment prov
 | `docs/19` DEC-031 | Public Preli Question Bank (no login) |
 | `docs/19` DEC-046 | Admin-managed footer social links |
 | `docs/19` DEC-048 | Admin / Moderator roles, account settings, email verification |
+| `docs/19` DEC-051 / DEC-052 | Answers subscriber-only on public routes; Admin-granted subscriptions |
 | `docs/04`–`06` | Architecture, DB, API |
 | `docs/07`–`08` | Auth, access control |
 | `docs/09`–`10` | Cloudinary, BullMQ |

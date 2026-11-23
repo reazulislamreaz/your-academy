@@ -3,7 +3,7 @@ import { Queue, Worker } from 'bullmq';
 import { v2 as cloudinary } from 'cloudinary';
 import IORedis from 'ioredis';
 import { createEmailSender, emailConfigWarnings, loadEmailConfig } from './email/send';
-import { emailVerificationEmail, passwordResetEmail } from './email/templates';
+import { emailChangedNoticeEmail, emailVerificationEmail, passwordResetEmail } from './email/templates';
 
 const redisUrl = process.env.REDIS_URL ?? 'redis://127.0.0.1:6379';
 const service = process.env.APP_NAME ?? 'your-academy';
@@ -15,6 +15,13 @@ type PasswordResetJob = {
   userId: string;
   /** Display only; token TTL is enforced by the API. Older jobs omit it. */
   expiresInMinutes?: number;
+};
+
+type EmailChangedNoticeJob = {
+  to: string;
+  newEmailMasked: string;
+  userId: string;
+  changedBy: 'admin' | 'user';
 };
 
 type EmailVerificationJob = {
@@ -72,6 +79,14 @@ function sendEmailVerification(data: EmailVerificationJob) {
     expiresInMinutes: data.expiresInMinutes ?? 24 * 60,
   });
   return sendEmail('email-verification', data.to, email, data.verifyUrl);
+}
+
+function sendEmailChangedNotice(data: EmailChangedNoticeJob) {
+  const email = emailChangedNoticeEmail(emailConfig.brand, {
+    newEmailMasked: data.newEmailMasked,
+    changedBy: data.changedBy,
+  });
+  return sendEmail('email-changed-notice', data.to, email, '(no link)');
 }
 
 async function deleteCloudinaryAsset(data: DeleteAssetJob) {
@@ -171,6 +186,10 @@ async function main() {
       }
       if (job.name === 'email-verification') {
         await sendEmailVerification(job.data as EmailVerificationJob);
+        return;
+      }
+      if (job.name === 'email-changed-notice') {
+        await sendEmailChangedNotice(job.data as EmailChangedNoticeJob);
         return;
       }
       console.log(`[${service}-worker] email job ${job.id}`, job.name, job.data);

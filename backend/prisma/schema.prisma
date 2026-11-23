@@ -183,6 +183,8 @@ model User {
   /// Set when the current `email` was confirmed via link; cleared whenever email changes.
   emailVerifiedAt DateTime? @map("email_verified_at") @db.Timestamptz(3)
   passwordHash   String     @map("password_hash")
+  /// Set when an Admin issues a temporary password; every API call except change-password is refused until cleared.
+  mustChangePassword Boolean @default(false) @map("must_change_password")
   role           UserRole   @default(USER)
   status         UserStatus @default(ACTIVE)
   avatarAssetId  String?    @unique @map("avatar_asset_id") @db.Uuid
@@ -246,6 +248,9 @@ model PasswordResetToken {
   tokenHash String    @unique @map("token_hash")
   expiresAt DateTime  @map("expires_at") @db.Timestamptz(3)
   usedAt    DateTime? @map("used_at") @db.Timestamptz(3)
+  /// Admin-assisted reset by email: this address is marked verified once the link is used
+  /// (only if it is still the account's email). Null for self-service and WhatsApp links.
+  verifiesEmail String? @map("verifies_email") @db.VarChar(255)
   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -280,12 +285,15 @@ model AuthSession {
   ipAddress            String?   @map("ip_address") @db.VarChar(64)
   expiresAt            DateTime  @map("expires_at") @db.Timestamptz(3)
   revokedAt            DateTime? @map("revoked_at") @db.Timestamptz(3)
+  /// Why the session ended: LOGOUT | ROTATED | REPLACED (newer login, single-device rule) |
+  /// ADMIN_LOGOUT | ADMIN_RESET | PASSWORD_CHANGE | PASSWORD_RESET | SUSPENDED | TOKEN_REUSE.
+  revokedReason        String?   @map("revoked_reason") @db.VarChar(32)
   replacedBySessionId  String?   @map("replaced_by_session_id") @db.Uuid
   createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
+  @@index([userId, createdAt(sort: Desc)])
   @@index([expiresAt])
   @@map("auth_sessions")
 }

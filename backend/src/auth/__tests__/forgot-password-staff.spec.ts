@@ -10,8 +10,11 @@ describe('AuthService.forgotPassword', () => {
   const prisma = {
     user: { findUnique: jest.fn() },
     passwordResetToken: { updateMany: jest.fn(), create: jest.fn() },
-    $transaction: jest.fn(async (ops: unknown[]) => Promise.all(ops)),
+    $transaction: jest.fn(),
   };
+  prisma.$transaction.mockImplementation(async (arg: unknown) =>
+    typeof arg === 'function' ? (arg as (tx: unknown) => unknown)(prisma) : Promise.all(arg as unknown[]),
+  );
   const emailQueue = { enqueuePasswordReset: jest.fn() };
   const service = new AuthService(
     prisma as never,

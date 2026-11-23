@@ -1,7 +1,21 @@
-import { Body, Controller, Get, HttpCode, Param, Patch, Post, Query, Res, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Query,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { UserRole, UserStatus } from '@prisma/client';
 import { createSuccessResponse, cursorPaginationMeta } from '@your-academy/shared';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import type { RequestUser } from '../auth/auth.types';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { RequirePermission } from '../common/decorators/require-permission.decorator';
@@ -10,7 +24,10 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
 import { parseLimit } from '../common/pagination';
 import { newRequestId } from '../common/request-id';
+import { AdminPasswordResetService } from './admin-password-reset.service';
+import { AdminUserSessionsService } from './admin-user-sessions.service';
 import { AdminService } from './admin.service';
+import { AdminResetByEmailDto, AdminTemporaryPasswordDto } from './dto/admin-password-reset.dto';
 import {
   AdminResetPasswordDto,
   CreateStaffUserDto,
@@ -27,6 +44,8 @@ export class AdminController {
   constructor(
     private readonly admin: AdminService,
     private readonly staff: StaffUsersService,
+    private readonly passwordResets: AdminPasswordResetService,
+    private readonly sessions: AdminUserSessionsService,
   ) {}
 
   @RequirePermission('dashboard')
@@ -120,6 +139,81 @@ export class AdminController {
   ) {
     return createSuccessResponse(
       await this.staff.resetModeratorPassword(id, body, user.userId),
+      newRequestId(),
+    );
+  }
+
+  // ─── Admin-assisted password reset (Admin-only via the class-level `users` permission) ───
+
+  @Post('users/:id/password-reset/email')
+  @HttpCode(200)
+  @UseGuards(CsrfGuard)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  async passwordResetByEmail(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: AdminResetByEmailDto,
+    @Req() req: Request,
+  ) {
+    return createSuccessResponse(
+      await this.passwordResets.sendByEmail(id, body.email, user.userId, req.ip),
+      newRequestId(),
+    );
+  }
+
+  @Post('users/:id/password-reset/link')
+  @HttpCode(200)
+  @UseGuards(CsrfGuard)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  async passwordResetLink(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() req: Request,
+  ) {
+    return createSuccessResponse(
+      await this.passwordResets.createShareableLink(id, user.userId, req.ip),
+      newRequestId(),
+    );
+  }
+
+  @Post('users/:id/password-reset/temporary')
+  @HttpCode(200)
+  @UseGuards(CsrfGuard)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  async passwordResetTemporary(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: AdminTemporaryPasswordDto,
+    @Req() req: Request,
+  ) {
+    return createSuccessResponse(
+      await this.passwordResets.setTemporaryPassword(id, body.password, user.userId, req.ip),
+      newRequestId(),
+    );
+  }
+
+  @Get('users/:id/password-reset/history')
+  async passwordResetHistory(@Param('id', ParseUUIDPipe) id: string) {
+    return createSuccessResponse(await this.passwordResets.history(id), newRequestId());
+  }
+
+  // ─── Sign-ins (single-device rule) ───
+
+  @Get('users/:id/logins')
+  async recentLogins(@Param('id', ParseUUIDPipe) id: string) {
+    return createSuccessResponse(await this.sessions.recentLogins(id), newRequestId());
+  }
+
+  @Post('users/:id/force-logout')
+  @HttpCode(200)
+  @UseGuards(CsrfGuard)
+  async forceLogout(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() req: Request,
+  ) {
+    return createSuccessResponse(
+      await this.sessions.forceLogout(id, user.userId, req.ip),
       newRequestId(),
     );
   }

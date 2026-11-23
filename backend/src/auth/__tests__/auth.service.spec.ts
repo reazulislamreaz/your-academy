@@ -4,6 +4,7 @@ jest.mock('@nestjs/jwt', () => ({
 
 import { UnauthorizedException, UnprocessableEntityException } from '@nestjs/common';
 import { UserRole, UserStatus } from '@prisma/client';
+import * as argon2 from 'argon2';
 import { AuthService } from '../auth.service';
 
 describe('AuthService hardening paths', () => {
@@ -22,6 +23,7 @@ describe('AuthService hardening paths', () => {
       findUniqueOrThrow: jest.Mock;
     };
     $transaction: jest.Mock;
+    $queryRaw: jest.Mock;
   } = {
     user: {
       findUnique: jest.fn(),
@@ -42,6 +44,7 @@ describe('AuthService hardening paths', () => {
       findUniqueOrThrow: jest.fn(),
     },
     $transaction: jest.fn(),
+    $queryRaw: jest.fn().mockResolvedValue([]),
   };
   prisma.$transaction.mockImplementation(async (arg: unknown) => {
     if (typeof arg === 'function') {
@@ -135,7 +138,75 @@ describe('AuthService hardening paths', () => {
     );
     expect(prisma.authSession.updateMany).toHaveBeenCalledWith({
       where: { familyId: 'fam-1', revokedAt: null },
-      data: { revokedAt: expect.any(Date) },
+      data: { revokedAt: expect.any(Date), revokedReason: 'TOKEN_REUSE' },
+    });
+  });
+
+  it('answers SESSION_REPLACED (not reuse) for a device logged out by a newer login', async () => {
+    prisma.authSession.findUnique.mockResolvedValue({
+      id: 'sess-old',
+      familyId: 'fam-1',
+      revokedAt: new Date(),
+      revokedReason: 'REPLACED',
+      expiresAt: new Date(Date.now() + 60_000),
+      user: { id: 'u1', status: UserStatus.ACTIVE },
+    });
+    const err = await service.refresh('old-device-token').catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(UnauthorizedException);
+    expect(JSON.stringify((err as UnauthorizedException).getResponse())).toContain('SESSION_REPLACED');
+    // The new device's family must survive.
+    expect(prisma.authSession.updateMany).not.toHaveBeenCalled();
+  });
+
+  describe('single active session (one device per account)', () => {
+    const learner = {
+      id: 'u1',
+      whatsappNumber: '+8801711111111',
+      role: UserRole.USER,
+      status: UserStatus.ACTIVE,
+      deletedAt: null,
+      passwordHash: 'hash',
+    };
+
+    beforeAll(async () => {
+      learner.passwordHash = await argon2.hash('Password123', { type: argon2.argon2id });
+    });
+
+    beforeEach(() => {
+      delete process.env.SINGLE_SESSION_STAFF;
+      delete process.env.SINGLE_SESSION_ENABLED;
+      prisma.authSession.create.mockResolvedValue({ id: 'sess-new', familyId: 'fam-new' });
+    });
+
+    it('revokes every other session as REPLACED under a per-user lock on login', async () => {
+      prisma.user.findUnique.mockResolvedValue(learner);
+      await service.login(
+        { whatsappNumber: '+8801711111111', password: 'Password123' },
+        { userAgent: 'Firefox', ipAddress: '203.0.113.9' },
+      );
+      expect(prisma.$queryRaw).toHaveBeenCalled();
+      expect(prisma.authSession.updateMany).toHaveBeenCalledWith({
+        where: { userId: 'u1', revokedAt: null },
+        data: { revokedAt: expect.any(Date), revokedReason: 'REPLACED' },
+      });
+      // Revoke happens before the new session row is written.
+      expect(prisma.authSession.updateMany.mock.invocationCallOrder[0]).toBeLessThan(
+        prisma.authSession.create.mock.invocationCallOrder[0],
+      );
+      expect(prisma.authSession.create.mock.calls[0][0].data).toMatchObject({
+        userAgent: 'Firefox',
+        ipAddress: '203.0.113.9',
+      });
+    });
+
+    it('leaves staff sessions alone unless SINGLE_SESSION_STAFF=true', async () => {
+      prisma.user.findUnique.mockResolvedValue({ ...learner, role: UserRole.MODERATOR });
+      await service.login({ whatsappNumber: '+8801711111111', password: 'Password123' });
+      expect(prisma.authSession.updateMany).not.toHaveBeenCalled();
+
+      process.env.SINGLE_SESSION_STAFF = 'true';
+      await service.login({ whatsappNumber: '+8801711111111', password: 'Password123' });
+      expect(prisma.authSession.updateMany).toHaveBeenCalledTimes(1);
     });
   });
 

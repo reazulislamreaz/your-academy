@@ -177,7 +177,7 @@ export class StaffUsersService {
           await this.assertAnotherActiveAdmin(tx, id);
         }
         const updated = await tx.user.update({ where: { id }, data: { status }, select: STAFF_SELECT });
-        if (status === UserStatus.SUSPENDED) await this.revokeSessions(tx, id);
+        if (status === UserStatus.SUSPENDED) await this.revokeSessions(tx, id, 'SUSPENDED');
         return updated;
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
@@ -206,7 +206,7 @@ export class StaffUsersService {
     const passwordHash = await argon2.hash(dto.newPassword, { type: argon2.argon2id });
     await this.prisma.$transaction(async (tx) => {
       await tx.user.update({ where: { id }, data: { passwordHash } });
-      await this.revokeSessions(tx, id);
+      await this.revokeSessions(tx, id, 'ADMIN_RESET');
       await tx.passwordResetToken.updateMany({
         where: { userId: id, usedAt: null },
         data: { usedAt: new Date() },
@@ -245,10 +245,10 @@ export class StaffUsersService {
     }
   }
 
-  private async revokeSessions(tx: Tx, userId: string) {
+  private async revokeSessions(tx: Tx, userId: string, reason = 'ADMIN_LOGOUT') {
     await tx.authSession.updateMany({
       where: { userId, revokedAt: null },
-      data: { revokedAt: new Date() },
+      data: { revokedAt: new Date(), revokedReason: reason },
     });
   }
 

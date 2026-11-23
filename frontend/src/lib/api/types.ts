@@ -313,6 +313,8 @@ export type MeUser = {
   email: string | null;
   /** True when `email` was confirmed via the emailed link (DEC-048). */
   emailVerified?: boolean;
+  /** An Admin set a temporary password; the API refuses other calls until it is changed. */
+  mustChangePassword?: boolean;
   role: string;
   status: string;
   createdAt?: string;

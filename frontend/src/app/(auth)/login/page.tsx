@@ -17,7 +17,12 @@ import { PasswordField } from '@/features/auth/password-field';
 import { postLoginPath } from '@/features/auth/post-login-path';
 import { meQueryKey } from '@/features/auth/use-auth';
 import { WhatsappField, toAuthWhatsappPayload } from '@/features/auth/whatsapp-field';
-import { ApiError, apiFetch, isSessionExpiredLoginReason } from '@/lib/api/client';
+import {
+  ApiError,
+  SESSION_REPLACED_REASON,
+  apiFetch,
+  isSessionExpiredLoginReason,
+} from '@/lib/api/client';
 import type { MeUser } from '@/lib/api/types';
 
 function LoginForm() {
@@ -29,6 +34,7 @@ function LoginForm() {
   const [touchedWa, setTouchedWa] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const sessionExpired = isSessionExpiredLoginReason(searchParams.get('reason'));
+  const sessionReplaced = searchParams.get('reason') === SESSION_REPLACED_REASON;
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
@@ -52,7 +58,11 @@ function LoginForm() {
         skipRefresh: true,
       });
       qc.setQueryData(meQueryKey, result.user);
-      router.push(postLoginPath(result.user, searchParams.get('next')));
+      router.push(
+        result.user.mustChangePassword
+          ? '/change-password'
+          : postLoginPath(result.user, searchParams.get('next')),
+      );
       router.refresh();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Login failed');
@@ -79,6 +89,12 @@ function LoginForm() {
       >
         <AuthModeSwitch active="login" />
         <form onSubmit={onSubmit} className="mt-5 space-y-4" noValidate>
+          {sessionReplaced ? (
+            <Alert variant="warning">
+              Your account was signed in on another device, so you have been signed out here. Using
+              the same account on more than one device at a time is not allowed.
+            </Alert>
+          ) : null}
           {sessionExpired ? (
             <Alert variant="warning">Your session expired. Sign in again to continue.</Alert>
           ) : null}

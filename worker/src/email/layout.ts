@@ -14,7 +14,8 @@ export type EmailContent = {
   heading: string;
   /** Short paragraphs of plain text (escaped). */
   paragraphs: string[];
-  button: { label: string; url: string };
+  /** Omit for notice-only emails (e.g. "your email was changed"). */
+  button?: { label: string; url: string };
   /** Small print under the button, e.g. expiry + "ignore if not you". */
   notes: string[];
 };
@@ -55,7 +56,7 @@ function siteHost(siteUrl: string): string {
 }
 
 function renderHtml(content: EmailContent, brand: EmailBrand): string {
-  const url = escapeHtml(content.button.url);
+  const url = content.button ? escapeHtml(content.button.url) : null;
   const site = escapeHtml(brand.siteUrl);
   const host = escapeHtml(siteHost(brand.siteUrl));
   const support = brand.supportEmail ? escapeHtml(brand.supportEmail) : null;
@@ -117,14 +118,18 @@ function renderHtml(content: EmailContent, brand: EmailBrand): string {
     <tr><td style="background:#ffffff;border:1px solid ${LINE};border-top:0;border-radius:0 0 16px 16px;padding:36px 40px 32px;" class="ya-card ya-pad">
       <h1 style="margin:0 0 16px;font-family:${FONT};font-size:26px;line-height:32px;font-weight:700;color:${INK};" class="ya-heading ya-ink">${escapeHtml(content.heading)}</h1>
       ${paragraphs}
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0 28px;" class="ya-btn"><tr>
+      ${
+        url
+          ? `      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0 28px;" class="ya-btn"><tr>
         <td align="center" bgcolor="${RED}" style="border-radius:10px;background:${RED};">
-          <!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" href="${url}" style="height:48px;v-text-anchor:middle;width:240px;" arcsize="20%" stroke="f" fillcolor="${RED}"><center style="color:#ffffff;font-family:Arial,sans-serif;font-size:16px;font-weight:bold;">${escapeHtml(content.button.label)}</center></v:roundrect><![endif]-->
-          <!--[if !mso]><!--><a href="${url}" target="_blank" style="display:inline-block;padding:14px 32px;font-family:${FONT};font-size:16px;line-height:20px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:10px;background:${RED};">${escapeHtml(content.button.label)}</a><!--<![endif]-->
+          <!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" href="${url}" style="height:48px;v-text-anchor:middle;width:240px;" arcsize="20%" stroke="f" fillcolor="${RED}"><center style="color:#ffffff;font-family:Arial,sans-serif;font-size:16px;font-weight:bold;">${escapeHtml(content.button?.label ?? '')}</center></v:roundrect><![endif]-->
+          <!--[if !mso]><!--><a href="${url}" target="_blank" style="display:inline-block;padding:14px 32px;font-family:${FONT};font-size:16px;line-height:20px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:10px;background:${RED};">${escapeHtml(content.button?.label ?? '')}</a><!--<![endif]-->
         </td>
       </tr></table>
       <p style="margin:0 0 6px;font-family:${FONT};font-size:13px;line-height:20px;color:${MUTED};" class="ya-muted">Button not working? Copy and paste this link into your browser:</p>
-      <p style="margin:0 0 24px;font-family:${FONT};font-size:13px;line-height:20px;word-break:break-all;"><a href="${url}" target="_blank" style="color:${RED};text-decoration:underline;" class="ya-link">${url}</a></p>
+      <p style="margin:0 0 24px;font-family:${FONT};font-size:13px;line-height:20px;word-break:break-all;"><a href="${url}" target="_blank" style="color:${RED};text-decoration:underline;" class="ya-link">${url}</a></p>`
+          : '<div style="height:16px;line-height:16px;font-size:0;">&nbsp;</div>'
+      }
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="border-top:1px solid ${LINE};padding-top:20px;" class="ya-rule">${notes}</td></tr></table>
     </td></tr>
     <tr><td align="center" style="padding:24px 24px 8px;font-family:${FONT};font-size:12px;line-height:18px;color:#64748b;" class="ya-muted">
@@ -148,9 +153,7 @@ function renderText(content: EmailContent, brand: EmailBrand): string {
     content.heading,
     '',
     ...content.paragraphs.flatMap((p) => [p, '']),
-    `${content.button.label}:`,
-    content.button.url,
-    '',
+    ...(content.button ? [`${content.button.label}:`, content.button.url, ''] : []),
     ...content.notes,
     '',
     '—',

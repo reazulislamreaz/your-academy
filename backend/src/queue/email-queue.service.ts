@@ -17,6 +17,14 @@ export type EmailVerificationJob = {
   expiresInMinutes: number;
 };
 
+/** Sent to the previous address when an account's email is replaced. */
+export type EmailChangedNoticeJob = {
+  to: string;
+  newEmailMasked: string;
+  userId: string;
+  changedBy: 'admin' | 'user';
+};
+
 @Injectable()
 export class EmailQueueService {
   private readonly logger = new Logger(EmailQueueService.name);
@@ -36,5 +44,12 @@ export class EmailQueueService {
       jobId: `email-verification-${dedupeKey}`,
     });
     this.logger.debug(`Enqueued email-verification for user ${job.userId}`);
+  }
+
+  async enqueueEmailChangedNotice(job: EmailChangedNoticeJob, dedupeKey: string) {
+    await this.emailQueue.add('email-changed-notice', job, {
+      jobId: `email-changed-notice-${dedupeKey}`,
+    });
+    this.logger.debug(`Enqueued email-changed-notice for user ${job.userId}`);
   }
 }

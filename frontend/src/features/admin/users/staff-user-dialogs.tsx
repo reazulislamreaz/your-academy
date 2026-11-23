@@ -2,7 +2,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { KeyRound, PencilLine, ShieldCheck } from 'lucide-react';
+import { PencilLine, ShieldCheck } from 'lucide-react';
 import { isValidWhatsapp, normalizeWhatsapp, ROLE_LABELS, UserRole } from '@your-academy/shared';
 import { Button } from '@/components/ui/button';
 import { Field, FieldHint } from '@/components/ui/field';
@@ -156,11 +156,12 @@ export function CreateStaffUserDialog({ open, onClose }: { open: boolean; onClos
   );
 }
 
-type DialogKind = 'edit' | 'role' | 'password' | null;
+type DialogKind = 'edit' | 'role' | null;
 
 /**
  * Row actions for staff accounts. The API enforces every rule (no self role change,
- * last admin protected, moderator-only password reset); the UI just hides dead ends.
+ * last admin protected); the UI just hides dead ends. Password resets for any
+ * non-admin account live in `AdminPasswordResetButton`.
  */
 export function StaffUserActions({ user, currentUserId }: { user: StaffUserRow; currentUserId?: string }) {
   const [dialog, setDialog] = useState<DialogKind>(null);
@@ -179,16 +180,9 @@ export function StaffUserActions({ user, currentUserId }: { user: StaffUserRow; 
           Role
         </Button>
       ) : null}
-      {user.role === 'MODERATOR' && !isSelf ? (
-        <Button size="sm" variant="ghost" onClick={() => setDialog('password')} className="gap-1.5">
-          <KeyRound className="size-3.5" aria-hidden />
-          Reset password
-        </Button>
-      ) : null}
 
       {dialog === 'edit' ? <EditStaffDialog user={user} onClose={() => setDialog(null)} /> : null}
       {dialog === 'role' ? <ChangeRoleDialog user={user} onClose={() => setDialog(null)} /> : null}
-      {dialog === 'password' ? <ResetPasswordDialog user={user} onClose={() => setDialog(null)} /> : null}
     </>
   );
 }
@@ -285,70 +279,6 @@ function ChangeRoleDialog({ user, onClose }: { user: StaffUserRow; onClose: () =
         <Label htmlFor="role-select">Role</Label>
         <RoleSelect id="role-select" value={role} onChange={setRole} />
       </Field>
-    </FormDialog>
-  );
-}
-
-function ResetPasswordDialog({ user, onClose }: { user: StaffUserRow; onClose: () => void }) {
-  const [password, setPassword] = useState('');
-  const [confirm, setConfirm] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState(false);
-  const mismatch = confirm.length > 0 && confirm !== password;
-
-  const reset = useMutation({
-    mutationFn: () =>
-      apiFetch(`/admin/users/${user.id}/reset-password`, {
-        method: 'POST',
-        body: JSON.stringify({ newPassword: password }),
-      }),
-    onSuccess: () => setDone(true),
-    onError: (err) => setError(errorMessage(err, 'Could not reset the password')),
-  });
-
-  return (
-    <FormDialog
-      open
-      title={done ? 'Password reset' : `Reset password for ${user.name}`}
-      description={
-        done
-          ? `${user.name} has been signed out everywhere. Share the new password with them securely.`
-          : 'Use this when the moderator has no verified email. They are signed out of all devices.'
-      }
-      confirmLabel={done ? 'Done' : 'Reset password'}
-      pending={reset.isPending}
-      error={error}
-      disableSubmit={!done && (!isValidPassword(password) || password !== confirm)}
-      onSubmit={() => (done ? onClose() : reset.mutate())}
-      onClose={onClose}
-    >
-      {done ? null : (
-        <div className="space-y-4">
-          <Field>
-            <Label htmlFor="reset-new">New password</Label>
-            <PasswordField
-              id="reset-new"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="new-password"
-              required
-            />
-            <FieldHint className="text-xs">{PASSWORD_POLICY_HINT}</FieldHint>
-          </Field>
-          <Field>
-            <Label htmlFor="reset-confirm">Confirm new password</Label>
-            <PasswordField
-              id="reset-confirm"
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-              autoComplete="new-password"
-              aria-invalid={mismatch}
-              required
-            />
-            {mismatch ? <FieldHint className="text-xs text-[var(--highlight)]">Passwords do not match.</FieldHint> : null}
-          </Field>
-        </div>
-      )}
     </FormDialog>
   );
 }

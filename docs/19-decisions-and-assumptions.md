@@ -44,6 +44,8 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | DEC-044 | Quiz listing guide CMS (sidebar “কুইজ কীভাবে দিবেন”) | CONFIRMED |
 | DEC-045 | Auth-aware public Quiz / Model Test start + result CTA | CONFIRMED |
 | DEC-046 | Admin-managed footer social media links (DB + CMS) | CONFIRMED |
+| DEC-051 | Answers are subscriber-only on public routes (amends DEC-031/039/040/042) | CONFIRMED |
+| DEC-052 | Admin grants / revokes learner subscriptions | CONFIRMED |
 
 ---
 
@@ -85,6 +87,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Decision | **Yes.** Public bank is organized by admin **upload batches** (`QuestionUploadBatch` → Question Set). `GET /api/v1/public/question-sets` lists sets; `…/question-sets/:id/questions` returns MCQs in original upload order. Cards include correct-answer data for UI toggles; **Show All / Hide All Answers** is a client preference (`localStorage`) with per-question reveal when hidden. Homepage lists latest sets; `/preli-question-bank` is the hub. Save still requires login. |
 | Impact | PublicModule batch APIs, marketing Question Set UI + answer visibility controls, DEC-003 exception for public surfaces only |
 | Status | **CONFIRMED** (product request 2026-11-12; grouping + answer toggles same day) |
+| Amended | **DEC-051 (2026-11-23):** correct answers are omitted from public cards unless the viewer is an Admin or has an active subscription; the toggle is shown only when keys are present. |
 
 ### DEC-040 — Public Written Question Bank
 
@@ -94,6 +97,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Decision | **Yes.** Parallel Prisma domain (`WrittenQuestion`, `WrittenUploadBatch`, placements, import rows) — do not overload MCQ `Question` tables. Admin Excel/CSV/`.docx` upload under `/admin/written-question-imports`. DOCX (OOXML only; reject legacy `.doc`): (1) template Word table, (2) **real exam papers** — header authority/post/`সময়; পরীক্ষার তারিখ; পূর্ণমান` (often in a 1-col table) + `০১।`/`1.` stems with `ক)–ঙ)`/`a)–e)` sub-lines grouped under the parent; answers optional; Unicode math preserved; auto-fill `questionDate`/`examYear`/`sheetPreamble` from header or `YYYY-MM-DD` filename, (3) labeled blocks. Sample via `GET …/template?format=docx`. No server-side `.doc` conversion. Public written-set APIs + marketing bank unchanged. **Publish on successful import when question text is present** (exam papers often omit model answers; blank answers must not hide the collection). Empty stem → DRAFT. Max 8 placements. |
 | Impact | WrittenImportModule, `docx-parser` exam-paper mode, admin Written upload/preview, migration `20261118190000_written_question_bank` |
 | Status | **CONFIRMED** (product request 2026-11-18; exam-paper DOCX 2026-11-19; publish-without-answer clarified 2026-11-19) |
+| Amended | **DEC-051 (2026-11-23):** `modelAnswer` is omitted (and not searchable) on public routes unless the viewer is entitled. |
 
 ### DEC-041 — Scoped categories (Preliminary vs Written)
 
@@ -112,6 +116,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Decision | **Yes.** Add `CategoryScope.TOPIC` + optional `Category.iconKey`. Topic Base is **fully separate** from Preli/Written. Admin Taxonomy **Topics** tab supports **3-level** tree (Category → Sub → Child) + upload cascade IDs. Homepage **Topic Base** strip shows **Top 4 root Categories** + **Others** → `/topic-categories` folder explorer. Leaf Sub/Child folders show **title-first** Topic collections (upload batches); clicking a title opens `/topic-base/sets/:id` with that set’s questions (Preli/Written pattern). No question dump on Category or intermediate Sub folders. Marketing navbar unchanged. |
 | Impact | Migrations `20261121120000_topic_base_question_analysis`, `20261121140000_topic_three_level_hierarchy`; TopicImportModule; public topic APIs; admin upload/taxonomy UI; homepage topics wiring |
 | Status | **CONFIRMED** (product request 2026-11-21; 3-level hierarchy 2026-11-21) |
+| Amended | **DEC-051 (2026-11-23):** Topic question keys are omitted on public routes unless the viewer is entitled. |
 
 ### DEC-034 — Excel serial, sheet preamble/sections, multi-placement, year filter
 
@@ -442,6 +447,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Decision | **Yes.** Add `Exam` / `ExamQuestion` / `ExamAttempt` (guest domain; does **not** reuse bank `Question`). Admin upload at `/admin/exams/upload` (ExcelJS). Public listing `/exams` (newest first), take `/exams/[id]`, result with answer sheet + Bangla registration CTA. Correct answers omitted until submit. Learner “Govt job prep” moves to `/exam-tracks` so marketing can own `/exams`. NestJS `/api/v1/public/exams*` + `/api/v1/admin/exams*` (no Next.js Server Actions for scoring). Authenticated PracticeSet exams (DEC-023/035) remain unchanged. **Guest Excel template (2026-11-21):** fixed **7 columns** `প্রশ্ন নং \| প্রশ্ন \| ক \| খ \| গ \| ঘ \| উত্তর`. `উত্তর` is a single letter `a`–`d` (case-insensitive; Bangla `ক`–`ঘ` also mapped). Stored `correctAnswer` is the matching option text. Legacy Preli 9-column sheets (exam name / date) and English OptionA–D / free-text answer matching are **deprecated** for guest exams — download the current template. Blank / non-sequential `প্রশ্ন নং` and blank spacer rows are allowed; row errors name the spreadsheet row and field. |
 | Impact | Prisma migration `20261118170000_guest_exams`, ExamsModule, marketing `/exams*`, admin upload UI, marketing nav |
 | Status | **CONFIRMED** (product request 2026-11-18; template revised 2026-11-21) |
+| Amended | **DEC-051 (2026-11-23):** results show score/totals + own selections to everyone; answer key, explanations and per-question correctness only for entitled viewers. |
 
 ### DEC-040 — Public guest Model Tests (parallel to guest Quiz)
 
@@ -451,6 +457,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Decision | **Yes.** Add isolated `ModelTest` / `ModelTestQuestion` / `ModelTestAttempt` tables and `ModelTestsModule`. Admin `/admin/model-tests/upload`. Public `/model-test` (listing/search/year filter), take `/model-test/[id]`, result `/model-test/[id]/result/[attemptId]`. Marketing **Exams** nav is a dropdown: Model Test → `/model-test`, Quiz → `/exams` (unchanged). Excel parser scans for header row with `প্রশ্ন নং` + `প্রশ্ন` (preamble title/date rows OK); 7 columns; `উত্তর` = `a`–`d` or `ক`–`ঘ`. Incomplete submit shows Skip & Submit / Go Back. Guest result shows register CTA. Authenticated learner `/model-tests` PracticeSet route remains separate. |
 | Impact | Migration `20261121160000_model_tests`, ModelTestsModule, marketing `/model-test*`, admin upload, Exams dropdown |
 | Status | **CONFIRMED** (product request 2026-11-21) |
+| Amended | **DEC-051 (2026-11-23):** Model Test results follow the same rule as guest Quiz results (key / explanations / correctness subscriber-only). |
 
 ### DEC-043 — Model Test listing guide CMS
 
@@ -556,6 +563,52 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Decision | Send through **Resend** SMTP (`smtp.resend.com:465`, no new npm dependency — Nodemailer) from `Your Academy <support@youracademy.com.bd>`; `Reply-To: support@youracademy.com.bd` via **Cloudflare Email Routing** → team Gmail. DNS: Resend DKIM + `send.` SPF/MX, Cloudflare routing MX/SPF, DMARC `p=none` → `quarantine` after 2–4 weeks. One shared branded template (`worker/src/email/`) for reset + verification: multipart HTML/text, Message-ID on our domain, masked send logging. Token logic/TTL unchanged; the API only passes `expiresInMinutes` for display. Personal Gmail SMTP is retired. |
 | Impact | `worker/src/email/*`, `worker/src/main.ts`, `frontend/public/images/email-logo.png`, `.env.example`, docs 17 + 23. Server env must switch to Resend values. |
 | Status | **CONFIRMED** (owner chose Resend + Cloudflare routing, 2026-11-23). DNS + Resend account pending on owner. |
+
+### DEC-051 — Answers are subscriber-only on public routes
+
+| Field | Value |
+|-------|-------|
+| Question | Public banks (DEC-031/040/042) and guest Quiz / Model Test results (DEC-039/040) shipped answer keys to anyone. Should answers stay free? |
+| Decision | **No — "public browse, answers paid".** Question text and options stay public without login. Correct answers (`correctAnswerLabel`, `correctAnswerBn`, `correctAnswer`, `correctOptionId`, `isCorrect`), explanations and written `modelAnswer` are **omitted** (absent, never faked) unless the viewer is an **Admin** or has an **active subscription**, decided only by `AccessControlService.canViewerSeeAnswers` (moderators are not entitled by role). Answer-bearing public routes use `OptionalJwtAuthGuard` (never throws; expired/invalid cookies = anonymous). Responses to a signed-in viewer are `Cache-Control: private, no-store` + `Vary: Cookie, Authorization`; anonymous `GET /public/questions` keeps its short shared cache. Guest exam / model test results return score, totals and the viewer's own selections to everyone, plus `answersVisible`; key/explanations/per-question correctness only when entitled. Preli Practice is scored server-side (`POST /public/question-sets/:id/practice-score`) instead of in the browser. Written search no longer matches inside model answers for non-entitled viewers. SSR result pages forward the visitor's cookies. UI shows "Answers are available with a subscription". |
+| Residual risk | Any score is a weak oracle: a visitor can submit single answers and infer keys from the score. Mitigated by throttling (practice-score 10/min, exam submit 20/min per IP); not eliminated. |
+| Impact | `PublicController`/`PublicService`, `ExamsService`/`ModelTestsService.getAttemptResult`, public exam/model-test controllers, `AccessControlService.canViewerSeeAnswers`; shared `ExamAttemptResult`/`ModelTestAttemptResult` (`answersVisible`, optional key fields), `PublicPracticeScore`; marketing cards, set views, result views, homepage sample MCQ. |
+| Status | **CONFIRMED** (owner decision 2026-11-23) |
+
+### DEC-052 — Admin grants / revokes learner subscriptions
+
+| Field | Value |
+|-------|-------|
+| Question | Payments are out of v1 (PAYMENTS-V1), and nothing created `UserSubscription` rows. How does a learner become entitled? |
+| Decision | **Admins grant access manually.** Admin-only (`users` permission) endpoints under `/api/v1/admin/users/:id/subscription`: `GET` (current + last 20), `POST` grant `{ endsAt, startsAt?, note? }` (end must be after start and in the future; Admin targets rejected — already entitled), `POST …/revoke` `{ note? }` or `DELETE` (cancels every ACTIVE subscription not yet ended; 404 if none). Grant cancels any open ACTIVE subscription in the same transaction, then creates an ACTIVE row on the `PREMIUM` plan (upserted if the seed did not run). Audited as `SUBSCRIPTION_GRANT` / `SUBSCRIPTION_REVOKE`; the note is stored only in the audit log (no schema change). Entitlement is still read by `AccessControlService`. |
+| Impact | `AdminSubscriptionsModule` (`backend/src/subscriptions/admin-subscriptions.*`), shared `AdminUserSubscriptionOverview`, `frontend/src/features/admin/users/user-subscription-card.tsx`. |
+| Status | **CONFIRMED** (owner decision 2026-11-23) |
+
+### DEC-053 — One device at a time (single active session)
+
+| Field | Value |
+|-------|-------|
+| Question | How do we stop one paid account being shared across devices? |
+| Decision | Every login (and register) revokes all other `AuthSession` rows of the account with `revokedReason = REPLACED`, under a per-user Postgres advisory lock so near-simultaneous logins leave exactly one winner; refresh rotation takes the same lock. `JwtStrategy` already loads the session per request, so a replaced device's access token fails immediately with **401 `SESSION_REPLACED`** (refresh answers the same, without the token-reuse family kill). Browser: `SessionWatcher` polls `GET /auth/session` every 45 s while visible and on focus; `apiFetch` clears cookies (`POST /auth/session/clear`) and sends the user to `/login?reason=session-replaced`, which explains why. Tabs share cookies → one session. Applies to learners; staff only when `SINGLE_SESSION_STAFF=true` (owner chose learners-only default, 2026-11-23). `SINGLE_SESSION_ENABLED=false` turns it off. Sessions now store user agent + IP; Admin sees recent sign-ins and can force-logout (`/admin/users/:id/logins`, `/force-logout`). Supersedes the unlimited-sessions behaviour noted under DEC-016. |
+| Impact | `auth.service.ts`, `session-lock.ts`, `jwt.strategy.ts`, `auth.controller.ts`, `admin-user-sessions.service.ts`, migration `20261123180000_password_reset_and_single_session`, `frontend/src/features/auth/session-watcher.tsx`, `lib/api/client.ts`, login page. Residual: Socket.IO support chat checks the session only at handshake, so an open chat socket on the old device stays connected until it reconnects. |
+| Status | **CONFIRMED** (owner request, 2026-11-23) |
+
+### DEC-054 — Admin-assisted password reset
+
+| Field | Value |
+|-------|-------|
+| Question | Learners who never added an email are stuck when they forget their password. |
+| Decision | Admin-only (`users` permission) "Reset password" on the user list and detail page, for USER and MODERATOR accounts (not Admins, not self, not suspended). **A — Email:** Admin adds/confirms/changes the email (format + uniqueness checked), it is saved unverified, the standard reset email is sent, and the address is marked verified when that link is used (`PasswordResetToken.verifiesEmail`). The previous address, if any, gets an "email changed" notice. **B — WhatsApp:** the same single-use link is returned once to the Admin with Copy and "Open in WhatsApp" (bilingual message to `wa.me/<user>`). **C — Temporary password:** generated (12 chars) or typed; sets `User.mustChangePassword`, revokes all sessions; the API answers **403 `PASSWORD_CHANGE_REQUIRED`** for everything but `/users/me`, `/auth/session`, `/auth/change-password`, `/auth/logout` until the user sets a new one at `/change-password`. All options reuse one token system (`issuePasswordResetToken`: SHA-256 only, single-use, `PASSWORD_RESET_TTL_SECONDS`, newer link voids older). Every successful reset signs out all devices. Rate limit: `ADMIN_RESET_LIMIT_PER_USER` (default 5) per user per 15 min plus 10/min per admin. Audit actions `ADMIN_PASSWORD_RESET_EMAIL|LINK|TEMPORARY`, `PASSWORD_RESET_COMPLETED`; history on the user page. Plain passwords and links are never logged or audited. Forgot-password page always shows "No email? Contact support on WhatsApp" (`NEXT_PUBLIC_SUPPORT_WHATSAPP`) rather than revealing whether a number has an email (no enumeration, DEC-004). Learners with no email see a dismissible reminder to add one. Amends DEC-004 (email-only) and DEC-048 (moderator-only admin reset — that UI is replaced; the old endpoint remains). |
+| Impact | `admin-password-reset.service.ts`, `auth/password-reset-tokens.ts`, worker `email-changed-notice` job, frontend `admin-password-reset-dialog.tsx`, `user-security-cards.tsx`, `(auth)/change-password`, forgot-password page, `no-email-reminder.tsx`. |
+| Status | **CONFIRMED** (owner request, 2026-11-23) |
+
+### DEC-055 — Per-user / per-IP rate limits behind the proxy
+
+| Field | Value |
+|-------|-------|
+| Question | Throttling keyed on the socket address put every visitor in one bucket behind nginx/Cloudflare. |
+| Decision | `trust proxy` (`TRUST_PROXY`, default private ranges) and `AppThrottlerGuard`: signed-in requests are tracked per user id (verified JWT), guests per client IP (`TRUSTED_CLIENT_IP_HEADER`, e.g. `cf-connecting-ip` when the origin only accepts Cloudflare traffic). A second `content` throttler caps question/exam content requests at `CONTENT_RATE_LIMIT_PER_10_MIN` (default 300) per user/IP to slow bulk scraping; hits are logged. Storage is in-memory (single API instance). |
+| Impact | `backend/src/main.ts`, `app.module.ts`, `common/guards/app-throttler.guard.ts`. |
+| Status | **CONFIRMED** (owner request, 2026-11-23) |
 
 ### Deferred / NEEDS APPROVAL (explicitly out of Phase 1)
 

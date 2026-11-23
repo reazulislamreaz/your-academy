@@ -60,3 +60,30 @@ export function emailVerificationEmail(
     ),
   };
 }
+
+/** Security notice to the previous address after an account's email is replaced. No links. */
+export function emailChangedNoticeEmail(
+  brand: EmailBrand,
+  input: { newEmailMasked: string; changedBy: 'admin' | 'user' },
+): TemplateEmail {
+  const who = input.changedBy === 'admin' ? 'by our support team at your request' : 'from your account settings';
+  return {
+    subject: `Your ${brand.name} email address was changed`,
+    ...renderEmail(
+      {
+        preheader: `The email on your account is now ${input.newEmailMasked}.`,
+        heading: 'Your email address was changed',
+        paragraphs: [
+          `The email address on your ${brand.name} account was changed ${who}.`,
+          `New address: ${input.newEmailMasked}. Future emails, including password reset links, will go there.`,
+        ],
+        notes: [
+          brand.supportEmail
+            ? `If you didn't ask for this change, contact us right away at ${brand.supportEmail}.`
+            : "If you didn't ask for this change, contact our support team right away.",
+        ],
+      },
+      brand,
+    ),
+  };
+}

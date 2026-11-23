@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect, useState, type ReactNode } from 'react';
 import { RouteProgress } from '@/components/loading';
+import { SessionWatcher } from '@/features/auth/session-watcher';
 import { ApiError } from '@/lib/api/client';
 import { isChunkLoadError, reloadOnceForChunkError } from '@/lib/chunk-error-recovery';
 
@@ -61,6 +62,7 @@ export function Providers({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={client}>
       <RouteProgress />
+      <SessionWatcher />
       {children}
     </QueryClientProvider>
   );

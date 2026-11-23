@@ -18,6 +18,9 @@ import { AdminPage, AdminSection } from '@/components/admin/admin-page';
 import { AdminUserStatus } from '@/components/admin/admin-status';
 import { useMe } from '@/features/auth/use-auth';
 import { StaffUserActions } from '@/features/admin/users/staff-user-dialogs';
+import { AdminPasswordResetButton } from '@/features/admin/users/admin-password-reset-dialog';
+import { PasswordResetHistoryCard, RecentLoginsCard } from '@/features/admin/users/user-security-cards';
+import { UserSubscriptionCard } from '@/features/admin/users/user-subscription-card';
 import { ROLE_LABELS, UserRole } from '@your-academy/shared';
 
 function formatDuration(seconds: number): string {
@@ -88,6 +91,7 @@ export default function AdminUserDetailPage() {
               </Button>
             </Link>
             <StaffUserActions user={profile} currentUserId={meId} />
+            <AdminPasswordResetButton user={profile} currentUserId={meId} />
             {profile.id !== meId ? (
               profile.status === 'ACTIVE' ? (
                 <ConfirmButton
@@ -163,6 +167,13 @@ export default function AdminUserDetailPage() {
             />
           </div>
         </AdminSection>
+      </div>
+
+      <UserSubscriptionCard userId={profile.id} />
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <RecentLoginsCard userId={profile.id} canForceLogout={profile.id !== meId} />
+        <PasswordResetHistoryCard userId={profile.id} />
       </div>
 
       <AdminSection

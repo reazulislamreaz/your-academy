@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { createEmailSender, emailConfigWarnings, loadEmailConfig, maskEmail } from './send';
-import { emailVerificationEmail, passwordResetEmail } from './templates';
+import { emailChangedNoticeEmail, emailVerificationEmail, passwordResetEmail } from './templates';
 
 const prodEnv = {
   NODE_ENV: 'production',
@@ -106,5 +106,15 @@ describe('config + sending', () => {
     assert.equal(out.status, 'logged');
     assert.match(out.messageId, /@youracademy\.com\.bd>$/);
     assert.ok(logs[0].includes('so***@gmail.com'));
+  });
+});
+
+describe('email changed notice', () => {
+  it('renders without a button or link and masks the new address', () => {
+    const brand = { name: 'Your Academy', siteUrl: 'https://youracademy.com.bd', logoUrl: 'x', supportEmail: 'support@youracademy.com.bd' };
+    const email = emailChangedNoticeEmail(brand, { newEmailMasked: 'so***@gmail.com', changedBy: 'admin' });
+    assert.match(email.subject, /email address was changed/);
+    assert.match(email.text, /so\*\*\*@gmail\.com/);
+    assert.doesNotMatch(email.html, /Button not working/);
   });
 });

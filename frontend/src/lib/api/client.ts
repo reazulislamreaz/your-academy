@@ -86,6 +86,34 @@ export function isSessionExpiredLoginReason(reason: string | null): boolean {
   return reason === SESSION_EXPIRED_REASON;
 }
 
+export const SESSION_REPLACED_REASON = 'session-replaced';
+let sessionReplacedHandled = false;
+
+/**
+ * One device at a time (DEC-053): a newer login elsewhere revoked this session.
+ * Clear the stale cookies, then show the login page with the explanation.
+ */
+export function handleSessionReplaced(): void {
+  if (typeof window === 'undefined' || sessionReplacedHandled) return;
+  sessionReplacedHandled = true;
+  const csrf = getCookie(process.env.NEXT_PUBLIC_CSRF_COOKIE_NAME ?? 'csrf_token');
+  const go = () => window.location.assign(`/login?reason=${SESSION_REPLACED_REASON}`);
+  void fetch(`${API_BASE}/auth/session/clear`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: csrf ? { 'X-CSRF-Token': csrf } : {},
+  })
+    .catch(() => undefined)
+    .finally(go);
+}
+
+/** Admin issued a temporary password: everything else is refused until it is changed. */
+function handlePasswordChangeRequired(): void {
+  if (typeof window === 'undefined') return;
+  if (window.location.pathname.startsWith('/change-password')) return;
+  window.location.assign('/change-password');
+}
+
 function shouldAttemptRefresh(path: string, skipRefresh?: boolean): boolean {
   if (skipRefresh) return false;
   const p = path.split('?')[0];
@@ -95,6 +123,7 @@ function shouldAttemptRefresh(path: string, skipRefresh?: boolean): boolean {
     '/auth/refresh',
     '/auth/forgot-password',
     '/auth/reset-password',
+    '/auth/session/clear',
   ].includes(p);
 }
 
@@ -107,7 +136,7 @@ function likelyHasSessionCookies(): boolean {
 }
 
 /** Single-flight refresh + cooldown after failure (prevents throttle storms). */
-let refreshInFlight: Promise<boolean> | null = null;
+let refreshInFlight: Promise<boolean | 'replaced'> | null = null;
 let refreshCooldownUntil = 0;
 
 function isFormDataBody(body: BodyInit | null | undefined): body is FormData {
@@ -140,7 +169,17 @@ function cloneBody(body: BodyInit | null | undefined): BodyInit | null | undefin
   return copy;
 }
 
-async function refreshSession(): Promise<boolean> {
+/** Read an error code without consuming the body the caller will parse later. */
+async function peekErrorCode(res: Response): Promise<string | undefined> {
+  try {
+    const body = (await res.clone().json()) as ApiEnvelope<unknown>;
+    return body.error?.code;
+  } catch {
+    return undefined;
+  }
+}
+
+async function refreshSession(): Promise<boolean | 'replaced'> {
   if (!likelyHasSessionCookies()) return false;
   if (Date.now() < refreshCooldownUntil) return false;
   if (refreshInFlight) return refreshInFlight;
@@ -151,6 +190,10 @@ async function refreshSession(): Promise<boolean> {
         method: 'POST',
         credentials: 'include',
       });
+      if (res.status === 401) {
+        const body = (await res.json().catch(() => null)) as ApiEnvelope<unknown> | null;
+        if (body?.error?.code === 'SESSION_REPLACED') return 'replaced';
+      }
       if (!res.ok) {
         // 429: back off a full throttle window; other failures: short cool-down.
         refreshCooldownUntil = Date.now() + (res.status === 429 ? 65_000 : 15_000);
@@ -230,9 +273,14 @@ export async function apiFetchResult<T>(
     );
   }
 
-  if (res.status === 401 && shouldAttemptRefresh(path, skipRefresh)) {
+  const replacedNow = res.status === 401 && (await peekErrorCode(res)) === 'SESSION_REPLACED';
+  if (replacedNow && shouldAttemptRefresh(path, skipRefresh)) {
+    handleSessionReplaced();
+  } else if (res.status === 401 && shouldAttemptRefresh(path, skipRefresh)) {
     const refreshed = await refreshSession();
-    if (refreshed) {
+    if (refreshed === 'replaced') {
+      handleSessionReplaced();
+    } else if (refreshed) {
       // Re-read CSRF — refresh rotates cookies.
       if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
         const csrf = getCookie(process.env.NEXT_PUBLIC_CSRF_COOKIE_NAME ?? 'csrf_token');
@@ -253,6 +301,9 @@ export async function apiFetchResult<T>(
 
   const json = await parseJson<T>(res);
   if (!res.ok || !json.success) {
+    if (res.status === 403 && json.error?.code === 'PASSWORD_CHANGE_REQUIRED') {
+      handlePasswordChangeRequired();
+    }
     throw new ApiError(
       json.error?.code ?? 'HTTP_ERROR',
       json.error?.message ?? 'Request failed',

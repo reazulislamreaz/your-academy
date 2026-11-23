@@ -86,6 +86,8 @@ Auth roles: `Public`, `User`, `Admin`. Entitlement notes apply inside handlers.
 | POST | `/auth/refresh` | Rotate refresh | Cookie/body | — |
 | POST | `/auth/change-password` | Change password | User | USER/ADMIN |
 | POST | `/auth/forgot-password` | Start email reset (DEC-004) | Public | — |
+| GET | `/auth/session` | Liveness check for the one-device rule; 401 `SESSION_REPLACED` when a newer login took over (DEC-053) | Learner/Staff | — |
+| POST | `/auth/session/clear` | Clear auth cookies after `SESSION_REPLACED` (CSRF required, no session needed) | Public | — |
 | POST | `/auth/reset-password` | Complete reset | Public | — |
 | POST | `/auth/verify-email` | Confirm email via emailed token (DEC-048) | Public | — |
 
@@ -124,7 +126,13 @@ Profile picture: separate upload after auth or multipart field if approved.
 | POST | `/admin/users` | Create staff account `{ name, whatsappNumber, password, role: ADMIN\|MODERATOR }` → `409 WHATSAPP_EXISTS` | User | ADMIN |
 | PATCH | `/admin/users/:id` | Edit staff `{ name?, whatsappNumber?, email? }` (changed email → unverified) | User | ADMIN |
 | PATCH | `/admin/users/:id/role` | `{ role }` → `403 CANNOT_CHANGE_OWN_ROLE`, `409 LAST_ADMIN` | User | ADMIN |
-| POST | `/admin/users/:id/reset-password` | `{ newPassword }` — moderators only; revokes sessions | User | ADMIN |
+| POST | `/admin/users/:id/reset-password` | `{ newPassword }` — moderators only; revokes sessions (legacy; UI uses the routes below) | User | ADMIN |
+| POST | `/admin/users/:id/password-reset/email` | `{ email? }` — save/confirm email, send standard reset email → `{ email, emailChanged, expiresAt }` (DEC-054) | User | ADMIN |
+| POST | `/admin/users/:id/password-reset/link` | One-time reset link for WhatsApp → `{ resetUrl, expiresAt, whatsappNumber, name }` | User | ADMIN |
+| POST | `/admin/users/:id/password-reset/temporary` | `{ password? }` → `{ temporaryPassword \| null, generated }`; forces change at next sign-in, revokes sessions | User | ADMIN |
+| GET | `/admin/users/:id/password-reset/history` | Recent reset/password-change audit entries | User | ADMIN |
+| GET | `/admin/users/:id/logins` | Recent sign-ins (device, IP, active/ended reason) (DEC-053) | User | ADMIN |
+| POST | `/admin/users/:id/force-logout` | Revoke every active session → `{ sessionsRevoked }` | User | ADMIN |
 | GET | `/admin/users/:id` | User detail (profile, study stats, sessions, observed engagement, recent events; subscription read-only) | User | ADMIN |
 | PATCH | `/admin/users/:id/status` | Suspend/reinstate (any role; not self → `403`, not last admin → `409 LAST_ADMIN`; suspend revokes sessions) | User | ADMIN |
 | DELETE | `/users/me` | Delete own account | User | USER/ADMIN |
@@ -143,15 +151,16 @@ Scoped taxonomies (DEC-041): `PRELIMINARY` (default) vs `WRITTEN`. Unique `(scop
 | GET | `/public/documents/:id` | Public document metadata + `view.available` (no storage URLs) | Public | — |
 | GET | `/public/documents/:id/file` | PDF bytes proxy for in-app viewer (`Content-Disposition: inline`; no attachment) | Public | — |
 | GET | `/documents/:id/file` | Authenticated in-app PDF bytes (inline; no signed download URL) | User | — |
-| GET | `/public/questions` | Published MCQ cards (options + correct answer), `createdAt DESC`, cursor pagination + filters (`q`, `categoryId`, `subcategoryId`, `examTag`, `difficulty`, `uploadBatchId`) | Public | — |
+| GET | `/public/questions` | Published MCQ cards (options; `correctAnswerLabel`/`correctAnswerBn` **only for entitled viewers**, DEC-051), `createdAt DESC`, cursor pagination + filters (`q`, `categoryId`, `subcategoryId`, `examTag`, `difficulty`, `uploadBatchId`). Anonymous: shared cache; signed-in: `private, no-store` | Public (+ optional JWT) | — |
 | GET | `/public/question-sets` | Upload-based Question Sets (completed/archived batches with published MCQs), newest first; filters: `q`, `categoryId`, `subcategoryId`, `year` — taxonomy IDs must be `PRELIMINARY` scope or the filter returns empty | Public | — |
 | GET | `/public/question-sets/years` | Distinct exam years for Preli bank year chips | Public | — |
 | GET | `/public/question-sets/:id` | Question Set metadata (`sheetPreamble`, `examYear`, `placements`) | Public | — |
-| GET | `/public/question-sets/:id/questions` | MCQs in a set in original upload `rowNumber` order (`sourceSerial`, `sectionTitle`; no category badge under stem) | Public | — |
+| GET | `/public/question-sets/:id/questions` | MCQs in a set in original upload `rowNumber` order (`sourceSerial`, `sectionTitle`; no category badge under stem); answer key only for entitled viewers (DEC-051) | Public (+ optional JWT) | — |
+| POST | `/public/question-sets/:id/practice-score` | DEC-051 server-side Preli Practice scoring. Body `{ answers: { [questionId]: optionId } }` (unknown ids ignored). Returns `PublicPracticeScore`: `totalQuestions`, `correctCount`, `wrongCount`, `skippedCount`, `score`, `percent`, `answersVisible`, `answerSheet[{ id, selectedOptionId, isSkipped, isCorrect?, correctOptionId?, correctAnswerLabel? }]` — optional fields only when entitled. Throttled 10/min | Public (+ optional JWT) | — |
 | GET | `/public/written-question-sets` | Written Question Sets (DEC-040); same filters as Preli — taxonomy IDs must be `WRITTEN` scope | Public | — |
 | GET | `/public/written-question-sets/years` | Distinct years for Written bank year filter | Public | — |
 | GET | `/public/written-question-sets/:id` | Written set metadata | Public | — |
-| GET | `/public/written-question-sets/:id/questions` | Written questions in upload order (modelAnswer, marks) | Public | — |
+| GET | `/public/written-question-sets/:id/questions` | Written questions in upload order (marks; `modelAnswer` only for entitled viewers and `q` searches it only for them — DEC-051) | Public (+ optional JWT) | — |
 | GET | `/public/homepage` | Published homepage CMS payload + hero image URL (DEC-038; Cache-Control max-age=60) | Public | — |
 | GET | `/public/social-links` | Enabled footer social links ordered by `sortOrder` (DEC-046) | Public | — |
 | GET | `/admin/social-links` | All social links (including disabled) | User | ADMIN |
@@ -266,9 +275,9 @@ Separate TOPIC taxonomy + MCQ bank. Excel template (8 columns): `প্রশ্
 | GET | `/public/topic-directory` | Topic roots + nested Sub/Child folders | Public | — |
 | GET | `/public/topic-subcategories/:id` | Topic folder meta for L1 Category, L2 Sub, or L3 Child (`level`) | Public | — |
 | GET | `/public/topic-subcategories/:id/sets` | Title-first Topic collections for a **leaf** Sub/Child (`cursor`, `limit`; empty for Category or Sub with children) | Public | — |
-| GET | `/public/topic-subcategories/:id/questions` | Cursor-paginated topic MCQs for that folder (legacy/folder dump; prefer sets) | Public | — |
+| GET | `/public/topic-subcategories/:id/questions` | Cursor-paginated topic MCQs for that folder (legacy/folder dump; prefer sets); answer key only for entitled viewers (DEC-051) | Public (+ optional JWT) | — |
 | GET | `/public/topic-sets/:id` | Topic upload-batch meta | Public | — |
-| GET | `/public/topic-sets/:id/questions` | Cursor-paginated MCQs for one Topic collection (`q`) | Public | — |
+| GET | `/public/topic-sets/:id/questions` | Cursor-paginated MCQs for one Topic collection (`q`); answer key only for entitled viewers (DEC-051) | Public (+ optional JWT) | — |
 | GET | `/admin/topic-question-imports` | Topic batches (`cursor`, `limit`, optional `q`) | User | ADMIN |
 | GET | `/admin/topic-question-imports/template` | 8-column Excel template | User | ADMIN |
 | GET | `/admin/topic-question-imports/:id` | Topic batch detail (admin) | User | ADMIN |
@@ -285,7 +294,7 @@ Marketing UI: homepage Top 4 + Others → `/topic-categories` folder explorer. L
 
 ### 2.5c Public guest exams (DEC-039)
 
-Quizzory-style timed exams with name-only entry. Separate from bank `Question` / PracticeSet. Correct answers are omitted until after submit.
+Quizzory-style timed exams with name-only entry. Separate from bank `Question` / PracticeSet. Correct answers are omitted until after submit, and after submit only for entitled viewers (Admin or active subscription — DEC-051).
 
 Admin Excel template (7 columns): `প্রশ্ন নং | প্রশ্ন | ক | খ | গ | ঘ | উত্তর`. `উত্তর` must be `a`/`b`/`c`/`d` (case-insensitive) or Bangla `ক`/`খ`/`গ`/`ঘ`; the API stores the resolved option text. `প্রশ্ন নং` is optional reference only. Row-level validation errors are returned on `EXCEL_PARSE_FAILED`.
 
@@ -295,7 +304,7 @@ Admin Excel template (7 columns): `প্রশ্ন নং | প্রশ্�
 | GET | `/public/exams/meta/guide` | Quiz listing sidebar guide (`title` + ordered `items`) | Public | — |
 | GET | `/public/exams/:idOrSlug` | Exam + questions (no correct answers / explanations) | Public | — |
 | POST | `/public/exams/:idOrSlug/attempts` | Submit answers (`userName` required for guests; optional when JWT present — uses account name + sets `userId`); scores server-side | Public (+ optional JWT) | — |
-| GET | `/public/exams/attempts/:attemptId` | Result + full answer sheet (correct + explanation) | Public | — |
+| GET | `/public/exams/attempts/:attemptId` | Result: score/totals + own `selectedAnswer` per question + `answersVisible`. `correctAnswer` / `explanation` / `isCorrect` only for entitled viewers (DEC-051); `private, no-store` | Public (+ optional JWT) | — |
 | GET | `/me/timed-attempts` | Linked public Quiz + Model Test attempts for the signed-in user | Auth | — |
 | POST | `/me/timed-attempts/claim` | Attach a guest attempt (`kind`, `attemptId`) to the current user after register | Auth | CSRF |
 | GET | `/admin/exams` | Admin list (`cursor`, `limit`) | User | ADMIN |
@@ -316,7 +325,7 @@ Parallel to guest exams. Header row may follow title/date preamble rows. Same 7-
 | GET | `/public/model-tests/meta/guide` | Listing sidebar guide (`title` + ordered `items`) | Public | — |
 | GET | `/public/model-tests/:idOrSlug` | Detail + questions (no answers) | Public | — |
 | POST | `/public/model-tests/:idOrSlug/attempts` | Submit answers; optional JWT attaches `userId` + account name (DEC-045) | Public (+ optional JWT) | — |
-| GET | `/public/model-tests/attempts/:attemptId` | Result + answer sheet | Public | — |
+| GET | `/public/model-tests/attempts/:attemptId` | Result: same shape and DEC-051 gating as guest exam results (`answersVisible`) | Public (+ optional JWT) | — |
 | GET | `/admin/model-tests` | Admin list (`cursor`, `limit`) | User | ADMIN |
 | GET | `/admin/model-tests/categories` | All Model Test categories | User | ADMIN |
 | POST | `/admin/model-tests/categories` | Create category (`name`) | User | ADMIN |
@@ -417,8 +426,12 @@ Admin vs user allowed MIME/size differ by purpose (`avatar`, `question-image`, `
 | GET | `/me/access` | Trial + subscription + entitlements | User | USER/ADMIN |
 | GET | `/admin/subscription-plans` | List plans | User | ADMIN |
 | POST | `/admin/subscription-plans` | Create/update plans | User | ADMIN |
+| GET | `/admin/users/:id/subscription` | DEC-052 `AdminUserSubscriptionOverview`: `isAdmin`, `hasActiveSubscription`, `current`, `history` (last 20) | User | ADMIN (`users`) |
+| POST | `/admin/users/:id/subscription` | Grant `{ endsAt, startsAt?, note? }` (ISO; end after start and in the future → else `422 SUBSCRIPTION_INVALID_DATES`; Admin target → `409 SUBSCRIPTION_NOT_NEEDED`). Cancels open ACTIVE rows + creates ACTIVE `PREMIUM` row in one transaction; audit `SUBSCRIPTION_GRANT`. Returns overview | User + CSRF | ADMIN (`users`) |
+| POST | `/admin/users/:id/subscription/revoke` | Revoke `{ note? }` — cancels every ACTIVE subscription not yet ended; `404 SUBSCRIPTION_NOT_FOUND` if none; audit `SUBSCRIPTION_REVOKE`. Returns overview | User + CSRF | ADMIN (`users`) |
+| DELETE | `/admin/users/:id/subscription` | Same as revoke (no note) | User + CSRF | ADMIN (`users`) |
 
-No payment capture endpoints in v1.
+No payment capture endpoints in v1; subscriptions are Admin-granted (DEC-052).
 
 ---
 

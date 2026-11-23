@@ -152,7 +152,7 @@ describe('StaffUsersService', () => {
       await service.updateStatus('target', UserStatus.SUSPENDED, 'a1');
       expect(prisma.authSession.updateMany).toHaveBeenCalledWith({
         where: { userId: 'target', revokedAt: null },
-        data: { revokedAt: expect.any(Date) },
+        data: { revokedAt: expect.any(Date), revokedReason: 'SUSPENDED' },
       });
     });
   });

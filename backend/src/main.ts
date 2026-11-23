@@ -11,6 +11,9 @@ async function bootstrap() {
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.enableShutdownHooks();
+  // Behind nginx (private Docker network) req.ip must come from X-Forwarded-For, or every
+  // client shares one rate-limit bucket. Override with TRUST_PROXY (Express syntax).
+  app.set('trust proxy', process.env.TRUST_PROXY ?? 'loopback, linklocal, uniquelocal');
   // Homepage CMS drafts (tiles + logo metadata) can exceed Express's default ~100kb.
   app.useBodyParser('json', { limit: '2mb' });
   app.useBodyParser('urlencoded', { limit: '2mb', extended: true });

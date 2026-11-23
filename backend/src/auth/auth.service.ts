@@ -31,11 +31,26 @@ import { LearningActivityService } from '../learning-activity/learning-activity.
 import { EmailQueueService } from '../queue/email-queue.service';
 import { AccessControlService } from '../subscriptions/access-control.service';
 import type { JwtPayload, RequestUser } from './auth.types';
+import { issuePasswordResetToken } from './password-reset-tokens';
+import { SESSION_REPLACED_MESSAGE, lockUserSessions } from './session-lock';
 import type { ChangePasswordDto } from './dto/change-password.dto';
 import type { ForgotPasswordDto } from './dto/forgot-password.dto';
 import type { LoginDto } from './dto/login.dto';
 import type { RegisterDto } from './dto/register.dto';
 import type { ResetPasswordDto } from './dto/reset-password.dto';
+
+/** Device details recorded on each session for the admin "recent logins" view. */
+export type ClientMeta = { userAgent?: string | null; ipAddress?: string | null };
+
+/**
+ * One device at a time (DEC-053): a new login revokes every other session of the
+ * account. Applies to learners always; to Admin/Moderator only when SINGLE_SESSION_STAFF=true.
+ */
+export function singleSessionApplies(role: UserRole): boolean {
+  if (process.env.SINGLE_SESSION_ENABLED === 'false') return false;
+  if (isStaffRole(role)) return process.env.SINGLE_SESSION_STAFF === 'true';
+  return true;
+}
 
 @Injectable()
 export class AuthService {
@@ -50,7 +65,7 @@ export class AuthService {
     private readonly learningActivity: LearningActivityService,
   ) {}
 
-  async register(dto: RegisterDto) {
+  async register(dto: RegisterDto, meta: ClientMeta = {}) {
     const whatsappNumber = normalizeWhatsapp(dto.whatsappNumber);
     if (!isValidWhatsapp(whatsappNumber)) {
       throw new UnprocessableEntityException(
@@ -93,10 +108,10 @@ export class AuthService {
       },
     });
 
-    return this.issueSession(user);
+    return this.issueSession(user, meta);
   }
 
-  async login(dto: LoginDto) {
+  async login(dto: LoginDto, meta: ClientMeta = {}) {
     const whatsappNumber = normalizeWhatsapp(dto.whatsappNumber);
     // Same normalize path as register; invalid format still maps to generic credentials
     // so we do not leak whether a number is registered.
@@ -119,10 +134,10 @@ export class AuthService {
       );
     }
 
-    return this.issueSession(user);
+    return this.issueSession(user, meta);
   }
 
-  async refresh(refreshToken: string | undefined) {
+  async refresh(refreshToken: string | undefined, meta: ClientMeta = {}) {
     if (!refreshToken) {
       throw new UnauthorizedException(
         createErrorResponse('UNAUTHORIZED', 'Missing refresh token', newRequestId()),
@@ -142,9 +157,15 @@ export class AuthService {
     }
 
     if (session.revokedAt) {
+      // A device logged out by a newer login is not token theft — tell it why.
+      if (session.revokedReason === 'REPLACED') {
+        throw new UnauthorizedException(
+          createErrorResponse('SESSION_REPLACED', SESSION_REPLACED_MESSAGE, newRequestId()),
+        );
+      }
       await this.prisma.authSession.updateMany({
         where: { familyId: session.familyId, revokedAt: null },
-        data: { revokedAt: new Date() },
+        data: { revokedAt: new Date(), revokedReason: 'TOKEN_REUSE' },
       });
       throw new UnauthorizedException(
         createErrorResponse('TOKEN_REUSE', 'Refresh token reuse detected', newRequestId()),
@@ -157,7 +178,7 @@ export class AuthService {
       );
     }
 
-    const tokens = await this.rotateSession(session.user, session.id, session.familyId);
+    const tokens = await this.rotateSession(session.user, session.id, session.familyId, meta);
     return { user: session.user, ...tokens };
   }
 
@@ -165,7 +186,7 @@ export class AuthService {
     await this.prisma.$transaction([
       this.prisma.authSession.update({
         where: { id: user.sessionId },
-        data: { revokedAt: new Date() },
+        data: { revokedAt: new Date(), revokedReason: 'LOGOUT' },
       }),
       this.prisma.browsingSession.updateMany({
         where: { userId: user.userId, status: BrowsingSessionStatus.ACTIVE },
@@ -178,7 +199,7 @@ export class AuthService {
     });
   }
 
-  async changePassword(user: RequestUser, dto: ChangePasswordDto) {
+  async changePassword(user: RequestUser, dto: ChangePasswordDto, meta: ClientMeta = {}) {
     const dbUser = await this.prisma.user.findUniqueOrThrow({ where: { id: user.userId } });
     const ok = await argon2.verify(dbUser.passwordHash, dto.currentPassword);
     if (!ok) {
@@ -187,12 +208,25 @@ export class AuthService {
       );
     }
 
+    if (dbUser.mustChangePassword && (await argon2.verify(dbUser.passwordHash, dto.newPassword))) {
+      throw new UnprocessableEntityException(
+        createErrorResponse(
+          'PASSWORD_REUSED',
+          'Choose a new password that is different from the temporary one',
+          newRequestId(),
+        ),
+      );
+    }
+
     const passwordHash = await argon2.hash(dto.newPassword, { type: argon2.argon2id });
     await this.prisma.$transaction([
-      this.prisma.user.update({ where: { id: user.userId }, data: { passwordHash } }),
+      this.prisma.user.update({
+        where: { id: user.userId },
+        data: { passwordHash, mustChangePassword: false },
+      }),
       this.prisma.authSession.updateMany({
         where: { userId: user.userId, revokedAt: null },
-        data: { revokedAt: new Date() },
+        data: { revokedAt: new Date(), revokedReason: 'PASSWORD_CHANGE' },
       }),
     ]);
 
@@ -203,7 +237,7 @@ export class AuthService {
       entityId: user.userId,
     });
 
-    return this.issueSession(await this.prisma.user.findUniqueOrThrow({ where: { id: user.userId } }));
+    return this.issueSession(await this.prisma.user.findUniqueOrThrow({ where: { id: user.userId } }), meta);
   }
 
   async forgotPassword(dto: ForgotPasswordDto) {
@@ -221,39 +255,18 @@ export class AuthService {
     const email = user?.email;
     const emailUsable = Boolean(email && (!isStaffRole(user?.role) || user?.emailVerifiedAt));
     if (user && email && emailUsable && user.status === UserStatus.ACTIVE && !user.deletedAt) {
-      const token = randomToken(32);
-      const ttl = Number(process.env.PASSWORD_RESET_TTL_SECONDS ?? 1800);
-      const tokenHash = sha256(token);
-      // Invalidate unused prior tokens so only the latest reset link works.
-      await this.prisma.$transaction([
-        this.prisma.passwordResetToken.updateMany({
-          where: { userId: user.id, usedAt: null },
-          data: { usedAt: new Date() },
-        }),
-        this.prisma.passwordResetToken.create({
-          data: {
-            userId: user.id,
-            tokenHash,
-            expiresAt: new Date(Date.now() + ttl * 1000),
-          },
-        }),
-      ]);
-      const base = process.env.PASSWORD_RESET_URL_BASE ?? 'http://localhost:3000/reset-password';
-      const resetUrl = `${base}?token=${token}`;
+      const issued = await this.prisma.$transaction((tx) => issuePasswordResetToken(tx, user.id));
       try {
         await this.emailQueue.enqueuePasswordReset(
-          { to: email, resetUrl, userId: user.id, expiresInMinutes: Math.round(ttl / 60) },
-          tokenHash.slice(0, 32),
+          { to: email, resetUrl: issued.resetUrl, userId: user.id, expiresInMinutes: issued.expiresInMinutes },
+          issued.tokenHash.slice(0, 32),
         );
       } catch (err) {
         this.logger.error(`Failed to enqueue password reset email: ${String(err)}`);
-        // Still log in non-production so local resets remain usable without worker.
-        if (process.env.NODE_ENV !== 'production') {
-          this.logger.log(`Password reset link for ${user.email}: ${resetUrl}`);
-        }
       }
+      // Local resets stay usable without a worker; never in production.
       if (process.env.NODE_ENV !== 'production') {
-        this.logger.log(`Password reset link for ${user.email}: ${resetUrl}`);
+        this.logger.log(`Password reset link for ${user.email}: ${issued.resetUrl}`);
       }
     }
 
@@ -264,7 +277,7 @@ export class AuthService {
     const tokenHash = sha256(dto.token);
     const passwordHash = await argon2.hash(dto.newPassword, { type: argon2.argon2id });
 
-    await this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const claimed = await tx.passwordResetToken.updateMany({
         where: { tokenHash, usedAt: null, expiresAt: { gt: new Date() } },
         data: { usedAt: new Date() },
@@ -275,12 +288,37 @@ export class AuthService {
         );
       }
 
-      const record = await tx.passwordResetToken.findUniqueOrThrow({ where: { tokenHash } });
-      await tx.user.update({ where: { id: record.userId }, data: { passwordHash } });
+      const record = await tx.passwordResetToken.findUniqueOrThrow({
+        where: { tokenHash },
+        include: { user: { select: { email: true, emailVerifiedAt: true } } },
+      });
+      // An admin-sent link proves the user controls the inbox it was sent to — but only
+      // if that address is still the account's email.
+      const verifiesEmail =
+        record.verifiesEmail !== null &&
+        record.user.email === record.verifiesEmail &&
+        !record.user.emailVerifiedAt;
+      await tx.user.update({
+        where: { id: record.userId },
+        data: {
+          passwordHash,
+          mustChangePassword: false,
+          ...(verifiesEmail ? { emailVerifiedAt: new Date() } : {}),
+        },
+      });
       await tx.authSession.updateMany({
         where: { userId: record.userId, revokedAt: null },
-        data: { revokedAt: new Date() },
+        data: { revokedAt: new Date(), revokedReason: 'PASSWORD_RESET' },
       });
+      return { userId: record.userId, adminAssisted: record.verifiesEmail !== null };
+    });
+
+    await this.audit.record({
+      actorUserId: result.userId,
+      action: 'PASSWORD_RESET_COMPLETED',
+      entityType: 'user',
+      entityId: result.userId,
+      metadata: { via: 'reset_link' },
     });
 
     return { message: 'Password updated. Please sign in.' };
@@ -324,6 +362,8 @@ export class AuthService {
       name: row.name,
       whatsappNumber: row.whatsappNumber,
       email: row.email,
+      emailVerified: Boolean(row.emailVerifiedAt),
+      mustChangePassword: row.mustChangePassword,
       role: row.role,
       status: row.status,
       access,
@@ -336,9 +376,20 @@ export class AuthService {
     };
   }
 
-  private async issueSession(user: User) {
+  private async issueSession(user: User, meta: ClientMeta = {}) {
     const familyId = randomUUID();
-    const tokens = await this.createSessionTokens(user, familyId);
+    const tokens = await this.prisma.$transaction(async (tx) => {
+      // Serialise logins/refreshes per user so two near-simultaneous logins can't both
+      // survive: the later one (by lock order) revokes the earlier one.
+      await lockUserSessions(tx, user.id);
+      if (singleSessionApplies(user.role)) {
+        await tx.authSession.updateMany({
+          where: { userId: user.id, revokedAt: null },
+          data: { revokedAt: new Date(), revokedReason: 'REPLACED' },
+        });
+      }
+      return this.createSessionTokens(user, familyId, tx, meta);
+    });
     await this.learningActivity.record({
       userId: user.id,
       type: 'LOGIN',
@@ -346,28 +397,47 @@ export class AuthService {
     return { user, ...tokens };
   }
 
-  private async rotateSession(user: User, oldSessionId: string, familyId: string) {
+  private async rotateSession(user: User, oldSessionId: string, familyId: string, meta: ClientMeta) {
     return this.prisma.$transaction(async (tx) => {
-      const tokens = await this.createSessionTokens(user, familyId, tx);
+      await lockUserSessions(tx, user.id);
+      const tokens = await this.createSessionTokens(user, familyId, tx, meta);
       const rotated = await tx.authSession.updateMany({
         where: { id: oldSessionId, revokedAt: null },
-        data: { revokedAt: new Date(), replacedBySessionId: tokens.sessionId },
+        data: { revokedAt: new Date(), revokedReason: 'ROTATED', replacedBySessionId: tokens.sessionId },
       });
       if (rotated.count !== 1) {
-        // Concurrent refresh already consumed this token — treat as reuse.
-        await tx.authSession.update({
-          where: { id: tokens.sessionId },
-          data: { revokedAt: new Date() },
+        const old = await tx.authSession.findUnique({
+          where: { id: oldSessionId },
+          select: { revokedReason: true },
         });
+        // A newer login on another device won the lock first: discard our new row.
+        if (old?.revokedReason === 'REPLACED') {
+          await tx.authSession.update({
+            where: { id: tokens.sessionId },
+            data: { revokedAt: new Date(), revokedReason: 'REPLACED' },
+          });
+          return { replaced: true as const };
+        }
+        // Concurrent refresh already consumed this token — treat as reuse.
         await tx.authSession.updateMany({
           where: { familyId, revokedAt: null },
-          data: { revokedAt: new Date() },
+          data: { revokedAt: new Date(), revokedReason: 'TOKEN_REUSE' },
         });
+        return { reuse: true as const };
+      }
+      return tokens;
+    }).then((result) => {
+      if ('replaced' in result) {
+        throw new UnauthorizedException(
+          createErrorResponse('SESSION_REPLACED', SESSION_REPLACED_MESSAGE, newRequestId()),
+        );
+      }
+      if ('reuse' in result) {
         throw new UnauthorizedException(
           createErrorResponse('TOKEN_REUSE', 'Refresh token reuse detected', newRequestId()),
         );
       }
-      return tokens;
+      return result;
     });
   }
 
@@ -375,6 +445,7 @@ export class AuthService {
     user: User,
     familyId: string,
     db: Prisma.TransactionClient | PrismaService = this.prisma,
+    meta: ClientMeta = {},
   ) {
     const refreshToken = randomToken(48);
     const refreshTtl = Number(process.env.JWT_REFRESH_TTL_SECONDS ?? 2592000);
@@ -385,6 +456,8 @@ export class AuthService {
         userId: user.id,
         refreshTokenHash: sha256(refreshToken),
         familyId,
+        userAgent: meta.userAgent?.slice(0, 512) ?? null,
+        ipAddress: meta.ipAddress?.slice(0, 64) ?? null,
         expiresAt: new Date(Date.now() + refreshTtl * 1000),
       },
     });

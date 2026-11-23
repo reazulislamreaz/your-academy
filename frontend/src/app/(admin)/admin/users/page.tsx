@@ -29,6 +29,7 @@ import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import { apiFetch } from '@/lib/api/client';
 import { useMe } from '@/features/auth/use-auth';
 import { CreateStaffUserDialog, StaffUserActions } from '@/features/admin/users/staff-user-dialogs';
+import { AdminPasswordResetButton } from '@/features/admin/users/admin-password-reset-dialog';
 
 type RoleFilter = '' | 'ADMIN' | 'MODERATOR' | 'USER';
 
@@ -186,6 +187,7 @@ export default function AdminUsersPage() {
                         </Button>
                       </Link>
                       <StaffUserActions user={user} currentUserId={meId} />
+                      <AdminPasswordResetButton user={user} currentUserId={meId} />
                       {user.id !== meId ? (
                         user.status === 'ACTIVE' ? (
                           <ConfirmButton
@@ -312,6 +314,7 @@ export default function AdminUsersPage() {
                             }
                           >
                             <StaffUserActions user={user} currentUserId={meId} />
+                            <AdminPasswordResetButton user={user} currentUserId={meId} />
                             {user.id !== meId ? (
                               user.status === 'ACTIVE' ? (
                                 <ConfirmButton

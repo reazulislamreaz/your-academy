@@ -50,6 +50,12 @@ Docker Compose overrides `DATABASE_URL` host to `postgres` for `api` / `worker` 
 | `SWAGGER_ENABLED` | no | Default true in dev |
 | `THROTTLE_TTL_SECONDS` | no | Rate limit window |
 | `THROTTLE_LIMIT` | no | Requests per window |
+| `CONTENT_RATE_LIMIT_PER_10_MIN` | no | Question/exam content requests per user or guest IP per 10 min (default 300, DEC-055) |
+| `TRUST_PROXY` | no | Express `trust proxy` (default `loopback, linklocal, uniquelocal`) |
+| `TRUSTED_CLIENT_IP_HEADER` | no | e.g. `cf-connecting-ip`; only when the origin accepts Cloudflare traffic only |
+| `SINGLE_SESSION_STAFF` | no | `true` = one device at a time also for Admin/Moderator (default `false`, DEC-053) |
+| `SINGLE_SESSION_ENABLED` | no | `false` disables the one-device rule entirely (default on) |
+| `NEXT_PUBLIC_SUPPORT_WHATSAPP` | web (build) | Support WhatsApp digits with country code for the forgot-password "no email" button |
 
 ## Web
 
@@ -104,7 +110,8 @@ Store only in gitignored `.env` — never commit. Product file storage remains C
 | `EMAIL_SUPPORT_ADDRESS` | worker | Footer contact; defaults to `EMAIL_REPLY_TO` |
 | `APP_PUBLIC_URL` | worker | Site for logo + footer links; defaults to `WEB_ORIGIN` |
 | `PASSWORD_RESET_URL_BASE` | api | e.g. `http://localhost:3000/reset-password` |
-| `PASSWORD_RESET_TTL_SECONDS` | api | Default `1800` (30 min, DEC-048) |
+| `PASSWORD_RESET_TTL_SECONDS` | api | Default `1800` (30 min, DEC-048); also admin-assisted links |
+| `ADMIN_RESET_LIMIT_PER_USER` | api | Admin-assisted resets per user per 15 min (default 5, DEC-054) |
 | `EMAIL_VERIFICATION_URL_BASE` | api | Confirmation link base; defaults to `${WEB_ORIGIN}/verify-email` |
 | `EMAIL_VERIFICATION_TTL_SECONDS` | api | Default `86400` (24 h) |
 

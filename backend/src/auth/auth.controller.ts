@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   Post,
   Req,
@@ -15,7 +16,7 @@ import { CsrfGuard } from '../common/guards/csrf.guard';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { newRequestId } from '../common/request-id';
 import { SupportGuestService } from '../support/support-guest.service';
-import { AuthService } from './auth.service';
+import { AuthService, type ClientMeta } from './auth.service';
 import type { RequestUser } from './auth.types';
 import { CookieService } from './cookie.service';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -23,6 +24,11 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+
+function clientMeta(req: Request): ClientMeta {
+  const ua = req.headers['user-agent'];
+  return { userAgent: typeof ua === 'string' ? ua : null, ipAddress: req.ip ?? null };
+}
 
 @Controller('api/v1/auth')
 export class AuthController {
@@ -34,8 +40,12 @@ export class AuthController {
 
   @Post('register')
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
-  async register(@Body() dto: RegisterDto, @Res({ passthrough: true }) res: Response) {
-    const result = await this.auth.register(dto);
+  async register(
+    @Body() dto: RegisterDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.auth.register(dto, clientMeta(req));
     this.cookies.setAuthCookies(res, {
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
@@ -51,8 +61,8 @@ export class AuthController {
   @Post('login')
   @HttpCode(200)
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
-  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
-    const result = await this.auth.login(dto);
+  async login(@Body() dto: LoginDto, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const result = await this.auth.login(dto, clientMeta(req));
     this.cookies.setAuthCookies(res, {
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
@@ -70,7 +80,7 @@ export class AuthController {
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const name = process.env.REFRESH_COOKIE_NAME ?? 'refresh_token';
-    const result = await this.auth.refresh(req.cookies?.[name]);
+    const result = await this.auth.refresh(req.cookies?.[name], clientMeta(req));
     this.cookies.setAuthCookies(res, {
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
@@ -94,15 +104,41 @@ export class AuthController {
     return createSuccessResponse({ ok: true }, newRequestId());
   }
 
+  /**
+   * Cheap liveness check for the single-device rule: the browser polls this (and on
+   * tab focus) so a device replaced by a newer login is signed out promptly.
+   * JwtAuthGuard answers 401 SESSION_REPLACED for a replaced session.
+   */
+  @Get('session')
+  @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  session() {
+    return createSuccessResponse({ active: true }, newRequestId());
+  }
+
+  /**
+   * Clears auth cookies without needing a valid session — used by a device that was
+   * signed out by a newer login (its access token is already rejected).
+   */
+  @Post('session/clear')
+  @HttpCode(200)
+  @UseGuards(CsrfGuard)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  clearSession(@Res({ passthrough: true }) res: Response) {
+    this.cookies.clearAuthCookies(res);
+    return createSuccessResponse({ ok: true }, newRequestId());
+  }
+
   @Post('change-password')
   @HttpCode(200)
   @UseGuards(JwtAuthGuard, CsrfGuard)
   async changePassword(
     @CurrentUser() user: RequestUser,
     @Body() dto: ChangePasswordDto,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const result = await this.auth.changePassword(user, dto);
+    const result = await this.auth.changePassword(user, dto, clientMeta(req));
     this.cookies.setAuthCookies(res, {
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
