@@ -1,4 +1,6 @@
 import type {
+  AdminExamDetail,
+  AdminExamQuestion,
   AdminExamUploadResult,
   ExamAttemptResult,
   ExamGuideConfig,
@@ -108,4 +110,46 @@ export function listAdminExams(params?: { cursor?: string; limit?: number }) {
       _count: { attempts: number };
     }>
   >(`/admin/exams?${sp.toString()}`);
+}
+
+/** Admin / moderator edit view — includes correct answers. */
+export function getAdminExam(id: string): Promise<AdminExamDetail> {
+  return apiFetch<AdminExamDetail>(`/admin/exams/${encodeURIComponent(id)}`);
+}
+
+export function updateAdminExam(
+  id: string,
+  body: {
+    title?: string;
+    description?: string | null;
+    durationInMinutes?: number;
+    isPublished?: boolean;
+  },
+): Promise<AdminExamDetail> {
+  return apiFetch<AdminExamDetail>(`/admin/exams/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  });
+}
+
+export function updateAdminExamQuestion(
+  examId: string,
+  questionId: string,
+  body: {
+    questionText?: string;
+    options?: string[];
+    correctOptionIndex?: number;
+    explanation?: string | null;
+  },
+): Promise<AdminExamQuestion> {
+  return apiFetch<AdminExamQuestion>(
+    `/admin/exams/${encodeURIComponent(examId)}/questions/${encodeURIComponent(questionId)}`,
+    { method: 'PATCH', body: JSON.stringify(body) },
+  );
+}
+
+export function deleteAdminExam(
+  id: string,
+): Promise<{ id: string; title: string; deletedAttempts: number; deleted: true }> {
+  return apiFetch(`/admin/exams/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }

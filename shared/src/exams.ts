@@ -94,6 +94,32 @@ export type AdminExamUploadResult = {
 };
 
 /** `/exams` (Quiz) sidebar guide item (UTF-8 Bengali supported). */
+/** Admin edit view of a quiz — includes answers (admin / moderator only). */
+export type AdminExamQuestion = {
+  id: string;
+  questionText: string;
+  options: string[];
+  correctAnswer: string;
+  /** 0–3 when `correctAnswer` matches an option; -1 if it no longer does. */
+  correctOptionIndex: number;
+  explanation: string | null;
+  sortOrder: number;
+};
+
+export type AdminExamDetail = {
+  id: string;
+  title: string;
+  slug: string;
+  description: string | null;
+  totalQuestions: number;
+  durationInMinutes: number;
+  isPublished: boolean;
+  createdAt: string;
+  updatedAt: string;
+  attemptCount: number;
+  questions: AdminExamQuestion[];
+};
+
 export type ExamGuideItem = {
   id: string;
   text: string;

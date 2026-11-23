@@ -14,7 +14,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { ExamGuideEditor } from '@/features/admin/exams/exam-guide-editor';
 import { FileDropzone } from '@/features/admin/question-imports/file-dropzone';
 import { ApiError } from '@/lib/api/client';
-import { listAdminExams, uploadAdminExam } from '@/lib/api/exams';
+import { deleteAdminExam, listAdminExams, uploadAdminExam } from '@/lib/api/exams';
+import { revalidateExamsCache } from '@/lib/api/revalidate-exams';
+import { Badge } from '@/components/ui/badge';
+import { ConfirmButton } from '@/components/ui/confirm-button';
 import { adminDownloadUrl } from '@/lib/api/upload';
 import type { AdminExamUploadResult } from '@your-academy/shared';
 
@@ -50,6 +53,17 @@ export default function AdminExamUploadPage() {
   });
   const examItems = exams.data?.pages.flatMap((p) => p.data) ?? [];
 
+  const [listError, setListError] = useState<string | null>(null);
+  const removeExam = useMutation({
+    mutationFn: deleteAdminExam,
+    onSuccess: async () => {
+      setListError(null);
+      void qc.invalidateQueries({ queryKey: ['admin-exams'] });
+      await revalidateExamsCache();
+    },
+    onError: (err) => setListError(err instanceof ApiError ? err.message : 'Delete failed'),
+  });
+
   const upload = useMutation({
     mutationFn: uploadAdminExam,
     onSuccess: (data) => {
@@ -57,6 +71,7 @@ export default function AdminExamUploadPage() {
       setError(null);
       setFile(null);
       void qc.invalidateQueries({ queryKey: ['admin-exams'] });
+      void revalidateExamsCache();
     },
     onError: (err) => {
       setResult(null);
@@ -68,7 +83,7 @@ export default function AdminExamUploadPage() {
     <AdminPage>
       <PageHeader
         title="Quiz"
-        description="Upload Excel · edit listing guide · publish."
+        description="Upload Excel · edit, unpublish, or delete quizzes · edit the listing guide."
       />
 
       <AdminSection title="Listing guide">
@@ -187,7 +202,7 @@ export default function AdminExamUploadPage() {
               <Alert>
                 Created <strong>{result.title}</strong> with {result.totalQuestions} questions (
                 {result.durationInMinutes} mins).{' '}
-                <Link href={`/exams/${result.slug}`} className="font-semibold underline">
+                <Link href={`/exams/${encodeURIComponent(result.slug)}`} className="font-semibold underline">
                   Open public exam
                 </Link>
                 {result.parseWarnings.length ? (
@@ -221,7 +236,8 @@ export default function AdminExamUploadPage() {
       </AdminSection>
 
       <AdminSection title="Existing exams">
-        <AdminFormPanel title="Published exams">
+        <AdminFormPanel title="All quizzes">
+          {listError ? <Alert variant="danger" className="mb-3">{listError}</Alert> : null}
           {exams.isLoading ? (
             <p className="text-sm text-[var(--muted)]">Loading…</p>
           ) : examItems.length ? (
@@ -233,17 +249,38 @@ export default function AdminExamUploadPage() {
                     className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-2"
                   >
                     <div className="min-w-0">
-                      <p className="font-medium break-words text-[var(--ink)]">{exam.title}</p>
+                      <p className="flex flex-wrap items-center gap-2 font-medium break-words text-[var(--ink)]">
+                        {exam.title}
+                        {exam.isPublished ? null : <Badge variant="warning">Draft</Badge>}
+                      </p>
                       <p className="mt-0.5 text-xs text-[var(--muted)]">
                         {exam.totalQuestions} Q · {exam.durationInMinutes} mins ·{' '}
                         {exam._count.attempts} attempts
                       </p>
                     </div>
-                    <Link href={`/exams/${exam.slug}`} className="shrink-0">
-                      <Button size="sm" variant="outline" className="h-10 w-full sm:w-auto">
-                        View
-                      </Button>
-                    </Link>
+                    <div className="flex shrink-0 flex-wrap gap-2">
+                      <Link href={`/exams/${encodeURIComponent(exam.slug)}`}>
+                        <Button size="sm" variant="outline" className="h-10">
+                          View
+                        </Button>
+                      </Link>
+                      <Link href={`/admin/exams/${exam.id}`}>
+                        <Button size="sm" variant="outline" className="h-10">
+                          Edit
+                        </Button>
+                      </Link>
+                      <ConfirmButton
+                        size="sm"
+                        variant="ghost"
+                        className="h-10 text-[var(--highlight)]"
+                        confirmTitle="Delete this quiz?"
+                        confirmMessage={`Delete “${exam.title}”${exam._count.attempts ? ` and ${exam._count.attempts} attempt(s)` : ''}? This cannot be undone.`}
+                        confirmLabel="Delete quiz"
+                        onConfirm={() => removeExam.mutateAsync(exam.id)}
+                      >
+                        Delete
+                      </ConfirmButton>
+                    </div>
                   </li>
                 ))}
               </ul>

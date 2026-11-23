@@ -1,7 +1,11 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
   Post,
   Put,
   Query,
@@ -23,6 +27,7 @@ import { PermissionsGuard } from '../common/guards/permissions.guard';
 import { parseLimit } from '../common/pagination';
 import { newRequestId } from '../common/request-id';
 import { UpdateExamGuideDto } from './dto/update-exam-guide.dto';
+import { UpdateExamDto, UpdateExamQuestionDto } from './dto/update-exam.dto';
 import { ExamsService } from './exams.service';
 
 @Controller('api/v1/admin/exams')
@@ -97,5 +102,36 @@ export class AdminExamsController {
       createdById: user.userId,
     });
     return createSuccessResponse(data, newRequestId());
+  }
+
+  // `:id` routes stay below the static `template` / `guide` routes so they never shadow them.
+  @Get(':id')
+  async detail(@Param('id', ParseUUIDPipe) id: string) {
+    return createSuccessResponse(await this.exams.getAdminDetail(id), newRequestId());
+  }
+
+  @Patch(':id')
+  @UseGuards(CsrfGuard)
+  async update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateExamDto) {
+    return createSuccessResponse(await this.exams.updateMeta(id, dto), newRequestId());
+  }
+
+  @Patch(':id/questions/:questionId')
+  @UseGuards(CsrfGuard)
+  async updateQuestion(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('questionId', ParseUUIDPipe) questionId: string,
+    @Body() dto: UpdateExamQuestionDto,
+  ) {
+    return createSuccessResponse(
+      await this.exams.updateQuestion(id, questionId, dto),
+      newRequestId(),
+    );
+  }
+
+  @Delete(':id')
+  @UseGuards(CsrfGuard)
+  async remove(@Param('id', ParseUUIDPipe) id: string) {
+    return createSuccessResponse(await this.exams.remove(id), newRequestId());
   }
 }

@@ -9,6 +9,8 @@ import {
   DEFAULT_EXAM_GUIDE_ITEMS,
   DEFAULT_EXAM_GUIDE_TITLE,
   createErrorResponse,
+  type AdminExamDetail,
+  type AdminExamQuestion,
   type ExamGuideConfig,
   type ExamGuideItem,
   type TimedAttemptSummary,
@@ -20,6 +22,7 @@ import { paginateById, parseLimit } from '../common/pagination';
 import { buildExamTemplateBuffer, parseExamWorkbook } from './exam-excel-parser';
 import { slugifyExamTitle } from './exam-slug';
 import type { SubmitExamAttemptDto } from './dto/submit-exam-attempt.dto';
+import type { UpdateExamDto, UpdateExamQuestionDto } from './dto/update-exam.dto';
 import type { UpdateExamGuideDto } from './dto/update-exam-guide.dto';
 
 const UUID_RE =
@@ -478,6 +481,151 @@ export class ExamsService {
       },
     });
     return paginateById(rows, limit);
+  }
+
+  /** Admin edit view: every question with its answer, published or not. */
+  async getAdminDetail(id: string): Promise<AdminExamDetail> {
+    const exam = await this.prisma.exam.findUnique({
+      where: { id },
+      include: {
+        questions: { orderBy: { sortOrder: 'asc' } },
+        _count: { select: { attempts: true } },
+      },
+    });
+    if (!exam) throw this.examNotFound();
+    return {
+      id: exam.id,
+      title: exam.title,
+      slug: exam.slug,
+      description: exam.description,
+      totalQuestions: exam.totalQuestions,
+      durationInMinutes: exam.durationInMinutes,
+      isPublished: exam.isPublished,
+      createdAt: exam.createdAt.toISOString(),
+      updatedAt: exam.updatedAt.toISOString(),
+      attemptCount: exam._count.attempts,
+      questions: exam.questions.map((q) => this.toAdminQuestion(q)),
+    };
+  }
+
+  /** Edit title / description / duration / published. The slug is kept so links keep working. */
+  async updateMeta(id: string, dto: UpdateExamDto): Promise<AdminExamDetail> {
+    await this.assertExists(id);
+    const data: Prisma.ExamUpdateInput = {};
+    if (dto.title !== undefined) {
+      const title = dto.title.trim();
+      if (!title) {
+        throw new BadRequestException(
+          createErrorResponse('TITLE_REQUIRED', 'Exam title is required', newRequestId()),
+        );
+      }
+      data.title = title.slice(0, 200);
+    }
+    if (dto.description !== undefined) data.description = dto.description?.trim() || null;
+    if (dto.durationInMinutes !== undefined) data.durationInMinutes = dto.durationInMinutes;
+    if (dto.isPublished !== undefined) data.isPublished = dto.isPublished;
+    await this.prisma.exam.update({ where: { id }, data });
+    return this.getAdminDetail(id);
+  }
+
+  /**
+   * Edit one question. `correctAnswer` is stored as the option text (how attempts are
+   * scored), so it is recomputed whenever the options or the chosen index change.
+   * Scores of past attempts are not recalculated.
+   */
+  async updateQuestion(
+    examId: string,
+    questionId: string,
+    dto: UpdateExamQuestionDto,
+  ): Promise<AdminExamQuestion> {
+    const question = await this.prisma.examQuestion.findFirst({
+      where: { id: questionId, examId },
+    });
+    if (!question) {
+      throw new NotFoundException(
+        createErrorResponse('EXAM_QUESTION_NOT_FOUND', 'Question not found', newRequestId()),
+      );
+    }
+
+    const currentOptions = asStringOptions(question.options);
+    const options = dto.options ? dto.options.map((o) => o.trim()) : currentOptions;
+    if (options.some((o) => !o)) {
+      throw new BadRequestException(
+        createErrorResponse('INVALID_OPTIONS', 'All four options are required', newRequestId()),
+      );
+    }
+    if (new Set(options).size !== options.length) {
+      // Answers are matched by option text, so duplicates would make scoring ambiguous.
+      throw new BadRequestException(
+        createErrorResponse('DUPLICATE_OPTIONS', 'Options must all be different', newRequestId()),
+      );
+    }
+    const index = dto.correctOptionIndex ?? currentOptions.indexOf(question.correctAnswer);
+    if (index < 0 || index >= options.length) {
+      throw new BadRequestException(
+        createErrorResponse('CORRECT_ANSWER_REQUIRED', 'Choose the correct option', newRequestId()),
+      );
+    }
+
+    const data: Prisma.ExamQuestionUpdateInput = {
+      options,
+      correctAnswer: options[index],
+    };
+    if (dto.questionText !== undefined) {
+      const text = dto.questionText.trim();
+      if (!text) {
+        throw new BadRequestException(
+          createErrorResponse('QUESTION_REQUIRED', 'Question text is required', newRequestId()),
+        );
+      }
+      data.questionText = text;
+    }
+    if (dto.explanation !== undefined) data.explanation = dto.explanation?.trim() || null;
+
+    const updated = await this.prisma.examQuestion.update({ where: { id: questionId }, data });
+    return this.toAdminQuestion(updated);
+  }
+
+  /** Permanently deletes the quiz with its questions and all attempts (cascade). */
+  async remove(id: string) {
+    const exam = await this.prisma.exam.findUnique({
+      where: { id },
+      select: { id: true, title: true, _count: { select: { attempts: true } } },
+    });
+    if (!exam) throw this.examNotFound();
+    await this.prisma.exam.delete({ where: { id } });
+    return { id: exam.id, title: exam.title, deletedAttempts: exam._count.attempts, deleted: true };
+  }
+
+  private async assertExists(id: string) {
+    const exists = await this.prisma.exam.findUnique({ where: { id }, select: { id: true } });
+    if (!exists) throw this.examNotFound();
+  }
+
+  private examNotFound() {
+    return new NotFoundException(
+      createErrorResponse('EXAM_NOT_FOUND', 'Exam not found', newRequestId()),
+    );
+  }
+
+  private toAdminQuestion(q: {
+    id: string;
+    questionText: string;
+    options: Prisma.JsonValue;
+    correctAnswer: string;
+    explanation: string | null;
+    sortOrder: number;
+  }): AdminExamQuestion {
+    const options = asStringOptions(q.options);
+    return {
+      id: q.id,
+      questionText: q.questionText,
+      options,
+      correctAnswer: q.correctAnswer,
+      correctOptionIndex: options.indexOf(q.correctAnswer),
+      explanation: q.explanation,
+      sortOrder: q.sortOrder,
+    };
   }
 
   /** Public + admin: Quiz listing sidebar guide. Seeds defaults when missing. */
