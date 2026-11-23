@@ -15,6 +15,7 @@ const MARKETING_PATHS = [
   '/written-question-bank-categories',
   '/topic-categories',
   '/topic-base',
+  '/privacy-policy',
 ] as const;
 
 /**

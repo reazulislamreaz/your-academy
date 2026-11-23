@@ -9,6 +9,7 @@ const ACCOUNT_LINKS = [
   { href: '/#faq', label: 'FAQ' },
   { href: '/register', label: 'Create free account' },
   { href: '/login', label: 'Sign in' },
+  { href: '/privacy-policy', label: 'Privacy Policy' },
 ] as const;
 
 type Props = {

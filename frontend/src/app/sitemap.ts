@@ -15,6 +15,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     '/news',
     '/exams',
     '/model-test',
+    '/privacy-policy',
   ] as const;
 
   return paths.map((path) => ({

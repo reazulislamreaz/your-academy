@@ -488,6 +488,15 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Impact | Migration `20261122153000_social_links`, SocialLinksModule, admin page, marketing footer props |
 | Status | **CONFIRMED** (product request 2026-11-22) |
 
+### DEC-047 — Public Privacy Policy page
+
+| Field | Value |
+|-------|-------|
+| Question | Should the marketing site publish a Privacy Policy, and what must it say? |
+| Decision | Static page at `/privacy-policy` under `(marketing)` (footer "Account" column link, sitemap, public marketing prefix). Content describes only data flows present in code: account fields, exam/quiz submissions (guest + linked), learning activity + heartbeats, support chat (guest name/WhatsApp, attachments), session IP/user-agent, audit logs, auth/CSRF/support-guest cookies, local/session storage keys, Cloudinary, SMTP email, VPS hosting. No analytics, ads, or payments. Bracketed placeholders (company, contact, jurisdiction, providers, retention, minimum age) must be filled by the business. Update the page whenever a cookie, vendor, or personal-data field changes. |
+| Impact | `frontend/src/app/(marketing)/privacy-policy/page.tsx`, footer, sitemap, role-routing, social-links revalidate paths |
+| Status | **NEEDS APPROVAL** — draft wording and placeholders pending owner + legal review (2026-11-23) |
+
 ### Deferred / NEEDS APPROVAL (explicitly out of Phase 1)
 
 | Item | Notes |
