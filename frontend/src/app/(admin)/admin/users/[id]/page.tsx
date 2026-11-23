@@ -16,6 +16,9 @@ import { AdminUsersDetailPageSkeleton } from '@/components/skeletons';
 import { useState, type ReactNode } from 'react';
 import { AdminPage, AdminSection } from '@/components/admin/admin-page';
 import { AdminUserStatus } from '@/components/admin/admin-status';
+import { useMe } from '@/features/auth/use-auth';
+import { StaffUserActions } from '@/features/admin/users/staff-user-dialogs';
+import { ROLE_LABELS, UserRole } from '@your-academy/shared';
 
 function formatDuration(seconds: number): string {
   if (seconds < 60) return `${seconds}s`;
@@ -28,6 +31,7 @@ function formatDuration(seconds: number): string {
 
 export default function AdminUserDetailPage() {
   const params = useParams<{ id: string }>();
+  const meId = useMe().data?.id;
   const id = params.id;
   const qc = useQueryClient();
   const [error, setError] = useState<string | null>(null);
@@ -83,7 +87,8 @@ export default function AdminUserDetailPage() {
                 Back
               </Button>
             </Link>
-            {profile.role !== 'ADMIN' ? (
+            <StaffUserActions user={profile} currentUserId={meId} />
+            {profile.id !== meId ? (
               profile.status === 'ACTIVE' ? (
                 <ConfirmButton
                   size="sm"
@@ -121,7 +126,7 @@ export default function AdminUserDetailPage() {
         <AdminSection title="Profile" className="lg:col-span-1">
           <Surface className="space-y-4 p-4 sm:p-5">
             <div className="flex flex-wrap gap-2">
-              <Badge variant="outline">{profile.role}</Badge>
+              <Badge variant="outline">{ROLE_LABELS[profile.role as UserRole] ?? profile.role}</Badge>
               <AdminUserStatus status={profile.status} />
               {profile.online ? <Badge variant="success">Online</Badge> : null}
             </div>

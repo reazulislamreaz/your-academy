@@ -9,14 +9,13 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { UserRole } from '@prisma/client';
 import { createSuccessResponse } from '@your-academy/shared';
 import type { RequestUser } from '../auth/auth.types';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { Roles } from '../common/decorators/roles.decorator';
+import { RequirePermission } from '../common/decorators/require-permission.decorator';
 import { CsrfGuard } from '../common/guards/csrf.guard';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { RolesGuard } from '../common/guards/roles.guard';
+import { PermissionsGuard } from '../common/guards/permissions.guard';
 import { newRequestId } from '../common/request-id';
 import { CategoriesService } from './categories.service';
 import { parseCategoryScope } from './category-scope';
@@ -40,8 +39,8 @@ export class CategoriesController {
   }
 
   @Get('admin/categories')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('categories')
   async listAdmin(@Query('scope') scope?: string) {
     return createSuccessResponse(
       await this.categories.listAdmin(parseCategoryScope(scope)),
@@ -50,22 +49,22 @@ export class CategoriesController {
   }
 
   @Post('admin/categories')
-  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
-  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, PermissionsGuard, CsrfGuard)
+  @RequirePermission('categories')
   async create(@Body() dto: CreateCategoryDto) {
     return createSuccessResponse(await this.categories.create(dto), newRequestId());
   }
 
   @Patch('admin/categories/:id')
-  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
-  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, PermissionsGuard, CsrfGuard)
+  @RequirePermission('categories')
   async update(@Param('id') id: string, @Body() dto: UpdateCategoryDto) {
     return createSuccessResponse(await this.categories.update(id, dto), newRequestId());
   }
 
   @Post('admin/categories/:id/activate')
-  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
-  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, PermissionsGuard, CsrfGuard)
+  @RequirePermission('categories')
   async activate(@CurrentUser() user: RequestUser, @Param('id') id: string) {
     return createSuccessResponse(
       await this.categories.activate(id, user.userId),
@@ -74,8 +73,8 @@ export class CategoriesController {
   }
 
   @Post('admin/categories/:id/deactivate')
-  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
-  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, PermissionsGuard, CsrfGuard)
+  @RequirePermission('categories')
   async deactivate(@CurrentUser() user: RequestUser, @Param('id') id: string) {
     return createSuccessResponse(
       await this.categories.deactivate(id, user.userId),
@@ -88,8 +87,8 @@ export class CategoriesController {
    * only when the category is unused.
    */
   @Delete('admin/categories/:id')
-  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
-  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, PermissionsGuard, CsrfGuard)
+  @RequirePermission('categories')
   async remove(
     @CurrentUser() user: RequestUser,
     @Param('id') id: string,

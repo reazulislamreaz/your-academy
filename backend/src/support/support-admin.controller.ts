@@ -9,13 +9,12 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { UserRole } from '@prisma/client';
 import { createSuccessResponse } from '@your-academy/shared';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { Roles } from '../common/decorators/roles.decorator';
+import { RequirePermission } from '../common/decorators/require-permission.decorator';
 import { CsrfGuard } from '../common/guards/csrf.guard';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { RolesGuard } from '../common/guards/roles.guard';
+import { PermissionsGuard } from '../common/guards/permissions.guard';
 import { newRequestId } from '../common/request-id';
 import type { RequestUser } from '../auth/auth.types';
 import {
@@ -29,8 +28,8 @@ import { SupportMessageService } from './support-message.service';
 import { SupportPresenceService } from './support-presence.service';
 
 @Controller('api/v1/admin/support')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
+@RequirePermission('support')
 export class SupportAdminController {
   constructor(
     private readonly conversations: SupportConversationService,

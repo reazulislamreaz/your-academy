@@ -66,13 +66,14 @@ Forbidden without approval: microservices, GraphQL, alternate ORMs, payment prov
 | Trial | **Disabled** — registration does not grant a free-trial window; `AccessControlService.isTrialActive` always false. Schema columns remain for compatibility. |
 | Without entitlement | Login, homepage, browse/search/filter questions, titles/content/options, save MCQs, profile, bookmarks, activity, news, **published PDFs** (DEC-001) |
 | Answers gated | Correct answers, indicators, explanations — **omit from API** unless admin or active subscription |
-| Questions CRUD | **Admin only** |
+| Questions CRUD | **Admin or Moderator** (content sections only — DEC-048) |
 | Question browse | Public Preli bank + homepage via `/api/v1/public/questions` (DEC-031); learner practice `/questions*` remains authenticated (DEC-003) |
 | Payments | Not in v1; keep subscription tables modular |
 | Register fields | name, WhatsApp (unique), password; avatar optional; email optional at register |
 | Password reset | **Email** only (DEC-004); needs email on account; no enumeration |
 | Web auth | HTTP-only cookies + CSRF (DEC-012); never `localStorage` for tokens |
 | Guest exams | Public timed `Exam` / `ExamQuestion` / `ExamAttempt` (DEC-039); separate from bank `Question` + PracticeSet; answers only after submit |
+| Dashboard roles | `ADMIN` (everything) / `MODERATOR` (Preli, Written, Topic, Quiz, Model Test, Newspaper only). Permissions in `shared/src/permissions.ts`; every `/admin/*` route needs `@RequirePermission` (DEC-048). Staff accounts are Admin-created only |
 
 ---
 
@@ -135,7 +136,7 @@ Forbidden without approval: microservices, GraphQL, alternate ORMs, payment prov
 - Central `AccessControlService` (Phase 5) — do not duplicate trial/subscription math.
 - Strip `isCorrect` / `explanation` / `correctOptionId` when not entitled; absence only (never fake `false`).
 - RBAC guards on every protected route; IDOR checks on user-owned resources.
-- Admins: content management via `/admin/*`; learner answer bypass per DEC-014 (proposed admin bypass).
+- Staff: content management via `/admin/*` guarded by `PermissionsGuard` + `@RequirePermission` (DEC-048) — never add an `/admin/*` route without one. Learner answer bypass per DEC-014 stays **Admin-only**.
 
 ---
 
@@ -243,6 +244,7 @@ Forbidden without approval: microservices, GraphQL, alternate ORMs, payment prov
 | `docs/00`–`03` | Overview, business, functional, NFR |
 | `docs/19` DEC-031 | Public Preli Question Bank (no login) |
 | `docs/19` DEC-046 | Admin-managed footer social links |
+| `docs/19` DEC-048 | Admin / Moderator roles, account settings, email verification |
 | `docs/04`–`06` | Architecture, DB, API |
 | `docs/07`–`08` | Auth, access control |
 | `docs/09`–`10` | Cloudinary, BullMQ |

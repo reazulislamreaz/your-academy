@@ -311,6 +311,8 @@ export type MeUser = {
   name: string;
   whatsappNumber: string;
   email: string | null;
+  /** True when `email` was confirmed via the emailed link (DEC-048). */
+  emailVerified?: boolean;
   role: string;
   status: string;
   createdAt?: string;

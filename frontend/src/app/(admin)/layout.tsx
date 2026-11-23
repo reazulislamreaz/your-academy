@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { AdminShell } from '@/components/layout/admin-shell';
 import { LearnerThemeProvider } from '@/components/theme/learner-theme-provider';
 import { AdminGate } from '@/features/admin/admin-gate';
+import { AdminRouteGuard } from '@/features/admin/admin-route-guard';
 import { LEARNER_THEME_BOOT_SCRIPT, LEARNER_THEME_DEFAULT } from '@/lib/learner-theme';
 
 /**
@@ -18,7 +19,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       <script dangerouslySetInnerHTML={{ __html: LEARNER_THEME_BOOT_SCRIPT }} />
       <LearnerThemeProvider>
         <AdminGate>
-          <AdminShell>{children}</AdminShell>
+          <AdminShell>
+            <AdminRouteGuard>{children}</AdminRouteGuard>
+          </AdminShell>
         </AdminGate>
       </LearnerThemeProvider>
     </div>

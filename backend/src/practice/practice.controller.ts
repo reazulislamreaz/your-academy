@@ -8,14 +8,14 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { PracticeSetStatus, UserRole } from '@prisma/client';
+import { PracticeSetStatus } from '@prisma/client';
 import { createSuccessResponse } from '@your-academy/shared';
 import type { RequestUser } from '../auth/auth.types';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { Roles } from '../common/decorators/roles.decorator';
+import { RequirePermission } from '../common/decorators/require-permission.decorator';
 import { CsrfGuard } from '../common/guards/csrf.guard';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { RolesGuard } from '../common/guards/roles.guard';
+import { PermissionsGuard } from '../common/guards/permissions.guard';
 import { newRequestId } from '../common/request-id';
 import {
   CreatePracticeSetDto,
@@ -138,8 +138,8 @@ export class PracticeController {
   }
 
   @Get('admin/practice-sets')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('quiz')
   async adminList(
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
@@ -161,36 +161,36 @@ export class PracticeController {
   }
 
   @Post('admin/practice-sets')
-  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
-  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, PermissionsGuard, CsrfGuard)
+  @RequirePermission('quiz')
   async adminCreate(@CurrentUser() user: RequestUser, @Body() dto: CreatePracticeSetDto) {
     return createSuccessResponse(await this.practice.adminCreate(user, dto), newRequestId());
   }
 
   @Patch('admin/practice-sets/:id')
-  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
-  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, PermissionsGuard, CsrfGuard)
+  @RequirePermission('quiz')
   async adminUpdate(@Param('id') id: string, @Body() dto: UpdatePracticeSetDto) {
     return createSuccessResponse(await this.practice.adminUpdate(id, dto), newRequestId());
   }
 
   @Patch('admin/practice-sets/:id/publish')
-  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
-  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, PermissionsGuard, CsrfGuard)
+  @RequirePermission('quiz')
   async adminPublish(@Param('id') id: string) {
     return createSuccessResponse(await this.practice.adminPublish(id), newRequestId());
   }
 
   @Patch('admin/practice-sets/:id/archive')
-  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
-  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, PermissionsGuard, CsrfGuard)
+  @RequirePermission('quiz')
   async adminArchive(@Param('id') id: string) {
     return createSuccessResponse(await this.practice.adminArchive(id), newRequestId());
   }
 
   @Get('admin/practice-attempts')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('examResults')
   async adminAttempts(
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
@@ -220,8 +220,8 @@ export class PracticeController {
   }
 
   @Get('admin/practice-attempts/:id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('examResults')
   async adminAttemptDetail(@CurrentUser() user: RequestUser, @Param('id') id: string) {
     return createSuccessResponse(
       await this.practice.getAttemptResult(user, id, { asAdmin: true }),

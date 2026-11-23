@@ -15,6 +15,7 @@ import {
 import { Surface } from '@/components/ui/surface';
 import { Skeleton } from '@/components/ui/skeleton';
 import { isUnauthorized, useMe } from '@/features/auth/use-auth';
+import { isStaffRole } from '@your-academy/shared';
 
 function AdminRouteBodySkeleton({ pathname }: { pathname: string }) {
   if (pathname.startsWith('/admin/dashboard')) return <AdminDashboardPageSkeleton />;
@@ -50,8 +51,9 @@ function AdminRouteBodySkeleton({ pathname }: { pathname: string }) {
 }
 
 /**
- * Client RBAC gate for the admin shell.
- * Non-admins are sent to the learner desk; API RolesGuard remains the security boundary.
+ * Client gate for the admin shell: only staff (Admin / Moderator) enter.
+ * Learners are sent to the learner desk. Per-section access is `AdminRouteGuard`;
+ * the API PermissionsGuard remains the security boundary.
  * While checking access, show full admin chrome so the page matches the real console.
  */
 export function AdminGate({ children }: { children: ReactNode }) {
@@ -66,7 +68,7 @@ export function AdminGate({ children }: { children: ReactNode }) {
       router.replace(`/login?next=${encodeURIComponent(next)}`);
       return;
     }
-    if (me.data.role !== 'ADMIN') {
+    if (!isStaffRole(me.data.role)) {
       router.replace('/home');
     }
   }, [me.isLoading, me.error, me.data, router, pathname]);
@@ -87,7 +89,7 @@ export function AdminGate({ children }: { children: ReactNode }) {
     );
   }
 
-  if (me.data.role !== 'ADMIN') {
+  if (!isStaffRole(me.data.role)) {
     return (
       <AdminChromeSkeleton label="Redirecting…">
         <AdminRouteBodySkeleton pathname={pathname} />

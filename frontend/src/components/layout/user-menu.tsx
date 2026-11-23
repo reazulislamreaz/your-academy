@@ -1,18 +1,19 @@
 'use client';
 
 import Link from 'next/link';
-import { LogIn, LogOut, LayoutDashboard, UserRound } from 'lucide-react';
+import { LogIn, LogOut, LayoutDashboard, UserCog, UserRound } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { useIsAdmin, useLogout, useMe } from '@/features/auth/use-auth';
+import { useIsStaff, useLogout, useMe } from '@/features/auth/use-auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { defaultPathForRole } from '@/lib/auth/role-routing';
 import { cn } from '@/lib/utils';
+import { ROLE_LABELS, UserRole } from '@your-academy/shared';
 import { UserAvatar } from './user-avatar';
 
 function roleLabel(role: string): string {
-  if (role === 'ADMIN') return 'Admin';
+  if (role === 'ADMIN' || role === 'MODERATOR') return ROLE_LABELS[role as UserRole];
   return 'Student';
 }
 
@@ -37,7 +38,7 @@ export function UserMenu({
 }) {
   const me = useMe();
   const logout = useLogout();
-  const isAdmin = useIsAdmin();
+  const isStaff = useIsStaff();
   const [open, setOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
   const panelId = useId();
@@ -147,14 +148,16 @@ export function UserMenu({
             Dashboard
           </Button>
         </Link>
-        {!isAdmin ? (
-          <Link href="/profile">
-            <Button variant="outline" size="sm" className="w-full justify-start gap-2">
+        <Link href={isStaff ? '/admin/account' : '/profile'}>
+          <Button variant="outline" size="sm" className="w-full justify-start gap-2">
+            {isStaff ? (
+              <UserCog className="size-4" aria-hidden />
+            ) : (
               <UserRound className="size-4" aria-hidden />
-              Profile
-            </Button>
-          </Link>
-        ) : null}
+            )}
+            {isStaff ? 'Account settings' : 'Profile'}
+          </Button>
+        </Link>
         <Button
           variant="ghost"
           size="sm"
@@ -217,6 +220,17 @@ export function UserMenu({
             <LayoutDashboard className="size-3.5 shrink-0" aria-hidden />
             Dashboard
           </Link>
+          {isStaff ? (
+            <Link
+              role="menuitem"
+              href="/admin/account"
+              className="flex items-center gap-2 rounded-[var(--radius-sm)] px-3 py-2.5 text-sm font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--bg-muted)]"
+              onClick={() => setOpen(false)}
+            >
+              <UserCog className="size-3.5 shrink-0" aria-hidden />
+              Account settings
+            </Link>
+          ) : null}
           <button
             type="button"
             role="menuitem"

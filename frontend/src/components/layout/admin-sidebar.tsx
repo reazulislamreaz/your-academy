@@ -4,9 +4,10 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
+import { useMe } from '@/features/auth/use-auth';
 import { cn } from '@/lib/utils';
 import { BrandMark } from './brand-mark';
-import { adminNavGroups, isAdminNavActive } from './admin-nav';
+import { adminNavGroupsForRole, isAdminNavActive } from './admin-nav';
 import { UserMenu } from './user-menu';
 
 const COLLAPSE_KEY = 'ya-admin-sidebar-collapsed';
@@ -17,6 +18,8 @@ type Props = {
 
 export function AdminSidebar({ footerExtra }: Props) {
   const pathname = usePathname();
+  // Show each role only the sections it may open (DEC-048).
+  const navGroups = adminNavGroupsForRole(useMe().data?.role);
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
@@ -111,7 +114,7 @@ export function AdminSidebar({ footerExtra }: Props) {
         )}
         aria-label="Admin"
       >
-        {adminNavGroups.map((group) => (
+        {navGroups.map((group) => (
           <div key={group.title} className="space-y-1">
             {!collapsed ? (
               <p className="px-3 pb-1 text-[0.625rem] font-semibold tracking-[0.14em] text-[var(--admin-sidebar-muted)] uppercase">

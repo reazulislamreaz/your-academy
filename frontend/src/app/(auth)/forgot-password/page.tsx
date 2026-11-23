@@ -41,7 +41,8 @@ export default function ForgotPasswordPage() {
           Reset password
         </h1>
         <p className="text-sm leading-relaxed text-[var(--muted-strong)]">
-          Enter the email on your account. If it matches, we send a reset link.
+          Enter the email on your account. If it matches, we send a reset link that works once and
+          expires in 30 minutes.
         </p>
       </div>
       <Surface
@@ -69,6 +70,11 @@ export default function ForgotPasswordPage() {
               />
             </Field>
             {error ? <Alert variant="danger">{error}</Alert> : null}
+            <p className="text-xs leading-relaxed text-[var(--muted-strong)]">
+              No email on your account? Ask an Admin to reset your password. Admin and Moderator
+              accounts need a <strong className="font-semibold">verified</strong> email (Account
+              Settings) to use this form.
+            </p>
             <Button
               type="submit"
               className="hero-cta-primary motion-press auth-submit auth-submit-gradient h-11 w-full"

@@ -5,9 +5,9 @@ import {
   Logger,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { MediaDeliveryType, MediaResourceType, UserRole } from '@prisma/client';
+import { MediaDeliveryType, MediaResourceType } from '@prisma/client';
 import { v2 as cloudinary } from 'cloudinary';
-import { createErrorResponse } from '@your-academy/shared';
+import { createErrorResponse, hasAnyPermission } from '@your-academy/shared';
 import type { RequestUser } from '../auth/auth.types';
 import { newRequestId } from '../common/request-id';
 import { PrismaService } from '../database/prisma.service';
@@ -20,6 +20,7 @@ import {
   PDF_MAX_BYTES,
   SUPPORT_ATTACHMENT_MAX_BYTES,
   SUPPORT_ATTACHMENT_MIMES,
+  UPLOAD_PURPOSE_PERMISSIONS,
   UPLOAD_PURPOSES,
 } from './storage.types';
 
@@ -327,17 +328,19 @@ export class StorageService {
   }
 
   private assertPurposeAllowed(purpose: UploadPurpose, user: RequestUser) {
-    if (purpose === 'avatar' || purpose === 'support-attachment') return;
-    if (user.role !== UserRole.ADMIN) {
+    const required = UPLOAD_PURPOSE_PERMISSIONS[purpose];
+    if (required === null) return;
+    if (!hasAnyPermission(user.role, required)) {
       throw new ForbiddenException(
         createErrorResponse(
           'FORBIDDEN',
-          'Only admins can upload this asset type',
+          'Your role cannot upload this asset type',
           newRequestId(),
         ),
       );
     }
   }
+
 
   /** Guest support uploads — folder keyed by guest session id (no User FK). */
   createGuestSupportUploadParams(

@@ -5,8 +5,10 @@ import {
   isAdminAppPath,
   isLearnerAppPath,
   isPublicMarketingPath,
+  toAppRole,
   type AppRole,
 } from '@/lib/auth/role-routing';
+import { isStaffRole } from '@your-academy/shared';
 
 const ACCESS = process.env.ACCESS_COOKIE_NAME ?? 'access_token';
 const REFRESH = process.env.REFRESH_COOKIE_NAME ?? 'refresh_token';
@@ -19,7 +21,7 @@ function readAccessRole(token: string | undefined): AppRole | null {
     if (!segment) return null;
     const json = atob(segment.replace(/-/g, '+').replace(/_/g, '/'));
     const payload = JSON.parse(json) as { role?: string };
-    return payload.role === 'ADMIN' ? 'ADMIN' : payload.role === 'USER' ? 'USER' : null;
+    return toAppRole(payload.role);
   } catch {
     return null;
   }
@@ -61,10 +63,11 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Admins must not enter learner / student dashboards.
-  if (isLearnerAppPath(pathname) && role === 'ADMIN') {
+  // Staff (Admin / Moderator) must not enter learner / student dashboards.
+  // Moderators opening an admin-only section see AdminGate's "Access denied".
+  if (isLearnerAppPath(pathname) && isStaffRole(role)) {
     const url = request.nextUrl.clone();
-    url.pathname = '/admin/dashboard';
+    url.pathname = defaultPathForRole(role);
     url.search = '';
     return NextResponse.redirect(url);
   }

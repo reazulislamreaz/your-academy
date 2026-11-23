@@ -11,24 +11,23 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { UserRole } from '@prisma/client';
 import { createSuccessResponse, cursorPaginationMeta } from '@your-academy/shared';
 import type { Response } from 'express';
 import { memoryStorage } from 'multer';
 import type { RequestUser } from '../auth/auth.types';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { Roles } from '../common/decorators/roles.decorator';
+import { RequirePermission } from '../common/decorators/require-permission.decorator';
 import { CsrfGuard } from '../common/guards/csrf.guard';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { RolesGuard } from '../common/guards/roles.guard';
+import { PermissionsGuard } from '../common/guards/permissions.guard';
 import { parseLimit } from '../common/pagination';
 import { newRequestId } from '../common/request-id';
 import { UpdateExamGuideDto } from './dto/update-exam-guide.dto';
 import { ExamsService } from './exams.service';
 
 @Controller('api/v1/admin/exams')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
+@RequirePermission('quiz')
 export class AdminExamsController {
   constructor(private readonly exams: ExamsService) {}
 

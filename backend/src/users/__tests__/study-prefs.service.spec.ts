@@ -43,6 +43,7 @@ describe('UsersService study prefs', () => {
     access as never,
     storage as never,
     practice as never,
+    {} as never,
   );
 
   const baseUser = {

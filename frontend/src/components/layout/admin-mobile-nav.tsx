@@ -8,7 +8,9 @@ import { LearnerThemePortal } from '@/components/theme/learner-theme-portal';
 import { useLearnerTheme } from '@/components/theme/learner-theme-provider';
 import { cn } from '@/lib/utils';
 import { useBodyScrollLock } from '@/lib/hooks/use-body-scroll-lock';
-import { adminNavGroups, adminNavItems, isAdminNavActive } from './admin-nav';
+import { ROLE_LABELS, UserRole } from '@your-academy/shared';
+import { useMe } from '@/features/auth/use-auth';
+import { adminNavGroupsForRole, adminNavItems, isAdminNavActive } from './admin-nav';
 import { BrandMark } from './brand-mark';
 import {
   HamburgerIcon,
@@ -20,6 +22,9 @@ import { UserMenu } from './user-menu';
 /** Compact mobile admin chrome: logo + title + drawer. */
 export function AdminMobileNav({ themeToggle }: { themeToggle?: ReactNode }) {
   const pathname = usePathname();
+  // Show each role only the sections it may open (DEC-048).
+  const role = useMe().data?.role;
+  const navGroups = adminNavGroupsForRole(role);
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const panelId = useId();
@@ -91,7 +96,7 @@ export function AdminMobileNav({ themeToggle }: { themeToggle?: ReactNode }) {
           inverseLogo={inverseLogo}
         >
           <nav className="flex flex-col gap-5" aria-label="Admin sections">
-            {adminNavGroups.map((group) => (
+            {navGroups.map((group) => (
               <div key={group.title}>
                 <p className="px-3 pb-2 text-[0.6875rem] font-semibold tracking-[0.16em] text-[var(--muted)] uppercase">
                   {group.title}
@@ -144,7 +149,7 @@ export function AdminMobileNav({ themeToggle }: { themeToggle?: ReactNode }) {
         <BrandMark markOnly href="/" className="[&_img]:h-8" />
         <div className="min-w-0 flex-1">
           <p className="truncate text-[0.65rem] font-semibold tracking-[0.14em] text-[var(--muted)] uppercase">
-            Admin
+            {role === 'MODERATOR' ? ROLE_LABELS[UserRole.MODERATOR] : ROLE_LABELS[UserRole.ADMIN]}
           </p>
           <p className="truncate text-sm font-semibold text-[var(--ink)]">{activeLabel}</p>
         </div>

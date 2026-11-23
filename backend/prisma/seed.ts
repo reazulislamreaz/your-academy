@@ -62,12 +62,15 @@ async function main() {
       status: UserStatus.ACTIVE,
       passwordHash,
       email: adminEmail,
+      // Operator-provisioned — trusted so the bootstrap admin can use password reset.
+      emailVerifiedAt: new Date(),
       deletedAt: null,
     },
     create: {
       name: 'Platform Admin',
       whatsappNumber: adminWhatsapp,
       email: adminEmail,
+      emailVerifiedAt: new Date(),
       passwordHash,
       role: UserRole.ADMIN,
       status: UserStatus.ACTIVE,

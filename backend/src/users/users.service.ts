@@ -1,4 +1,11 @@
-import { BadRequestException, Inject, Injectable, NotFoundException, forwardRef } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Inject,
+  Injectable,
+  NotFoundException,
+  forwardRef,
+} from '@nestjs/common';
 import { MediaResourceType, QuestionStatus } from '@prisma/client';
 import { createErrorResponse } from '@your-academy/shared';
 import type { RequestUser } from '../auth/auth.types';
@@ -8,6 +15,7 @@ import { PracticeService } from '../practice/practice.service';
 import { StorageService } from '../storage/storage.service';
 import { AccessControlService } from '../subscriptions/access-control.service';
 import type { UpdateStudyPrefsDto } from './dto/update-study-prefs.dto';
+import { EmailVerificationService } from './email-verification.service';
 
 @Injectable()
 export class UsersService {
@@ -17,6 +25,7 @@ export class UsersService {
     private readonly storage: StorageService,
     @Inject(forwardRef(() => PracticeService))
     private readonly practice: PracticeService,
+    private readonly emailVerification: EmailVerificationService,
   ) {}
 
   private async serializeMe(userId: string) {
@@ -80,6 +89,7 @@ export class UsersService {
       name: dbUser.name,
       whatsappNumber: dbUser.whatsappNumber,
       email: dbUser.email,
+      emailVerified: Boolean(dbUser.email && dbUser.emailVerifiedAt),
       role: dbUser.role,
       status: dbUser.status,
       createdAt: dbUser.createdAt.toISOString(),
@@ -99,15 +109,39 @@ export class UsersService {
   }
 
   async updateMe(user: RequestUser, data: { name?: string; email?: string | null }) {
+    const current = await this.prisma.user.findUniqueOrThrow({
+      where: { id: user.userId },
+      select: { email: true },
+    });
+    const nextEmail =
+      data.email === undefined ? undefined : data.email ? data.email.trim().toLowerCase() : null;
+    const emailChanged = nextEmail !== undefined && nextEmail !== current.email;
+
+    if (emailChanged && nextEmail) {
+      const taken = await this.prisma.user.findFirst({
+        where: { email: nextEmail, id: { not: user.userId } },
+        select: { id: true },
+      });
+      if (taken) {
+        throw new ConflictException(
+          createErrorResponse('EMAIL_EXISTS', 'Email already in use', newRequestId()),
+        );
+      }
+    }
+
     await this.prisma.user.update({
       where: { id: user.userId },
       data: {
         ...(data.name ? { name: data.name.trim() } : {}),
-        ...(data.email !== undefined
-          ? { email: data.email ? data.email.trim().toLowerCase() : null }
-          : {}),
+        // A new address must be re-proven before it can receive reset links.
+        ...(emailChanged ? { email: nextEmail, emailVerifiedAt: null } : {}),
       },
     });
+
+    if (emailChanged) {
+      await this.emailVerification.invalidateOutstanding(user.userId);
+      if (nextEmail) await this.emailVerification.sendForCurrentEmail(user.userId);
+    }
     return this.getMe(user);
   }
 

@@ -530,6 +530,15 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Legal bases | service provision, legitimate interests, consent (optional fields), legal obligation | Standard framework; legal review. |
 | Cloudflare cookies (`__cf_bm`) | "may be set" | Depends on Cloudflare zone settings; not verifiable from repo. |
 
+### DEC-048 — Dashboard roles: Admin + Moderator, account settings, email verification
+
+| Field | Value |
+|-------|-------|
+| Question | Should the dashboard support a limited Moderator role, admin-created staff accounts, self-service account settings, and verified-email password reset? |
+| Decision | **Yes.** `UserRole` gains `MODERATOR`. Permissions live in one map (`shared/src/permissions.ts`); backend `@RequirePermission` + `PermissionsGuard` on every `/admin/*` route (replaces `RolesGuard`), frontend nav/route gate/middleware read the same map. **Moderator** = full CRUD on Preli, Written, Topic, Quiz (**guest exams + practice sets**), Model Test, Newspaper (**documents + news**), plus the shared category trees and own Account Settings. Everything else (users, roles, homepage, social links/settings, support, dashboard KPIs, activity, audit, **exam results**) is Admin-only → `403`. Only Admins create staff accounts (WhatsApp E.164 + Argon2id password + role); nobody changes their own role or deactivates themselves; the last active Admin cannot be demoted/deactivated; Admins can reset **moderator** passwords (revokes sessions). Every staff user gets `/admin/account` (change password with current + confirm; add/change email with emailed confirmation link). Password reset links: 30 min, hashed, single-use; staff need a **verified** email, **learners keep the legacy rule** (any email) so existing students are not locked out. Learner self-registration unchanged. First admin: `pnpm admin:create`. |
+| Impact | Migration `20261123120000_staff_roles_email_verification` (enum value, `users.email_verified_at`, `email_verification_tokens`; backfills existing admin emails as verified). Admin/users/auth/storage/worker changes; `/admin/account`, `/verify-email`; docs 06, 07, 17. |
+| Status | **CONFIRMED** (product request 2026-11-23; quiz/newspaper scope and learner reset rule chosen by owner) |
+
 ### Deferred / NEEDS APPROVAL (explicitly out of Phase 1)
 
 | Item | Notes |

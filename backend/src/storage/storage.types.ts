@@ -1,3 +1,5 @@
+import type { DashboardPermission } from '@your-academy/shared';
+
 export const UPLOAD_PURPOSES = [
   'avatar',
   'question-image',
@@ -9,6 +11,22 @@ export const UPLOAD_PURPOSES = [
   'support-attachment',
 ] as const;
 export type UploadPurpose = (typeof UPLOAD_PURPOSES)[number];
+
+/**
+ * Dashboard permission needed per upload purpose (DEC-048); `null` = any signed-in user.
+ * Keeps moderator uploads (question images, newspaper PDFs) aligned with their sections.
+ */
+export const UPLOAD_PURPOSE_PERMISSIONS: Readonly<
+  Record<UploadPurpose, readonly DashboardPermission[] | null>
+> = {
+  avatar: null,
+  'support-attachment': null,
+  'question-image': ['preli', 'written', 'topic', 'quiz', 'modelTest'],
+  'news-cover': ['newspaper'],
+  pdf: ['newspaper'],
+  'homepage-hero': ['homepage'],
+  'homepage-tile-logo': ['homepage'],
+};
 
 /** Cloudinary eager transform: fit into 256×256, auto format/quality (backend resize). */
 export const HOMEPAGE_TILE_LOGO_EAGER = 'c_fit,w_256,h_256,q_auto:good,f_auto';

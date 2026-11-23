@@ -11,15 +11,14 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { UserRole } from '@prisma/client';
 import { createSuccessResponse, cursorPaginationMeta } from '@your-academy/shared';
 import type { Response } from 'express';
 import type { RequestUser } from '../auth/auth.types';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { Roles } from '../common/decorators/roles.decorator';
+import { RequirePermission } from '../common/decorators/require-permission.decorator';
 import { CsrfGuard } from '../common/guards/csrf.guard';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { RolesGuard } from '../common/guards/roles.guard';
+import { PermissionsGuard } from '../common/guards/permissions.guard';
 import { parseLimit } from '../common/pagination';
 import { newRequestId } from '../common/request-id';
 import { CreateDocumentDto, UpdateDocumentDto } from './dto/create-document.dto';
@@ -80,8 +79,8 @@ export class DocumentsController {
   }
 
   @Get('admin/documents')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('newspaper')
   async adminList(@Query('cursor') cursor?: string, @Query('limit') limit?: string) {
     const take = parseLimit(limit, 50);
     const data = await this.documents.adminList({ cursor, limit: take });
@@ -93,22 +92,22 @@ export class DocumentsController {
   }
 
   @Get('admin/documents/:id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('newspaper')
   async adminGet(@Param('id') id: string) {
     return createSuccessResponse(await this.documents.adminGet(id), newRequestId());
   }
 
   @Post('admin/documents')
-  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
-  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, PermissionsGuard, CsrfGuard)
+  @RequirePermission('newspaper')
   async create(@CurrentUser() user: RequestUser, @Body() dto: CreateDocumentDto) {
     return createSuccessResponse(await this.documents.create(user, dto), newRequestId());
   }
 
   @Patch('admin/documents/:id')
-  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
-  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, PermissionsGuard, CsrfGuard)
+  @RequirePermission('newspaper')
   async update(
     @CurrentUser() user: RequestUser,
     @Param('id') id: string,
@@ -118,8 +117,8 @@ export class DocumentsController {
   }
 
   @Delete('admin/documents/:id')
-  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
-  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, PermissionsGuard, CsrfGuard)
+  @RequirePermission('newspaper')
   async remove(@CurrentUser() user: RequestUser, @Param('id') id: string) {
     return createSuccessResponse(await this.documents.softDelete(id, user.userId), newRequestId());
   }

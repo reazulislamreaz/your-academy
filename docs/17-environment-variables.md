@@ -100,7 +100,11 @@ Store only in gitignored `.env` — never commit. Product file storage remains C
 | `SMTP_USER` / `SMTP_PASS` | worker | Optional auth |
 | `EMAIL_FROM` | worker | From address |
 | `PASSWORD_RESET_URL_BASE` | api | e.g. `http://localhost:3000/reset-password` |
-| `PASSWORD_RESET_TTL_SECONDS` | api | Default `3600` |
+| `PASSWORD_RESET_TTL_SECONDS` | api | Default `1800` (30 min, DEC-048) |
+| `EMAIL_VERIFICATION_URL_BASE` | api | Confirmation link base; defaults to `${WEB_ORIGIN}/verify-email` |
+| `EMAIL_VERIFICATION_TTL_SECONDS` | api | Default `86400` (24 h) |
+
+Adding or changing an email in Account Settings enqueues an `email-verification` job on the same queue. Admins and Moderators only receive reset links at a **verified** email; learners keep the legacy rule (any email on the account).
 
 Forgot-password enqueues a BullMQ `password-reset` job on `email-queue`. The worker sends via SMTP when reachable; in non-production it logs the reset URL if SMTP fails (e.g. Mailhog not running). The API also logs the link when `NODE_ENV !== production`.
 
@@ -108,7 +112,7 @@ Local scripts use `dotenv -e .env -o` so `.env` wins over inherited Docker hostn
 
 ## Bootstrap admin
 
-See `.env.example` for `BOOTSTRAP_ADMIN_*` (seed).
+`BOOTSTRAP_ADMIN_NAME`, `BOOTSTRAP_ADMIN_WHATSAPP`, `BOOTSTRAP_ADMIN_PASSWORD`, `BOOTSTRAP_ADMIN_EMAIL` feed both `pnpm admin:create` (first admin only, idempotent, `--reset-password` to rotate) and the demo `pnpm db:seed`. The bootstrap email is marked verified (operator-provisioned).
 
 ## Production (`.env.production` on VPS)
 

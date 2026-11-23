@@ -28,6 +28,7 @@
     "db:migrate": "dotenv -e .env -- pnpm --filter @your-academy/backend prisma:migrate",
     "db:deploy": "dotenv -e .env -- pnpm --filter @your-academy/backend prisma:deploy",
     "db:seed": "dotenv -e .env -- pnpm --filter @your-academy/backend prisma:seed",
+    "admin:create": "dotenv -e .env -- pnpm --filter @your-academy/backend admin:create --",
     "db:reset": "dotenv -e .env -- pnpm --filter @your-academy/backend exec prisma migrate reset --force",
     "db:backup": "./scripts/backup-db.sh",
     "db:restore": "./scripts/restore-db.sh"

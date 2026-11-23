@@ -6,6 +6,7 @@ import { ApiError, apiFetch } from '@/lib/api/client';
 import type { MeUser } from '@/lib/api/types';
 import { resetBodyScrollLock } from '@/lib/hooks/use-body-scroll-lock';
 import { getCookie } from '@/lib/utils';
+import { isStaffRole } from '@your-academy/shared';
 
 export const meQueryKey = ['me'] as const;
 
@@ -49,6 +50,12 @@ export function useLogout() {
 export function useIsAdmin() {
   const me = useMe();
   return me.data?.role === 'ADMIN';
+}
+
+/** Dashboard staff (Admin or Moderator) — DEC-048. */
+export function useIsStaff() {
+  const me = useMe();
+  return isStaffRole(me.data?.role);
 }
 
 export function isUnauthorized(error: unknown): boolean {

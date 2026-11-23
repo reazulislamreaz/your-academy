@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation';
 import { useEffect, type ReactNode } from 'react';
 import { HomePageSkeleton } from '@/components/skeletons';
 import { isUnauthorized, useMe } from '@/features/auth/use-auth';
+import { isStaffRole } from '@your-academy/shared';
+import { defaultPathForRole } from '@/lib/auth/role-routing';
 
 /** Learner desk-shaped shell while access is resolved. */
 function LearnerGateSkeleton({ label }: { label: string }) {
@@ -17,7 +19,7 @@ function LearnerGateSkeleton({ label }: { label: string }) {
 
 /**
  * Client RBAC gate for the learner `(app)` shell.
- * Admins are sent to the admin console; API RolesGuard remains the security boundary for data.
+ * Staff (Admin / Moderator) are sent to the dashboard; API RolesGuard remains the security boundary for data.
  */
 export function LearnerGate({ children }: { children: ReactNode }) {
   const me = useMe();
@@ -30,8 +32,8 @@ export function LearnerGate({ children }: { children: ReactNode }) {
       router.replace('/login?next=/home');
       return;
     }
-    if (me.data.role === 'ADMIN') {
-      router.replace('/admin/dashboard');
+    if (isStaffRole(me.data.role)) {
+      router.replace(defaultPathForRole(me.data.role));
     }
   }, [me.isLoading, me.error, me.data, router]);
 
@@ -43,8 +45,8 @@ export function LearnerGate({ children }: { children: ReactNode }) {
     return <LearnerGateSkeleton label="Redirecting to sign in…" />;
   }
 
-  if (me.data.role === 'ADMIN') {
-    return <LearnerGateSkeleton label="Redirecting to admin…" />;
+  if (isStaffRole(me.data.role)) {
+    return <LearnerGateSkeleton label="Redirecting to the dashboard…" />;
   }
 
   return <>{children}</>;

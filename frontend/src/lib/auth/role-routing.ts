@@ -1,6 +1,12 @@
-/** Role-aware dashboard routing (UX). API RolesGuard remains authz source of truth. */
+/** Role-aware dashboard routing (UX). API PermissionsGuard remains authz source of truth. */
+import { isStaffRole } from '@your-academy/shared';
+import { canAccessAdminPath, defaultAdminPathForRole } from './admin-access';
 
-export type AppRole = 'ADMIN' | 'USER';
+export type AppRole = 'ADMIN' | 'MODERATOR' | 'USER';
+
+export function toAppRole(role: string | null | undefined): AppRole | null {
+  return role === 'ADMIN' || role === 'MODERATOR' || role === 'USER' ? role : null;
+}
 
 /** Authenticated learner / student app shells under `(app)`. */
 export const LEARNER_APP_PREFIXES = [
@@ -60,28 +66,28 @@ export function isLearnerAppPath(pathname: string): boolean {
 }
 
 export function defaultPathForRole(role: AppRole | string | null | undefined): string {
-  return role === 'ADMIN' ? '/admin/dashboard' : '/home';
+  return isStaffRole(role) ? defaultAdminPathForRole(role) : '/home';
 }
 
 /**
  * Safe in-app destination after login / session restore.
- * Admins stay in `/admin/*`; learners never enter `/admin/*`.
+ * Staff (Admin / Moderator) stay in `/admin/*` sections their role allows;
+ * learners never enter `/admin/*`.
  */
 export function resolvePostAuthPath(
   role: AppRole | string | null | undefined,
   next?: string | null,
 ): string {
-  const normalized: AppRole | null = role === 'ADMIN' ? 'ADMIN' : role === 'USER' ? 'USER' : null;
+  const normalized = toAppRole(role);
   const fallback = defaultPathForRole(normalized);
 
   if (!next || !next.startsWith('/') || next.startsWith('//')) {
     return fallback;
   }
 
-  if (normalized === 'ADMIN') {
-    if (isAdminAppPath(next)) return next;
-    // Admins must not land on learner dashboards via ?next=
-    return '/admin/dashboard';
+  if (isStaffRole(normalized)) {
+    // Staff must not land on learner dashboards or admin sections outside their role.
+    return isAdminAppPath(next) && canAccessAdminPath(normalized, next) ? next : fallback;
   }
 
   if (isAdminAppPath(next)) {

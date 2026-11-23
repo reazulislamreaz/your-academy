@@ -15,9 +15,11 @@ import {
   ScrollText,
   Share2,
   Shapes,
+  UserCog,
   Users,
   type LucideIcon,
 } from 'lucide-react';
+import { canAccessAdminPath } from '@/lib/auth/admin-access';
 
 export type AdminNavItem = {
   href: string;
@@ -89,6 +91,7 @@ export const adminNavItems: AdminNavItem[] = [
   },
   { href: '/admin/news', label: 'News', icon: Newspaper },
   { href: '/admin/documents', label: 'Documents', shortLabel: 'Docs', icon: FileText },
+  { href: '/admin/account', label: 'Account settings', shortLabel: 'Account', icon: UserCog },
 ];
 
 /** Grouped nav for sidebar + mobile drawer (enterprise IA). */
@@ -124,7 +127,25 @@ export const adminNavGroups: AdminNavGroup[] = [
       ].includes(i.href),
     ),
   },
+  {
+    title: 'Account',
+    items: adminNavItems.filter((i) => i.href === '/admin/account'),
+  },
 ];
+
+/**
+ * Sidebar / drawer groups visible to a role. Access comes from the route table in
+ * `lib/auth/admin-access.ts` (backed by the shared permission map) — UX only;
+ * the API enforces the same permissions.
+ */
+export function adminNavGroupsForRole(role: string | null | undefined): AdminNavGroup[] {
+  return adminNavGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => canAccessAdminPath(role, item.href)),
+    }))
+    .filter((group) => group.items.length > 0);
+}
 
 export function isAdminNavActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);

@@ -3,6 +3,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useState } from 'react';
+import { UserPlus } from 'lucide-react';
+import { ROLE_LABELS, UserRole } from '@your-academy/shared';
 import { AdminMobileCard, AdminMobileCards } from '@/components/admin/admin-mobile-cards';
 import { AdminListMeta, AdminPage, AdminToolbar } from '@/components/admin/admin-page';
 import { AdminRowActions } from '@/components/admin/admin-row-actions';
@@ -25,20 +27,32 @@ import { ContentIn } from '@/components/ui/skeleton';
 import { useCursorList } from '@/lib/hooks/use-cursor-list';
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import { apiFetch } from '@/lib/api/client';
+import { useMe } from '@/features/auth/use-auth';
+import { CreateStaffUserDialog, StaffUserActions } from '@/features/admin/users/staff-user-dialogs';
+
+type RoleFilter = '' | 'ADMIN' | 'MODERATOR' | 'USER';
+
+function roleLabel(role: string): string {
+  return ROLE_LABELS[role as UserRole] ?? role;
+}
 
 export default function AdminUsersPage() {
   const qc = useQueryClient();
   const [q, setQ] = useState('');
   const qApplied = useDebouncedValue(q.trim(), 350);
   const [status, setStatus] = useState<'' | 'ACTIVE' | 'SUSPENDED'>('');
+  const [role, setRole] = useState<RoleFilter>('');
+  const [createOpen, setCreateOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const meId = useMe().data?.id;
 
   const list = useCursorList<AdminUserListItem>(
-    ['admin-users', qApplied, status],
+    ['admin-users', qApplied, status, role],
     (cursor) => {
       const params = new URLSearchParams({ limit: '30' });
       if (qApplied) params.set('q', qApplied);
       if (status) params.set('status', status);
+      if (role) params.set('role', role);
       if (cursor) params.set('cursor', cursor);
       return `/admin/users?${params}`;
     },
@@ -70,8 +84,15 @@ export default function AdminUsersPage() {
       <PageHeader
         eyebrow="People"
         title="Users"
-        description="Find learners by name, WhatsApp, or email. Suspend or reinstate accounts from the list or detail page."
+        description="Manage learners and dashboard accounts. Create Admin or Moderator accounts, change roles, and suspend or reinstate access."
+        actions={
+          <Button size="sm" className="gap-1.5" onClick={() => setCreateOpen(true)}>
+            <UserPlus className="size-4" aria-hidden />
+            Create staff account
+          </Button>
+        }
       />
+      <CreateStaffUserDialog open={createOpen} onClose={() => setCreateOpen(false)} />
 
       <AdminToolbar>
         <div className="admin-filter-grid">
@@ -91,6 +112,17 @@ export default function AdminUsersPage() {
             <option value="ACTIVE">Active</option>
             <option value="SUSPENDED">Suspended</option>
           </Select>
+          <Select
+            value={role}
+            onChange={(e) => setRole(e.target.value as RoleFilter)}
+            className="h-10 w-full sm:w-44"
+            aria-label="Filter by role"
+          >
+            <option value="">All roles</option>
+            <option value="ADMIN">Admins</option>
+            <option value="MODERATOR">Moderators</option>
+            <option value="USER">Learners</option>
+          </Select>
         </div>
       </AdminToolbar>
 
@@ -106,7 +138,7 @@ export default function AdminUsersPage() {
             <EmptyState
               title="No users found"
               description={
-                qApplied || status
+                qApplied || status || role
                   ? 'Try a different search or clear the status filter.'
                   : 'Registered learners will appear here.'
               }
@@ -126,7 +158,7 @@ export default function AdminUsersPage() {
                   key={`m-${user.id}`}
                   badges={
                     <>
-                      <Badge variant="outline">{user.role}</Badge>
+                      <Badge variant="outline">{roleLabel(user.role)}</Badge>
                       <AdminUserStatus status={user.status} />
                       {user.online ? <Badge variant="success">Online</Badge> : null}
                     </>
@@ -153,12 +185,13 @@ export default function AdminUsersPage() {
                           View
                         </Button>
                       </Link>
-                      {user.role !== 'ADMIN' ? (
+                      <StaffUserActions user={user} currentUserId={meId} />
+                      {user.id !== meId ? (
                         user.status === 'ACTIVE' ? (
                           <ConfirmButton
                             size="sm"
                             variant="ghost"
-                            confirmTitle="Suspend this user?"
+                            confirmTitle="Suspend this account?"
                             confirmMessage={`Suspend ${user.name}? They will not be able to sign in until reinstated.`}
                             confirmLabel="Suspend"
                             reversible
@@ -238,7 +271,7 @@ export default function AdminUsersPage() {
                             {user.email ? ` · ${user.email}` : ''}
                           </p>
                           <div className="mt-1.5 flex flex-wrap gap-1">
-                            <Badge variant="outline">{user.role}</Badge>
+                            <Badge variant="outline">{roleLabel(user.role)}</Badge>
                             <AdminUserStatus status={user.status} />
                           </div>
                         </AdminTd>
@@ -278,12 +311,13 @@ export default function AdminUsersPage() {
                               </Link>
                             }
                           >
-                            {user.role !== 'ADMIN' ? (
+                            <StaffUserActions user={user} currentUserId={meId} />
+                            {user.id !== meId ? (
                               user.status === 'ACTIVE' ? (
                                 <ConfirmButton
                                   size="sm"
                                   variant="ghost"
-                                  confirmTitle="Suspend this user?"
+                                  confirmTitle="Suspend this account?"
                                   confirmMessage={`Suspend ${user.name}? They will not be able to sign in until reinstated.`}
                                   confirmLabel="Suspend"
                                   reversible
@@ -311,7 +345,7 @@ export default function AdminUsersPage() {
                               )
                             ) : (
                               <Button size="sm" variant="ghost" disabled>
-                                Protected
+                                You
                               </Button>
                             )}
                           </AdminRowActions>

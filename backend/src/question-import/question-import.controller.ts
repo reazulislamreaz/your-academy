@@ -13,16 +13,16 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { QuestionImportRowStatus, QuestionUploadStatus, UserRole } from '@prisma/client';
+import { QuestionImportRowStatus, QuestionUploadStatus } from '@prisma/client';
 import { createSuccessResponse } from '@your-academy/shared';
 import type { Response } from 'express';
 import { memoryStorage } from 'multer';
 import type { RequestUser } from '../auth/auth.types';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { Roles } from '../common/decorators/roles.decorator';
+import { RequirePermission } from '../common/decorators/require-permission.decorator';
 import { CsrfGuard } from '../common/guards/csrf.guard';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { RolesGuard } from '../common/guards/roles.guard';
+import { PermissionsGuard } from '../common/guards/permissions.guard';
 import { newRequestId } from '../common/request-id';
 import { ConfirmImportDto } from './dto/confirm-import.dto';
 import { UpdateBatchDto } from './dto/update-batch.dto';
@@ -30,8 +30,8 @@ import { UpdateImportRowDto } from './dto/update-import-row.dto';
 import { QuestionImportService } from './question-import.service';
 
 @Controller('api/v1/admin/question-imports')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
+@RequirePermission('preli')
 export class QuestionImportController {
   constructor(private readonly imports: QuestionImportService) {}
 

@@ -11,12 +11,11 @@ import {
   Put,
   UseGuards,
 } from '@nestjs/common';
-import { UserRole } from '@prisma/client';
 import { createSuccessResponse } from '@your-academy/shared';
-import { Roles } from '../common/decorators/roles.decorator';
+import { RequirePermission } from '../common/decorators/require-permission.decorator';
 import { CsrfGuard } from '../common/guards/csrf.guard';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { RolesGuard } from '../common/guards/roles.guard';
+import { PermissionsGuard } from '../common/guards/permissions.guard';
 import { newRequestId } from '../common/request-id';
 import {
   CreateSocialLinkDto,
@@ -37,37 +36,37 @@ export class SocialLinksController {
   }
 
   @Get('admin/social-links')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('settings')
   async listAdmin() {
     return createSuccessResponse(await this.socialLinks.listAdmin(), newRequestId());
   }
 
   @Post('admin/social-links')
-  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
-  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, PermissionsGuard, CsrfGuard)
+  @RequirePermission('settings')
   async create(@Body() body: CreateSocialLinkDto) {
     return createSuccessResponse(await this.socialLinks.create(body), newRequestId());
   }
 
   /** Declare before `:id` routes so Nest never treats `reorder` as a UUID. */
   @Put('admin/social-links/reorder')
-  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
-  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, PermissionsGuard, CsrfGuard)
+  @RequirePermission('settings')
   async reorder(@Body() body: ReorderSocialLinksDto) {
     return createSuccessResponse(await this.socialLinks.reorder(body.orderedIds), newRequestId());
   }
 
   @Patch('admin/social-links/:id')
-  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
-  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, PermissionsGuard, CsrfGuard)
+  @RequirePermission('settings')
   async update(@Param('id', ParseUUIDPipe) id: string, @Body() body: UpdateSocialLinkDto) {
     return createSuccessResponse(await this.socialLinks.update(id, body), newRequestId());
   }
 
   @Delete('admin/social-links/:id')
-  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
-  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, PermissionsGuard, CsrfGuard)
+  @RequirePermission('settings')
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     return createSuccessResponse(await this.socialLinks.remove(id), newRequestId());
   }

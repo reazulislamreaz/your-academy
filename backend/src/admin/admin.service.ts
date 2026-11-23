@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -196,6 +195,7 @@ export class AdminService {
   async listUsers(params: {
     q?: string;
     status?: UserStatus;
+    role?: UserRole;
     cursor?: string;
     limit?: number;
     createdFrom?: string;
@@ -217,6 +217,7 @@ export class AdminService {
       where: {
         deletedAt: null,
         ...(params.status ? { status: params.status } : {}),
+        ...(params.role ? { role: params.role } : {}),
         ...(createdAtFilter ? { createdAt: createdAtFilter } : {}),
         ...(params.q
           ? {
@@ -572,66 +573,6 @@ export class AdminService {
         ),
       })),
       recentEvents: recentEvents.map((e) => this.mapEvent(e)),
-    };
-  }
-
-  async updateUserStatus(id: string, status: UserStatus, actorUserId?: string) {
-    if (status !== UserStatus.ACTIVE && status !== UserStatus.SUSPENDED) {
-      throw new BadRequestException(
-        createErrorResponse(
-          'VALIDATION_ERROR',
-          'Status must be ACTIVE or SUSPENDED',
-          newRequestId(),
-        ),
-      );
-    }
-    const user = await this.prisma.user.findFirst({
-      where: { id, deletedAt: null },
-      select: { id: true, role: true },
-    });
-    if (!user) {
-      throw new NotFoundException(
-        createErrorResponse('USER_NOT_FOUND', 'User not found', newRequestId()),
-      );
-    }
-    if (user.role === UserRole.ADMIN && status === UserStatus.SUSPENDED) {
-      throw new ForbiddenException(
-        createErrorResponse(
-          'FORBIDDEN',
-          'Cannot suspend admin accounts via this endpoint',
-          newRequestId(),
-        ),
-      );
-    }
-    const updated = await this.prisma.user.update({
-      where: { id },
-      data: { status },
-      select: {
-        id: true,
-        name: true,
-        whatsappNumber: true,
-        email: true,
-        role: true,
-        status: true,
-        trialEndsAt: true,
-        createdAt: true,
-      },
-    });
-
-    await this.prisma.auditLog.create({
-      data: {
-        actorUserId: actorUserId ?? null,
-        action: status === UserStatus.SUSPENDED ? 'USER_SUSPEND' : 'USER_REINSTATE',
-        entityType: 'user',
-        entityId: id,
-        metadata: { status },
-      },
-    });
-
-    return {
-      ...updated,
-      trialEndsAt: updated.trialEndsAt.toISOString(),
-      createdAt: updated.createdAt.toISOString(),
     };
   }
 

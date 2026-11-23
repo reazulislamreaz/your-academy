@@ -2,6 +2,7 @@ import { revalidatePath, revalidateTag } from 'next/cache';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { serverApiBase } from '@/lib/api/client';
+import { hasPermission } from '@your-academy/shared';
 
 const EXAM_PATHS = ['/exams'] as const;
 
@@ -37,7 +38,7 @@ export async function POST() {
     success?: boolean;
     data?: { role?: string };
   };
-  if (!envelope.success || envelope.data?.role !== 'ADMIN') {
+  if (!envelope.success || !hasPermission(envelope.data?.role, 'quiz')) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 

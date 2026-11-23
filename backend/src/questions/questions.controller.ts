@@ -8,14 +8,14 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { Difficulty, QuestionStatus, UserRole } from '@prisma/client';
+import { Difficulty, QuestionStatus } from '@prisma/client';
 import { createSuccessResponse, cursorPaginationMeta } from '@your-academy/shared';
 import type { RequestUser } from '../auth/auth.types';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { Roles } from '../common/decorators/roles.decorator';
+import { RequirePermission } from '../common/decorators/require-permission.decorator';
 import { CsrfGuard } from '../common/guards/csrf.guard';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { RolesGuard } from '../common/guards/roles.guard';
+import { PermissionsGuard } from '../common/guards/permissions.guard';
 import { newRequestId } from '../common/request-id';
 import { CreateAttemptDto } from './dto/create-attempt.dto';
 import { CreateQuestionDto } from './dto/create-question.dto';
@@ -91,8 +91,8 @@ export class QuestionsController {
   }
 
   @Get('admin/questions')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('preli')
   async adminList(
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
@@ -114,43 +114,43 @@ export class QuestionsController {
   }
 
   @Post('admin/questions')
-  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
-  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, PermissionsGuard, CsrfGuard)
+  @RequirePermission('preli')
   async create(@CurrentUser() user: RequestUser, @Body() dto: CreateQuestionDto) {
     return createSuccessResponse(await this.questions.createDraft(user, dto), newRequestId());
   }
 
   @Get('admin/questions/:id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('preli')
   async adminGet(@Param('id') id: string) {
     return createSuccessResponse(await this.questions.adminGet(id), newRequestId());
   }
 
   @Patch('admin/questions/:id')
-  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
-  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, PermissionsGuard, CsrfGuard)
+  @RequirePermission('preli')
   async update(@Param('id') id: string, @Body() dto: UpdateQuestionDto) {
     return createSuccessResponse(await this.questions.update(id, dto), newRequestId());
   }
 
   @Post('admin/questions/:id/publish')
-  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
-  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, PermissionsGuard, CsrfGuard)
+  @RequirePermission('preli')
   async publish(@CurrentUser() user: RequestUser, @Param('id') id: string) {
     return createSuccessResponse(await this.questions.publish(id, user.userId), newRequestId());
   }
 
   @Post('admin/questions/:id/archive')
-  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
-  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, PermissionsGuard, CsrfGuard)
+  @RequirePermission('preli')
   async archive(@CurrentUser() user: RequestUser, @Param('id') id: string) {
     return createSuccessResponse(await this.questions.archive(id, user.userId), newRequestId());
   }
 
   @Post('admin/questions/:id/duplicate')
-  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
-  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, PermissionsGuard, CsrfGuard)
+  @RequirePermission('preli')
   async duplicate(@CurrentUser() user: RequestUser, @Param('id') id: string) {
     return createSuccessResponse(await this.questions.duplicate(id, user.userId), newRequestId());
   }

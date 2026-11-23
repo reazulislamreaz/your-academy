@@ -8,6 +8,12 @@ export type PasswordResetEmailJob = {
   userId: string;
 };
 
+export type EmailVerificationJob = {
+  to: string;
+  verifyUrl: string;
+  userId: string;
+};
+
 @Injectable()
 export class EmailQueueService {
   private readonly logger = new Logger(EmailQueueService.name);
@@ -20,5 +26,12 @@ export class EmailQueueService {
       jobId: `password-reset-${dedupeKey}`,
     });
     this.logger.debug(`Enqueued password-reset for user ${job.userId}`);
+  }
+
+  async enqueueEmailVerification(job: EmailVerificationJob, dedupeKey: string) {
+    await this.emailQueue.add('email-verification', job, {
+      jobId: `email-verification-${dedupeKey}`,
+    });
+    this.logger.debug(`Enqueued email-verification for user ${job.userId}`);
   }
 }

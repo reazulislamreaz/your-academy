@@ -5,7 +5,7 @@
 - Secure registration/login with WhatsApp number + password
 - Short-lived access tokens + rotating refresh tokens
 - Server-side session revocation
-- RBAC for `USER` and `ADMIN`
+- RBAC for `USER` (learner), `MODERATOR`, and `ADMIN` (DEC-048)
 - No privilege escalation paths via client manipulation
 - Web browser auth via **HTTP-only cookies + CSRF** (DEC-012)
 
@@ -16,7 +16,7 @@
 | WhatsApp number | Required, unique, stored E.164-normalized |
 | Password | Min length policy (proposed ≥8 with complexity DEC-013); Argon2id |
 | Email | Optional at registration; required on account for password-reset email (DEC-004) |
-| Role | `USER` default; `ADMIN` assigned out-of-band / seed |
+| Role | `USER` default (self-registration); `ADMIN` / `MODERATOR` created only by an Admin (`POST /admin/users`) or `pnpm admin:create` |
 
 ## 3. Password Hashing
 
@@ -31,7 +31,7 @@
 | Claim | Purpose |
 |-------|---------|
 | `sub` | userId |
-| `role` | USER/ADMIN |
+| `role` | USER/MODERATOR/ADMIN (informational — `JwtStrategy` reloads role + status from DB every request) |
 | `sid` | sessionId |
 | `iat` / `exp` | Issued / expiry |
 
@@ -125,22 +125,28 @@ Because access/refresh cookies authenticate the browser automatically, CSRF defe
 ### Password reset (DEC-004 CONFIRMED — email)
 
 1. `forgot-password`: always return generic success (no account enumeration)
-2. If user exists, is ACTIVE, and has an email: store hashed reset token with TTL; enqueue `email-queue` job with one-time link
-3. If user has no email: do nothing beyond generic success
-4. `reset-password`: validate token; set password; revoke sessions
+2. If user exists, is ACTIVE, and has a usable email: store SHA-256 of a random token with a 30-minute TTL (`PASSWORD_RESET_TTL_SECONDS`, default 1800), invalidate older unused tokens, enqueue `email-queue` job with the one-time link. **Usable** = any email for learners; a **verified** email (`emailVerifiedAt`) for `ADMIN`/`MODERATOR` (DEC-048)
+3. If user has no usable email: do nothing beyond generic success (UI tells them to contact an Admin; Admins can reset moderator passwords from Users)
+4. `reset-password`: atomically claim the token (single use); set password; revoke all sessions
 5. WhatsApp OTP reset is out of scope for v1
+
+### Email verification (DEC-048)
+
+1. Adding/changing an email (`PATCH /users/me`) clears `emailVerifiedAt`, invalidates outstanding links, and enqueues an `email-verification` job (24 h TTL, hashed, single-use, bound to the address)
+2. `POST /auth/verify-email { token }` (public, throttled) marks the address verified only if it is still the account's current email
+3. `POST /users/me/email/verification` re-sends (3/min)
 
 ## 7. Guards (NestJS)
 
 | Guard | Responsibility |
 |-------|----------------|
 | `JwtAuthGuard` | Require valid access JWT from cookie or Bearer |
-| `RolesGuard` | Require `@Roles('ADMIN')` etc. |
+| `PermissionsGuard` | Require `@RequirePermission('<section>')`, checked against `ROLE_PERMISSIONS` in `@your-academy/shared` (fails closed) |
 | `CsrfGuard` | Validate CSRF on unsafe methods for cookie sessions |
 | `OptionalJwtGuard` | Attach user if present |
 | Throttler | Rate limits |
 
-Apply at controller/method level. Admin routes under `/admin/*` always require `ADMIN`.
+Apply at controller/method level. Every `/admin/*` route carries a permission; `dashboard-rbac-routes.spec.ts` fails CI if one is missing or if a moderator could reach a non-content route.
 
 **JWT extraction order:** `Authorization: Bearer` if present; else `access_token` cookie.
 
@@ -150,8 +156,13 @@ Apply at controller/method level. Admin routes under `/admin/*` always require `
 
 | Role | Capabilities |
 |------|--------------|
-| USER | Learner APIs; own resources |
-| ADMIN | All USER + management + dashboard |
+| USER | Learner APIs; own resources. Never enters `/admin` |
+| MODERATOR | Dashboard content sections only, full CRUD: Preli, Written, Topic, Quiz (guest exams + practice sets), Model Test, Newspaper (documents + news), shared category trees; own Account Settings. No users, roles, settings, homepage, support, analytics, audit, or exam results |
+| ADMIN | Everything, including user management, role assignment, settings |
+
+Permissions are defined once in `shared/src/permissions.ts` (`DASHBOARD_PERMISSIONS`, `ROLE_PERMISSIONS`). Frontend sidebar, route gate (`AdminRouteGuard`, "Access denied"), and middleware read the same map via `frontend/src/lib/auth/admin-access.ts` — UX only.
+
+**Staff account rules (server-enforced, `StaffUsersService`):** only Admins create/edit staff; nobody changes their own role or deactivates themselves; the last active Admin cannot be demoted or deactivated; deactivation revokes sessions; Admin password reset applies to Moderators only and revokes their sessions.
 
 ### Ownership (IDOR prevention)
 

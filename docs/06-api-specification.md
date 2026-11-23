@@ -76,6 +76,8 @@ Auth roles: `Public`, `User`, `Admin`. Entitlement notes apply inside handlers.
 
 ### 2.1 Auth
 
+> **Roles (DEC-048):** `ADMIN` rows below also mean "or a role granted that section in `ROLE_PERMISSIONS`". Moderators may call `/admin/{questions,question-imports,written-question-imports,topic-question-imports,categories,exams,practice-sets,model-tests,news,documents}/*`; every other `/admin/*` route is Admin-only (`403 FORBIDDEN`).
+
 | Method | Endpoint | Description | Auth | Role |
 |--------|----------|-------------|------|------|
 | POST | `/auth/register` | Register + start trial | Public | — |
@@ -85,6 +87,7 @@ Auth roles: `Public`, `User`, `Admin`. Entitlement notes apply inside handlers.
 | POST | `/auth/change-password` | Change password | User | USER/ADMIN |
 | POST | `/auth/forgot-password` | Start email reset (DEC-004) | Public | — |
 | POST | `/auth/reset-password` | Complete reset | Public | — |
+| POST | `/auth/verify-email` | Confirm email via emailed token (DEC-048) | Public | — |
 
 `forgot-password` body: `{ "email": "…" }` or `{ "whatsappNumber": "…" }` lookup that resolves to a user email for delivery — prefer email identifier for reset requests. Always returns generic success.
 
@@ -115,10 +118,15 @@ Profile picture: separate upload after auth or multipart field if approved.
 | PATCH | `/users/me` | Update profile | User | USER/ADMIN |
 | PATCH | `/users/me/study-prefs` | Update preferred categories / continue pointer / onboarding flag | User | USER/ADMIN |
 | POST | `/users/me/avatar` | Avatar upload init/complete | User | USER/ADMIN |
+| POST | `/users/me/email/verification` | Re-send email confirmation link (3/min) | User | any |
 | GET | `/users/me/stats` | Personal dashboard stats (bookmark counts, browsing seconds, recent saves) | User | USER/ADMIN |
-| GET | `/admin/users` | List users (enriched: online, attempts, trial/sub; cursor/`q`/`status`/`createdFrom`/`createdTo`) | User | ADMIN |
+| GET | `/admin/users` | List users (enriched: online, attempts, trial/sub; cursor/`q`/`status`/`role`/`createdFrom`/`createdTo`) | User | ADMIN |
+| POST | `/admin/users` | Create staff account `{ name, whatsappNumber, password, role: ADMIN\|MODERATOR }` → `409 WHATSAPP_EXISTS` | User | ADMIN |
+| PATCH | `/admin/users/:id` | Edit staff `{ name?, whatsappNumber?, email? }` (changed email → unverified) | User | ADMIN |
+| PATCH | `/admin/users/:id/role` | `{ role }` → `403 CANNOT_CHANGE_OWN_ROLE`, `409 LAST_ADMIN` | User | ADMIN |
+| POST | `/admin/users/:id/reset-password` | `{ newPassword }` — moderators only; revokes sessions | User | ADMIN |
 | GET | `/admin/users/:id` | User detail (profile, study stats, sessions, observed engagement, recent events; subscription read-only) | User | ADMIN |
-| PATCH | `/admin/users/:id/status` | Suspend/reinstate | User | ADMIN |
+| PATCH | `/admin/users/:id/status` | Suspend/reinstate (any role; not self → `403`, not last admin → `409 LAST_ADMIN`; suspend revokes sessions) | User | ADMIN |
 | DELETE | `/users/me` | Delete own account | User | USER/ADMIN |
 
 ---

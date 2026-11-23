@@ -14,7 +14,7 @@ import {
   UserStatus,
   type User,
 } from '@prisma/client';
-import { createErrorResponse } from '@your-academy/shared';
+import { createErrorResponse, isStaffRole } from '@your-academy/shared';
 import * as argon2 from 'argon2';
 import { randomUUID } from 'node:crypto';
 import { AuditService } from '../audit/audit.service';
@@ -216,9 +216,13 @@ export class AuthService {
           })
         : null;
 
-    if (user?.email && user.status === UserStatus.ACTIVE && !user.deletedAt) {
+    // Dashboard staff may only reset through an address they have proven they control;
+    // learners keep the legacy behaviour (any email on the account) — DEC-048.
+    const email = user?.email;
+    const emailUsable = Boolean(email && (!isStaffRole(user?.role) || user?.emailVerifiedAt));
+    if (user && email && emailUsable && user.status === UserStatus.ACTIVE && !user.deletedAt) {
       const token = randomToken(32);
-      const ttl = Number(process.env.PASSWORD_RESET_TTL_SECONDS ?? 3600);
+      const ttl = Number(process.env.PASSWORD_RESET_TTL_SECONDS ?? 1800);
       const tokenHash = sha256(token);
       // Invalidate unused prior tokens so only the latest reset link works.
       await this.prisma.$transaction([
@@ -238,7 +242,7 @@ export class AuthService {
       const resetUrl = `${base}?token=${token}`;
       try {
         await this.emailQueue.enqueuePasswordReset(
-          { to: user.email, resetUrl, userId: user.id },
+          { to: email, resetUrl, userId: user.id },
           tokenHash.slice(0, 32),
         );
       } catch (err) {

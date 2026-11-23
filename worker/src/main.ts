@@ -14,6 +14,22 @@ type PasswordResetJob = {
   userId: string;
 };
 
+type EmailVerificationJob = {
+  to: string;
+  verifyUrl: string;
+  userId: string;
+};
+
+type TransactionalEmail = {
+  kind: string;
+  to: string;
+  subject: string;
+  intro: string;
+  /** Bearer link (reset / verify) — logged only outside production. */
+  link: string;
+  outro: string;
+};
+
 type DeleteAssetJob = {
   mediaAssetId: string;
   publicId: string;
@@ -38,20 +54,20 @@ function configureCloudinary() {
   return true;
 }
 
-async function sendPasswordResetEmail(data: PasswordResetJob) {
+async function sendTransactionalEmail(mail: TransactionalEmail) {
   const host = process.env.SMTP_HOST?.trim();
   const port = Number(process.env.SMTP_PORT ?? 1025);
   const from = process.env.EMAIL_FROM ?? 'noreply@your-academy.local';
 
   if (!host) {
-    // Never log reset URLs/tokens outside local development — they are bearer secrets.
+    // Never log links outside local development — they are bearer secrets.
     if (process.env.NODE_ENV === 'production') {
       throw new Error(
-        'SMTP_HOST is required in production to deliver password-reset emails (refusing to log reset URLs)',
+        `SMTP_HOST is required in production to deliver ${mail.kind} emails (refusing to log links)`,
       );
     }
-    console.log(`[${service}-worker] SMTP_HOST unset — logging password reset for ${data.to}`);
-    console.log(`[${service}-worker] resetUrl=${data.resetUrl}`);
+    console.log(`[${service}-worker] SMTP_HOST unset — logging ${mail.kind} for ${mail.to}`);
+    console.log(`[${service}-worker] link=${mail.link}`);
     return;
   }
 
@@ -68,22 +84,44 @@ async function sendPasswordResetEmail(data: PasswordResetJob) {
   try {
     await transporter.sendMail({
       from,
-      to: data.to,
-      subject: 'Reset your Your Academy password',
-      text: `Reset your password using this link (expires soon):\n\n${data.resetUrl}\n\nIf you did not request this, ignore this email.`,
-      html: `<p>Reset your password using this link (expires soon):</p><p><a href="${data.resetUrl}">${data.resetUrl}</a></p><p>If you did not request this, ignore this email.</p>`,
+      to: mail.to,
+      subject: mail.subject,
+      text: `${mail.intro}\n\n${mail.link}\n\n${mail.outro}`,
+      html: `<p>${mail.intro}</p><p><a href="${mail.link}">${mail.link}</a></p><p>${mail.outro}</p>`,
     });
-    console.log(`[${service}-worker] password-reset email sent to ${data.to}`);
+    console.log(`[${service}-worker] ${mail.kind} email sent to ${mail.to}`);
   } catch (err) {
     if (process.env.NODE_ENV !== 'production') {
       console.warn(
-        `[${service}-worker] SMTP send failed (${String(err)}); logging resetUrl for ${data.to}`,
+        `[${service}-worker] SMTP send failed (${String(err)}); logging ${mail.kind} link for ${mail.to}`,
       );
-      console.log(`[${service}-worker] resetUrl=${data.resetUrl}`);
+      console.log(`[${service}-worker] link=${mail.link}`);
       return;
     }
     throw err;
   }
+}
+
+function sendPasswordResetEmail(data: PasswordResetJob) {
+  return sendTransactionalEmail({
+    kind: 'password-reset',
+    to: data.to,
+    subject: 'Reset your Your Academy password',
+    intro: 'Reset your password using this link. It expires in 30 minutes and works once:',
+    link: data.resetUrl,
+    outro: 'If you did not request this, ignore this email — your password stays the same.',
+  });
+}
+
+function sendEmailVerification(data: EmailVerificationJob) {
+  return sendTransactionalEmail({
+    kind: 'email-verification',
+    to: data.to,
+    subject: 'Confirm your Your Academy email address',
+    intro: 'Confirm this email address for your Your Academy account using this link:',
+    link: data.verifyUrl,
+    outro: 'If you did not add this email to an account, ignore this message.',
+  });
 }
 
 async function deleteCloudinaryAsset(data: DeleteAssetJob) {
@@ -179,6 +217,10 @@ async function main() {
     async (job) => {
       if (job.name === 'password-reset') {
         await sendPasswordResetEmail(job.data as PasswordResetJob);
+        return;
+      }
+      if (job.name === 'email-verification') {
+        await sendEmailVerification(job.data as EmailVerificationJob);
         return;
       }
       console.log(`[${service}-worker] email job ${job.id}`, job.name, job.data);

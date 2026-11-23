@@ -1,24 +1,35 @@
-import { Body, Controller, Get, Param, Patch, Query, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Patch, Post, Query, Res, UseGuards } from '@nestjs/common';
 import { UserRole, UserStatus } from '@prisma/client';
 import { createSuccessResponse, cursorPaginationMeta } from '@your-academy/shared';
 import type { Response } from 'express';
 import type { RequestUser } from '../auth/auth.types';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { Roles } from '../common/decorators/roles.decorator';
+import { RequirePermission } from '../common/decorators/require-permission.decorator';
 import { CsrfGuard } from '../common/guards/csrf.guard';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { RolesGuard } from '../common/guards/roles.guard';
+import { PermissionsGuard } from '../common/guards/permissions.guard';
 import { parseLimit } from '../common/pagination';
 import { newRequestId } from '../common/request-id';
 import { AdminService } from './admin.service';
+import {
+  AdminResetPasswordDto,
+  CreateStaffUserDto,
+  UpdateStaffUserDto,
+  UpdateUserRoleDto,
+} from './dto/staff-user.dto';
+import { StaffUsersService } from './staff-users.service';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 
 @Controller('api/v1/admin')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
+@RequirePermission('users')
 export class AdminController {
-  constructor(private readonly admin: AdminService) {}
+  constructor(
+    private readonly admin: AdminService,
+    private readonly staff: StaffUsersService,
+  ) {}
 
+  @RequirePermission('dashboard')
   @Get('dashboard')
   async dashboard() {
     return createSuccessResponse(await this.admin.dashboard(), newRequestId());
@@ -28,6 +39,7 @@ export class AdminController {
   async listUsers(
     @Query('q') q?: string,
     @Query('status') status?: UserStatus,
+    @Query('role') role?: string,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
     @Query('createdFrom') createdFrom?: string,
@@ -37,6 +49,8 @@ export class AdminController {
     const data = await this.admin.listUsers({
       q,
       status,
+      // Allowlist — never pass a raw client value into the Prisma filter.
+      role: Object.values(UserRole).find((r) => r === role),
       cursor,
       limit: take,
       createdFrom,
@@ -54,6 +68,35 @@ export class AdminController {
     return createSuccessResponse(await this.admin.getUser(id), newRequestId());
   }
 
+  @Post('users')
+  @UseGuards(CsrfGuard)
+  async createStaffUser(@CurrentUser() user: RequestUser, @Body() body: CreateStaffUserDto) {
+    return createSuccessResponse(await this.staff.create(body, user.userId), newRequestId());
+  }
+
+  @Patch('users/:id')
+  @UseGuards(CsrfGuard)
+  async updateStaffUser(
+    @CurrentUser() user: RequestUser,
+    @Param('id') id: string,
+    @Body() body: UpdateStaffUserDto,
+  ) {
+    return createSuccessResponse(await this.staff.update(id, body, user.userId), newRequestId());
+  }
+
+  @Patch('users/:id/role')
+  @UseGuards(CsrfGuard)
+  async updateUserRole(
+    @CurrentUser() user: RequestUser,
+    @Param('id') id: string,
+    @Body() body: UpdateUserRoleDto,
+  ) {
+    return createSuccessResponse(
+      await this.staff.changeRole(id, body.role, user.userId),
+      newRequestId(),
+    );
+  }
+
   @Patch('users/:id/status')
   @UseGuards(CsrfGuard)
   async updateUserStatus(
@@ -62,16 +105,32 @@ export class AdminController {
     @Body() body: UpdateUserStatusDto,
   ) {
     return createSuccessResponse(
-      await this.admin.updateUserStatus(id, body.status, user.userId),
+      await this.staff.updateStatus(id, body.status, user.userId),
       newRequestId(),
     );
   }
 
+  @Post('users/:id/reset-password')
+  @HttpCode(200)
+  @UseGuards(CsrfGuard)
+  async resetStaffPassword(
+    @CurrentUser() user: RequestUser,
+    @Param('id') id: string,
+    @Body() body: AdminResetPasswordDto,
+  ) {
+    return createSuccessResponse(
+      await this.staff.resetModeratorPassword(id, body, user.userId),
+      newRequestId(),
+    );
+  }
+
+  @RequirePermission('activity')
   @Get('activity/overview')
   async activityOverview() {
     return createSuccessResponse(await this.admin.activityOverview(), newRequestId());
   }
 
+  @RequirePermission('activity')
   @Get('activity/online')
   async activityOnline(@Query('q') q?: string, @Query('limit') limit?: string) {
     return createSuccessResponse(
@@ -83,6 +142,7 @@ export class AdminController {
     );
   }
 
+  @RequirePermission('activity')
   @Get('activity/events')
   async activityEvents(
     @Query('userId') userId?: string,
@@ -110,11 +170,13 @@ export class AdminController {
     );
   }
 
+  @RequirePermission('activity')
   @Get('activity/trends')
   async activityTrends(@Query('from') from?: string, @Query('to') to?: string) {
     return createSuccessResponse(await this.admin.activityTrends({ from, to }), newRequestId());
   }
 
+  @RequirePermission('activity')
   @Get('activity/export')
   async activityExport(
     @Query('userId') userId?: string,
@@ -136,6 +198,7 @@ export class AdminController {
     res!.send(csv);
   }
 
+  @RequirePermission('audit')
   @Get('audit')
   async listAudit(
     @Query('cursor') cursor?: string,
