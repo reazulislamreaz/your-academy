@@ -539,6 +539,15 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Impact | Migration `20261123120000_staff_roles_email_verification` (enum value, `users.email_verified_at`, `email_verification_tokens`; backfills existing admin emails as verified). Admin/users/auth/storage/worker changes; `/admin/account`, `/verify-email`; docs 06, 07, 17. |
 | Status | **CONFIRMED** (product request 2026-11-23; quiz/newspaper scope and learner reset rule chosen by owner) |
 
+### DEC-049 — Self-host web fonts (no build-time Google Fonts fetch)
+
+| Field | Value |
+|-------|-------|
+| Question | CI run 45165955497 failed in `next build`: `next/font/google` crashed parsing a Google Fonts response (`Cannot read properties of null (reading '1')` in `loader.js`). CI starts without a build cache, so every build depends on Google Fonts answering correctly. Keep it? |
+| Decision | **No.** Keep the same faces (DEC-037) but self-host them with `next/font/local`: `frontend/src/fonts/inter-latin-wght.woff2` (Inter 400–700, latin, preloaded) and `noto-sans-bengali-bengali-wght.woff2` (Noto Sans Bengali 100–900, bengali unicode-range). Same CSS variables (`--font-latin`, `--font-bengali`). SIL OFL 1.1 — see `src/fonts/LICENSE.md`. No new npm dependency. |
+| Impact | `frontend/src/lib/fonts.ts`, `frontend/src/fonts/*`. Production builds no longer need outbound network for fonts. Inter Cyrillic/Greek/Vietnamese subsets are no longer bundled (unused by the product). |
+| Status | **CONFIRMED** (2026-11-23, CI fix) |
+
 ### Deferred / NEEDS APPROVAL (explicitly out of Phase 1)
 
 | Item | Notes |
