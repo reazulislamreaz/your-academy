@@ -16,18 +16,42 @@ export const viewport: Viewport = {
   ],
 };
 
+
+
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
+
   title: {
     default: 'Your Academy',
     template: '%s · Your Academy',
   },
+
   description: 'Modern MCQ learning for competitive exam success',
+
+  verification: {
+    google: 'yDL55Y7iQid6beDDLrrGzUsCvcIsKRgZkfZV7xAVWcE',
+  },
+
   icons: {
     icon: [{ url: '/images/favicon.png', type: 'image/png' }],
     apple: '/images/apple-touch-icon.png',
   },
 };
+
+
+// export const metadata: Metadata = {
+//   metadataBase: new URL(SITE_URL),
+//   title: {
+//     default: 'Your Academy',
+//     template: '%s · Your Academy',
+//   },
+//   description: 'Modern MCQ learning for competitive exam success',
+//   icons: {
+//     icon: [{ url: '/images/favicon.png', type: 'image/png' }],
+//     apple: '/images/apple-touch-icon.png',
+//   },
+// };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
