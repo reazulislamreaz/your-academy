@@ -79,6 +79,8 @@ export type BookmarkCollectionSummary = {
   id: string;
   name: string;
   questionCount: number;
+  /** Saved PDFs in this folder (DEC-059). */
+  documentCount?: number;
   createdAt?: string;
   updatedAt?: string;
   containsQuestion?: boolean;
@@ -90,6 +92,7 @@ export type BookmarkCollectionsPayload = {
     id: null;
     name: string;
     questionCount: number;
+    documentCount?: number;
     containsQuestion?: boolean;
   };
   bookmarked: boolean;

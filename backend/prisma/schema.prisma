@@ -567,8 +567,9 @@ model BookmarkCollection {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bookmarks QuestionBookmark[]
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookmarks         QuestionBookmark[]
+  documentBookmarks DocumentBookmark[]
 
   @@unique([userId, name])
   @@index([userId, createdAt(sort: Desc)])
@@ -595,16 +596,21 @@ model QuestionBookmark {
 }
 
 model DocumentBookmark {
-  id         String   @id @default(uuid()) @db.Uuid
-  userId     String   @map("user_id") @db.Uuid
-  documentId String   @map("document_id") @db.Uuid
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  documentId   String   @map("document_id") @db.Uuid
+  /// Null = not in a folder. At most one folder per user+PDF, same rule as MCQs (DEC-059).
+  collectionId String?  @map("collection_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user       User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document   Document            @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  collection BookmarkCollection? @relation(fields: [collectionId], references: [id], onDelete: SetNull)
 
   @@unique([userId, documentId])
   @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, collectionId, createdAt(sort: Desc)])
+  @@index([collectionId])
   @@map("document_bookmarks")
 }
 

@@ -368,19 +368,22 @@ Timed/untimed quizzes and model tests built from published questions. Review pay
 
 | Method | Endpoint | Description | Auth | Role |
 |--------|----------|-------------|------|------|
-| GET | `/bookmarks/collections` | List folders + uncategorized counts (`questionId?` for picker state) | User | USER/ADMIN |
+| GET | `/bookmarks/collections` | List folders with `questionCount` + `documentCount`, plus uncategorized counts (`questionId?` or `documentId?` for picker state) | User | USER/ADMIN |
 | POST | `/bookmarks/collections` | `{ "name" }` create folder | User | USER/ADMIN |
 | PATCH | `/bookmarks/collections/:id` | Rename `{ "name" }` | User | USER/ADMIN |
-| DELETE | `/bookmarks/collections/:id` | Delete folder (bookmarks become uncategorized) | User | USER/ADMIN |
+| DELETE | `/bookmarks/collections/:id` | Delete folder (saved MCQs and PDFs stay saved, uncategorized) | User | USER/ADMIN |
 | GET | `/bookmarks/questions` | List (`cursor`, `limit`, optional `categoryId`, `collectionId` or `uncategorized`) | User | USER/ADMIN |
+| GET | `/bookmarks/questions/details` | Saved MCQs with stem + options (`cursor`, `limit` ≤100, `collectionId` or `uncategorized`). `data: { items, answersVisible }`; `isCorrect` / `explanation` omitted unless entitled (DEC-051) | User | USER/ADMIN |
+| POST | `/bookmarks/questions/practice-score` | Score a saved-questions exam `{ "questionIds": uuid[1..200], "answers": { questionId: optionId } }`. Only the caller's saved, published MCQs count; per-question key + explanation only when entitled. Throttled 10/min | User + CSRF | USER/ADMIN |
 | POST | `/bookmarks/questions` | Save/move `{ "questionId", "collectionId?", "newCollectionName?" }` (upsert; DEC-026) | User | USER/ADMIN |
 | PATCH | `/bookmarks/questions/:questionId` | Move `{ "collectionId": uuid\|null }` | User | USER/ADMIN |
 | DELETE | `/bookmarks/questions/:questionId` | Unsave | User | USER/ADMIN |
-| GET | `/bookmarks/documents` | List (`cursor`, `limit`) | User | USER/ADMIN |
-| POST | `/bookmarks/documents` | `{ "documentId" }` | User | USER/ADMIN |
+| GET | `/bookmarks/documents` | List (`cursor`, `limit`, `collectionId` or `uncategorized`); rows include `collection` | User | USER/ADMIN |
+| POST | `/bookmarks/documents` | Save/move `{ "documentId", "collectionId?", "newCollectionName?" }` (upsert, same rules as MCQs; DEC-059) | User | USER/ADMIN |
+| PATCH | `/bookmarks/documents/:documentId` | Move `{ "collectionId": uuid\|null }` | User | USER/ADMIN |
 | DELETE | `/bookmarks/documents/:documentId` | Remove | User | USER/ADMIN |
 
-Question bookmark rows are owner-scoped; at most one folder per user+question. Re-save to the same folder is idempotent; another folder moves. Document bookmarks remain flat. Question detail includes `bookmarked` + `collection`. Document detail includes `bookmarked`.
+Question and document bookmark rows are owner-scoped; at most one folder per user+item. Re-save to the same folder is idempotent; another folder moves. Filtering by a folder the caller does not own returns 404 `COLLECTION_NOT_FOUND`. Question detail includes `bookmarked` + `collection`. Document detail includes `bookmarked`.
 
 ---
 

@@ -15,6 +15,7 @@ erDiagram
   User ||--o{ QuestionBookmark : saves
   User ||--o{ DocumentBookmark : saves
   BookmarkCollection ||--o{ QuestionBookmark : organizes
+  BookmarkCollection ||--o{ DocumentBookmark : organizes
   User ||--o{ BrowsingSession : tracks
   User ||--o{ AuditLog : performs
   SubscriptionPlan ||--o{ UserSubscription : plans
@@ -252,9 +253,10 @@ PK: (newsId, documentId).
 | id | UUID PK |
 | userId | UUID FK → User ON DELETE CASCADE |
 | documentId | UUID FK → Document ON DELETE CASCADE |
+| collectionId | UUID? FK → BookmarkCollection ON DELETE SET NULL (null = no folder; DEC-059) |
 | createdAt | TIMESTAMPTZ |
 
-**Unique:** (userId, documentId).
+**Unique:** (userId, documentId) — one folder (or none) per saved PDF. **Indexes:** (userId, createdAt DESC), (userId, collectionId, createdAt DESC), (collectionId).
 
 ### 3.12 BrowsingSession
 

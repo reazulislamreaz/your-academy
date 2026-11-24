@@ -11,16 +11,29 @@ type Props = {
   result: PreliPracticeResult;
   /** Listing URL prefix (learner: `/preli-practice`). */
   basePath?: string;
+  /** Overrides for reuse outside Preli sets (e.g. saved-questions exams). */
+  kindLabel?: string;
+  backHref?: string;
+  backLabel?: string;
+  retakeHref?: string;
 };
 
 /** Preli Practice result + answer sheet — same visual language as Model Test results. */
-export function PreliPracticeResultView({ result, basePath = '/preli-practice' }: Props) {
+export function PreliPracticeResultView({
+  result,
+  basePath = '/preli-practice',
+  kindLabel = 'Preli Practice',
+  backHref,
+  backLabel = 'Back to Preli Sets',
+  retakeHref: retakeHrefProp,
+}: Props) {
   const [showSheet, setShowSheet] = useState(true);
   const circumference = 2 * Math.PI * 54;
   const progress = Math.min(100, Math.max(0, result.percent));
   const dash = (progress / 100) * circumference;
   const takeBase = basePath.replace(/\/$/, '') || '/preli-practice';
-  const retakeHref = `${takeBase}/${encodeURIComponent(result.setId)}`;
+  const retakeHref = retakeHrefProp ?? `${takeBase}/${encodeURIComponent(result.setId)}`;
+  const listHref = backHref ?? takeBase;
   // DEC-051: absent key → show score + own selections only.
   const answersVisible = result.answersVisible ?? true;
 
@@ -34,7 +47,7 @@ export function PreliPracticeResultView({ result, basePath = '/preli-practice' }
           {result.setTitle}
         </h1>
         <p className="mt-1 text-sm text-[var(--muted-strong)]">
-          Preli Practice
+          {kindLabel}
           {result.timedOut ? ' · Submitted on timeout' : null}
           {` · ${result.durationMinutes} min limit`}
         </p>
@@ -163,9 +176,9 @@ export function PreliPracticeResultView({ result, basePath = '/preli-practice' }
       ) : null}
 
       <section className="mt-6 flex flex-col gap-2.5 sm:mt-8 sm:flex-row sm:flex-wrap">
-        <Link href={takeBase} className="w-full sm:w-auto">
+        <Link href={listHref} className="w-full sm:w-auto">
           <Button variant="outline" className="h-11 w-full sm:h-10 sm:w-auto">
-            Back to Preli Sets
+            {backLabel}
           </Button>
         </Link>
         <Link href={retakeHref} className="w-full sm:w-auto">

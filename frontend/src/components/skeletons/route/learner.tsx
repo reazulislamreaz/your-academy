@@ -468,7 +468,7 @@ export function ResultDetailPageSkeleton() {
   );
 }
 
-/** `/bookmarks` — tabs + saved rows. */
+/** `/bookmarks` — unified saved rows (questions + PDFs). */
 export function BookmarksPageSkeleton({ omitChrome }: { omitChrome?: boolean } = {}) {
   const rows = (
     <div className="divide-y divide-[var(--line)] border-y border-[var(--line)]">

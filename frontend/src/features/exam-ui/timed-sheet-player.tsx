@@ -91,7 +91,8 @@ export function TimedSheetPlayer(props: Props) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [marked, setMarked] = useState<Record<string, boolean>>({});
   const [index, setIndex] = useState(0);
-  const [viewAll, setViewAll] = useState(false);
+  // View All is the default layout for every new attempt; one-at-a-time stays a toggle.
+  const [viewAll, setViewAll] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -123,7 +124,8 @@ export function TimedSheetPlayer(props: Props) {
           Math.max(0, io.current.questions.length - 1),
         ),
       );
-      setViewAll(Boolean(saved.viewAll));
+      // Resume keeps the learner's own toggle; sessions saved before it existed get the default.
+      setViewAll(saved.viewAll ?? true);
     }
     setHydrated(true);
   }, []);
@@ -156,7 +158,14 @@ export function TimedSheetPlayer(props: Props) {
       setAnswers({});
       setMarked({});
       setIndex(0);
-      io.current.saveSession({ userName: candidate, startedAtMs: now, answers: {}, marked: {} });
+      setViewAll(true);
+      io.current.saveSession({
+        userName: candidate,
+        startedAtMs: now,
+        answers: {},
+        marked: {},
+        viewAll: true,
+      });
       scrollExamToTop();
     },
     [accountName],

@@ -96,7 +96,7 @@ Short title; full content; multiple options; exactly one correct; detailed expla
 | FR-E03 | List bookmarks with pagination; filter by type and category where applicable |
 | FR-E04 | Unique constraint per `(userId, resourceId, resourceType)` |
 | FR-E05 | Store references only — no duplicated question/PDF payloads |
-| FR-E06 | MCQ Save to Collection (DEC-026): create/rename/delete private folders; save/move MCQ into one folder or uncategorized; Facebook-style picker on question detail; PDF bookmarks remain flat |
+| FR-E06 | Save to Collection (DEC-026, DEC-059): create/rename/delete private folders; save/move an MCQ **or PDF** into one folder or none (picker on question and PDF pages, with create-new-folder); Saved page filters by folder (All saved items / each folder / No folder), shows saved MCQs in full in View All by default, and starts a timed exam from all saved MCQs or one folder |
 
 ---
 

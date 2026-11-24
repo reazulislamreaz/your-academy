@@ -29,6 +29,7 @@ export function ModelTestSubmitDialog({
       pending={pending}
       onConfirm={onSkipAndSubmit}
       onCancel={onGoBack}
+      className="sm:max-w-lg"
       description={
         <div className="space-y-3 text-sm text-[var(--muted-strong)]">
           <p>

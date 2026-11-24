@@ -6,19 +6,51 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { createErrorResponse } from '@your-academy/shared';
+import { QuestionStatus } from '@prisma/client';
 import type { RequestUser } from '../auth/auth.types';
 import { newRequestId } from '../common/request-id';
 import { PrismaService } from '../database/prisma.service';
 import { LearningActivityService } from '../learning-activity/learning-activity.service';
+import { AccessControlService } from '../subscriptions/access-control.service';
 
 const MAX_COLLECTIONS_PER_USER = 50;
+/** Upper bound for one saved-questions exam (keeps the score query and the sheet bounded). */
+export const MAX_SAVED_EXAM_QUESTIONS = 200;
+
+/** `collectionId` query value: a folder id, `uncategorized` (no folder) or absent (everything). */
+export type CollectionFilter = string | 'uncategorized' | undefined;
+
+export type SavedPracticeScoreItem = {
+  id: string;
+  selectedOptionId: string | null;
+  isSkipped: boolean;
+  /** Entitled viewers only (DEC-051). */
+  isCorrect?: boolean;
+  correctOptionId?: string | null;
+  correctAnswerLabel?: string;
+  explanation?: string | null;
+};
 
 @Injectable()
 export class BookmarksService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly learningActivity: LearningActivityService,
+    private readonly access: AccessControlService,
   ) {}
+
+  /** Owner-checked Prisma filter for a folder selection. */
+  private async collectionWhere(userId: string, collectionId: CollectionFilter) {
+    if (collectionId === 'uncategorized') return { collectionId: null };
+    if (!collectionId) return {};
+    await this.assertCollectionOwner(userId, collectionId);
+    return { collectionId };
+  }
+
+  private async canViewAnswers(userId: string): Promise<boolean> {
+    const dbUser = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+    return this.access.canViewAnswers(dbUser);
+  }
 
   private normalizeName(name: string): string {
     return name.trim().replace(/\s+/g, ' ');
@@ -51,48 +83,60 @@ export class BookmarksService {
     return opts.collectionId === null ? null : null;
   }
 
-  async listCollections(user: RequestUser, opts: { questionId?: string } = {}) {
+  async listCollections(
+    user: RequestUser,
+    opts: { questionId?: string; documentId?: string } = {},
+  ) {
     const collections = await this.prisma.bookmarkCollection.findMany({
       where: { userId: user.userId },
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-      include: { _count: { select: { bookmarks: true } } },
+      include: { _count: { select: { bookmarks: true, documentBookmarks: true } } },
     });
 
+    // Picker state for the item being saved (an MCQ or a PDF).
     let activeCollectionId: string | null | undefined;
     let bookmarked = false;
-    if (opts.questionId) {
-      const bookmark = await this.prisma.questionBookmark.findUnique({
-        where: {
-          userId_questionId: { userId: user.userId, questionId: opts.questionId },
-        },
-        select: { collectionId: true },
-      });
+    const picking = Boolean(opts.questionId || opts.documentId);
+    if (opts.questionId || opts.documentId) {
+      const bookmark = opts.questionId
+        ? await this.prisma.questionBookmark.findUnique({
+            where: {
+              userId_questionId: { userId: user.userId, questionId: opts.questionId },
+            },
+            select: { collectionId: true },
+          })
+        : await this.prisma.documentBookmark.findUnique({
+            where: {
+              userId_documentId: { userId: user.userId, documentId: opts.documentId! },
+            },
+            select: { collectionId: true },
+          });
       bookmarked = Boolean(bookmark);
       activeCollectionId = bookmark?.collectionId ?? (bookmark ? null : undefined);
     }
 
-    const uncategorizedCount = await this.prisma.questionBookmark.count({
-      where: { userId: user.userId, collectionId: null },
-    });
+    const [uncategorizedCount, uncategorizedDocumentCount] = await Promise.all([
+      this.prisma.questionBookmark.count({ where: { userId: user.userId, collectionId: null } }),
+      this.prisma.documentBookmark.count({ where: { userId: user.userId, collectionId: null } }),
+    ]);
 
     return {
       items: collections.map((c) => ({
         id: c.id,
         name: c.name,
         questionCount: c._count.bookmarks,
+        documentCount: c._count.documentBookmarks,
         createdAt: c.createdAt,
         updatedAt: c.updatedAt,
-        containsQuestion: opts.questionId
-          ? bookmarked && activeCollectionId === c.id
-          : undefined,
+        // Field name kept for existing clients; true when the picked MCQ or PDF is here.
+        containsQuestion: picking ? bookmarked && activeCollectionId === c.id : undefined,
       })),
       uncategorized: {
         id: null as null,
         name: 'Saved Items',
         questionCount: uncategorizedCount,
-        containsQuestion: opts.questionId
-          ? bookmarked && activeCollectionId === null
-          : undefined,
+        documentCount: uncategorizedDocumentCount,
+        containsQuestion: picking ? bookmarked && activeCollectionId === null : undefined,
       },
       bookmarked,
       activeCollectionId: bookmarked ? (activeCollectionId ?? null) : null,
@@ -174,7 +218,7 @@ export class BookmarksService {
 
   async deleteCollection(user: RequestUser, collectionId: string) {
     await this.assertCollectionOwner(user.userId, collectionId);
-    // Bookmarks keep via ON DELETE SET NULL (uncategorized).
+    // Saved MCQs and PDFs are kept via ON DELETE SET NULL (they leave the folder, not the account).
     await this.prisma.bookmarkCollection.delete({ where: { id: collectionId } });
     return { ok: true };
   }
@@ -189,16 +233,7 @@ export class BookmarksService {
     } = {},
   ) {
     const take = Math.min(opts.limit ?? 20, 100);
-    const collectionFilter =
-      opts.collectionId === 'uncategorized'
-        ? { collectionId: null }
-        : opts.collectionId
-          ? { collectionId: opts.collectionId }
-          : {};
-
-    if (opts.collectionId && opts.collectionId !== 'uncategorized') {
-      await this.assertCollectionOwner(user.userId, opts.collectionId);
-    }
+    const collectionFilter = await this.collectionWhere(user.userId, opts.collectionId);
 
     const items = await this.prisma.questionBookmark.findMany({
       where: {
@@ -363,21 +398,43 @@ export class BookmarksService {
 
   async listDocuments(
     user: RequestUser,
-    opts: { cursor?: string; limit?: number } = {},
+    opts: { cursor?: string; limit?: number; collectionId?: CollectionFilter } = {},
   ) {
     const take = Math.min(opts.limit ?? 20, 100);
+    const collectionFilter = await this.collectionWhere(user.userId, opts.collectionId);
     const items = await this.prisma.documentBookmark.findMany({
-      where: { userId: user.userId },
+      where: { userId: user.userId, ...collectionFilter },
       take: take + 1,
       ...(opts.cursor ? { cursor: { id: opts.cursor }, skip: 1 } : {}),
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-      include: { document: { select: { id: true, title: true, visibility: true } } },
+      include: {
+        document: { select: { id: true, title: true, visibility: true } },
+        collection: { select: { id: true, name: true } },
+      },
     });
     const nextCursor = items.length > take ? items.pop()!.id : null;
     return { items, nextCursor };
   }
 
-  async addDocument(user: RequestUser, documentId: string) {
+  /**
+   * Save a PDF, optionally into a folder (or a new one). Mirrors `addQuestion`:
+   * one bookmark per user+PDF; saving again into the same folder is a no-op and
+   * into another folder moves it.
+   */
+  async addDocument(
+    user: RequestUser,
+    documentId: string,
+    opts: { collectionId?: string | null; newCollectionName?: string } = {},
+  ) {
+    if (opts.collectionId && opts.newCollectionName) {
+      throw new BadRequestException(
+        createErrorResponse(
+          'COLLECTION_TARGET_AMBIGUOUS',
+          'Provide either collectionId or newCollectionName',
+          newRequestId(),
+        ),
+      );
+    }
     const doc = await this.prisma.document.findFirst({
       where: { id: documentId, isPublished: true, deletedAt: null },
     });
@@ -386,9 +443,29 @@ export class BookmarksService {
         createErrorResponse('DOCUMENT_NOT_FOUND', 'Document not found', newRequestId()),
       );
     }
+
+    const collectionId = await this.resolveTargetCollectionId(user.userId, opts);
+    const include = { collection: { select: { id: true, name: true } } } as const;
+    const existing = await this.prisma.documentBookmark.findUnique({
+      where: { userId_documentId: { userId: user.userId, documentId } },
+      include,
+    });
+    if (existing) {
+      if (existing.collectionId === collectionId) {
+        return { ...existing, created: false, moved: false };
+      }
+      const updated = await this.prisma.documentBookmark.update({
+        where: { id: existing.id },
+        data: { collectionId },
+        include,
+      });
+      return { ...updated, created: false, moved: true };
+    }
+
     try {
       const bookmark = await this.prisma.documentBookmark.create({
-        data: { userId: user.userId, documentId },
+        data: { userId: user.userId, documentId, collectionId },
+        include,
       });
       await this.learningActivity.record({
         userId: user.userId,
@@ -396,7 +473,7 @@ export class BookmarksService {
         subjectCategoryId: doc.categoryId,
         meta: { documentId: doc.id },
       });
-      return bookmark;
+      return { ...bookmark, created: true, moved: false };
     } catch {
       throw new ConflictException(
         createErrorResponse('BOOKMARK_EXISTS', 'Already bookmarked', newRequestId()),
@@ -404,10 +481,173 @@ export class BookmarksService {
     }
   }
 
+  async moveDocument(user: RequestUser, documentId: string, collectionId: string | null) {
+    const bookmark = await this.prisma.documentBookmark.findUnique({
+      where: { userId_documentId: { userId: user.userId, documentId } },
+    });
+    if (!bookmark) {
+      throw new NotFoundException(
+        createErrorResponse('BOOKMARK_NOT_FOUND', 'Saved PDF not found', newRequestId()),
+      );
+    }
+    if (collectionId) {
+      await this.assertCollectionOwner(user.userId, collectionId);
+    }
+    return this.prisma.documentBookmark.update({
+      where: { id: bookmark.id },
+      data: { collectionId },
+      include: { collection: { select: { id: true, name: true } } },
+    });
+  }
+
   async removeDocument(user: RequestUser, documentId: string) {
     await this.prisma.documentBookmark.deleteMany({
       where: { userId: user.userId, documentId },
     });
     return { ok: true };
+  }
+
+  /**
+   * Saved MCQs with stem + options for the Saved page "View All" sheet and the
+   * saved-questions exam. Answer fields follow the same gate as `/questions/:id`
+   * (DEC-051): `isCorrect` / `explanation` are omitted unless the user is entitled.
+   */
+  async listQuestionDetails(
+    user: RequestUser,
+    opts: { cursor?: string; limit?: number; collectionId?: CollectionFilter } = {},
+  ) {
+    const take = Math.min(Math.max(opts.limit ?? 20, 1), 100);
+    const collectionFilter = await this.collectionWhere(user.userId, opts.collectionId);
+    const [rows, canView] = await Promise.all([
+      this.prisma.questionBookmark.findMany({
+        where: {
+          userId: user.userId,
+          ...collectionFilter,
+          question: { status: QuestionStatus.PUBLISHED, deletedAt: null },
+        },
+        take: take + 1,
+        ...(opts.cursor ? { cursor: { id: opts.cursor }, skip: 1 } : {}),
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        include: {
+          collection: { select: { id: true, name: true } },
+          question: {
+            select: {
+              id: true,
+              title: true,
+              content: true,
+              explanation: true,
+              difficulty: true,
+              sectionTitle: true,
+              category: { select: { id: true, name: true } },
+              subcategory: { select: { id: true, name: true } },
+              options: {
+                orderBy: { sortOrder: 'asc' },
+                select: { id: true, label: true, content: true, isCorrect: true, sortOrder: true },
+              },
+            },
+          },
+        },
+      }),
+      this.canViewAnswers(user.userId),
+    ]);
+    const nextCursor = rows.length > take ? rows.pop()!.id : null;
+
+    const items = rows.map((row) => {
+      const { explanation, options, ...question } = row.question;
+      return {
+        id: row.id,
+        createdAt: row.createdAt,
+        collection: row.collection,
+        question: {
+          ...question,
+          options: options.map((o) => this.access.stripAnswerFields(o, canView)),
+          // Absent (not null) when locked, so clients cannot tell "no explanation" from "hidden".
+          ...(canView ? { explanation: explanation ?? null } : {}),
+        },
+      };
+    });
+    return { items, nextCursor, answersVisible: canView };
+  }
+
+  /**
+   * Score an exam taken from saved questions. Only questions the user has saved
+   * count — any other id in the request is ignored — so the endpoint cannot be
+   * used to grade arbitrary bank questions. Per-question keys only when entitled.
+   */
+  async scoreSavedPractice(
+    user: RequestUser,
+    questionIdsRaw: string[],
+    answersRaw: Record<string, unknown>,
+  ) {
+    const requested = [...new Set(questionIdsRaw)].slice(0, MAX_SAVED_EXAM_QUESTIONS);
+    const [owned, canView] = await Promise.all([
+      requested.length
+        ? this.prisma.questionBookmark.findMany({
+            where: {
+              userId: user.userId,
+              questionId: { in: requested },
+              question: { status: QuestionStatus.PUBLISHED, deletedAt: null },
+            },
+            select: {
+              question: {
+                select: {
+                  id: true,
+                  explanation: true,
+                  options: {
+                    orderBy: { sortOrder: 'asc' },
+                    select: { id: true, label: true, isCorrect: true },
+                  },
+                },
+              },
+            },
+          })
+        : Promise.resolve([]),
+      this.canViewAnswers(user.userId),
+    ]);
+    const byId = new Map(owned.map((b) => [b.question.id, b.question]));
+
+    let correctCount = 0;
+    let wrongCount = 0;
+    let skippedCount = 0;
+    const answerSheet: SavedPracticeScoreItem[] = [];
+    for (const id of requested) {
+      const q = byId.get(id);
+      if (!q) continue;
+      const raw = answersRaw[id];
+      const candidate = typeof raw === 'string' ? raw.trim() : '';
+      // Ignore forged option ids that do not belong to this question.
+      const selectedOptionId = q.options.some((o) => o.id === candidate) ? candidate : null;
+      const correct = q.options.find((o) => o.isCorrect) ?? null;
+      const isSkipped = !selectedOptionId;
+      const isCorrect = Boolean(selectedOptionId && correct && selectedOptionId === correct.id);
+      if (isSkipped) skippedCount += 1;
+      else if (isCorrect) correctCount += 1;
+      else wrongCount += 1;
+      answerSheet.push({
+        id,
+        selectedOptionId,
+        isSkipped,
+        ...(canView
+          ? {
+              isCorrect,
+              correctOptionId: correct?.id ?? null,
+              correctAnswerLabel: correct?.label ?? '',
+              explanation: q.explanation ?? null,
+            }
+          : {}),
+      });
+    }
+
+    const totalQuestions = answerSheet.length;
+    return {
+      totalQuestions,
+      correctCount,
+      wrongCount,
+      skippedCount,
+      score: correctCount,
+      percent: totalQuestions === 0 ? 0 : Math.round((correctCount / totalQuestions) * 1000) / 10,
+      answersVisible: canView,
+      answerSheet,
+    };
   }
 }

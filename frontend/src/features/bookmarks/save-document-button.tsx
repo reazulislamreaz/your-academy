@@ -1,12 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Bookmark } from 'lucide-react';
+import { useState } from 'react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import { isUnauthorized, useMe } from '@/features/auth/use-auth';
 import { cn } from '@/lib/utils';
+import { SaveToCollectionDialog } from './save-to-collection-dialog';
 
 type Props = {
   documentId: string;
@@ -19,8 +21,8 @@ type Props = {
 };
 
 /**
- * Save / unsave a PDF bookmark — same UX pattern as Save MCQ (auth required).
- * Document bookmarks are flat (no collections); see DEC-026 for MCQ folders only.
+ * Save a PDF into a folder (or manage / remove the save) — same folder picker as
+ * Save MCQ (DEC-059). Auth required; guests get a login link.
  */
 export function SaveDocumentButton({
   documentId,
@@ -30,7 +32,7 @@ export function SaveDocumentButton({
   loginNext,
 }: Props) {
   const me = useMe();
-  const qc = useQueryClient();
+  const [pickerOpen, setPickerOpen] = useState(false);
   const loggedIn = Boolean(me.data) && !isUnauthorized(me.error);
   const next = loginNext ?? `/documents/${documentId}`;
   const loginHref = `/login?next=${encodeURIComponent(next)}`;
@@ -55,28 +57,6 @@ export function SaveDocumentButton({
 
   const bookmarked = bookmarkedProp ?? status.data ?? false;
 
-  const toggle = useMutation({
-    mutationFn: async () => {
-      if (bookmarked) {
-        await apiFetch(`/bookmarks/documents/${documentId}`, { method: 'DELETE' });
-        return false;
-      }
-      await apiFetch('/bookmarks/documents', {
-        method: 'POST',
-        body: JSON.stringify({ documentId }),
-      });
-      return true;
-    },
-    onSuccess: (nextBookmarked) => {
-      qc.setQueryData(['document-bookmark', documentId], nextBookmarked);
-      qc.setQueryData(['document', documentId], (prev: { bookmarked?: boolean } | undefined) =>
-        prev ? { ...prev, bookmarked: nextBookmarked } : prev,
-      );
-      void qc.invalidateQueries({ queryKey: ['bookmarks'] });
-      void qc.invalidateQueries({ queryKey: ['stats'] });
-    },
-  });
-
   const sharedClass = cn(
     'min-h-10 shrink-0 gap-1.5',
     bookmarked &&
@@ -97,17 +77,24 @@ export function SaveDocumentButton({
   }
 
   return (
-    <Button
-      type="button"
-      variant="outline"
-      size={size}
-      loading={toggle.isPending || (bookmarkedProp === undefined && status.isLoading)}
-      disabled={toggle.isPending}
-      className={sharedClass}
-      onClick={() => toggle.mutate()}
-    >
-      <Bookmark className="size-4" aria-hidden fill={bookmarked ? 'currentColor' : 'none'} />
-      {bookmarked ? 'Saved' : 'Save PDF'}
-    </Button>
+    <>
+      <Button
+        type="button"
+        variant="outline"
+        size={size}
+        loading={bookmarkedProp === undefined && status.isLoading}
+        className={sharedClass}
+        aria-label={bookmarked ? 'Manage saved PDF' : 'Save PDF'}
+        onClick={() => setPickerOpen(true)}
+      >
+        <Bookmark className="size-4" aria-hidden fill={bookmarked ? 'currentColor' : 'none'} />
+        {bookmarked ? 'Saved' : 'Save PDF'}
+      </Button>
+      <SaveToCollectionDialog
+        open={pickerOpen}
+        documentId={documentId}
+        onClose={() => setPickerOpen(false)}
+      />
+    </>
   );
 }

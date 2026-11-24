@@ -15,6 +15,8 @@ type Props = {
   setTitle: string;
   questionCount: number;
   pending?: boolean;
+  /** Dialog heading (default "Start Preli Practice"). */
+  title?: string;
   onStart: (durationMinutes: number) => void;
   onClose: () => void;
 };
@@ -25,6 +27,7 @@ export function PreliPracticeStartModal({
   setTitle,
   questionCount,
   pending = false,
+  title = 'Start Preli Practice',
   onStart,
   onClose,
 }: Props) {
@@ -53,7 +56,7 @@ export function PreliPracticeStartModal({
   return (
     <FormDialog
       open={open}
-      title="Start Preli Practice"
+      title={title}
       description={setTitle}
       confirmLabel={pending ? 'Starting…' : 'Start Exam'}
       cancelLabel="Cancel"

@@ -373,7 +373,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 |-------|-------|
 | Question | Can learners organize saved MCQs into personal folders (Facebook-style Save to Collection)? |
 | Decision | **Yes for MCQs.** `BookmarkCollection` is private per user. A question is saved at most once per user (`@@unique([userId, questionId])`) and may sit in **one** collection or uncategorized (`collectionId` null). Re-saving / picking another folder **moves** the bookmark. Creating a folder + saving is one atomic flow. Deleting a folder uncategorizes its bookmarks (`ON DELETE SET NULL`). PDF bookmarks stay flat (no collections in v1). Caps: name ≤80 chars; ≤50 collections per user. |
-| Impact | Prisma migration, BookmarksModule APIs, question detail `collection`, Save modal UI, bookmarks page folders |
+| Impact | Prisma migration, BookmarksModule APIs, question detail `collection`, Save modal UI, bookmarks page folders (extended to PDFs and restored on the Saved page by DEC-059) |
 | Status | **CONFIRMED** (product request 2026-11-12) |
 
 ### DEC-027 — Learner Orbit dark charcoal theme
@@ -618,6 +618,34 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Decision | One shared `frontend/src/features/exam-ui/` (start screen, one-question-at-a-time take screen with view-all toggle, sticky countdown + progress, navigator side panel / mobile bottom sheet, mark for review, clear answer, keyboard 1–4 / A–D / ←→, submit confirmation with unanswered count, result summary + All/Correct/Wrong/Skipped review). Behaviour changes: **Quiz may be submitted with unanswered questions** after the confirmation dialog (the API already accepted blanks; amends DEC-039's "answer every question" UI rule); **signed-in users press Start** before the timer begins (was: timer started on page open; amends DEC-045). Quiz "Wrong" is displayed as `wrongCount − skipped` so the three counts add up; scoring and API values are unchanged. Review correctness comes only from the API (`isCorrect` / `correctAnswer`), respecting DEC-051 locked answers. Progress stays in sessionStorage (survives refresh). |
 | Impact | `features/exam-ui/*`, guest-exams, model-tests, practice-player, practice-set cards/list, `results/[id]`. No backend change. |
 | Status | **CONFIRMED** (owner request, 2026-11-23) |
+
+### DEC-057 — Unified Saved questions & PDFs view
+
+| Field | Value |
+|-------|-------|
+| Question | Should the learner Saved page split MCQs and PDFs and expose folder switching? |
+| Decision | **No.** `/bookmarks` shows saved MCQs and PDFs together in one newest-first list (merged client-side from the existing `/bookmarks/questions` and `/bookmarks/documents` streams), styled after the shared exam UI (DEC-056). Learners can open any item one at a time inline (question practice with Check answer; embedded PDF viewer) with Previous / Next, a numbered navigator (side panel ≥ lg, bottom sheet below) and ←/→ keys. The open item is kept in `?item=q:<id>|d:<id>` via `history.replaceState` (no reload). The folder sidebar and move-to-folder control are removed from this page *(folders restored by DEC-059)*; `BookmarkCollection` data and APIs (DEC-026) are unchanged and the Save dialog on question pages still offers folders. Answer keys still come only from `/questions/:id` entitlement (DEC-051). |
+| Impact | `app/(app)/bookmarks/page.tsx`, `features/bookmarks/saved-*.ts(x)`. No schema or API change. |
+| Status | **CONFIRMED** (owner request, 2026-11-24) |
+
+
+### DEC-058 — Quiz and Model Test open in View All
+
+| Field | Value |
+|-------|-------|
+| Question | Which layout should a timed Quiz / Model Test start in? |
+| Decision | **View All** (every question on one scrolling page) for every new attempt, wherever it is started from. "One at a time" stays available from the header toggle. A refresh resumes the learner's last chosen mode; sessions saved before this change default to View All. Timer, scoring, submission and navigator are unchanged. Practice sets (`practice-player`) are not affected. Amends DEC-056. |
+| Impact | `features/exam-ui/timed-sheet-player.tsx` only. |
+| Status | **CONFIRMED** (owner request, 2026-11-24) |
+
+### DEC-059 — Folders for saved MCQs and PDFs, View All sheet, exams from saved questions
+
+| Field | Value |
+|-------|-------|
+| Question | Owner request: organize saved questions **and PDFs** in folders, filter by folder, read saved questions continuously, and take an exam from them. |
+| Decision | **Folders:** PDFs join the existing private `BookmarkCollection` folders (nullable `document_bookmarks.collection_id`, `ON DELETE SET NULL`; existing PDF saves stay saved with no folder). The DEC-026 rule now covers both kinds: one bookmark per user+item, in one folder or none — re-saving to the same folder is a no-op (no duplicates), another folder moves it. Save picker (with "Create new folder") on question and PDF pages; rename/delete (with confirmation — items stay saved, unfiled) on the Saved page. **Saved page:** folder chips (All saved items / each folder / No folder) replace DEC-057's "no folders" layout; View All is the default and shows each saved MCQ's full stem and options, plus the key and explanation only when the API sends them (DEC-051); PDFs open in the inline reader; one-at-a-time mode stays. Each item has a folder menu. **Exam:** "Take exam" uses all saved MCQs or the selected folder (newest 200 max), the shared timed exam player (DEC-056/058, View All default, learner picks 1–180 min) and the Preli Practice result view. Scoring is stateless and server-side (`POST /bookmarks/questions/practice-score`): only the caller's own saved, published MCQs count, forged option ids count as skipped, keys only for entitled users, throttled 10/min. Results are kept in the browser tab like Preli Practice (no attempt history). Question images are not shown: no learner API exposes `Question.imageAssetId` yet. Amends DEC-026 and supersedes the folder removal in DEC-057. |
+| Impact | Migration `20261124120000_document_bookmark_folders`; `bookmarks.service/controller/dto` (+ `SubscriptionsModule` import); frontend `app/(app)/bookmarks/**` (page, `exam`, `exam/result`, copy-protection layouts), `features/bookmarks/*` (folder bar, sheet card, saved exam, save dialog for PDFs), `PreliPracticeStartModal` / `PreliPracticeResultView` gained label props. |
+| Status | **CONFIRMED** (owner request, 2026-11-24) |
 
 ### Deferred / NEEDS APPROVAL (explicitly out of Phase 1)
 

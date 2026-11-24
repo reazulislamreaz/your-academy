@@ -43,6 +43,7 @@ export function ExamSubmitDialog({
       pending={pending}
       onConfirm={onConfirm}
       onCancel={onCancel}
+      className="sm:max-w-lg"
       description={
         <div className="space-y-3">
           <dl className="grid grid-cols-3 gap-2 text-center">

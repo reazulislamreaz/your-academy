@@ -16,7 +16,9 @@ import { cn } from '@/lib/utils';
 
 type Props = {
   open: boolean;
-  questionId: string;
+  /** Item to save: an MCQ (`questionId`) or a PDF (`documentId`). */
+  questionId?: string;
+  documentId?: string;
   questionTitle?: string;
   onClose: () => void;
 };
@@ -27,7 +29,18 @@ type SuccessState = {
   created: boolean;
 };
 
-export function SaveToCollectionDialog({ open, questionId, questionTitle, onClose }: Props) {
+/** Folder picker for saving an MCQ or a PDF; same folders for both (DEC-026, DEC-059). */
+export function SaveToCollectionDialog({
+  open,
+  questionId,
+  documentId,
+  questionTitle,
+  onClose,
+}: Props) {
+  const isDocument = Boolean(documentId);
+  const itemId = (documentId ?? questionId ?? '') as string;
+  const itemParam = isDocument ? 'documentId' : 'questionId';
+  const itemPath = isDocument ? 'documents' : 'questions';
   const qc = useQueryClient();
   const titleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -37,24 +50,25 @@ export function SaveToCollectionDialog({ open, questionId, questionTitle, onClos
   const [success, setSuccess] = useState<SuccessState | null>(null);
 
   const collections = useQuery({
-    queryKey: ['bookmark-collections', questionId],
+    queryKey: ['bookmark-collections', itemParam, itemId],
     queryFn: () =>
       apiFetch<BookmarkCollectionsPayload>(
-        `/bookmarks/collections?questionId=${encodeURIComponent(questionId)}`,
+        `/bookmarks/collections?${itemParam}=${encodeURIComponent(itemId)}`,
       ),
-    enabled: open,
+    enabled: open && Boolean(itemId),
   });
 
-  function syncQuestionCache(result: SaveQuestionBookmarkResult) {
-    qc.setQueryData<QuestionDetail>(['question', questionId], (prev) =>
-      prev
-        ? {
-            ...prev,
-            bookmarked: true,
-            collection: result.collection,
-          }
-        : prev,
-    );
+  function syncItemCache(bookmarked: boolean, collection: SaveQuestionBookmarkResult['collection']) {
+    if (isDocument) {
+      qc.setQueryData(['document-bookmark', itemId], bookmarked);
+      qc.setQueryData(['document', itemId], (prev: { bookmarked?: boolean } | undefined) =>
+        prev ? { ...prev, bookmarked } : prev,
+      );
+    } else {
+      qc.setQueryData<QuestionDetail>(['question', itemId], (prev) =>
+        prev ? { ...prev, bookmarked, collection } : prev,
+      );
+    }
     void qc.invalidateQueries({ queryKey: ['bookmarks'] });
     void qc.invalidateQueries({ queryKey: ['bookmark-collections'] });
     void qc.invalidateQueries({ queryKey: ['stats'] });
@@ -65,13 +79,13 @@ export function SaveToCollectionDialog({ open, questionId, questionTitle, onClos
       collectionId?: string | null;
       newCollectionName?: string;
     }) =>
-      apiFetch<SaveQuestionBookmarkResult>('/bookmarks/questions', {
+      apiFetch<SaveQuestionBookmarkResult>(`/bookmarks/${itemPath}`, {
         method: 'POST',
-        body: JSON.stringify({ questionId, ...body }),
+        body: JSON.stringify({ [itemParam]: itemId, ...body }),
       }),
     onSuccess: (result) => {
       setError(null);
-      syncQuestionCache(result);
+      syncItemCache(true, result.collection);
       setSuccess({
         folderName: result.collection?.name ?? 'Quick save',
         moved: result.moved,
@@ -85,14 +99,9 @@ export function SaveToCollectionDialog({ open, questionId, questionTitle, onClos
 
   const unsave = useMutation({
     mutationFn: () =>
-      apiFetch(`/bookmarks/questions/${questionId}`, { method: 'DELETE' }),
+      apiFetch(`/bookmarks/${itemPath}/${itemId}`, { method: 'DELETE' }),
     onSuccess: () => {
-      qc.setQueryData<QuestionDetail>(['question', questionId], (prev) =>
-        prev ? { ...prev, bookmarked: false, collection: null } : prev,
-      );
-      void qc.invalidateQueries({ queryKey: ['bookmarks'] });
-      void qc.invalidateQueries({ queryKey: ['bookmark-collections'] });
-      void qc.invalidateQueries({ queryKey: ['stats'] });
+      syncItemCache(false, null);
       setSuccess({ folderName: '', moved: false, created: false });
       onClose();
     },
@@ -165,6 +174,7 @@ export function SaveToCollectionDialog({ open, questionId, questionTitle, onClos
             id: null as string | null,
             name: 'Quick save',
             questionCount: data.uncategorized.questionCount,
+            documentCount: data.uncategorized.documentCount ?? 0,
             active: Boolean(data.uncategorized.containsQuestion),
           },
           ...data.items.map((c) => ({
@@ -172,6 +182,7 @@ export function SaveToCollectionDialog({ open, questionId, questionTitle, onClos
             id: c.id as string | null,
             name: c.name,
             questionCount: c.questionCount,
+            documentCount: c.documentCount ?? 0,
             active: Boolean(c.containsQuestion),
           })),
         ]
@@ -270,6 +281,9 @@ export function SaveToCollectionDialog({ open, questionId, questionTitle, onClos
                         <span className="block text-xs text-[var(--muted-strong)]">
                           {row.questionCount}{' '}
                           {row.questionCount === 1 ? 'question' : 'questions'}
+                          {row.documentCount
+                            ? ` · ${row.documentCount} ${row.documentCount === 1 ? 'PDF' : 'PDFs'}`
+                            : ''}
                         </span>
                       </span>
                       {row.active ? (

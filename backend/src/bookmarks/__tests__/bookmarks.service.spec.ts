@@ -15,9 +15,13 @@ describe('BookmarksService', () => {
     },
     documentBookmark: {
       findMany: jest.fn(),
+      findUnique: jest.fn(),
       create: jest.fn(),
+      update: jest.fn(),
       deleteMany: jest.fn(),
+      count: jest.fn(),
     },
+    user: { findUniqueOrThrow: jest.fn() },
     bookmarkCollection: {
       findMany: jest.fn(),
       findFirst: jest.fn(),
@@ -29,7 +33,21 @@ describe('BookmarksService', () => {
   };
 
   const learningActivity = { record: jest.fn() };
-  const service = new BookmarksService(prisma as never, learningActivity as never);
+  const access = {
+    canViewAnswers: jest.fn(),
+    // Same contract as AccessControlService.stripAnswerFields.
+    stripAnswerFields: <T extends { isCorrect?: boolean }>(o: T, canView: boolean): T => {
+      if (canView) return o;
+      const clone = { ...o };
+      delete clone.isCorrect;
+      return clone;
+    },
+  };
+  const service = new BookmarksService(
+    prisma as never,
+    learningActivity as never,
+    access as never,
+  );
   const user = { userId: 'user-1', role: 'USER' as const, sessionId: 'sess-1' };
 
   beforeEach(() => {
@@ -249,11 +267,12 @@ describe('BookmarksService', () => {
           name: 'Weak',
           createdAt: new Date(),
           updatedAt: new Date(),
-          _count: { bookmarks: 3 },
+          _count: { bookmarks: 3, documentBookmarks: 1 },
         },
       ]);
       prisma.questionBookmark.findUnique.mockResolvedValue({ collectionId: 'col1' });
       prisma.questionBookmark.count.mockResolvedValue(2);
+      prisma.documentBookmark.count.mockResolvedValue(4);
 
       const data = await service.listCollections(user, { questionId: 'q1' });
       expect(data.bookmarked).toBe(true);
@@ -261,9 +280,38 @@ describe('BookmarksService', () => {
       expect(data.items[0]).toMatchObject({
         id: 'col1',
         questionCount: 3,
+        documentCount: 1,
         containsQuestion: true,
       });
-      expect(data.uncategorized).toMatchObject({ questionCount: 2, containsQuestion: false });
+      expect(data.uncategorized).toMatchObject({
+        questionCount: 2,
+        documentCount: 4,
+        containsQuestion: false,
+      });
+    });
+
+    it('reports picker state for a PDF', async () => {
+      prisma.bookmarkCollection.findMany.mockResolvedValue([
+        {
+          id: 'col1',
+          name: 'Weak',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          _count: { bookmarks: 0, documentBookmarks: 1 },
+        },
+      ]);
+      prisma.documentBookmark.findUnique.mockResolvedValue({ collectionId: 'col1' });
+      prisma.questionBookmark.count.mockResolvedValue(0);
+      prisma.documentBookmark.count.mockResolvedValue(0);
+
+      const data = await service.listCollections(user, { documentId: 'd1' });
+      expect(prisma.documentBookmark.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { userId_documentId: { userId: user.userId, documentId: 'd1' } },
+        }),
+      );
+      expect(prisma.questionBookmark.findUnique).not.toHaveBeenCalled();
+      expect(data.items[0]?.containsQuestion).toBe(true);
     });
 
     it('creates a collection for the user', async () => {
@@ -315,11 +363,196 @@ describe('BookmarksService', () => {
       await expect(service.addDocument(user, 'd1')).rejects.toBeInstanceOf(ConflictException);
     });
 
+    it('saves a PDF into an owned folder', async () => {
+      prisma.document.findFirst.mockResolvedValue({ id: 'd1', categoryId: 'cat1' });
+      prisma.bookmarkCollection.findFirst.mockResolvedValue({ id: 'col1', userId: user.userId });
+      prisma.documentBookmark.findUnique.mockResolvedValue(null);
+      prisma.documentBookmark.create.mockResolvedValue({ id: 'db1', documentId: 'd1' });
+
+      await expect(
+        service.addDocument(user, 'd1', { collectionId: 'col1' }),
+      ).resolves.toMatchObject({ created: true, moved: false });
+      expect(prisma.documentBookmark.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: { userId: user.userId, documentId: 'd1', collectionId: 'col1' },
+        }),
+      );
+    });
+
+    it('rejects saving a PDF into another user folder', async () => {
+      prisma.document.findFirst.mockResolvedValue({ id: 'd1', categoryId: 'cat1' });
+      prisma.bookmarkCollection.findFirst.mockResolvedValue(null);
+      await expect(
+        service.addDocument(user, 'd1', { collectionId: 'other-col' }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      expect(prisma.documentBookmark.create).not.toHaveBeenCalled();
+    });
+
+    it('is idempotent for the same folder and moves for another', async () => {
+      prisma.document.findFirst.mockResolvedValue({ id: 'd1', categoryId: 'cat1' });
+      prisma.bookmarkCollection.findFirst.mockResolvedValue({ id: 'col2', userId: user.userId });
+      prisma.documentBookmark.findUnique.mockResolvedValue({ id: 'db1', collectionId: 'col2' });
+      await expect(
+        service.addDocument(user, 'd1', { collectionId: 'col2' }),
+      ).resolves.toMatchObject({ created: false, moved: false });
+      expect(prisma.documentBookmark.update).not.toHaveBeenCalled();
+
+      prisma.documentBookmark.findUnique.mockResolvedValue({ id: 'db1', collectionId: null });
+      prisma.documentBookmark.update.mockResolvedValue({ id: 'db1', collectionId: 'col2' });
+      await expect(
+        service.addDocument(user, 'd1', { collectionId: 'col2' }),
+      ).resolves.toMatchObject({ created: false, moved: true });
+    });
+
+    it('moves only the current user PDF bookmark', async () => {
+      prisma.documentBookmark.findUnique.mockResolvedValue(null);
+      await expect(service.moveDocument(user, 'd1', null)).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+      expect(prisma.documentBookmark.findUnique).toHaveBeenCalledWith({
+        where: { userId_documentId: { userId: user.userId, documentId: 'd1' } },
+      });
+    });
+
+    it('filters PDFs by an owned folder and 404s on a foreign one', async () => {
+      prisma.bookmarkCollection.findFirst.mockResolvedValue({ id: 'col1', userId: user.userId });
+      prisma.documentBookmark.findMany.mockResolvedValue([]);
+      await service.listDocuments(user, { collectionId: 'col1' });
+      expect(prisma.documentBookmark.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { userId: user.userId, collectionId: 'col1' } }),
+      );
+
+      prisma.bookmarkCollection.findFirst.mockResolvedValue(null);
+      await expect(
+        service.listDocuments(user, { collectionId: 'other-col' }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
     it('deletes only the current user document bookmark', async () => {
       prisma.documentBookmark.deleteMany.mockResolvedValue({ count: 1 });
       await expect(service.removeDocument(user, 'd1')).resolves.toEqual({ ok: true });
       expect(prisma.documentBookmark.deleteMany).toHaveBeenCalledWith({
         where: { userId: user.userId, documentId: 'd1' },
+      });
+    });
+  });
+
+  describe('saved question details (answer privacy)', () => {
+    const row = {
+      id: 'b1',
+      createdAt: new Date(),
+      collection: null,
+      question: {
+        id: 'q1',
+        title: 'T',
+        content: 'C',
+        explanation: 'Because',
+        options: [
+          { id: 'o1', label: 'A', content: 'x', isCorrect: true, sortOrder: 0 },
+          { id: 'o2', label: 'B', content: 'y', isCorrect: false, sortOrder: 1 },
+        ],
+      },
+    };
+
+    it('omits isCorrect and explanation for non-entitled users', async () => {
+      prisma.user.findUniqueOrThrow.mockResolvedValue({ id: user.userId });
+      access.canViewAnswers.mockResolvedValue(false);
+      prisma.questionBookmark.findMany.mockResolvedValue([row]);
+
+      const page = await service.listQuestionDetails(user, {});
+      const q = page.items[0]!.question;
+      expect(page.answersVisible).toBe(false);
+      expect('explanation' in q).toBe(false);
+      for (const o of q.options) expect('isCorrect' in o).toBe(false);
+      expect(prisma.questionBookmark.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ userId: user.userId }),
+        }),
+      );
+    });
+
+    it('includes answer fields for entitled users', async () => {
+      prisma.user.findUniqueOrThrow.mockResolvedValue({ id: user.userId });
+      access.canViewAnswers.mockResolvedValue(true);
+      prisma.questionBookmark.findMany.mockResolvedValue([row]);
+
+      const page = await service.listQuestionDetails(user, {});
+      const q = page.items[0]!.question as { explanation?: string; options: Array<{ isCorrect?: boolean }> };
+      expect(q.explanation).toBe('Because');
+      expect(q.options[0]!.isCorrect).toBe(true);
+    });
+  });
+
+  describe('saved-questions exam scoring', () => {
+    const saved = [
+      {
+        question: {
+          id: 'q1',
+          explanation: 'E1',
+          options: [
+            { id: 'o1', label: 'A', isCorrect: true },
+            { id: 'o2', label: 'B', isCorrect: false },
+          ],
+        },
+      },
+      {
+        question: {
+          id: 'q2',
+          explanation: null,
+          options: [
+            { id: 'o3', label: 'A', isCorrect: false },
+            { id: 'o4', label: 'B', isCorrect: true },
+          ],
+        },
+      },
+    ];
+
+    it('scores only the user saved questions and ignores forged option ids', async () => {
+      prisma.user.findUniqueOrThrow.mockResolvedValue({ id: user.userId });
+      access.canViewAnswers.mockResolvedValue(false);
+      prisma.questionBookmark.findMany.mockResolvedValue(saved);
+
+      const result = await service.scoreSavedPractice(user, ['q1', 'q2', 'not-saved'], {
+        q1: 'o1',
+        q2: 'o1', // option of another question → treated as skipped
+        'not-saved': 'x',
+      });
+
+      expect(prisma.questionBookmark.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            userId: user.userId,
+            questionId: { in: ['q1', 'q2', 'not-saved'] },
+          }),
+        }),
+      );
+      expect(result).toMatchObject({
+        totalQuestions: 2,
+        correctCount: 1,
+        wrongCount: 0,
+        skippedCount: 1,
+        percent: 50,
+        answersVisible: false,
+      });
+      for (const item of result.answerSheet) {
+        expect(item).not.toHaveProperty('isCorrect');
+        expect(item).not.toHaveProperty('correctOptionId');
+        expect(item).not.toHaveProperty('explanation');
+      }
+    });
+
+    it('returns the key and explanations to entitled users', async () => {
+      prisma.user.findUniqueOrThrow.mockResolvedValue({ id: user.userId });
+      access.canViewAnswers.mockResolvedValue(true);
+      prisma.questionBookmark.findMany.mockResolvedValue(saved);
+
+      const result = await service.scoreSavedPractice(user, ['q1', 'q2'], { q1: 'o2', q2: 'o4' });
+      expect(result).toMatchObject({ correctCount: 1, wrongCount: 1, answersVisible: true });
+      expect(result.answerSheet[0]).toMatchObject({
+        isCorrect: false,
+        correctOptionId: 'o1',
+        correctAnswerLabel: 'A',
+        explanation: 'E1',
       });
     });
   });

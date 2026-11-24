@@ -19,6 +19,8 @@ export type ConfirmDialogProps = {
   pending?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
+  /** Extra panel classes, e.g. a wider `sm:max-w-lg` for long button labels. */
+  className?: string;
 };
 
 const EXIT_MS = 160;
@@ -38,6 +40,7 @@ export function ConfirmDialog({
   pending = false,
   onConfirm,
   onCancel,
+  className,
 }: ConfirmDialogProps) {
   const titleId = useId();
   const descId = useId();
@@ -139,6 +142,7 @@ export function ConfirmDialog({
           className={cn(
             'ya-dialog-panel relative z-10 max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto overscroll-contain',
             'rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)] p-4 text-[var(--ink)] shadow-[var(--shadow-lg)] sm:p-6',
+            className,
           )}
         >
           <h2 id={titleId} className="font-display text-lg font-semibold text-[var(--ink)]">
@@ -152,7 +156,7 @@ export function ConfirmDialog({
               {reversible ? 'This can be reversed later.' : 'This action cannot be undone.'}
             </p>
           ) : null}
-          <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end [&>button]:w-full sm:[&>button]:w-auto">
+          <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end [&>button]:w-full sm:[&>button]:w-auto sm:[&>button]:whitespace-nowrap">
             <Button
               ref={cancelRef}
               type="button"
