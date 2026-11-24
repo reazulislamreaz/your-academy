@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   Activity,
   ArrowRight,
+  BadgeCheck,
   Clock3,
   FileQuestion,
   FileText,
@@ -40,8 +41,9 @@ type Dashboard = {
   users: {
     total: number;
     active: number;
-    trialActive: number;
-    trialExpired: number;
+    /** DEC-060 — subscriptions active right now / ended (not disabled). */
+    paidActive: number;
+    paidExpired: number;
     online: number;
     newRegistrations24h: number;
   };
@@ -211,6 +213,13 @@ export default function AdminDashboardPage() {
             hint={`${data.questions.published} published`}
             icon={FileQuestion}
             tone="blue"
+          />
+          <StatCard
+            label="Active subscribers"
+            value={data.users.paidActive}
+            hint={`${data.users.paidExpired} expired subscriptions`}
+            icon={BadgeCheck}
+            tone="teal"
           />
           <StatCard label="Categories" value={data.categories} icon={FolderTree} tone="slate" />
           <StatCard label="News posts" value={data.news} icon={Newspaper} tone="slate" />

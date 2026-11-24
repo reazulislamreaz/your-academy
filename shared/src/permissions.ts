@@ -31,6 +31,10 @@ export const DASHBOARD_PERMISSIONS = [
   'homepage',
   'settings',
   'support',
+  /** DEC-060 — packages, subscriber list, manual grants. */
+  'subscriptions',
+  /** DEC-060 — SSLCommerz transactions + re-check. */
+  'payments',
 ] as const;
 
 export type DashboardPermission = (typeof DASHBOARD_PERMISSIONS)[number];

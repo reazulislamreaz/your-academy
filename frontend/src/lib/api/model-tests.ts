@@ -1,6 +1,7 @@
 import type {
   AdminModelTestListItem,
   AdminModelTestUploadResult,
+  ContentAccessLevel,
   ModelTestAttemptResult,
   ModelTestCategoryRef,
   ModelTestGuideConfig,
@@ -102,6 +103,8 @@ export async function uploadAdminModelTest(input: {
   examYear?: number;
   categoryId?: string;
   isPublished?: boolean;
+  /** DEC-060 — defaults to FREE on the server. */
+  access?: ContentAccessLevel;
   file: File;
 }): Promise<AdminModelTestUploadResult> {
   const form = new FormData();
@@ -111,6 +114,7 @@ export async function uploadAdminModelTest(input: {
   if (input.examYear != null) form.append('examYear', String(input.examYear));
   if (input.categoryId) form.append('categoryId', input.categoryId);
   if (input.isPublished != null) form.append('isPublished', String(input.isPublished));
+  if (input.access) form.append('access', input.access);
   form.append('file', input.file);
 
   const result = await apiUploadForm<AdminModelTestUploadResult>(
@@ -150,6 +154,7 @@ export function updateAdminModelTest(
     examYear?: number | null;
     categoryId?: string | null;
     isPublished?: boolean;
+    access?: ContentAccessLevel;
   },
 ) {
   return apiFetch<{
@@ -160,6 +165,7 @@ export function updateAdminModelTest(
     examYear: number | null;
     durationInMinutes: number;
     isPublished: boolean;
+    access: ContentAccessLevel;
     totalQuestions: number;
     category: ModelTestCategoryRef | null;
   }>(`/admin/model-tests/${encodeURIComponent(id)}`, {

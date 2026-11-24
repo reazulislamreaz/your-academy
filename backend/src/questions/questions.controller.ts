@@ -64,6 +64,7 @@ export class QuestionsController {
   @Get('questions/:id/navigation')
   @UseGuards(JwtAuthGuard)
   async navigation(
+    @CurrentUser() user: RequestUser,
     @Param('id') id: string,
     @Query('categoryId') categoryId?: string,
     @Query('subcategoryId') subcategoryId?: string,
@@ -72,7 +73,7 @@ export class QuestionsController {
     @Query('examTag') examTag?: string,
   ) {
     return createSuccessResponse(
-      await this.questions.navigation(id, { categoryId, subcategoryId, difficulty, q, examTag }),
+      await this.questions.navigation(user, id, { categoryId, subcategoryId, difficulty, q, examTag }),
       newRequestId(),
     );
   }

@@ -1,5 +1,9 @@
 import {
   Activity,
+  BadgeCheck,
+  CreditCard,
+  Package,
+  ToggleRight,
   ClipboardList,
   FileQuestion,
   FileSpreadsheet,
@@ -92,6 +96,11 @@ export const adminNavItems: AdminNavItem[] = [
   { href: '/admin/news', label: 'News', icon: Newspaper },
   { href: '/admin/documents', label: 'Documents', shortLabel: 'Docs', icon: FileText },
   { href: '/admin/account', label: 'Account settings', shortLabel: 'Account', icon: UserCog },
+  // DEC-060 — Free vs Paid system
+  { href: '/admin/paid-system', label: 'Paid system', shortLabel: 'Paid', icon: ToggleRight },
+  { href: '/admin/packages', label: 'Packages', icon: Package },
+  { href: '/admin/subscribers', label: 'Subscribers', icon: BadgeCheck },
+  { href: '/admin/payments', label: 'Payments', icon: CreditCard },
 ];
 
 /** Grouped nav for sidebar + mobile drawer (enterprise IA). */
@@ -125,6 +134,14 @@ export const adminNavGroups: AdminNavGroup[] = [
         '/admin/news',
         '/admin/documents',
       ].includes(i.href),
+    ),
+  },
+  {
+    title: 'Billing',
+    items: adminNavItems.filter((i) =>
+      ['/admin/paid-system', '/admin/packages', '/admin/subscribers', '/admin/payments'].includes(
+        i.href,
+      ),
     ),
   },
   {

@@ -7,4 +7,4 @@ export * from './homepage-layout';
 export * from './social-links';
 export * from './whatsapp';
 export * from './permissions';
-export * from './subscriptions';
+export * from './billing';

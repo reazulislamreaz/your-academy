@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { AnswersLockedNote } from '@/components/marketing/answers-locked-note';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { PreliPracticeResult } from './preli-practice-session';
@@ -34,8 +33,6 @@ export function PreliPracticeResultView({
   const takeBase = basePath.replace(/\/$/, '') || '/preli-practice';
   const retakeHref = retakeHrefProp ?? `${takeBase}/${encodeURIComponent(result.setId)}`;
   const listHref = backHref ?? takeBase;
-  // DEC-051: absent key → show score + own selections only.
-  const answersVisible = result.answersVisible ?? true;
 
   return (
     <div className="mx-auto w-full max-w-3xl overflow-x-clip px-3 py-6 sm:px-6 sm:py-10">
@@ -91,13 +88,6 @@ export function PreliPracticeResultView({
         </div>
       </section>
 
-      {!answersVisible ? (
-        <AnswersLockedNote
-          className="mt-4 sm:mt-6"
-          detail="Your score and selected answers are shown below."
-        />
-      ) : null}
-
       <div className="mt-4 flex justify-center sm:mt-6">
         <Button
           type="button"
@@ -125,7 +115,7 @@ export function PreliPracticeResultView({
                 {item.options.map((option, optIdx) => {
                   const isSelected = item.selectedOptionId === option.id;
                   const isCorrect =
-                    answersVisible && item.correctOptionId != null && item.correctOptionId === option.id;
+                    item.correctOptionId != null && item.correctOptionId === option.id;
                   const letter =
                     ['ক', 'খ', 'গ', 'ঘ'][optIdx] ?? option.label ?? String.fromCharCode(65 + optIdx);
                   return (
@@ -137,11 +127,7 @@ export function PreliPracticeResultView({
                           'border-[var(--success)] bg-[var(--success-soft)] text-[var(--success-fg)]',
                         isSelected &&
                           !isCorrect &&
-                          answersVisible &&
                           'border-[var(--danger)] bg-[var(--danger-soft)] text-[var(--danger-fg)]',
-                        isSelected &&
-                          !answersVisible &&
-                          'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--ink)]',
                         !isSelected && !isCorrect && 'border-transparent text-[var(--ink-soft)]',
                       )}
                     >

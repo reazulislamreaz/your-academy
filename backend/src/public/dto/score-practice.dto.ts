@@ -1,6 +1,6 @@
 import { IsObject } from 'class-validator';
 
-/** DEC-051 — Preli Practice answers scored on the server. */
+/** Preli Practice answers scored on the server (locked sets refused — DEC-060). */
 export class ScorePracticeDto {
   /** Map of questionId → selected option id. Unknown ids are ignored. */
   @IsObject()

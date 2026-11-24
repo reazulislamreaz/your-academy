@@ -9,7 +9,7 @@ alwaysApply: true
 Follow `AGENTS.md` security and secrets sections.
 
 - Argon2id; rotating refresh; HTTP-only cookies + CSRF
-- Backend answer privacy; RBAC; IDOR prevention
+- Backend Free vs Paid locks (DEC-060, never send locked content); RBAC; IDOR prevention
 - Rate-limit auth endpoints; Helmet; CORS allowlist + credentials
 - No Cloudinary secrets on client; signed/server uploads
 - Never commit `.env` or log tokens/passwords

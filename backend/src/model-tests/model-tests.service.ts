@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { ContentAccess, Prisma } from '@prisma/client';
 import {
   DEFAULT_MODEL_TEST_GUIDE_ITEMS,
   DEFAULT_MODEL_TEST_GUIDE_TITLE,
@@ -14,6 +14,7 @@ import {
   type TimedAttemptSummary,
 } from '@your-academy/shared';
 import type { RequestUser } from '../auth/auth.types';
+import { AccessPolicyService, type ViewerAccess } from '../billing/access-policy.service';
 import { PrismaService } from '../database/prisma.service';
 import { newRequestId } from '../common/request-id';
 import { paginateById, parseLimit } from '../common/pagination';
@@ -50,19 +51,25 @@ function asStringOptions(value: unknown): string[] {
 
 @Injectable()
 export class ModelTestsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly accessPolicy: AccessPolicyService,
+  ) {}
 
   async getTemplateBuffer(): Promise<Buffer> {
     return buildModelTestTemplateBuffer();
   }
 
-  async listPublished(filters?: {
-    q?: string;
-    year?: number;
-    categoryId?: string;
-    cursor?: string;
-    limit?: number;
-  }) {
+  async listPublished(
+    filters: {
+      q?: string;
+      year?: number;
+      categoryId?: string;
+      cursor?: string;
+      limit?: number;
+    },
+    viewer: ViewerAccess,
+  ) {
     const q = filters?.q?.trim();
     const year = filters?.year;
     const categoryId = filters?.categoryId?.trim();
@@ -88,10 +95,19 @@ export class ModelTestsService {
         totalQuestions: true,
         durationInMinutes: true,
         createdAt: true,
+        access: true,
         category: { select: { id: true, name: true, slug: true } },
       },
     });
-    return paginateById(rows, limit);
+    const page = paginateById(rows, limit);
+    return {
+      ...page,
+      // DEC-060: paid tests stay listed with a lock; their questions are never sent.
+      items: page.items.map((row) => ({
+        ...row,
+        locked: !viewer.fullAccess && row.access === ContentAccess.PAID,
+      })),
+    };
   }
 
   async listFilterYears(): Promise<number[]> {
@@ -196,8 +212,9 @@ export class ModelTestsService {
     return found.id;
   }
 
-  async getPublishedForTaking(idOrSlug: string) {
+  async getPublishedForTaking(idOrSlug: string, viewer: ViewerAccess) {
     const modelTest = await this.findPublished(idOrSlug);
+    await this.accessPolicy.assertAccess(viewer, { kind: 'MODEL_TEST', access: modelTest.access });
     const questions = await this.prisma.modelTestQuestion.findMany({
       where: { modelTestId: modelTest.id },
       orderBy: { sortOrder: 'asc' },
@@ -225,6 +242,7 @@ export class ModelTestsService {
       totalQuestions: modelTest.totalQuestions,
       durationInMinutes: modelTest.durationInMinutes,
       createdAt: modelTest.createdAt,
+      access: modelTest.access,
       questions: questions.map((q) => ({
         id: q.id,
         questionText: q.questionText,
@@ -237,9 +255,11 @@ export class ModelTestsService {
   async submitAttempt(
     idOrSlug: string,
     dto: SubmitModelTestAttemptDto,
-    actor: RequestUser | null = null,
+    actor: RequestUser | null,
+    viewer: ViewerAccess,
   ) {
     const modelTest = await this.findPublished(idOrSlug);
+    await this.accessPolicy.assertAccess(viewer, { kind: 'MODEL_TEST', access: modelTest.access });
     const questions = await this.prisma.modelTestQuestion.findMany({
       where: { modelTestId: modelTest.id },
       orderBy: { sortOrder: 'asc' },
@@ -404,14 +424,8 @@ export class ModelTestsService {
     return { items, nextCursor };
   }
 
-  /**
-   * DEC-051: everyone sees score/totals and their own selections; the answer key,
-   * explanations and per-question correctness are for entitled viewers only.
-   */
-  async getAttemptResult(
-    attemptId: string,
-    view: { canViewAnswers: boolean } = { canViewAnswers: false },
-  ) {
+  /** Result with answer key; a PAID test's key needs access like the test itself (DEC-060). */
+  async getAttemptResult(attemptId: string, viewer: ViewerAccess) {
     const attempt = await this.prisma.modelTestAttempt.findUnique({
       where: { id: attemptId },
       include: {
@@ -423,6 +437,7 @@ export class ModelTestsService {
             totalQuestions: true,
             durationInMinutes: true,
             examYear: true,
+            access: true,
           },
         },
       },
@@ -432,6 +447,10 @@ export class ModelTestsService {
         createErrorResponse('MODEL_TEST_ATTEMPT_NOT_FOUND', 'Attempt not found', newRequestId()),
       );
     }
+    await this.accessPolicy.assertAccess(viewer, {
+      kind: 'MODEL_TEST',
+      access: attempt.modelTest.access,
+    });
 
     const questions = await this.prisma.modelTestQuestion.findMany({
       where: { modelTestId: attempt.modelTestId },
@@ -470,7 +489,6 @@ export class ModelTestsService {
         durationInMinutes: attempt.modelTest.durationInMinutes,
         examYear: attempt.modelTest.examYear,
       },
-      answersVisible: view.canViewAnswers,
       answerSheet: questions.map((q) => {
         const selected = userAnswers[q.id] ?? '';
         const options = asStringOptions(q.options);
@@ -481,9 +499,9 @@ export class ModelTestsService {
           options,
           selectedAnswer: selected || null,
           isSkipped: !selected,
-          ...(view.canViewAnswers
-            ? { correctAnswer: q.correctAnswer, explanation: q.explanation, isCorrect }
-            : {}),
+          correctAnswer: q.correctAnswer,
+          explanation: q.explanation,
+          isCorrect,
         };
       }),
     };
@@ -496,6 +514,8 @@ export class ModelTestsService {
     examYear?: number | null;
     categoryId?: string | null;
     isPublished?: boolean;
+    /** DEC-060 — defaults to FREE. */
+    access?: ContentAccess;
     file: Express.Multer.File;
     createdById: string;
   }) {
@@ -588,6 +608,7 @@ export class ModelTestsService {
           totalQuestions: parsed.rows.length,
           durationInMinutes: Math.floor(input.durationInMinutes),
           isPublished,
+          access: input.access ?? ContentAccess.FREE,
           createdById: input.createdById,
           questions: {
             create: parsed.rows.map((row, index) => ({
@@ -655,6 +676,7 @@ export class ModelTestsService {
         totalQuestions: true,
         durationInMinutes: true,
         isPublished: true,
+        access: true,
         createdAt: true,
         category: { select: { id: true, name: true, slug: true } },
         _count: { select: { attempts: true } },
@@ -693,6 +715,7 @@ export class ModelTestsService {
       durationInMinutes?: number;
       examYear?: number | null;
       categoryId?: string | null;
+      access?: ContentAccess;
     },
   ) {
     const existing = await this.prisma.modelTest.findUnique({
@@ -742,6 +765,7 @@ export class ModelTestsService {
         ? { connect: { id: categoryId } }
         : { disconnect: true };
     }
+    if (input.access !== undefined) data.access = input.access;
 
     return this.prisma.modelTest.update({
       where: { id },
@@ -754,6 +778,7 @@ export class ModelTestsService {
         examYear: true,
         durationInMinutes: true,
         isPublished: true,
+        access: true,
         totalQuestions: true,
         category: { select: { id: true, name: true, slug: true } },
       },

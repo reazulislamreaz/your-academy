@@ -4,8 +4,8 @@ export type SavedItemKind = 'question' | 'document';
 export type FolderRef = { id: string; name: string } | null;
 
 /**
- * Saved MCQ as returned by `GET /bookmarks/questions/details`. `isCorrect` and
- * `explanation` are absent unless the API decided the user is entitled (DEC-051).
+ * Saved MCQ as returned by `GET /bookmarks/questions/details` (key + explanation
+ * included; MCQs from locked sets are left out by the API — DEC-060).
  */
 export type SavedQuestionDetail = {
   id: string;
@@ -15,8 +15,8 @@ export type SavedQuestionDetail = {
   sectionTitle?: string | null;
   category: { id: string; name: string };
   subcategory?: { id: string; name: string } | null;
-  options: Array<{ id: string; label: string; content: string; isCorrect?: boolean }>;
-  explanation?: string | null;
+  options: Array<{ id: string; label: string; content: string; isCorrect: boolean }>;
+  explanation: string | null;
 };
 
 export type QuestionDetailRow = {
@@ -28,7 +28,6 @@ export type QuestionDetailRow = {
 
 export type SavedQuestionDetailsPage = {
   items: QuestionDetailRow[];
-  answersVisible: boolean;
 };
 
 export type DocumentBookmarkRow = {

@@ -11,7 +11,6 @@ async function fetchResult(attemptId: string): Promise<ExamAttemptResult | null>
   try {
     const res = await fetch(
       `${serverApiBase()}/public/exams/attempts/${encodeURIComponent(attemptId)}`,
-      // DEC-051: forward the session so entitled viewers get the answer key.
       { cache: 'no-store', headers: await sessionCookieHeader() },
     );
     if (res.status === 404) return null;

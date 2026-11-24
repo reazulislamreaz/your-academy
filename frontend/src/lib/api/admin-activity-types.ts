@@ -1,3 +1,5 @@
+import type { SubscriptionSummary } from '@your-academy/shared';
+
 export type AdminUserListItem = {
   id: string;
   name: string;
@@ -5,22 +7,14 @@ export type AdminUserListItem = {
   email: string | null;
   role: string;
   status: string;
-  trialEndsAt: string;
-  trialStartedAt: string;
-  trialActive: boolean;
   createdAt: string;
   avatarAssetId: string | null;
   lastHeartbeatAt: string | null;
   online: boolean;
   attemptCount: number;
   practiceAttemptCount: number;
-  subscription: {
-    id: string;
-    status: string;
-    startsAt: string;
-    endsAt: string;
-    plan: { id: string; code: string; name: string };
-  } | null;
+  /** DEC-060 — derived per request. */
+  subscription: SubscriptionSummary;
 };
 
 export type AdminUserDetail = {
@@ -31,9 +25,6 @@ export type AdminUserDetail = {
     email: string | null;
     role: string;
     status: string;
-    trialStartedAt: string;
-    trialEndsAt: string;
-    trialActive: boolean;
     createdAt: string;
     onboardingCompletedAt: string | null;
     preferredCategoryIds: string[];
@@ -41,22 +32,7 @@ export type AdminUserDetail = {
     online: boolean;
     lastHeartbeatAt: string | null;
   };
-  subscription: {
-    id: string;
-    status: string;
-    startsAt: string;
-    endsAt: string;
-    canceledAt: string | null;
-    plan: { id: string; code: string; name: string; durationDays: number };
-  } | null;
-  subscriptions: Array<{
-    id: string;
-    status: string;
-    startsAt: string;
-    endsAt: string;
-    canceledAt: string | null;
-    plan: { id: string; code: string; name: string; durationDays: number };
-  }>;
+  subscription: SubscriptionSummary;
   study: {
     activeSeconds: number;
     sessionCount: number;

@@ -83,8 +83,6 @@ async function main() {
         passwordHash: await argon2.hash(password, { type: argon2.argon2id }),
         role: UserRole.ADMIN,
         status: UserStatus.ACTIVE,
-        trialStartedAt: now,
-        trialEndsAt: now,
       },
     });
     console.log(`Created admin ${whatsappNumber}${email ? ` (${email})` : ''}. Sign in at /login.`);

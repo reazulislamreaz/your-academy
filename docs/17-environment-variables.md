@@ -46,7 +46,15 @@ Docker Compose overrides `DATABASE_URL` host to `postgres` for `api` / `worker` 
 | `ACCESS_COOKIE_NAME` | no | Default `access_token` |
 | `REFRESH_COOKIE_NAME` | no | Default `refresh_token` |
 | `CSRF_COOKIE_NAME` | no | Default `csrf_token` |
-| `TRIAL_DAYS` | no | Unused for entitlement (free trials disabled). Prefer `0`. |
+| `SSLCZ_STORE_ID` | for payments | SSLCommerz store id. Empty → online payment disabled (`PAYMENT_NOT_CONFIGURED`), DEC-060 |
+| `SSLCZ_STORE_PASSWORD` | for payments | SSLCommerz store password (API secret — never logged) |
+| `SSLCZ_IS_LIVE` | no | `true` = securepay.sslcommerz.com, `false`/unset = sandbox |
+| `SSLCZ_TIMEOUT_MS` | no | Gateway HTTP timeout (default 30000) |
+| `PAYMENT_RECHECK_ENABLED` | no | `false` turns off the lost-IPN re-check loop (default on) |
+| `PAYMENT_RECHECK_INTERVAL_MINUTES` | no | Re-check loop interval (default 10) |
+| `PAYMENT_RECHECK_MIN_AGE_MINUTES` | no | Only PENDING orders older than this are re-checked (default 15) |
+| `PAYMENT_PENDING_EXPIRE_MINUTES` | no | PENDING with no gateway transaction after this → FAILED (default 120, min 30) |
+| `APP_PUBLIC_URL` | no | Web origin for payment result redirects + email links (default: first `WEB_ORIGIN`) |
 | `SWAGGER_ENABLED` | no | Default true in dev |
 | `THROTTLE_TTL_SECONDS` | no | Rate limit window |
 | `THROTTLE_LIMIT` | no | Requests per window |

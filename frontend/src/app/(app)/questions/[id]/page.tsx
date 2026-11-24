@@ -5,7 +5,7 @@ import { useParams, useSearchParams } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bookmark, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Suspense, useEffect, useMemo, useState } from 'react';
-import { EntitlementCallout } from '@/components/access/entitlement-callout';
+import { LockedContent } from '@/components/access/locked-content';
 import { OptionRow, type OptionRowState } from '@/components/questions/option-row';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import { Surface } from '@/components/ui/surface';
 import { Alert } from '@/components/ui/alert';
 import { SaveToCollectionDialog } from '@/features/bookmarks/save-to-collection-dialog';
 import { meQueryKey } from '@/features/auth/use-auth';
+import { isContentLockedError } from '@/lib/api/billing';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import type { MeUser, QuestionDetail } from '@/lib/api/types';
 import { QuestionDetailPageSkeleton } from '@/components/skeletons';
@@ -71,6 +72,11 @@ function QuestionDetailContent() {
     return <QuestionDetailPageSkeleton />;
   }
 
+  // DEC-060: this MCQ belongs to a locked Preli set.
+  if (isContentLockedError(error)) {
+    return <LockedContent className="my-10" />;
+  }
+
   if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
     return (
       <Alert variant="warning">
@@ -86,9 +92,8 @@ function QuestionDetailContent() {
     return <Alert variant="danger">Unable to load question.</Alert>;
   }
 
-  const selected = data.options.find((o) => o.id === selectedId);
-  /** Feedback only after Check — never leak correctness before the learner commits. */
-  const showAnswerKeys = checked && data.answersVisible;
+  /** Feedback only after Check — never reveal correctness before the learner commits. */
+  const showAnswerKeys = checked;
 
   function optionState(option: QuestionDetail['options'][number]): OptionRowState {
     const isSelected = selectedId === option.id;
@@ -187,23 +192,12 @@ function QuestionDetailContent() {
       </div>
 
       {!checked ? (
-        <EntitlementCallout
-          variant="practice"
-          title="Select, then check"
-          description={
-            data.answersVisible
-              ? 'Choose an option and press Check answer to reveal the key and explanation.'
-              : 'Choose an option and press Check answer. Correct keys stay hidden unless you are entitled.'
-          }
-        />
-      ) : null}
-
-      {checked && !data.answersVisible ? (
-        <EntitlementCallout
-          variant="locked"
-          title={`You selected ${selected?.label ?? 'an option'}`}
-          description="Correct answers and explanations unlock with a future premium plan. You can keep browsing the full question bank."
-        />
+        <Alert>
+          <p className="font-semibold text-[var(--ink)]">Select, then check</p>
+          <p className="mt-1 text-[var(--muted-strong)]">
+            Choose an option and press Check answer to reveal the key and explanation.
+          </p>
+        </Alert>
       ) : null}
 
       {checked && data.explanation ? (

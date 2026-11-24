@@ -31,7 +31,6 @@ export function ModelTestResultView({ result, basePath = '/model-test' }: Props)
       elapsedSeconds={result.elapsedSeconds}
       durationInMinutes={result.modelTest.durationInMinutes}
       submittedAt={result.submittedAt}
-      answersVisible={result.answersVisible}
       answerSheet={result.answerSheet}
       optionLabels={BANGLA_OPTION_LABELS}
       takeBase={takeBase}

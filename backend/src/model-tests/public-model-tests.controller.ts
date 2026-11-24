@@ -7,20 +7,33 @@ import { OptionalJwtAuthGuard } from '../common/guards/optional-jwt-auth.guard';
 import { newRequestId } from '../common/request-id';
 import { parseLimit } from '../common/pagination';
 import { setViewerCacheHeaders } from '../public/viewer-cache';
-import { AccessControlService } from '../subscriptions/access-control.service';
+import { AccessPolicyService, type ViewerAccess } from '../billing/access-policy.service';
 import { SubmitModelTestAttemptDto } from './dto/submit-model-test-attempt.dto';
 import { ModelTestsService } from './model-tests.service';
 
-/** Guest Model Tests; optional JWT links attempt to account (DEC-045). */
+type ViewerRequest = Request & { user?: RequestUser | null };
+
+/**
+ * Guest Model Tests; optional JWT links attempt to account (DEC-045).
+ * DEC-060: PAID tests are listed with `locked` and refuse detail / submit / result.
+ */
 @Controller('api/v1/public/model-tests')
 export class PublicModelTestsController {
   constructor(
     private readonly modelTests: ModelTestsService,
-    private readonly access: AccessControlService,
+    private readonly access: AccessPolicyService,
   ) {}
 
+  private viewer(req: ViewerRequest, res: Response, anonymousCache?: string): Promise<ViewerAccess> {
+    setViewerCacheHeaders(res, req.user, anonymousCache);
+    return this.access.resolve(req.user);
+  }
+
   @Get()
+  @UseGuards(OptionalJwtAuthGuard)
   async list(
+    @Req() req: ViewerRequest,
+    @Res({ passthrough: true }) res: Response,
     @Query('q') q?: string,
     @Query('year') yearRaw?: string,
     @Query('categoryId') categoryId?: string,
@@ -29,13 +42,17 @@ export class PublicModelTestsController {
   ) {
     const year = yearRaw?.trim() ? Number(yearRaw) : undefined;
     const take = parseLimit(limitRaw, 12);
-    const page = await this.modelTests.listPublished({
-      q,
-      year: year != null && Number.isFinite(year) ? year : undefined,
-      categoryId,
-      cursor,
-      limit: take,
-    });
+    const viewer = await this.viewer(req, res, 'public, max-age=30, s-maxage=60');
+    const page = await this.modelTests.listPublished(
+      {
+        q,
+        year: year != null && Number.isFinite(year) ? year : undefined,
+        categoryId,
+        cursor,
+        limit: take,
+      },
+      viewer,
+    );
     return createSuccessResponse(
       page.items,
       newRequestId(),
@@ -61,26 +78,30 @@ export class PublicModelTestsController {
     return createSuccessResponse(await this.modelTests.getGuide(), newRequestId());
   }
 
-  /** DEC-051: answer key / explanations only for entitled viewers. */
   @Get('attempts/:attemptId')
   @UseGuards(OptionalJwtAuthGuard)
   async attemptResult(
     @Param('attemptId') attemptId: string,
-    @Req() req: Request & { user?: RequestUser | null },
+    @Req() req: ViewerRequest,
     @Res({ passthrough: true }) res: Response,
   ) {
-    setViewerCacheHeaders(res, req.user, 'no-store');
-    const canViewAnswers = await this.access.canViewerSeeAnswers(req.user);
+    const viewer = await this.viewer(req, res, 'no-store');
     return createSuccessResponse(
-      await this.modelTests.getAttemptResult(attemptId, { canViewAnswers }),
+      await this.modelTests.getAttemptResult(attemptId, viewer),
       newRequestId(),
     );
   }
 
   @Get(':idOrSlug')
-  async detail(@Param('idOrSlug') idOrSlug: string) {
+  @UseGuards(OptionalJwtAuthGuard)
+  async detail(
+    @Param('idOrSlug') idOrSlug: string,
+    @Req() req: ViewerRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const viewer = await this.viewer(req, res);
     return createSuccessResponse(
-      await this.modelTests.getPublishedForTaking(idOrSlug),
+      await this.modelTests.getPublishedForTaking(idOrSlug, viewer),
       newRequestId(),
     );
   }
@@ -91,10 +112,11 @@ export class PublicModelTestsController {
   async submit(
     @Param('idOrSlug') idOrSlug: string,
     @Body() dto: SubmitModelTestAttemptDto,
-    @Req() req: Request & { user?: RequestUser | null },
+    @Req() req: ViewerRequest,
   ) {
+    const viewer = await this.access.resolve(req.user);
     return createSuccessResponse(
-      await this.modelTests.submitAttempt(idOrSlug, dto, req.user ?? null),
+      await this.modelTests.submitAttempt(idOrSlug, dto, req.user ?? null, viewer),
       newRequestId(),
     );
   }

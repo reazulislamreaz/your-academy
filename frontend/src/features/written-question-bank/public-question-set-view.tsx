@@ -13,6 +13,8 @@ import {
   getPublicWrittenQuestionSet,
   listPublicWrittenSetQuestions,
 } from '@/lib/api/written-questions';
+import { LockedContent } from '@/components/access/locked-content';
+import { isContentLockedError } from '@/lib/api/billing';
 import { ExamInfoCard } from './exam-info-card';
 import { cn } from '@/lib/utils';
 
@@ -46,9 +48,12 @@ export function WrittenQuestionSetView({
         limit: 20,
       }),
     getNextPageParam: (last) => last.pagination?.nextCursor ?? undefined,
+    // DEC-060: a locked set's questions are refused by the API — don't ask.
+    enabled: Boolean(setQry.data) && !setQry.data?.locked,
   });
 
   const items = list.data?.pages.flatMap((p) => p.data) ?? [];
+  const locked = Boolean(setQry.data?.locked) || isContentLockedError(list.error);
 
   return (
     <div className={cn('space-y-6', className)}>
@@ -81,63 +86,64 @@ export function WrittenQuestionSetView({
           <h1 className="font-display text-[clamp(1.5rem,3vw,2rem)] font-bold tracking-tight text-[var(--ink)]">
             {setQry.data.title}
           </h1>
-          {setQry.data.sheetPreamble ? (
-            <ExamInfoCard preamble={setQry.data.sheetPreamble} />
-          ) : null}
+          {setQry.data.sheetPreamble ? <ExamInfoCard preamble={setQry.data.sheetPreamble} /> : null}
         </header>
       ) : null}
 
-      {list.isLoading ? (
-        <ListCardSkeleton rows={3} rowClassName="min-h-32 py-6" />
-      ) : null}
+      {locked && setQry.data ? <LockedContent title={setQry.data.title} /> : null}
 
-      {list.isError ? (
-        <LoadError
-          message="Could not load questions for this set."
-          onRetry={() => void list.refetch()}
-        />
-      ) : null}
+      {setQry.data && !locked ? (
+        <>
+          {list.isLoading ? <ListCardSkeleton rows={3} rowClassName="min-h-32 py-6" /> : null}
 
-      {!list.isLoading && !list.isError && items.length === 0 ? (
-        <EmptyState
-          align="center"
-          title="No questions yet"
-          description="This written set has no published questions."
-        />
-      ) : null}
+          {list.isError ? (
+            <LoadError
+              message="Could not load questions for this set."
+              onRetry={() => void list.refetch()}
+            />
+          ) : null}
 
-      <ul className="space-y-4">
-        {items.map((item, index) => {
-          const prevSection = index > 0 ? items[index - 1]?.sectionTitle : null;
-          const showSection =
-            Boolean(item.sectionTitle) && item.sectionTitle !== prevSection;
-          return (
-            <li key={item.id} className="space-y-3">
-              {showSection ? (
-                <div className="rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-muted)] px-4 py-2.5">
-                  <p className="font-display text-sm font-bold tracking-tight text-[var(--ink)]">
-                    {item.sectionTitle}
-                  </p>
-                </div>
-              ) : null}
-              <PublicWrittenCard question={item} />
-            </li>
-          );
-        })}
-      </ul>
+          {!list.isLoading && !list.isError && items.length === 0 ? (
+            <EmptyState
+              align="center"
+              title="No questions yet"
+              description="This written set has no published questions."
+            />
+          ) : null}
 
-      {list.hasNextPage ? (
-        <div className="flex justify-center pt-2">
-          <Button
-            type="button"
-            variant="outline"
-            className="cursor-pointer"
-            disabled={list.isFetchingNextPage}
-            onClick={() => void list.fetchNextPage()}
-          >
-            {list.isFetchingNextPage ? 'Loading…' : 'Load more questions'}
-          </Button>
-        </div>
+          <ul className="space-y-4">
+            {items.map((item, index) => {
+              const prevSection = index > 0 ? items[index - 1]?.sectionTitle : null;
+              const showSection = Boolean(item.sectionTitle) && item.sectionTitle !== prevSection;
+              return (
+                <li key={item.id} className="space-y-3">
+                  {showSection ? (
+                    <div className="rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-muted)] px-4 py-2.5">
+                      <p className="font-display text-sm font-bold tracking-tight text-[var(--ink)]">
+                        {item.sectionTitle}
+                      </p>
+                    </div>
+                  ) : null}
+                  <PublicWrittenCard question={item} />
+                </li>
+              );
+            })}
+          </ul>
+
+          {list.hasNextPage ? (
+            <div className="flex justify-center pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="cursor-pointer"
+                disabled={list.isFetchingNextPage}
+                onClick={() => void list.fetchNextPage()}
+              >
+                {list.isFetchingNextPage ? 'Loading…' : 'Load more questions'}
+              </Button>
+            </div>
+          ) : null}
+        </>
       ) : null}
     </div>
   );

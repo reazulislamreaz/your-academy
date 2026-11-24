@@ -11,7 +11,6 @@ import type { RequestUser } from '../auth/auth.types';
 import { newRequestId } from '../common/request-id';
 import { PrismaService } from '../database/prisma.service';
 import { LearningActivityService } from '../learning-activity/learning-activity.service';
-import { AccessControlService } from '../subscriptions/access-control.service';
 import type {
   CreatePracticeSetDto,
   SaveProgressDto,
@@ -48,7 +47,6 @@ type OptionSnapshot = {
 export class PracticeService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly access: AccessControlService,
     private readonly learningActivity: LearningActivityService,
   ) {}
 
@@ -558,11 +556,6 @@ export class PracticeService {
       );
     }
 
-    const viewerId = opts?.asAdmin ? user.userId : attempt.userId;
-    const dbUser = await this.prisma.user.findUniqueOrThrow({ where: { id: viewerId } });
-    // Admin viewing another user's result: show answers if admin is entitled (DEC-014 proposed).
-    const canView = await this.access.canViewAnswers(dbUser);
-
     const totalQuestions = attempt.correctCount != null
       ? (attempt.correctCount ?? 0) + (attempt.wrongCount ?? 0) + (attempt.skippedCount ?? 0)
       : await this.prisma.practiceSetItem.count({ where: { practiceSetId: attempt.practiceSetId } });
@@ -591,18 +584,13 @@ export class PracticeService {
         const options = optionsRaw
           .slice()
           .sort((a, b) => a.sortOrder - b.sortOrder)
-          .map((o) =>
-            this.access.stripAnswerFields(
-              {
-                id: o.id,
-                label: o.label,
-                content: o.content,
-                sortOrder: o.sortOrder,
-                isCorrect: o.isCorrect,
-              },
-              canView,
-            ),
-          );
+          .map((o) => ({
+            id: o.id,
+            label: o.label,
+            content: o.content,
+            sortOrder: o.sortOrder,
+            isCorrect: o.isCorrect,
+          }));
         return {
           questionId: answer.questionId,
           title: answer.questionTitleSnapshot ?? 'Question',
@@ -610,12 +598,8 @@ export class PracticeService {
           difficulty: 'MEDIUM',
           selectedOptionId: answer.selectedOptionId ?? null,
           unanswered: !answer.selectedOptionId,
-          ...(canView
-            ? {
-                isCorrect: answer.isCorrect ?? null,
-                explanation: answer.explanationSnapshot ?? undefined,
-              }
-            : {}),
+          isCorrect: answer.isCorrect ?? null,
+          explanation: answer.explanationSnapshot ?? null,
           options,
         };
       });
@@ -646,18 +630,13 @@ export class PracticeService {
       const answerMap = new Map(attempt.answers.map((a) => [a.questionId, a]));
       review = items.map((item) => {
         const answer = answerMap.get(item.questionId);
-        const options = item.question.options.map((o) =>
-          this.access.stripAnswerFields(
-            {
-              id: o.id,
-              label: o.label,
-              content: o.content,
-              sortOrder: o.sortOrder,
-              isCorrect: o.isCorrect,
-            },
-            canView,
-          ),
-        );
+        const options = item.question.options.map((o) => ({
+          id: o.id,
+          label: o.label,
+          content: o.content,
+          sortOrder: o.sortOrder,
+          isCorrect: o.isCorrect,
+        }));
         return {
           questionId: item.questionId,
           title: item.question.title,
@@ -665,12 +644,8 @@ export class PracticeService {
           difficulty: item.question.difficulty,
           selectedOptionId: answer?.selectedOptionId ?? null,
           unanswered: !answer?.selectedOptionId,
-          ...(canView
-            ? {
-                isCorrect: answer?.isCorrect ?? null,
-                explanation: item.question.explanation ?? undefined,
-              }
-            : {}),
+          isCorrect: answer?.isCorrect ?? null,
+          explanation: item.question.explanation ?? null,
           options,
         };
       });
@@ -692,7 +667,6 @@ export class PracticeService {
       totalQuestions,
       attempted,
       unanswered,
-      answersVisible: canView,
       practiceSet: attempt.practiceSet,
       review,
       ...(opts?.asAdmin && attempt.user

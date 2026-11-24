@@ -1,7 +1,7 @@
 'use client';
 
-import { Check, Lock, X } from 'lucide-react';
-import { useMemo, useState, type ReactNode } from 'react';
+import { Check, X } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';
@@ -10,7 +10,6 @@ export type ReviewOption = {
   key: string;
   label: string;
   content: string;
-  /** Only present when the API returned the answer key (entitled viewers). */
   isCorrect?: boolean;
 };
 
@@ -22,76 +21,49 @@ export type ReviewItem = {
   options: ReviewOption[];
   selectedKey: string | null;
   isSkipped: boolean;
-  /** API-provided correctness (entitled only) — never computed client-side. */
+  /** API-provided correctness — never computed client-side. */
   isCorrect?: boolean | null;
   explanation?: string | null;
 };
 
-type Filter = 'all' | 'correct' | 'wrong' | 'skipped' | 'answered';
+type Filter = 'all' | 'correct' | 'wrong' | 'skipped';
 
 type Props = {
   items: ReviewItem[];
-  /** DEC-051: false → no key / correctness / explanations in the payload. */
-  answersVisible: boolean;
-  /** Rendered above the list when answers are locked. */
-  lockedNote?: ReactNode;
   heading?: string;
 };
 
-function statusOf(
-  item: ReviewItem,
-  answersVisible: boolean,
-): 'correct' | 'wrong' | 'skipped' | 'answered' {
+function statusOf(item: ReviewItem): 'correct' | 'wrong' | 'skipped' | 'answered' {
   if (item.isSkipped || !item.selectedKey) return 'skipped';
-  if (!answersVisible) return 'answered';
   if (item.isCorrect === true) return 'correct';
   if (item.isCorrect === false) return 'wrong';
   return 'answered';
 }
 
 /** Question-by-question review with All / Correct / Wrong / Skipped filters. */
-export function AnswerReview({
-  items,
-  answersVisible,
-  lockedNote,
-  heading = 'Answer review',
-}: Props) {
+export function AnswerReview({ items, heading = 'Answer review' }: Props) {
   const [filter, setFilter] = useState<Filter>('all');
 
   const withStatus = useMemo(
-    () => items.map((item) => ({ item, status: statusOf(item, answersVisible) })),
-    [answersVisible, items],
+    () => items.map((item) => ({ item, status: statusOf(item) })),
+    [items],
   );
   const counts = useMemo(() => {
-    const c = { all: items.length, correct: 0, wrong: 0, skipped: 0, answered: 0 };
+    const c = { all: items.length, correct: 0, wrong: 0, skipped: 0 };
     for (const { status } of withStatus) {
       if (status !== 'answered') c[status] += 1;
     }
-    // "Answered" = everything not skipped (correct + wrong when the key is visible).
-    c.answered = items.length - c.skipped;
     return c;
   }, [items.length, withStatus]);
 
-  const filters: Array<{ id: Filter; label: string; locked?: boolean }> = answersVisible
-    ? [
-        { id: 'all', label: 'All' },
-        { id: 'correct', label: 'Correct' },
-        { id: 'wrong', label: 'Wrong' },
-        { id: 'skipped', label: 'Skipped' },
-      ]
-    : [
-        { id: 'all', label: 'All' },
-        { id: 'answered', label: 'Answered' },
-        { id: 'skipped', label: 'Skipped' },
-        { id: 'correct', label: 'Correct', locked: true },
-        { id: 'wrong', label: 'Wrong', locked: true },
-      ];
+  const filters: Array<{ id: Filter; label: string }> = [
+    { id: 'all', label: 'All' },
+    { id: 'correct', label: 'Correct' },
+    { id: 'wrong', label: 'Wrong' },
+    { id: 'skipped', label: 'Skipped' },
+  ];
 
-  const visible = withStatus.filter(({ status }) => {
-    if (filter === 'all') return true;
-    if (filter === 'answered') return status !== 'skipped';
-    return status === filter;
-  });
+  const visible = withStatus.filter(({ status }) => filter === 'all' || status === filter);
 
   return (
     <section aria-labelledby="answer-review-heading" className="space-y-4">
@@ -113,39 +85,29 @@ export function AnswerReview({
               <button
                 key={f.id}
                 type="button"
-                disabled={f.locked}
                 aria-pressed={active}
-                title={f.locked ? 'Available with a subscription' : undefined}
                 onClick={() => setFilter(f.id)}
                 className={cn(
                   'inline-flex min-h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3 text-xs font-semibold whitespace-nowrap transition-colors',
-                  'disabled:cursor-not-allowed disabled:opacity-55',
                   active
                     ? 'border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-fg)]'
                     : 'border-[var(--line)] bg-[var(--bg-elevated)] text-[var(--muted-strong)] hover:border-[var(--line-strong)] hover:text-[var(--ink)]',
                 )}
               >
-                {f.locked ? <Lock className="size-3" aria-hidden /> : null}
                 {f.label}
-                {f.locked ? (
-                  <span className="sr-only"> (available with a subscription)</span>
-                ) : (
-                  <span
-                    className={cn(
-                      'rounded-full px-1.5 tabular-nums',
-                      active ? 'bg-white/20' : 'bg-[var(--bg-muted)]',
-                    )}
-                  >
-                    {counts[f.id]}
-                  </span>
-                )}
+                <span
+                  className={cn(
+                    'rounded-full px-1.5 tabular-nums',
+                    active ? 'bg-white/20' : 'bg-[var(--bg-muted)]',
+                  )}
+                >
+                  {counts[f.id]}
+                </span>
               </button>
             );
           })}
         </div>
       </div>
-
-      {lockedNote}
 
       {visible.length === 0 ? (
         <EmptyState nested align="center" title="No questions in this filter" />
@@ -153,7 +115,7 @@ export function AnswerReview({
         <ol className="space-y-3">
           {visible.map(({ item, status }) => (
             <li key={item.id}>
-              <ReviewCard item={item} status={status} answersVisible={answersVisible} />
+              <ReviewCard item={item} status={status} />
             </li>
           ))}
         </ol>
@@ -172,11 +134,9 @@ const STATUS_BADGE = {
 function ReviewCard({
   item,
   status,
-  answersVisible,
 }: {
   item: ReviewItem;
   status: keyof typeof STATUS_BADGE;
-  answersVisible: boolean;
 }) {
   const badge = STATUS_BADGE[status];
   return (
@@ -208,8 +168,8 @@ function ReviewCard({
       <ul className="mt-3 space-y-2">
         {item.options.map((opt) => {
           const selected = item.selectedKey === opt.key;
-          const showCorrect = answersVisible && opt.isCorrect === true;
-          const showWrong = answersVisible && selected && opt.isCorrect === false;
+          const showCorrect = opt.isCorrect === true;
+          const showWrong = selected && opt.isCorrect === false;
           return (
             <li
               key={opt.key}
@@ -217,11 +177,11 @@ function ReviewCard({
                 'flex items-start gap-3 rounded-[var(--radius)] border px-3 py-2.5',
                 showCorrect && 'border-[var(--success)] bg-[var(--success-soft)]',
                 showWrong && 'border-[var(--danger)] bg-[var(--danger-soft)]',
-                selected && !answersVisible && 'border-[var(--accent)] bg-[var(--accent-soft)]',
-                !showCorrect &&
+                selected &&
+                  !showCorrect &&
                   !showWrong &&
-                  !(selected && !answersVisible) &&
-                  'border-[var(--line)]',
+                  'border-[var(--accent)] bg-[var(--accent-soft)]',
+                !showCorrect && !showWrong && !selected && 'border-[var(--line)]',
               )}
             >
               <span
@@ -276,7 +236,7 @@ function ReviewCard({
         })}
       </ul>
 
-      {answersVisible && item.explanation ? (
+      {item.explanation ? (
         <div className="mt-3 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-soft)] px-3.5 py-3">
           <p className="text-xs font-semibold tracking-wide text-[var(--ink)] uppercase">
             Explanation

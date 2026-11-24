@@ -275,14 +275,8 @@ export class ExamsService {
     return { items, nextCursor };
   }
 
-  /**
-   * DEC-051: everyone sees score/totals and their own selections; the answer key,
-   * explanations and per-question correctness are for entitled viewers only.
-   */
-  async getAttemptResult(
-    attemptId: string,
-    view: { canViewAnswers: boolean } = { canViewAnswers: false },
-  ) {
+  /** Score, own selections, answer key and explanations (DEC-060: Quizzes are free). */
+  async getAttemptResult(attemptId: string) {
     if (!UUID_RE.test(attemptId)) {
       throw new NotFoundException(
         createErrorResponse('ATTEMPT_NOT_FOUND', 'Attempt not found', newRequestId()),
@@ -337,7 +331,6 @@ export class ExamsService {
         totalQuestions: attempt.exam.totalQuestions,
         durationInMinutes: attempt.exam.durationInMinutes,
       },
-      answersVisible: view.canViewAnswers,
       answerSheet: questions.map((q) => {
         const selected = userAnswers[q.id] ?? '';
         const options = asStringOptions(q.options);
@@ -348,9 +341,9 @@ export class ExamsService {
           options,
           selectedAnswer: selected || null,
           isSkipped: !selected,
-          ...(view.canViewAnswers
-            ? { correctAnswer: q.correctAnswer, explanation: q.explanation, isCorrect }
-            : {}),
+          correctAnswer: q.correctAnswer,
+          explanation: q.explanation,
+          isCorrect,
         };
       }),
     };

@@ -8,7 +8,7 @@ alwaysApply: false
 
 Follow `AGENTS.md` testing, Docker, and definition-of-done sections.
 
-- Must-test: auth, RBAC, answer privacy, publish validation
+- Must-test: auth, RBAC, Free vs Paid locks + payment validation (DEC-060), publish validation
 - Jest + Supertest on backend
 - Docker: multi-stage, non-root, healthchecks; DB/Redis internal in prod
 - `prisma migrate deploy` as deploy step

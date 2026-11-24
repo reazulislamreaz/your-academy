@@ -11,15 +11,13 @@ import { Button } from '@/components/ui/button';
 import { SearchField } from '@/components/ui/search-field';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PublicMcqCard } from '@/components/marketing/public-mcq-card';
-import {
-  getPublicQuestionSet,
-  listPublicSetQuestions,
-} from '@/lib/api/public-questions';
+import { getPublicQuestionSet, listPublicSetQuestions } from '@/lib/api/public-questions';
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import { AnswerVisibilityToggle } from './answer-visibility-toggle';
 import { ExamInfoCard } from './exam-info-card';
-import { hasAnyAnswerKey, useAnswerVisibility } from './use-answer-visibility';
-import { AnswersLockedNote } from '@/components/marketing/answers-locked-note';
+import { useAnswerVisibility } from './use-answer-visibility';
+import { LockedContent } from '@/components/access/locked-content';
+import { isContentLockedError } from '@/lib/api/billing';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -56,12 +54,13 @@ export function PublicQuestionSetView({
         q: q || undefined,
       }),
     getNextPageParam: (last) => last.pagination?.nextCursor ?? undefined,
+    // DEC-060: a locked set's questions are refused by the API — don't ask.
+    enabled: Boolean(setQry.data) && !setQry.data?.locked,
   });
 
   const items = list.data?.pages.flatMap((p) => p.data) ?? [];
-  // DEC-051: free viewers get no answer key — swap the toggle for a subscription note.
-  const answersLocked = items.length > 0 && !hasAnyAnswerKey(items);
-  const visibility = useAnswerVisibility({ answersAvailable: !answersLocked });
+  const locked = Boolean(setQry.data?.locked) || isContentLockedError(list.error);
+  const visibility = useAnswerVisibility();
   const individualMode = visibility.mode === 'hide-all';
 
   return (
@@ -95,86 +94,80 @@ export function PublicQuestionSetView({
           <h1 className="font-display text-[clamp(1.5rem,3vw,2rem)] font-bold tracking-tight text-[var(--ink)]">
             {setQry.data.title}
           </h1>
-          {setQry.data.sheetPreamble ? (
-            <ExamInfoCard preamble={setQry.data.sheetPreamble} />
-          ) : null}
+          {setQry.data.sheetPreamble ? <ExamInfoCard preamble={setQry.data.sheetPreamble} /> : null}
         </header>
       ) : null}
 
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        {answersLocked ? (
-          <AnswersLockedNote />
-        ) : (
-          <AnswerVisibilityToggle mode={visibility.mode} onChange={visibility.setMode} />
-        )}
-        <SearchField
-          value={qInput}
-          onChange={setQInput}
-          placeholder="Search in this set…"
-          aria-label="Search in this set"
-          className="min-w-0 flex-1 lg:max-w-md"
-        />
-      </div>
+      {locked && setQry.data ? <LockedContent title={setQry.data.title} /> : null}
 
-      {list.isLoading ? (
-        <ListCardSkeleton
-          rows={3}
-          rowClassName="min-h-56 py-6"
-        />
-      ) : null}
+      {setQry.data && !locked ? (
+        <>
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <AnswerVisibilityToggle mode={visibility.mode} onChange={visibility.setMode} />
+            <SearchField
+              value={qInput}
+              onChange={setQInput}
+              placeholder="Search in this set…"
+              aria-label="Search in this set"
+              className="min-w-0 flex-1 lg:max-w-md"
+            />
+          </div>
 
-      {list.isError ? (
-        <LoadError
-          message="Could not load questions for this set."
-          onRetry={() => void list.refetch()}
-        />
-      ) : null}
+          {list.isLoading ? <ListCardSkeleton rows={3} rowClassName="min-h-56 py-6" /> : null}
 
-      {!list.isLoading && !list.isError && items.length === 0 ? (
-        <EmptyState
-          align="center"
-          title="No matching questions"
-          description="No questions match your search in this set."
-        />
-      ) : null}
+          {list.isError ? (
+            <LoadError
+              message="Could not load questions for this set."
+              onRetry={() => void list.refetch()}
+            />
+          ) : null}
 
-      <ul className="space-y-4">
-        {items.map((item, index) => {
-          const prevSection = index > 0 ? items[index - 1]?.sectionTitle : null;
-          const showSection =
-            Boolean(item.sectionTitle) && item.sectionTitle !== prevSection;
-          return (
-            <li key={item.id} className="space-y-3">
-              {showSection ? (
-                <div className="rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-muted)] px-4 py-2.5">
-                  <p className="font-display text-sm font-bold tracking-tight text-[var(--ink)]">
-                    {item.sectionTitle}
-                  </p>
-                </div>
-              ) : null}
-              <PublicMcqCard
-                question={item}
-                answerVisible={visibility.isAnswerVisible(item.id)}
-                allowIndividualToggle={individualMode}
-                onToggleAnswer={() => visibility.toggleQuestion(item.id)}
-              />
-            </li>
-          );
-        })}
-      </ul>
+          {!list.isLoading && !list.isError && items.length === 0 ? (
+            <EmptyState
+              align="center"
+              title="No matching questions"
+              description="No questions match your search in this set."
+            />
+          ) : null}
 
-      {list.hasNextPage ? (
-        <div className="flex justify-center pt-2">
-          <Button
-            type="button"
-            variant="outline"
-            className="cursor-pointer"
-            disabled={list.isFetchingNextPage}
-            onClick={() => void list.fetchNextPage()}
-          >
-            {list.isFetchingNextPage ? 'Loading…' : 'Load more questions'}
-          </Button>
-        </div>
+          <ul className="space-y-4">
+            {items.map((item, index) => {
+              const prevSection = index > 0 ? items[index - 1]?.sectionTitle : null;
+              const showSection = Boolean(item.sectionTitle) && item.sectionTitle !== prevSection;
+              return (
+                <li key={item.id} className="space-y-3">
+                  {showSection ? (
+                    <div className="rounded-[var(--radius)] border border-[var(--line)] bg-[var(--bg-muted)] px-4 py-2.5">
+                      <p className="font-display text-sm font-bold tracking-tight text-[var(--ink)]">
+                        {item.sectionTitle}
+                      </p>
+                    </div>
+                  ) : null}
+                  <PublicMcqCard
+                    question={item}
+                    answerVisible={visibility.isAnswerVisible(item.id)}
+                    allowIndividualToggle={individualMode}
+                    onToggleAnswer={() => visibility.toggleQuestion(item.id)}
+                  />
+                </li>
+              );
+            })}
+          </ul>
+
+          {list.hasNextPage ? (
+            <div className="flex justify-center pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="cursor-pointer"
+                disabled={list.isFetchingNextPage}
+                onClick={() => void list.fetchNextPage()}
+              >
+                {list.isFetchingNextPage ? 'Loading…' : 'Load more questions'}
+              </Button>
+            </div>
+          ) : null}
+        </>
       ) : null}
     </div>
   );

@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { scrollExamToTop } from '@/features/guest-exams/scroll-exam-to-top';
 import { useExamCountdown } from '@/features/guest-exams/use-exam-countdown';
 import { ModelTestSubmitDialog } from '@/features/model-tests/model-test-submit-dialog';
+import { LockedContent } from '@/components/access/locked-content';
+import { isContentLockedError } from '@/lib/api/billing';
 import { ApiError } from '@/lib/api/client';
 import { getPublicQuestionSet } from '@/lib/api/public-questions';
 import { cn } from '@/lib/utils';
@@ -55,7 +57,10 @@ export function PreliPracticePlayer({ setId, basePath = '/preli-practice' }: Pro
     queryKey: ['preli-practice-questions', setId],
     queryFn: () => loadAllPreliSetQuestions(setId),
     staleTime: 60_000,
+    // DEC-060: a locked set's questions are refused by the API — don't ask.
+    enabled: Boolean(setQry.data) && !setQry.data?.locked,
   });
+  const locked = Boolean(setQry.data?.locked) || isContentLockedError(questionsQry.error);
 
   useEffect(() => {
     const saved = loadPreliPracticeSession(setId);
@@ -173,6 +178,14 @@ export function PreliPracticePlayer({ setId, basePath = '/preli-practice' }: Pro
     }
     void submit(false, elapsedSeconds);
   };
+
+  if (locked) {
+    return (
+      <div className="mx-auto w-full max-w-3xl px-4 py-8">
+        <LockedContent title={setQry.data?.title} />
+      </div>
+    );
+  }
 
   if (!hydrated || durationMinutes == null || startedAtMs == null) {
     return (

@@ -18,8 +18,11 @@ erDiagram
   BookmarkCollection ||--o{ DocumentBookmark : organizes
   User ||--o{ BrowsingSession : tracks
   User ||--o{ AuditLog : performs
-  SubscriptionPlan ||--o{ UserSubscription : plans
-  UserSubscription ||--o{ Payment : payments
+  SubscriptionPackage ||--o{ UserSubscription : lastPackage
+  SubscriptionPackage ||--o{ PaymentOrder : orders
+  User ||--o{ PaymentOrder : pays
+  PaymentOrder ||--o{ PaymentGatewayLog : logs
+  User ||--o{ SubscriptionEvent : history
   Category ||--o{ Category : parent
   Category ||--o{ Question : categorizes
   Question ||--o{ QuestionOption : options
@@ -58,7 +61,7 @@ erDiagram
 
 ### 3.1 User
 
-**Purpose:** Account identity, trial window, role, profile.
+**Purpose:** Account identity, role, profile.
 
 | Field | Type | Notes |
 |-------|------|-------|
@@ -70,8 +73,6 @@ erDiagram
 | role | ENUM(`USER`,`ADMIN`) | Default `USER` |
 | status | ENUM(`ACTIVE`,`SUSPENDED`,`DELETED`) | |
 | avatarAssetId | UUID NULL FK → MediaAsset | |
-| trialStartedAt | TIMESTAMPTZ | Set at registration |
-| trialEndsAt | TIMESTAMPTZ | `trialStartedAt + 7 days` |
 | preferredCategoryIds | UUID[] | Root category interests from onboarding (max 3 in service) |
 | lastQuestionId | UUID NULL FK → Question | Continue-learning pointer (`ON DELETE SET NULL`) |
 | lastQuestionFilterQs | VARCHAR(512) NULL | Optional filter query string for resume |
@@ -79,7 +80,7 @@ erDiagram
 | createdAt / updatedAt | TIMESTAMPTZ | |
 | deletedAt | TIMESTAMPTZ NULL | Soft delete |
 
-**Indexes:** unique(whatsappNumber); unique(email) where not null; (status); (trialEndsAt); (createdAt).
+**Indexes:** unique(whatsappNumber); unique(email) where not null; (status); (createdAt).
 
 **Cascade:** Deleting user (hard) cascades sessions, bookmarks, browsing sessions; questions createdBy set null or restrict for admins — prefer `createdById` SET NULL on content.
 
@@ -274,54 +275,25 @@ PK: (newsId, documentId).
 
 **Indexes:** (userId, startedAt DESC); partial unique active session policy per DEC-010.
 
-### 3.13 SubscriptionPlan
+### 3.13 SiteSetting / SubscriptionPackage (DEC-060)
 
-| Field | Type |
-|-------|------|
-| id | UUID PK |
-| code | VARCHAR(64) UNIQUE |
-| name | VARCHAR(120) |
-| description | TEXT NULL |
-| durationDays | INT |
-| priceCents | INT | Future |
-| currency | CHAR(3) | Future |
-| entitlements | JSONB | e.g. `["VIEW_ANSWERS","VIEW_EXPLANATIONS"]` |
-| isActive | BOOLEAN |
-| createdAt / updatedAt | TIMESTAMPTZ |
+`site_settings` — single row `id = 'default'`: `paid_system_enabled` (default false), `preli_free_set_count`, `written_free_set_count` (default 10), `updated_by_id`, `updated_at`.
 
-### 3.14 UserSubscription
+`subscription_packages` — `name`, `duration` ENUM(`MONTHLY`,`SIX_MONTHS`,`YEARLY`), `price_bdt` DECIMAL(12,2), `description`, `features` TEXT[], `is_active`, `sort_order`, `deleted_at` (soft delete once referenced). Index (is_active, deleted_at, sort_order).
 
-| Field | Type | Notes |
-|-------|------|-------|
-| id | UUID PK | |
-| userId | UUID FK → User | |
-| planId | UUID FK → SubscriptionPlan | |
-| status | ENUM(`ACTIVE`,`CANCELED`,`EXPIRED`,`PAST_DUE`) | |
-| startsAt | TIMESTAMPTZ | |
-| endsAt | TIMESTAMPTZ | |
-| canceledAt | TIMESTAMPTZ NULL | |
-| createdAt / updatedAt | TIMESTAMPTZ | |
+`model_tests.access` ENUM(`FREE`,`PAID`) default `FREE`.
 
-**Indexes:** (userId, status); (endsAt).  
-**Integrity:** Prefer no overlapping ACTIVE periods per user (service-enforced; optional exclusion constraint later).
+### 3.14 UserSubscription (DEC-060)
 
-### 3.15 Payment
+One row per user (`user_id` UNIQUE): `package_id` NULL (last package; NULL for custom grants / migrated rows), `starts_at`, `ends_at`, `disabled_at`, `disabled_by_id`. Paid = `disabled_at IS NULL AND starts_at <= now < ends_at`. Index (ends_at).
 
-Future-ready placeholder.
+`subscription_events` — append-only: `user_id`, `actor_user_id`, `source` (`MANUAL`,`PAYMENT`,`MIGRATION`), `action` (`GRANT`,`EXTEND`,`SET_END`,`DISABLE`,`ENABLE`,`PURCHASE`,`MIGRATED`), `package_id`, `payment_order_id`, `previous_ends_at`, `new_ends_at`, `note`. Index (user_id, created_at DESC).
 
-| Field | Type |
-|-------|------|
-| id | UUID PK |
-| userSubscriptionId | UUID FK |
-| provider | VARCHAR(64) |
-| providerRef | VARCHAR(255) |
-| amountCents | INT |
-| currency | CHAR(3) |
-| status | ENUM(`PENDING`,`SUCCEEDED`,`FAILED`,`REFUNDED`) |
-| rawPayload | JSONB NULL |
-| createdAt | TIMESTAMPTZ |
+### 3.15 PaymentOrder / PaymentGatewayLog (DEC-060)
 
-**Unique:** (provider, providerRef).
+`payment_orders` — `tran_id` UNIQUE (idempotency key), `user_id`, `package_id` (RESTRICT), snapshot `package_name` / `duration` / `amount` DECIMAL(12,2) / `currency` 'BDT', `status` ENUM(`PENDING`,`SUCCESS`,`FAILED`,`CANCELLED`,`RISK`,`REFUNDED`), gateway fields `val_id`, `bank_tran_id`, `card_type`, `gateway_status`, `risk_level`, `risk_title`, `failure_reason`, `validated_at`, `applied_at` (set in the same transaction as the subscription extension), `last_checked_at`. Indexes (user_id, created_at DESC), (status, created_at).
+
+`payment_gateway_logs` — `payment_order_id`, `tran_id`, `kind` (INIT_REQUEST, VALIDATE_RESPONSE, CALLBACK_IPN, …), `http_status`, `payload` JSONB (store password / signatures redacted).
 
 ### 3.16 AuditLog
 
@@ -373,7 +345,7 @@ Messages: cursor via `(conversationId, id)`; unique `(conversationId, clientMess
 ## 4. Transactions (Examples)
 
 - Publish question: validate options + set status/publishedAt in one transaction.
-- Register: create user + trial timestamps (+ optional avatar asset) atomically.
+- Register: create user (+ optional avatar asset) atomically.
 - Bookmark add: insert with unique conflict → 409.
 - Document create: insert MediaAsset + Document; compensate Cloudinary on failure via queue.
 

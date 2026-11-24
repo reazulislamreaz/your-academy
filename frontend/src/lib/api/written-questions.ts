@@ -5,8 +5,7 @@ export type PublicWrittenQuestionCard = {
   id: string;
   title: string;
   content: string;
-  /** DEC-051: omitted unless the viewer is entitled. */
-  modelAnswer?: string | null;
+  modelAnswer: string | null;
   marks: string | null;
   sourceSerial: string | null;
   examYear: string | null;

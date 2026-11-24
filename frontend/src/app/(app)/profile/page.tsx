@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Surface } from '@/components/ui/surface';
 import { isUnauthorized, meQueryKey, useLogout, useMe } from '@/features/auth/use-auth';
+import { MyPlanCard } from '@/features/billing/my-plan-card';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import type { MeUser, UserStats } from '@/lib/api/types';
 import { getStorageStatus, uploadViaSignedRequest } from '@/lib/cloudinary-upload';
@@ -218,8 +219,8 @@ export default function ProfilePage() {
                 <h2 className="break-words font-display text-xl font-bold tracking-tight text-[var(--ink)] sm:text-2xl">
                   {user.name}
                 </h2>
-                <Badge variant={user.access.hasActiveSubscription ? 'success' : 'outline'}>
-                  {user.access.hasActiveSubscription ? 'Member' : 'Free'}
+                <Badge variant={user.access.isPaid ? 'success' : 'outline'}>
+                  {user.access.isPaid ? 'Paid' : 'Free'}
                 </Badge>
               </div>
               <dl className="grid gap-1.5 text-sm text-[var(--muted-strong)]">
@@ -250,18 +251,10 @@ export default function ProfilePage() {
               </dl>
             </div>
           </div>
-          <p className="max-w-sm text-sm leading-relaxed text-[var(--muted-strong)] sm:text-right">
-            {user.access.hasActiveSubscription
-              ? 'Answers and explanations are unlocked with your active membership.'
-              : 'You can browse and bookmark. Correct answers stay premium until a paid plan is available.'}
-          </p>
         </div>
-        {user.access.hasActiveSubscription ? (
-          <Alert variant="success" className="mt-4">
-            Active membership entitlements are on for this account.
-          </Alert>
-        ) : null}
       </Surface>
+
+      <MyPlanCard />
 
       <section className="space-y-3">
         <h2 className="font-display text-lg font-bold tracking-tight">Study summary</h2>

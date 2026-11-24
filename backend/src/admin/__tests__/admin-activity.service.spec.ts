@@ -11,7 +11,10 @@ describe('AdminService activity / users', () => {
         new Date(at.getTime() - ONLINE_HEARTBEAT_WINDOW_MS),
       record: jest.fn(),
     };
-    return new AdminService(prisma as never, learningActivity as never);
+    const subscriptions = {
+      toSummary: (row: unknown) => ({ state: row ? 'ACTIVE' : 'FREE' }),
+    };
+    return new AdminService(prisma as never, learningActivity as never, subscriptions as never);
   }
 
   it('classifies online users using the 90s heartbeat window', async () => {
@@ -29,14 +32,12 @@ describe('AdminService activity / users', () => {
             email: null,
             role: UserRole.USER,
             status: UserStatus.ACTIVE,
-            trialEndsAt: new Date(now.getTime() + 86400000),
-            trialStartedAt: new Date(now.getTime() - 86400000),
             createdAt: now,
             avatarAssetId: null,
             avatarAsset: null,
             browsingSessions: [{ lastHeartbeatAt: fresh, accruedSeconds: 40 }],
             _count: { questionAttempts: 2, practiceAttempts: 0 },
-            subscriptions: [],
+            subscription: null,
           },
           {
             id: 'u-offline',
@@ -45,14 +46,12 @@ describe('AdminService activity / users', () => {
             email: null,
             role: UserRole.USER,
             status: UserStatus.ACTIVE,
-            trialEndsAt: new Date(now.getTime() + 86400000),
-            trialStartedAt: new Date(now.getTime() - 86400000),
             createdAt: now,
             avatarAssetId: null,
             avatarAsset: null,
             browsingSessions: [{ lastHeartbeatAt: stale, accruedSeconds: 10 }],
             _count: { questionAttempts: 0, practiceAttempts: 0 },
-            subscriptions: [],
+            subscription: null,
           },
         ]),
       },
@@ -113,14 +112,12 @@ describe('AdminService activity / users', () => {
           email: null,
           role: UserRole.USER,
           status: UserStatus.ACTIVE,
-          trialStartedAt: new Date(now.getTime() - 2 * 86400000),
-          trialEndsAt: new Date(now.getTime() + 5 * 86400000),
           createdAt: now,
           onboardingCompletedAt: null,
           preferredCategoryIds: [],
           avatarAssetId: null,
           avatarAsset: null,
-          subscriptions: [],
+          subscription: null,
         }),
       },
       questionAttempt: {

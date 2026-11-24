@@ -36,7 +36,6 @@ export function ExamResultView({ result, basePath = '/exams' }: Props) {
       elapsedSeconds={result.elapsedSeconds}
       durationInMinutes={result.exam.durationInMinutes}
       submittedAt={result.submittedAt}
-      answersVisible={result.answersVisible}
       answerSheet={result.answerSheet}
       optionLabels={LATIN_OPTION_LABELS}
       takeBase={takeBase}

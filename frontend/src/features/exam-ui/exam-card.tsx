@@ -5,6 +5,7 @@ import {
   Clock3,
   Hourglass,
   ListChecks,
+  Lock,
   MinusCircle,
   Trophy,
 } from 'lucide-react';
@@ -30,6 +31,8 @@ type Props = {
   totalMarks?: number | null;
   negativeMark?: number | null;
   status?: ExamCardStatus;
+  /** DEC-060: paid content for this viewer — `href` should point to Packages / login. */
+  locked?: boolean;
 };
 
 /** Listing card shared by public + dashboard Quiz / Model Test / practice-set lists. */
@@ -44,9 +47,16 @@ export const ExamCard = memo(function ExamCard({
   totalMarks,
   negativeMark,
   status,
+  locked = false,
 }: Props) {
-  const state = status?.state;
-  const cta = state === 'in-progress' ? 'Resume' : state === 'completed' ? 'Retake' : 'Start';
+  const state = locked ? undefined : status?.state;
+  const cta = locked
+    ? 'Unlock'
+    : state === 'in-progress'
+      ? 'Resume'
+      : state === 'completed'
+        ? 'Retake'
+        : 'Start';
 
   return (
     <article
@@ -70,7 +80,7 @@ export const ExamCard = memo(function ExamCard({
             {tag}
           </span>
         ))}
-        {status && state !== 'not-started' ? (
+        {status && state && state !== 'not-started' ? (
           <span className="ml-auto">
             <StatusPill status={status} />
           </span>
@@ -88,6 +98,12 @@ export const ExamCard = memo(function ExamCard({
       {description ? (
         <p className="mt-1 line-clamp-2 text-sm leading-relaxed break-words text-[var(--muted-strong)]">
           {description}
+        </p>
+      ) : null}
+      {locked ? (
+        <p className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--muted-strong)]">
+          <Lock className="size-3.5 shrink-0" aria-hidden />
+          Become a paid user to unlock
         </p>
       ) : null}
 
@@ -132,10 +148,11 @@ export const ExamCard = memo(function ExamCard({
           )}
           aria-label={`${cta}: ${title}`}
         >
+          {locked ? <Lock className="size-4" aria-hidden /> : null}
           {cta}
-          <ArrowRight className="size-4" aria-hidden />
+          {locked ? null : <ArrowRight className="size-4" aria-hidden />}
         </Link>
-        {status?.state === 'completed' && status.resultHref ? (
+        {!locked && status?.state === 'completed' && status.resultHref ? (
           <Link
             href={status.resultHref}
             className="text-sm font-semibold text-[var(--accent)] underline-offset-2 hover:underline"

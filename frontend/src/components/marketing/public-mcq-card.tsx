@@ -7,7 +7,6 @@ import { SaveToCollectionDialog } from '@/features/bookmarks/save-to-collection-
 import { useMe, isUnauthorized } from '@/features/auth/use-auth';
 import type { PublicQuestionCard } from '@/lib/api/public-questions';
 import { cn } from '@/lib/utils';
-import { AnswersLockedNote } from './answers-locked-note';
 
 const BN_OPTION: Record<string, string> = {
   A: 'ক',
@@ -33,7 +32,7 @@ export function PublicMcqCard({
   allowIndividualToggle = false,
 }: Props) {
   const me = useMe();
-  // DEC-051: the API omits the key unless the viewer is entitled.
+  // A question without a marked correct option has an empty label.
   const hasAnswer = Boolean(question.correctAnswerLabel);
   const showAnswer = answerVisible && hasAnswer;
   const loggedIn = Boolean(me.data) && !isUnauthorized(me.error);
@@ -103,8 +102,6 @@ export function PublicMcqCard({
         )}
 
         <div className="flex flex-wrap items-center gap-2">
-          {!hasAnswer ? <AnswersLockedNote variant="inline" /> : null}
-
           {hasAnswer && allowIndividualToggle && onToggleAnswer ? (
             <button
               type="button"

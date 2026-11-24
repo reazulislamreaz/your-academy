@@ -20,6 +20,7 @@ import { useMe } from '@/features/auth/use-auth';
 import { StaffUserActions } from '@/features/admin/users/staff-user-dialogs';
 import { AdminPasswordResetButton } from '@/features/admin/users/admin-password-reset-dialog';
 import { PasswordResetHistoryCard, RecentLoginsCard } from '@/features/admin/users/user-security-cards';
+import { SubscriptionStateBadge } from '@/features/admin/billing/billing-format';
 import { UserSubscriptionCard } from '@/features/admin/users/user-subscription-card';
 import { ROLE_LABELS, UserRole } from '@your-academy/shared';
 
@@ -137,7 +138,8 @@ export default function AdminUserDetailPage() {
             <dl className="divide-y divide-[var(--line)] text-sm">
               <ProfileRow label="Joined">{new Date(profile.createdAt).toLocaleString()}</ProfileRow>
               <ProfileRow label="Subscription">
-                {subscription ? subscription.plan.name : 'None (read-only)'}
+                <SubscriptionStateBadge state={subscription.state} />
+                {subscription.packageName ? ` ${subscription.packageName}` : ''}
               </ProfileRow>
               <ProfileRow label="Last heartbeat">
                 {profile.lastHeartbeatAt ? new Date(profile.lastHeartbeatAt).toLocaleString() : '—'}
@@ -169,7 +171,7 @@ export default function AdminUserDetailPage() {
         </AdminSection>
       </div>
 
-      <UserSubscriptionCard userId={profile.id} />
+      <UserSubscriptionCard userId={profile.id} subscription={subscription} role={profile.role} />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <RecentLoginsCard userId={profile.id} canForceLogout={profile.id !== meId} />

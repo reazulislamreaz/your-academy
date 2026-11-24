@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { LayoutDashboard, List, RotateCcw } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { AnswersLockedNote } from '@/components/marketing/answers-locked-note';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useMe } from '@/features/auth/use-auth';
@@ -22,9 +21,9 @@ type SheetItem = {
   options: string[];
   selectedAnswer: string | null;
   isSkipped: boolean;
-  correctAnswer?: string;
-  explanation?: string | null;
-  isCorrect?: boolean;
+  correctAnswer: string;
+  explanation: string | null;
+  isCorrect: boolean;
 };
 
 type Props = {
@@ -44,7 +43,6 @@ type Props = {
   elapsedSeconds: number | null;
   durationInMinutes: number;
   submittedAt: string;
-  answersVisible: boolean;
   answerSheet: SheetItem[];
   optionLabels: readonly string[];
   /** Listing / take prefix, e.g. `/exams` or `/live-model-tests`. */
@@ -54,7 +52,7 @@ type Props = {
   tags?: string[];
 };
 
-/** Result + review for public Quiz / Model Test attempts (DEC-039/040/045/051). */
+/** Result + review for public Quiz / Model Test attempts (DEC-039/040/045). */
 export function TimedResultView(props: Props) {
   const {
     kind,
@@ -85,8 +83,6 @@ export function TimedResultView(props: Props) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const isGuest = mounted && !me.data && !me.isLoading;
-  // DEC-051: non-entitled viewers get score + own selections only.
-  const answersVisible = props.answersVisible !== false;
   const resultPath = `${takeBase}/${encodeURIComponent(slug)}/result/${encodeURIComponent(attemptId)}`;
 
   const link = useMemo<Omit<GuestResultLink, 'savedAtMs'>>(
@@ -113,17 +109,15 @@ export function TimedResultView(props: Props) {
             key: String(i),
             label: optionLabelAt(optionLabels, i),
             content: opt,
-            // Key comes from the API only for entitled viewers.
-            isCorrect:
-              answersVisible && item.correctAnswer != null ? item.correctAnswer === opt : undefined,
+            isCorrect: item.correctAnswer === opt,
           })),
           selectedKey: selectedIndex >= 0 ? String(selectedIndex) : null,
           isSkipped: item.isSkipped,
-          isCorrect: answersVisible ? item.isCorrect : undefined,
-          explanation: answersVisible ? item.explanation : undefined,
+          isCorrect: item.isCorrect,
+          explanation: item.explanation,
         };
       }),
-    [answerSheet, answersVisible, optionLabels],
+    [answerSheet, optionLabels],
   );
 
   const submitted = new Date(submittedAt);
@@ -200,15 +194,7 @@ export function TimedResultView(props: Props) {
 
       {isGuest ? <GuestRegisterCta link={link} /> : null}
 
-      <AnswerReview
-        items={reviewItems}
-        answersVisible={answersVisible}
-        lockedNote={
-          answersVisible ? null : (
-            <AnswersLockedNote detail="Your score and selected answers are shown below." />
-          )
-        }
-      />
+      <AnswerReview items={reviewItems} />
     </div>
   );
 }

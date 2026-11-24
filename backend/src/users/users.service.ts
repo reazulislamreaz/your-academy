@@ -13,7 +13,7 @@ import { newRequestId } from '../common/request-id';
 import { PrismaService } from '../database/prisma.service';
 import { PracticeService } from '../practice/practice.service';
 import { StorageService } from '../storage/storage.service';
-import { AccessControlService } from '../subscriptions/access-control.service';
+import { AccessPolicyService } from '../billing/access-policy.service';
 import type { UpdateStudyPrefsDto } from './dto/update-study-prefs.dto';
 import { EmailVerificationService } from './email-verification.service';
 
@@ -21,7 +21,7 @@ import { EmailVerificationService } from './email-verification.service';
 export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly access: AccessControlService,
+    private readonly access: AccessPolicyService,
     private readonly storage: StorageService,
     @Inject(forwardRef(() => PracticeService))
     private readonly practice: PracticeService,
@@ -58,7 +58,7 @@ export class UsersService {
         createErrorResponse('USER_NOT_FOUND', 'User not found', newRequestId()),
       );
     }
-    const access = await this.access.getAccessSnapshot(dbUser);
+    const access = await this.access.snapshot(dbUser.id);
     const last =
       dbUser.lastQuestion &&
       !dbUser.lastQuestion.deletedAt &&

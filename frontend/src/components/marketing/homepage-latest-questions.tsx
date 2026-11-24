@@ -7,6 +7,7 @@ import type { HomepagePayload } from '@your-academy/shared';
 import { ListCardSkeleton, LoadError } from '@/components/loading';
 import { Button } from '@/components/ui/button';
 import { HomepageReveal } from '@/components/marketing/homepage-gsap';
+import { LockedTag, useUnlockHref } from '@/components/access/locked-content';
 import { listPublicQuestionSets } from '@/lib/api/public-questions';
 
 type Props = {
@@ -16,6 +17,7 @@ type Props = {
 /** Latest Exam Sets on the marketing homepage (headers from CMS; list from API). */
 export function HomepageLatestQuestions({ latest }: Props) {
   const limit = latest.limit ?? 6;
+  const unlockHref = useUnlockHref();
   const list = useQuery({
     queryKey: ['public-question-sets-home', limit],
     queryFn: () => listPublicQuestionSets({ limit }),
@@ -87,7 +89,7 @@ export function HomepageLatestQuestions({ latest }: Props) {
             {items.map((set, index) => (
               <li key={set.id} data-hp-stagger className="min-w-0">
                 <Link
-                  href={`/preli-question-bank/${set.id}`}
+                  href={set.locked ? unlockHref : `/preli-question-bank/${set.id}`}
                   className="hp-list-link group flex w-full min-w-0 items-center gap-3 px-4 py-4 sm:gap-5 sm:px-6 sm:py-5"
                 >
                   <span
@@ -100,6 +102,7 @@ export function HomepageLatestQuestions({ latest }: Props) {
                     <h3 className="break-words font-display text-[0.975rem] font-bold leading-snug tracking-tight text-[var(--ink)] transition-colors duration-200 group-hover:text-[var(--highlight)] sm:text-base md:text-[1.05rem]">
                       {set.title}
                     </h3>
+                    {set.locked ? <LockedTag className="mt-1" /> : null}
                   </span>
                   <span
                     className="hp-collection-arrow inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--hp-panel-border)] bg-[color-mix(in_srgb,var(--bg-muted)_55%,white)] text-[var(--muted-strong)] transition-[border-color,background-color,color,transform] duration-200 group-hover:border-[color-mix(in_srgb,var(--highlight)_28%,var(--line))] group-hover:bg-[var(--highlight-soft)] group-hover:text-[var(--highlight)]"

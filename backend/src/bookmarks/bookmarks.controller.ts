@@ -99,7 +99,7 @@ export class BookmarksController {
     });
   }
 
-  /** Saved MCQs with options (answer fields gated, DEC-051) for View All and saved exams. */
+  /** Saved MCQs with options + key (locked sets skipped, DEC-060) for View All and saved exams. */
   @Get('questions/details')
   async listQuestionDetails(
     @CurrentUser() user: RequestUser,
@@ -114,7 +114,7 @@ export class BookmarksController {
       collectionId,
     });
     return createSuccessResponse(
-      { items: data.items, answersVisible: data.answersVisible },
+      { items: data.items },
       newRequestId(),
       { nextCursor: data.nextCursor, prevCursor: null, limit: parsedLimit, total: null },
     );
@@ -122,7 +122,7 @@ export class BookmarksController {
 
   /**
    * Score an exam built from the user's saved MCQs. Throttled like the Preli
-   * Practice scorer: any score endpoint is a weak answer oracle (DEC-051).
+   * Practice scorer: throttled to limit bulk answer harvesting.
    */
   @Post('questions/practice-score')
   @HttpCode(200)

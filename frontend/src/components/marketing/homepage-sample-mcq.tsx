@@ -7,7 +7,6 @@ import { ArrowRight, CheckCircle2, CircleHelp, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ListCardSkeleton, LoadError } from '@/components/loading';
 import { EmptyState } from '@/components/ui/empty-state';
-import { AnswersLockedNote } from '@/components/marketing/answers-locked-note';
 import { HomepageReveal } from '@/components/marketing/homepage-gsap';
 import {
   listPublicQuestions,
@@ -18,7 +17,7 @@ import { cn } from '@/lib/utils';
 
 function McqPreviewCard({ question }: { question: PublicQuestionCard }) {
   const [picked, setPicked] = useState<string | null>(null);
-  // DEC-051: the key is omitted for non-subscribers — then picking only marks the choice.
+  // A question without a marked correct option has an empty label — picking only marks it.
   const correctLabel = question.correctAnswerLabel;
   const hasAnswer = Boolean(correctLabel);
   const categoryLine = [
@@ -123,7 +122,6 @@ function McqPreviewCard({ question }: { question: PublicQuestionCard }) {
           })}
         </ul>
 
-        {picked && !hasAnswer ? <AnswersLockedNote /> : null}
         {picked && hasAnswer ? (
           <p
             className={cn(
@@ -200,7 +198,7 @@ export function HomepageSampleMcq({ initial = null, content }: Props) {
           <ul className="space-y-2.5 text-sm text-[var(--ink-soft)]">
             {[
               'Live question from the Preli bank',
-              'Tap an option to try it — answers with a subscription',
+              'Tap an option to check your answer instantly',
               'Same reading face used in practice mode',
             ].map((line) => (
               <li key={line} className="flex items-start gap-2.5">

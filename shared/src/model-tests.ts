@@ -1,3 +1,5 @@
+import type { ContentAccessLevel } from './billing';
+
 /** Public guest Model Test contracts (parallel to DEC-039 guest exams). */
 
 export type ModelTestCategoryRef = {
@@ -16,6 +18,10 @@ export type PublicModelTestListItem = {
   totalQuestions: number;
   durationInMinutes: number;
   createdAt: string;
+  /** DEC-060 — FREE or PAID. */
+  access: ContentAccessLevel;
+  /** True when the viewer cannot open it right now (paid test, no active subscription). */
+  locked: boolean;
 };
 
 export type PublicModelTestQuestion = {
@@ -35,6 +41,7 @@ export type PublicModelTestDetail = {
   totalQuestions: number;
   durationInMinutes: number;
   createdAt: string;
+  access: ContentAccessLevel;
   questions: PublicModelTestQuestion[];
 };
 
@@ -59,10 +66,9 @@ export type ModelTestAnswerSheetItem = {
   options: string[];
   selectedAnswer: string | null;
   isSkipped: boolean;
-  /** DEC-051: present only when the viewer is entitled (`answersVisible`). */
-  correctAnswer?: string;
-  explanation?: string | null;
-  isCorrect?: boolean;
+  correctAnswer: string;
+  explanation: string | null;
+  isCorrect: boolean;
 };
 
 export type ModelTestAttemptResult = {
@@ -84,8 +90,6 @@ export type ModelTestAttemptResult = {
     durationInMinutes: number;
     examYear: number | null;
   };
-  /** DEC-051: false → answer key, explanations and per-question correctness omitted. */
-  answersVisible: boolean;
   answerSheet: ModelTestAnswerSheetItem[];
 };
 
@@ -122,6 +126,8 @@ export type AdminModelTestListItem = {
   totalQuestions: number;
   durationInMinutes: number;
   isPublished: boolean;
+  /** DEC-060 — FREE (everyone) or PAID (active subscription). */
+  access: ContentAccessLevel;
   createdAt: string;
   _count: { attempts: number };
 };

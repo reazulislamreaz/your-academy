@@ -44,8 +44,9 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | DEC-044 | Quiz listing guide CMS (sidebar “কুইজ কীভাবে দিবেন”) | CONFIRMED |
 | DEC-045 | Auth-aware public Quiz / Model Test start + result CTA | CONFIRMED |
 | DEC-046 | Admin-managed footer social media links (DB + CMS) | CONFIRMED |
-| DEC-051 | Answers are subscriber-only on public routes (amends DEC-031/039/040/042) | CONFIRMED |
-| DEC-052 | Admin grants / revokes learner subscriptions | CONFIRMED |
+| DEC-051 | Answers are subscriber-only on public routes (amends DEC-031/039/040/042) | SUPERSEDED by DEC-060 |
+| DEC-052 | Admin grants / revokes learner subscriptions | SUPERSEDED by DEC-060 |
+| DEC-060 | Free vs Paid system + SSLCommerz payments (replaces DEC-051/052) | CONFIRMED |
 
 ---
 
@@ -572,7 +573,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Decision | **No — "public browse, answers paid".** Question text and options stay public without login. Correct answers (`correctAnswerLabel`, `correctAnswerBn`, `correctAnswer`, `correctOptionId`, `isCorrect`), explanations and written `modelAnswer` are **omitted** (absent, never faked) unless the viewer is an **Admin** or has an **active subscription**, decided only by `AccessControlService.canViewerSeeAnswers` (moderators are not entitled by role). Answer-bearing public routes use `OptionalJwtAuthGuard` (never throws; expired/invalid cookies = anonymous). Responses to a signed-in viewer are `Cache-Control: private, no-store` + `Vary: Cookie, Authorization`; anonymous `GET /public/questions` keeps its short shared cache. Guest exam / model test results return score, totals and the viewer's own selections to everyone, plus `answersVisible`; key/explanations/per-question correctness only when entitled. Preli Practice is scored server-side (`POST /public/question-sets/:id/practice-score`) instead of in the browser. Written search no longer matches inside model answers for non-entitled viewers. SSR result pages forward the visitor's cookies. UI shows "Answers are available with a subscription". |
 | Residual risk | Any score is a weak oracle: a visitor can submit single answers and infer keys from the score. Mitigated by throttling (practice-score 10/min, exam submit 20/min per IP); not eliminated. |
 | Impact | `PublicController`/`PublicService`, `ExamsService`/`ModelTestsService.getAttemptResult`, public exam/model-test controllers, `AccessControlService.canViewerSeeAnswers`; shared `ExamAttemptResult`/`ModelTestAttemptResult` (`answersVisible`, optional key fields), `PublicPracticeScore`; marketing cards, set views, result views, homepage sample MCQ. |
-| Status | **CONFIRMED** (owner decision 2026-11-23) |
+| Status | **SUPERSEDED by DEC-060** (2026-11-24) — answers are no longer gated; whole sets / tests are. |
 
 ### DEC-052 — Admin grants / revokes learner subscriptions
 
@@ -581,7 +582,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Question | Payments are out of v1 (PAYMENTS-V1), and nothing created `UserSubscription` rows. How does a learner become entitled? |
 | Decision | **Admins grant access manually.** Admin-only (`users` permission) endpoints under `/api/v1/admin/users/:id/subscription`: `GET` (current + last 20), `POST` grant `{ endsAt, startsAt?, note? }` (end must be after start and in the future; Admin targets rejected — already entitled), `POST …/revoke` `{ note? }` or `DELETE` (cancels every ACTIVE subscription not yet ended; 404 if none). Grant cancels any open ACTIVE subscription in the same transaction, then creates an ACTIVE row on the `PREMIUM` plan (upserted if the seed did not run). Audited as `SUBSCRIPTION_GRANT` / `SUBSCRIPTION_REVOKE`; the note is stored only in the audit log (no schema change). Entitlement is still read by `AccessControlService`. |
 | Impact | `AdminSubscriptionsModule` (`backend/src/subscriptions/admin-subscriptions.*`), shared `AdminUserSubscriptionOverview`, `frontend/src/features/admin/users/user-subscription-card.tsx`. |
-| Status | **CONFIRMED** (owner decision 2026-11-23) |
+| Status | **SUPERSEDED by DEC-060** (2026-11-24) — module removed; manual grants live in `/admin/subscribers`. |
 
 ### DEC-053 — One device at a time (single active session)
 
@@ -647,6 +648,17 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Impact | Migration `20261124120000_document_bookmark_folders`; `bookmarks.service/controller/dto` (+ `SubscriptionsModule` import); frontend `app/(app)/bookmarks/**` (page, `exam`, `exam/result`, copy-protection layouts), `features/bookmarks/*` (folder bar, sheet card, saved exam, save dialog for PDFs), `PreliPracticeStartModal` / `PreliPracticeResultView` gained label props. |
 | Status | **CONFIRMED** (owner request, 2026-11-24) |
 
+
+### DEC-060 — Free vs Paid system with SSLCommerz payments
+
+| Field | Value |
+|-------|-------|
+| Question | Replace the answer-gating subscription (DEC-051/052) with a sellable Free vs Paid plan and online payment. |
+| Decision | **Access** (one place: `AccessPolicyService`, backend `billing/`): Admin → everything; **Paid System OFF** (site setting, default OFF) → everything for everyone and purchases blocked on the server; otherwise content marked free is open and the rest needs an **active subscription** (`disabledAt IS NULL AND startsAt ≤ now < endsAt`, checked per request — expiry needs no job). Moderators have no paid bypass. **What is locked:** Preli and Written sets after the first **N** (separate N per bank, default 10, admin-editable) in the public display order `questionDate DESC NULLS LAST, createdAt DESC, id DESC` over the **unfiltered** list — so newest N are free and a new upload shifts the window (owner-approved); Model Tests marked **PAID** (per-test Free/Paid toggle, existing tests migrated to FREE); `PREMIUM` documents. A bank MCQ inherits its set's lock (`/questions*`, `/public/questions`, saved-question details and saved exams skip locked ones). Topic Base, Quizzes, practice sets and other documents stay free. Locked items stay **listed** with `locked: true` (title only) and every content route answers **403 `CONTENT_LOCKED`** (`details[0].loginRequired`) without loading questions. Answer keys / explanations are **no longer gated** — open content includes them (reverses DEC-051). **Packages** (`subscription_packages`): name, duration MONTHLY / SIX_MONTHS / YEARLY (calendar months), price BDT (decimal), description, features, active, sort; soft-deleted once any order/subscription/event references them. **Subscriptions**: one row per user; buying while active adds the duration to the current end date; expired/disabled → restarts from now. Every change is logged in `subscription_events` (actor, source MANUAL / PAYMENT / MIGRATION, previous/new end) and audited. **Payments (SSLCommerz v4)**: `POST /payments/checkout {packageId}` — server reads price, snapshots amount/package on a PENDING `payment_orders` row with a random unique `tran_id`, opens a gateway session. success/fail/cancel/IPN are CSRF-free POST routes that trust nothing posted: a subscription is extended only after the **Order Validation API** says VALID/VALIDATED and tran_id, amount, currency (BDT) and store match the stored order; `verify_sign` is checked when present; `risk_level = 1` → RISK (held, admin can approve after review). Apply happens once: order row `FOR UPDATE` + `appliedAt` in the same transaction as the extension (user row locked too). A re-check loop in the API (every 10 min, `SKIP LOCKED` claims) and an admin **Re-check** button query the Transaction Query API for PENDING orders; orders with no gateway transaction after `PAYMENT_PENDING_EXPIRE_MINUTES` become FAILED. Every gateway request/response/callback is stored in `payment_gateway_logs` without the store password or signatures. Missing credentials → `503 PAYMENT_NOT_CONFIGURED` (no crash). |
+| Migration | `20261124180000_paid_system_sslcommerz` (single transaction): copies every user with an ACTIVE legacy subscription ending in the future into the new table with the **same start / end dates**, logs every legacy row as a `MIGRATED` event, aborts if the carried-over count differs, then drops `subscription_plans`, `user_subscriptions` (old shape), `payments` and the unused trial columns. |
+| Residual risk | The re-check loop runs inside the API process (not the BullMQ worker) so payment validation lives in one codebase; with several API replicas the `SKIP LOCKED` claim prevents double work and applying is idempotent anyway. Refunds are made in the SSLCommerz panel; "Mark refunded" only labels the order and does not revoke access (disable the subscription separately). |
+| Impact | `backend/src/billing/*` (replaces `backend/src/subscriptions/*`), public / questions / bookmarks / model-tests / documents / auth / users / admin services, shared `billing.ts`, frontend `features/billing`, `/packages`, `/payment/*`, admin Packages / Paid system / Subscribers / Payments, lock UI on lists and detail pages, profile "My plan". |
+| Status | **CONFIRMED** (owner approval 2026-11-24) |
 ### Deferred / NEEDS APPROVAL (explicitly out of Phase 1)
 
 | Item | Notes |

@@ -21,7 +21,7 @@ type Props = {
 
 /**
  * One row of the Saved "View All" sheet. MCQs show the full stem and options
- * (plus the key and explanation only when the API sent them — DEC-051); PDFs
+ * (with the key and explanation); PDFs
  * show a compact card that opens the inline reader.
  */
 export const SavedSheetCard = memo(function SavedSheetCard({

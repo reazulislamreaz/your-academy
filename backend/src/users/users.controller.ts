@@ -5,7 +5,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { CsrfGuard } from '../common/guards/csrf.guard';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { newRequestId } from '../common/request-id';
-import { AccessControlService } from '../subscriptions/access-control.service';
+import { AccessPolicyService } from '../billing/access-policy.service';
 import { PrismaService } from '../database/prisma.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UpdateStudyPrefsDto } from './dto/update-study-prefs.dto';
@@ -17,7 +17,7 @@ export class UsersController {
   constructor(
     private readonly users: UsersService,
     private readonly prisma: PrismaService,
-    private readonly access: AccessControlService,
+    private readonly access: AccessPolicyService,
   ) {}
 
   @Get('users/me')
@@ -56,7 +56,6 @@ export class UsersController {
 
   @Get('me/access')
   async accessSnapshot(@CurrentUser() user: RequestUser) {
-    const dbUser = await this.prisma.user.findUniqueOrThrow({ where: { id: user.userId } });
-    return createSuccessResponse(await this.access.getAccessSnapshot(dbUser), newRequestId());
+    return createSuccessResponse(await this.access.snapshot(user.userId), newRequestId());
   }
 }

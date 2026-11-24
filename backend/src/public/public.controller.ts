@@ -20,33 +20,36 @@ import { OptionalJwtAuthGuard } from '../common/guards/optional-jwt-auth.guard';
 import { newRequestId } from '../common/request-id';
 import { DocumentsService } from '../documents/documents.service';
 import { parseLimit } from '../common/pagination';
-import { AccessControlService } from '../subscriptions/access-control.service';
+import { AccessPolicyService, type ViewerAccess } from '../billing/access-policy.service';
 import { ScorePracticeDto } from './dto/score-practice.dto';
-import { PublicService, type AnswerViewOptions } from './public.service';
+import { PublicService } from './public.service';
 import { setViewerCacheHeaders } from './viewer-cache';
 
 type ViewerRequest = Request & { user?: RequestUser | null };
 
+const SHORT_PUBLIC_CACHE = 'public, max-age=30, s-maxage=60, stale-while-revalidate=120';
+
 /**
  * Unauthenticated marketing + public question bank (DEC-031).
- * Answer keys / model answers are subscriber-only (DEC-051): answer-bearing routes read
- * the optional session and ask AccessControlService.
+ * DEC-060: Preli / Written sets beyond the free N are locked for viewers without full
+ * access — routes read the optional session and ask AccessPolicyService.
  */
 @Controller('api/v1/public')
 export class PublicController {
   constructor(
     private readonly publicService: PublicService,
     private readonly documentsService: DocumentsService,
-    private readonly access: AccessControlService,
+    private readonly access: AccessPolicyService,
   ) {}
 
-  private async answerView(
+  /** Per-viewer access; signed-in responses are never shared-cached (locks differ). */
+  private async viewerAccess(
     req: ViewerRequest,
     res: Response,
     anonymousCacheControl?: string,
-  ): Promise<AnswerViewOptions> {
+  ): Promise<ViewerAccess> {
     setViewerCacheHeaders(res, req.user, anonymousCacheControl);
-    return { canViewAnswers: await this.access.canViewerSeeAnswers(req.user) };
+    return this.access.resolve(req.user);
   }
 
   /** Public aggregate counters — short shared cache (no user-specific data). */
@@ -113,8 +116,10 @@ export class PublicController {
 
   /** Upload-based Question Sets (one per admin import batch). */
   @Get('question-sets')
-  @Header('Cache-Control', 'public, max-age=30, s-maxage=60, stale-while-revalidate=120')
+  @UseGuards(OptionalJwtAuthGuard)
   async questionSets(
+    @Req() req: ViewerRequest,
+    @Res({ passthrough: true }) res: Response,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
     @Query('q') q?: string,
@@ -123,14 +128,11 @@ export class PublicController {
     @Query('year') year?: string,
   ) {
     const take = Math.min(Math.max(Number(limit) || 20, 1), 100);
-    const data = await this.publicService.listQuestionSets({
-      cursor,
-      limit: take,
-      q,
-      categoryId,
-      subcategoryId,
-      year,
-    });
+    const access = await this.viewerAccess(req, res, SHORT_PUBLIC_CACHE);
+    const data = await this.publicService.listQuestionSets(
+      { cursor, limit: take, q, categoryId, subcategoryId, year },
+      access,
+    );
     return createSuccessResponse(
       data.items,
       newRequestId(),
@@ -139,8 +141,17 @@ export class PublicController {
   }
 
   @Get('question-sets/:id')
-  async questionSet(@Param('id') id: string) {
-    return createSuccessResponse(await this.publicService.getQuestionSet(id), newRequestId());
+  @UseGuards(OptionalJwtAuthGuard)
+  async questionSet(
+    @Param('id') id: string,
+    @Req() req: ViewerRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const access = await this.viewerAccess(req, res);
+    return createSuccessResponse(
+      await this.publicService.getQuestionSet(id, access),
+      newRequestId(),
+    );
   }
 
   @Get('question-sets/:id/questions')
@@ -154,7 +165,7 @@ export class PublicController {
     @Query('q') q?: string,
   ) {
     const take = Math.min(Math.max(Number(limit) || 20, 1), 100);
-    const view = await this.answerView(req, res);
+    const view = await this.viewerAccess(req, res);
     const data = await this.publicService.listSetQuestions(
       id,
       {
@@ -172,9 +183,8 @@ export class PublicController {
   }
 
   /**
-   * DEC-051 — score a Preli Practice run server-side. Everyone gets totals + own selections;
-   * per-question correctness / key only for entitled viewers. Throttled: any score is a
-   * weak answer oracle (residual risk documented in DEC-051).
+   * Score a Preli Practice run server-side (totals, own selections and the key).
+   * Locked sets are refused (DEC-060). Throttled to limit bulk answer harvesting.
    */
   @Post('question-sets/:id/practice-score')
   @HttpCode(200)
@@ -186,7 +196,7 @@ export class PublicController {
     @Req() req: ViewerRequest,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const view = await this.answerView(req, res, 'no-store');
+    const view = await this.viewerAccess(req, res, 'no-store');
     return createSuccessResponse(
       await this.publicService.scoreSetPractice(id, dto.answers ?? {}, view),
       newRequestId(),
@@ -204,8 +214,10 @@ export class PublicController {
   }
 
   @Get('written-question-sets')
-  @Header('Cache-Control', 'public, max-age=30, s-maxage=60, stale-while-revalidate=120')
+  @UseGuards(OptionalJwtAuthGuard)
   async writtenQuestionSets(
+    @Req() req: ViewerRequest,
+    @Res({ passthrough: true }) res: Response,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
     @Query('q') q?: string,
@@ -214,14 +226,11 @@ export class PublicController {
     @Query('year') year?: string,
   ) {
     const take = Math.min(Math.max(Number(limit) || 20, 1), 100);
-    const data = await this.publicService.listWrittenQuestionSets({
-      cursor,
-      limit: take,
-      q,
-      categoryId,
-      subcategoryId,
-      year,
-    });
+    const access = await this.viewerAccess(req, res, SHORT_PUBLIC_CACHE);
+    const data = await this.publicService.listWrittenQuestionSets(
+      { cursor, limit: take, q, categoryId, subcategoryId, year },
+      access,
+    );
     return createSuccessResponse(
       data.items,
       newRequestId(),
@@ -230,9 +239,15 @@ export class PublicController {
   }
 
   @Get('written-question-sets/:id')
-  async writtenQuestionSet(@Param('id') id: string) {
+  @UseGuards(OptionalJwtAuthGuard)
+  async writtenQuestionSet(
+    @Param('id') id: string,
+    @Req() req: ViewerRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const access = await this.viewerAccess(req, res);
     return createSuccessResponse(
-      await this.publicService.getWrittenQuestionSet(id),
+      await this.publicService.getWrittenQuestionSet(id, access),
       newRequestId(),
     );
   }
@@ -248,7 +263,7 @@ export class PublicController {
     @Query('q') q?: string,
   ) {
     const take = Math.min(Math.max(Number(limit) || 20, 1), 100);
-    const view = await this.answerView(req, res);
+    const view = await this.viewerAccess(req, res);
     const data = await this.publicService.listWrittenSetQuestions(
       id,
       {
@@ -280,27 +295,22 @@ export class PublicController {
     );
   }
 
+  /** Topic Base is free for everyone (not part of the DEC-060 paid system). */
   @Get('topic-subcategories/:id/questions')
-  @UseGuards(OptionalJwtAuthGuard)
+  @Header('Cache-Control', SHORT_PUBLIC_CACHE)
   async topicQuestions(
     @Param('id') id: string,
-    @Req() req: ViewerRequest,
-    @Res({ passthrough: true }) res: Response,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
     @Query('q') q?: string,
   ) {
     const take = Math.min(Math.max(Number(limit) || 20, 1), 100);
-    const view = await this.answerView(req, res);
-    const data = await this.publicService.listTopicQuestions(
-      {
-        subcategoryId: id,
-        cursor,
-        limit: take,
-        q,
-      },
-      view,
-    );
+    const data = await this.publicService.listTopicQuestions({
+      subcategoryId: id,
+      cursor,
+      limit: take,
+      q,
+    });
     return createSuccessResponse(
       data.items,
       newRequestId(),
@@ -329,27 +339,22 @@ export class PublicController {
     return createSuccessResponse(await this.publicService.getTopicSet(id), newRequestId());
   }
 
+  /** Topic Base is free for everyone (not part of the DEC-060 paid system). */
   @Get('topic-sets/:id/questions')
-  @UseGuards(OptionalJwtAuthGuard)
+  @Header('Cache-Control', SHORT_PUBLIC_CACHE)
   async topicSetQuestions(
     @Param('id') id: string,
-    @Req() req: ViewerRequest,
-    @Res({ passthrough: true }) res: Response,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
     @Query('q') q?: string,
   ) {
     const take = Math.min(Math.max(Number(limit) || 20, 1), 100);
-    const view = await this.answerView(req, res);
-    const data = await this.publicService.listTopicSetQuestions(
-      {
-        batchId: id,
-        cursor,
-        limit: take,
-        q,
-      },
-      view,
-    );
+    const data = await this.publicService.listTopicSetQuestions({
+      batchId: id,
+      cursor,
+      limit: take,
+      q,
+    });
     return createSuccessResponse(
       data.items,
       newRequestId(),
@@ -357,7 +362,7 @@ export class PublicController {
     );
   }
 
-  /** Anonymous responses keep the shared cache; signed-in ones are private (DEC-051). */
+  /** Anonymous responses keep the shared cache; signed-in ones are private (locks differ). */
   @Get('questions')
   @UseGuards(OptionalJwtAuthGuard)
   async questions(
@@ -373,7 +378,7 @@ export class PublicController {
     @Query('uploadBatchId') uploadBatchId?: string,
   ) {
     const take = Math.min(Math.max(Number(limit) || 20, 1), 100);
-    const view = await this.answerView(
+    const view = await this.viewerAccess(
       req,
       res,
       'public, max-age=30, s-maxage=60, stale-while-revalidate=120',

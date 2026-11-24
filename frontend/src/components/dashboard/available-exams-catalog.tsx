@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Surface } from '@/components/ui/surface';
 import { listPublicExams } from '@/lib/api/exams';
+import { LockedTag, useUnlockHref } from '@/components/access/locked-content';
 import { listPublicModelTests } from '@/lib/api/model-tests';
 import { cn } from '@/lib/utils';
 
@@ -22,6 +23,8 @@ type CatalogCardProps = {
   totalQuestions: number;
   meta?: string | null;
   kindLabel: string;
+  /** DEC-060: paid model test for this viewer — `href` points to Packages. */
+  locked?: boolean;
 };
 
 function CatalogCard({
@@ -31,6 +34,7 @@ function CatalogCard({
   totalQuestions,
   meta,
   kindLabel,
+  locked = false,
 }: CatalogCardProps) {
   return (
     <article
@@ -48,6 +52,7 @@ function CatalogCard({
         </Link>
       </h3>
       {meta ? <p className="mt-1 line-clamp-1 text-xs text-[var(--muted)]">{meta}</p> : null}
+      {locked ? <LockedTag className="mt-1.5" /> : null}
       <div className="mt-3 flex flex-wrap gap-3 text-xs text-[var(--muted-strong)]">
         <span className="inline-flex items-center gap-1">
           <Clock3 className="size-3.5 shrink-0" aria-hidden />
@@ -60,8 +65,8 @@ function CatalogCard({
       </div>
       <div className="mt-auto pt-4">
         <Link href={href} className="block">
-          <Button size="sm" className="h-10 w-full min-h-10">
-            Start exam
+          <Button size="sm" className="h-10 w-full min-h-10" variant={locked ? 'soft' : undefined}>
+            {locked ? 'Unlock' : 'Start exam'}
           </Button>
         </Link>
       </div>
@@ -178,6 +183,7 @@ function ExamSection({
  * Uses the same public list APIs and take routes as the marketing homepage.
  */
 export function AvailableExamsCatalog() {
+  const unlockHref = useUnlockHref();
   const modelTests = useInfiniteQuery({
     queryKey: ['public-model-tests', 'dashboard-all'],
     initialPageParam: undefined as string | undefined,
@@ -258,7 +264,8 @@ export function AvailableExamsCatalog() {
             <CatalogCard
               kindLabel="Model test"
               title={item.title}
-              href={`/live-model-tests/${item.slug}`}
+              href={item.locked ? unlockHref : `/live-model-tests/${item.slug}`}
+              locked={item.locked}
               durationInMinutes={item.durationInMinutes}
               totalQuestions={item.totalQuestions}
               meta={

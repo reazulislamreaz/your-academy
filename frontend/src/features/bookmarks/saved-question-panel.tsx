@@ -4,12 +4,13 @@ import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, ExternalLink } from 'lucide-react';
 import { useState } from 'react';
-import { EntitlementCallout } from '@/components/access/entitlement-callout';
+import { LockedContent } from '@/components/access/locked-content';
 import { OptionRow, type OptionRowState } from '@/components/questions/option-row';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { PageLoader } from '@/components/loading';
+import { isContentLockedError } from '@/lib/api/billing';
 import { apiFetch } from '@/lib/api/client';
 import type { QuestionDetail } from '@/lib/api/types';
 
@@ -20,9 +21,9 @@ type Props = {
 };
 
 /**
- * Inline practice view of one saved MCQ. Uses the same `/questions/:id` payload
- * as the detail page, so answer keys are present only when the API decided the
- * learner is entitled — this component never infers correctness itself.
+ * Inline practice view of one saved MCQ. Uses the same `/questions/:id` payload as the
+ * detail page (correctness comes from the API); a saved MCQ from a locked set shows the
+ * DEC-060 lock instead.
  */
 export function SavedQuestionPanel({ questionId, number, total }: Props) {
   const qc = useQueryClient();
@@ -52,6 +53,14 @@ export function SavedQuestionPanel({ questionId, number, total }: Props) {
     );
   }
 
+  if (isContentLockedError(error)) {
+    return (
+      <PanelShell kindLabel="Question" number={number} total={total}>
+        <LockedContent />
+      </PanelShell>
+    );
+  }
+
   if (error || !data) {
     return (
       <PanelShell kindLabel="Question" number={number} total={total}>
@@ -62,9 +71,8 @@ export function SavedQuestionPanel({ questionId, number, total }: Props) {
     );
   }
 
-  const selected = data.options.find((o) => o.id === selectedId);
   // Feedback only after Check — never reveal correctness before the learner commits.
-  const showAnswerKeys = checked && data.answersVisible;
+  const showAnswerKeys = checked;
 
   function optionState(option: QuestionDetail['options'][number]): OptionRowState {
     const isSelected = selectedId === option.id;
@@ -135,15 +143,6 @@ export function SavedQuestionPanel({ questionId, number, total }: Props) {
           {checked ? 'Checked' : 'Check answer'}
         </Button>
       </div>
-
-      {checked && !data.answersVisible ? (
-        <EntitlementCallout
-          variant="locked"
-          className="mt-4"
-          title={`You selected ${selected?.label ?? 'an option'}`}
-          description="Correct answers and explanations are available to subscribers."
-        />
-      ) : null}
 
       {checked && data.explanation ? (
         <div className="mt-4 rounded-[var(--radius)] border border-[var(--line)] border-l-[3px] border-l-[var(--info)] bg-[var(--bg-muted)] p-4 sm:p-5">

@@ -16,17 +16,8 @@ function readStoredMode(): AnswerVisibilityMode {
   }
 }
 
-/** True when at least one loaded card carries an answer key (DEC-051: subscriber-only). */
-export function hasAnyAnswerKey(items: ReadonlyArray<{ correctAnswerLabel?: string }>): boolean {
-  return items.some((item) => Boolean(item.correctAnswerLabel));
-}
-
-/**
- * Global Show/Hide All Answers + per-question overrides (DEC-031).
- * `answersAvailable: false` (DEC-051 — API omitted the key) locks everything hidden.
- */
-export function useAnswerVisibility(opts: { answersAvailable?: boolean } = {}) {
-  const locked = opts.answersAvailable === false;
+/** Global Show/Hide All Answers + per-question overrides (DEC-031). */
+export function useAnswerVisibility() {
   const [mode, setModeState] = useState<AnswerVisibilityMode>('hide-all');
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
   const [hydrated, setHydrated] = useState(false);
@@ -48,11 +39,10 @@ export function useAnswerVisibility(opts: { answersAvailable?: boolean } = {}) {
 
   const isAnswerVisible = useCallback(
     (questionId: string) => {
-      if (locked) return false;
       if (mode === 'show-all') return true;
       return Boolean(revealed[questionId]);
     },
-    [locked, mode, revealed],
+    [mode, revealed],
   );
 
   const toggleQuestion = useCallback(
@@ -70,7 +60,6 @@ export function useAnswerVisibility(opts: { answersAvailable?: boolean } = {}) {
 
   return {
     mode,
-    locked,
     setMode,
     isAnswerVisible,
     toggleQuestion,

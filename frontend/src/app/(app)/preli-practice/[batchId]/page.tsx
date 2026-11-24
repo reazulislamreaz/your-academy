@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Surface } from '@/components/ui/surface';
 import { PreliPracticeStartModal } from '@/features/preli-practice/preli-practice-start-modal';
 import { savePreliPracticeSession } from '@/features/preli-practice/preli-practice-session';
+import { LockedContent } from '@/components/access/locked-content';
 import { ApiError } from '@/lib/api/client';
 import { getPublicQuestionSet } from '@/lib/api/public-questions';
 
@@ -45,6 +46,15 @@ export default function PreliPracticePreparePage() {
   }
 
   const set = setQry.data;
+
+  // DEC-060: locked sets cannot be practised — offer the Packages page instead.
+  if (set?.locked) {
+    return (
+      <LearnerPage dense>
+        <LockedContent title={set.title} />
+      </LearnerPage>
+    );
+  }
 
   return (
     <LearnerPage dense>

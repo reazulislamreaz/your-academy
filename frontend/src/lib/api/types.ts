@@ -1,3 +1,4 @@
+import type { UserAccessSnapshot } from '@your-academy/shared';
 export type CategoryScope = 'PRELIMINARY' | 'WRITTEN' | 'TOPIC';
 
 export type CategoryLeaf = {
@@ -55,7 +56,7 @@ export type QuestionDetail = {
   id: string;
   title: string;
   content: string;
-  explanation?: string;
+  explanation: string | null;
   difficulty: string;
   examTags?: string[];
   sourceNote?: string | null;
@@ -63,7 +64,7 @@ export type QuestionDetail = {
     id: string;
     label: string;
     content: string;
-    isCorrect?: boolean;
+    isCorrect: boolean;
     sortOrder?: number;
   }>;
   category: { id: string; name: string; slug: string };
@@ -72,7 +73,6 @@ export type QuestionDetail = {
   bookmarked: boolean;
   /** Present when saved into a named folder; null when uncategorized or unsaved. */
   collection?: { id: string; name: string } | null;
-  answersVisible: boolean;
 };
 
 export type BookmarkCollectionSummary = {
@@ -205,7 +205,6 @@ export type PracticeAttemptResult = {
   totalQuestions?: number;
   attempted?: number;
   unanswered?: number;
-  answersVisible: boolean;
   practiceSet: {
     id: string;
     title: string;
@@ -226,14 +225,14 @@ export type PracticeAttemptResult = {
     difficulty: string;
     selectedOptionId?: string | null;
     unanswered?: boolean;
-    isCorrect?: boolean | null;
-    explanation?: string;
+    isCorrect: boolean | null;
+    explanation: string | null;
     options: Array<{
       id: string;
       label: string;
       content: string;
       sortOrder: number;
-      isCorrect?: boolean;
+      isCorrect: boolean;
     }>;
   }>;
 };
@@ -285,14 +284,8 @@ export type DocumentListItem = {
   updatedAt: string;
 };
 
-export type AccessSnapshot = {
-  trialStartedAt: string;
-  trialEndsAt: string;
-  isTrialActive: boolean;
-  hasActiveSubscription: boolean;
-  role: string;
-  entitlements: string[];
-};
+/** DEC-060 — `user.access` from /users/me (UX only; the API enforces every lock). */
+export type AccessSnapshot = UserAccessSnapshot;
 
 export type StudyLastQuestion = {
   id: string;

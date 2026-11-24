@@ -6,7 +6,6 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tansta
 import { ChevronLeft, ChevronRight, LayoutGrid, List, PlayCircle, Rows3, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { LearnerPage } from '@/components/layout/learner-page';
-import { AnswersLockedNote } from '@/components/marketing/answers-locked-note';
 import { BookmarksPageSkeleton } from '@/components/skeletons';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -124,7 +123,6 @@ export default function BookmarksPage() {
       ),
     [documents.data, documents.hasNextPage, questions.data, questions.hasNextPage],
   );
-  const answersVisible = questions.data?.pages[0]?.data.answersVisible ?? true;
 
   // Folder totals come from the collections summary (covers rows not loaded yet).
   const folderCounts = useMemo(() => {
@@ -382,9 +380,6 @@ export default function BookmarksPage() {
               </>
             ) : (
               <>
-                {!answersVisible && items.some((i) => i.kind === 'question') ? (
-                  <AnswersLockedNote detail="Your saved questions and options are shown in full; correct answers and explanations appear here once you subscribe." />
-                ) : null}
                 {items.map((item, i) => (
                   <SavedSheetCard
                     key={item.key}

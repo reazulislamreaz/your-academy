@@ -34,14 +34,8 @@ describe('BookmarksService', () => {
 
   const learningActivity = { record: jest.fn() };
   const access = {
-    canViewAnswers: jest.fn(),
-    // Same contract as AccessControlService.stripAnswerFields.
-    stripAnswerFields: <T extends { isCorrect?: boolean }>(o: T, canView: boolean): T => {
-      if (canView) return o;
-      const clone = { ...o };
-      delete clone.isCorrect;
-      return clone;
-    },
+    resolve: jest.fn(),
+    openPreliQuestionsWhere: jest.fn(),
   };
   const service = new BookmarksService(
     prisma as never,
@@ -437,7 +431,7 @@ describe('BookmarksService', () => {
     });
   });
 
-  describe('saved question details (answer privacy)', () => {
+  describe('saved question details (DEC-060 locks)', () => {
     const row = {
       id: 'b1',
       createdAt: new Date(),
@@ -453,33 +447,35 @@ describe('BookmarksService', () => {
         ],
       },
     };
+    const lock = { OR: [{ uploadBatchId: null }, { uploadBatchId: { in: ['free-set'] } }] };
 
-    it('omits isCorrect and explanation for non-entitled users', async () => {
-      prisma.user.findUniqueOrThrow.mockResolvedValue({ id: user.userId });
-      access.canViewAnswers.mockResolvedValue(false);
+    it('filters out saved MCQs from locked sets in the query itself', async () => {
+      access.resolve.mockResolvedValue({ fullAccess: false });
+      access.openPreliQuestionsWhere.mockResolvedValue(lock);
       prisma.questionBookmark.findMany.mockResolvedValue([row]);
 
-      const page = await service.listQuestionDetails(user, {});
-      const q = page.items[0]!.question;
-      expect(page.answersVisible).toBe(false);
-      expect('explanation' in q).toBe(false);
-      for (const o of q.options) expect('isCorrect' in o).toBe(false);
+      await service.listQuestionDetails(user, {});
       expect(prisma.questionBookmark.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({ userId: user.userId }),
+          where: expect.objectContaining({
+            userId: user.userId,
+            question: expect.objectContaining({ AND: [lock] }),
+          }),
         }),
       );
     });
 
-    it('includes answer fields for entitled users', async () => {
-      prisma.user.findUniqueOrThrow.mockResolvedValue({ id: user.userId });
-      access.canViewAnswers.mockResolvedValue(true);
+    it('returns the key and explanation for open questions', async () => {
+      access.resolve.mockResolvedValue({ fullAccess: true });
+      access.openPreliQuestionsWhere.mockResolvedValue(undefined);
       prisma.questionBookmark.findMany.mockResolvedValue([row]);
 
       const page = await service.listQuestionDetails(user, {});
-      const q = page.items[0]!.question as { explanation?: string; options: Array<{ isCorrect?: boolean }> };
+      const q = page.items[0]!.question;
       expect(q.explanation).toBe('Because');
       expect(q.options[0]!.isCorrect).toBe(true);
+      const where = prisma.questionBookmark.findMany.mock.calls[0][0].where;
+      expect(where.question).not.toHaveProperty('AND');
     });
   });
 
@@ -507,9 +503,10 @@ describe('BookmarksService', () => {
       },
     ];
 
-    it('scores only the user saved questions and ignores forged option ids', async () => {
-      prisma.user.findUniqueOrThrow.mockResolvedValue({ id: user.userId });
-      access.canViewAnswers.mockResolvedValue(false);
+    it('scores only open saved questions and ignores forged option ids', async () => {
+      const lock = { OR: [{ uploadBatchId: null }] };
+      access.resolve.mockResolvedValue({ fullAccess: false });
+      access.openPreliQuestionsWhere.mockResolvedValue(lock);
       prisma.questionBookmark.findMany.mockResolvedValue(saved);
 
       const result = await service.scoreSavedPractice(user, ['q1', 'q2', 'not-saved'], {
@@ -523,6 +520,7 @@ describe('BookmarksService', () => {
           where: expect.objectContaining({
             userId: user.userId,
             questionId: { in: ['q1', 'q2', 'not-saved'] },
+            question: expect.objectContaining({ AND: [lock] }),
           }),
         }),
       );
@@ -532,24 +530,9 @@ describe('BookmarksService', () => {
         wrongCount: 0,
         skippedCount: 1,
         percent: 50,
-        answersVisible: false,
       });
-      for (const item of result.answerSheet) {
-        expect(item).not.toHaveProperty('isCorrect');
-        expect(item).not.toHaveProperty('correctOptionId');
-        expect(item).not.toHaveProperty('explanation');
-      }
-    });
-
-    it('returns the key and explanations to entitled users', async () => {
-      prisma.user.findUniqueOrThrow.mockResolvedValue({ id: user.userId });
-      access.canViewAnswers.mockResolvedValue(true);
-      prisma.questionBookmark.findMany.mockResolvedValue(saved);
-
-      const result = await service.scoreSavedPractice(user, ['q1', 'q2'], { q1: 'o2', q2: 'o4' });
-      expect(result).toMatchObject({ correctCount: 1, wrongCount: 1, answersVisible: true });
       expect(result.answerSheet[0]).toMatchObject({
-        isCorrect: false,
+        isCorrect: true,
         correctOptionId: 'o1',
         correctAnswerLabel: 'A',
         explanation: 'E1',

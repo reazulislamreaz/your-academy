@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ListCardSkeleton, LoadError } from '@/components/loading';
+import { LockedTag, useUnlockHref } from '@/components/access/locked-content';
 import { GoForExamCta } from '@/components/marketing/go-for-exam-cta';
 import { GsapReveal } from '@/components/motion/gsap-reveal';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -62,6 +63,7 @@ export function WrittenQuestionBank({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const bankRoot = basePath.replace(/\/$/, '') || '/written-question-bank';
+  const unlockHref = useUnlockHref();
 
   // URL is the source of truth (navbar subcategory/category links, back/forward, refresh).
   // Category filter UI is intentionally omitted — subcategory + year only (same as Preli).
@@ -374,12 +376,14 @@ export function WrittenQuestionBank({
           {sets.map((set) => (
             <li key={set.id} data-gsap-stagger>
               <Link
-                href={`${bankRoot}/${set.id}`}
+                // DEC-060: locked sets stay listed; a click goes to Packages (or login).
+                href={set.locked ? unlockHref : `${bankRoot}/${set.id}`}
                 className="motion-hover-lift block cursor-pointer rounded-[1rem] border border-[var(--line)] bg-[var(--bg-elevated)] px-5 py-4 shadow-[var(--shadow-sm)] transition-all hover:border-[var(--highlight)] hover:shadow-[var(--shadow)]"
               >
                 <h2 className="font-display text-lg font-bold tracking-tight text-[var(--ink)] sm:text-xl">
                   {set.title}
                 </h2>
+                {set.locked ? <LockedTag className="mt-1.5" /> : null}
               </Link>
             </li>
           ))}

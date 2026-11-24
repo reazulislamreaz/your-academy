@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ListCardSkeleton, LoadError } from '@/components/loading';
+import { LockedTag, useUnlockHref } from '@/components/access/locked-content';
 import { GoForExamCta } from '@/components/marketing/go-for-exam-cta';
 import { GsapReveal } from '@/components/motion/gsap-reveal';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -67,6 +68,7 @@ export function PublicQuestionBank({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const bankRoot = basePath.replace(/\/$/, '') || '/preli-question-bank';
+  const unlockHref = useUnlockHref();
   const [practiceSet, setPracticeSet] = useState<{
     id: string;
     title: string;
@@ -388,7 +390,15 @@ export function PublicQuestionBank({
               'motion-hover-lift block w-full rounded-[1rem] border border-[var(--line)] bg-white px-5 py-4 text-left shadow-[var(--shadow-sm)] transition-all hover:border-[var(--highlight)] hover:shadow-[var(--shadow)]';
             return (
               <li key={set.id} data-gsap-stagger>
-                {timedPractice ? (
+                {set.locked ? (
+                  // DEC-060: locked sets stay visible; a click goes to Packages (or login).
+                  <Link href={unlockHref} className={cn(cardClass, 'opacity-90')}>
+                    <h2 className="font-display text-lg font-bold tracking-tight text-[var(--ink)] sm:text-xl">
+                      {set.title}
+                    </h2>
+                    <LockedTag className="mt-1.5" />
+                  </Link>
+                ) : timedPractice ? (
                   <button
                     type="button"
                     className={cardClass}

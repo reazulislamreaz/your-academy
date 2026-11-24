@@ -9,7 +9,6 @@ import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
-import { AnswersLockedNote } from '@/components/marketing/answers-locked-note';
 import { AnswerReview, type ReviewItem } from '@/features/exam-ui/answer-review';
 import { ResultSummary } from '@/features/exam-ui/result-summary';
 import { ApiError, apiFetch } from '@/lib/api/client';
@@ -29,12 +28,12 @@ function toReviewItems(data: PracticeAttemptResult): ReviewItem[] {
         key: opt.id,
         label: opt.label,
         content: opt.content,
-        isCorrect: data.answersVisible ? opt.isCorrect : undefined,
+        isCorrect: opt.isCorrect,
       })),
       selectedKey: item.selectedOptionId ?? null,
       isSkipped: unanswered,
-      isCorrect: data.answersVisible ? item.isCorrect : undefined,
-      explanation: data.answersVisible ? item.explanation : undefined,
+      isCorrect: item.isCorrect,
+      explanation: item.explanation,
     };
   });
 }
@@ -150,12 +149,6 @@ export default function ResultDetailPage() {
       <AnswerReview
         heading="Answer analysis"
         items={toReviewItems(data)}
-        answersVisible={data.answersVisible}
-        lockedNote={
-          data.answersVisible ? null : (
-            <AnswersLockedNote detail="Your score summary is always saved to your account." />
-          )
-        }
       />
     </LearnerPage>
   );

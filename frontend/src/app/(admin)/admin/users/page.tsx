@@ -28,6 +28,11 @@ import { useCursorList } from '@/lib/hooks/use-cursor-list';
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import { apiFetch } from '@/lib/api/client';
 import { useMe } from '@/features/auth/use-auth';
+import {
+  SubscriptionStateBadge,
+  formatDate,
+  subscriptionLabel,
+} from '@/features/admin/billing/billing-format';
 import { CreateStaffUserDialog, StaffUserActions } from '@/features/admin/users/staff-user-dialogs';
 import { AdminPasswordResetButton } from '@/features/admin/users/admin-password-reset-dialog';
 
@@ -174,7 +179,7 @@ export default function AdminUsersPage() {
                       {user.whatsappNumber}
                       {user.email ? ` · ${user.email}` : ''}
                       <br />
-                      {user.subscription ? user.subscription.plan.name : 'No subscription'}
+                      {subscriptionLabel(user.subscription)}
                       {' · '}
                       {user.attemptCount} MCQ · {user.practiceAttemptCount} practice
                     </>
@@ -289,13 +294,13 @@ export default function AdminUsersPage() {
                           )}
                         </AdminTd>
                         <AdminTd className="text-xs">
-                          {user.subscription ? (
-                            <span className="font-medium text-[var(--ink)]">
-                              {user.subscription.plan.name}
-                            </span>
-                          ) : (
-                            <span className="text-[var(--muted-strong)]">None</span>
-                          )}
+                          <SubscriptionStateBadge state={user.subscription.state} />
+                          {user.subscription.endsAt ? (
+                            <p className="mt-1 text-[var(--muted-strong)]">
+                              {user.subscription.packageName ?? 'Custom'} · until{' '}
+                              {formatDate(user.subscription.endsAt)}
+                            </p>
+                          ) : null}
                         </AdminTd>
                         <AdminTd muted className="text-xs whitespace-nowrap">
                           {user.attemptCount} MCQ · {user.practiceAttemptCount} practice

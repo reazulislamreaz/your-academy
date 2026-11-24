@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { DocumentVisibility, MediaResourceType, UserRole } from '@prisma/client';
+import { DocumentVisibility, MediaResourceType } from '@prisma/client';
 import { createErrorResponse } from '@your-academy/shared';
 import type { RequestUser } from '../auth/auth.types';
 import { newRequestId } from '../common/request-id';
@@ -12,7 +12,7 @@ import { paginateById, parseLimit } from '../common/pagination';
 import { PrismaService } from '../database/prisma.service';
 import { LearningActivityService } from '../learning-activity/learning-activity.service';
 import { MaintenanceQueueService } from '../queue/maintenance-queue.service';
-import { AccessControlService } from '../subscriptions/access-control.service';
+import { AccessPolicyService } from '../billing/access-policy.service';
 import { StorageService } from '../storage/storage.service';
 import type { CreateDocumentDto, UpdateDocumentDto } from './dto/create-document.dto';
 import { publicPdfByteCache } from './pdf-byte-cache';
@@ -22,7 +22,7 @@ export class DocumentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
-    private readonly access: AccessControlService,
+    private readonly access: AccessPolicyService,
     private readonly maintenanceQueue: MaintenanceQueueService,
     private readonly audit: AuditService,
     private readonly learningActivity: LearningActivityService,
@@ -200,13 +200,16 @@ export class DocumentsService {
       );
     }
 
-    const dbUser = await this.prisma.user.findUniqueOrThrow({ where: { id: user.userId } });
-    const allowed = await this.access.canAccessDocument(dbUser, doc.visibility);
+    // DEC-060: PREMIUM documents follow the Free vs Paid rules.
+    const allowed = await this.access.canAccess(await this.access.resolve(user), {
+      kind: 'DOCUMENT',
+      visibility: doc.visibility,
+    });
     if (!allowed) {
       throw new ForbiddenException(
         createErrorResponse(
           'DOCUMENT_PREMIUM_REQUIRED',
-          'This document requires an active subscription',
+          'Become a paid user to unlock this document',
           newRequestId(),
         ),
       );
@@ -291,10 +294,10 @@ export class DocumentsService {
     params: { cursor?: string; limit?: number; categoryId?: string },
   ) {
     const limit = parseLimit(params.limit, 20);
-    const dbUser = await this.prisma.user.findUniqueOrThrow({ where: { id: user.userId } });
-    const allowPremium =
-      dbUser.role === UserRole.ADMIN ||
-      (await this.access.canAccessDocument(dbUser, DocumentVisibility.PREMIUM));
+    const allowPremium = await this.access.canAccess(await this.access.resolve(user), {
+      kind: 'DOCUMENT',
+      visibility: DocumentVisibility.PREMIUM,
+    });
 
     const items = await this.prisma.document.findMany({
       where: {
@@ -372,13 +375,16 @@ export class DocumentsService {
       );
     }
 
-    const dbUser = await this.prisma.user.findUniqueOrThrow({ where: { id: user.userId } });
-    const allowed = await this.access.canAccessDocument(dbUser, doc.visibility);
+    // DEC-060: PREMIUM documents follow the Free vs Paid rules.
+    const allowed = await this.access.canAccess(await this.access.resolve(user), {
+      kind: 'DOCUMENT',
+      visibility: doc.visibility,
+    });
     if (!allowed) {
       throw new ForbiddenException(
         createErrorResponse(
           'DOCUMENT_PREMIUM_REQUIRED',
-          'This document requires an active subscription',
+          'Become a paid user to unlock this document',
           newRequestId(),
         ),
       );

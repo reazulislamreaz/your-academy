@@ -65,8 +65,6 @@ export class StaffUsersService {
   async create(dto: CreateStaffUserDto, actorUserId: string) {
     const whatsappNumber = this.parseWhatsapp(dto.whatsappNumber);
     const passwordHash = await argon2.hash(dto.password, { type: argon2.argon2id });
-    // Free trials are disabled — equal timestamps keep the legacy columns filled.
-    const now = new Date();
 
     let user: StaffRow;
     try {
@@ -77,8 +75,6 @@ export class StaffUsersService {
           passwordHash,
           role: dto.role,
           status: UserStatus.ACTIVE,
-          trialStartedAt: now,
-          trialEndsAt: now,
         },
         select: STAFF_SELECT,
       });

@@ -88,18 +88,43 @@ enum BrowsingSessionStatus {
   EXPIRED
 }
 
-enum SubscriptionStatus {
-  ACTIVE
-  CANCELED
-  EXPIRED
-  PAST_DUE
+/// DEC-060 — package lengths offered on the Packages page.
+enum PackageDuration {
+  MONTHLY
+  SIX_MONTHS
+  YEARLY
 }
 
-enum PaymentStatus {
+/// DEC-060 — per-item free/paid flag (Model Tests).
+enum ContentAccess {
+  FREE
+  PAID
+}
+
+/// DEC-060 — SSLCommerz order lifecycle. RISK = gateway flagged (risk_level 1), held for admin review.
+enum PaymentOrderStatus {
   PENDING
-  SUCCEEDED
+  SUCCESS
   FAILED
+  CANCELLED
+  RISK
   REFUNDED
+}
+
+enum SubscriptionEventSource {
+  MANUAL
+  PAYMENT
+  MIGRATION
+}
+
+enum SubscriptionEventAction {
+  GRANT
+  EXTEND
+  SET_END
+  DISABLE
+  ENABLE
+  PURCHASE
+  MIGRATED
 }
 
 /// Practice / quiz / model-test products (DEC-023).
@@ -176,82 +201,82 @@ enum SupportMessageKind {
 // ─── Models ──────────────────────────────────────────────────────────────────
 
 model User {
-  id             String     @id @default(uuid()) @db.Uuid
-  name           String     @db.VarChar(120)
-  whatsappNumber String     @unique @map("whatsapp_number") @db.VarChar(32)
-  email          String?    @unique @db.VarChar(255)
+  id                    String     @id @default(uuid()) @db.Uuid
+  name                  String     @db.VarChar(120)
+  whatsappNumber        String     @unique @map("whatsapp_number") @db.VarChar(32)
+  email                 String?    @unique @db.VarChar(255)
   /// Set when the current `email` was confirmed via link; cleared whenever email changes.
-  emailVerifiedAt DateTime? @map("email_verified_at") @db.Timestamptz(3)
-  passwordHash   String     @map("password_hash")
+  emailVerifiedAt       DateTime?  @map("email_verified_at") @db.Timestamptz(3)
+  passwordHash          String     @map("password_hash")
   /// Set when an Admin issues a temporary password; every API call except change-password is refused until cleared.
-  mustChangePassword Boolean @default(false) @map("must_change_password")
-  role           UserRole   @default(USER)
-  status         UserStatus @default(ACTIVE)
-  avatarAssetId  String?    @unique @map("avatar_asset_id") @db.Uuid
-  trialStartedAt DateTime   @map("trial_started_at") @db.Timestamptz(3)
-  trialEndsAt    DateTime   @map("trial_ends_at") @db.Timestamptz(3)
+  mustChangePassword    Boolean    @default(false) @map("must_change_password")
+  role                  UserRole   @default(USER)
+  status                UserStatus @default(ACTIVE)
+  avatarAssetId         String?    @unique @map("avatar_asset_id") @db.Uuid
   /// Root category IDs chosen during onboarding (max 3 enforced in service).
-  preferredCategoryIds String[]  @default([]) @map("preferred_category_ids") @db.Uuid
-  lastQuestionId       String?   @map("last_question_id") @db.Uuid
-  lastQuestionFilterQs String?   @map("last_question_filter_qs") @db.VarChar(512)
-  onboardingCompletedAt DateTime? @map("onboarding_completed_at") @db.Timestamptz(3)
-  createdAt      DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt      DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
-  deletedAt      DateTime?  @map("deleted_at") @db.Timestamptz(3)
+  preferredCategoryIds  String[]   @default([]) @map("preferred_category_ids") @db.Uuid
+  lastQuestionId        String?    @map("last_question_id") @db.Uuid
+  lastQuestionFilterQs  String?    @map("last_question_filter_qs") @db.VarChar(512)
+  onboardingCompletedAt DateTime?  @map("onboarding_completed_at") @db.Timestamptz(3)
+  createdAt             DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt             DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt             DateTime?  @map("deleted_at") @db.Timestamptz(3)
 
-  avatarAsset         MediaAsset?         @relation("UserAvatar", fields: [avatarAssetId], references: [id], onDelete: SetNull)
-  uploadedAssets      MediaAsset[]        @relation("UploadedBy")
-  authSessions        AuthSession[]
-  createdQuestions    Question[]          @relation("QuestionCreator")
-  createdWrittenQuestions WrittenQuestion[] @relation("WrittenQuestionCreator")
-  lastQuestion        Question?           @relation("UserLastQuestion", fields: [lastQuestionId], references: [id], onDelete: SetNull)
-  questionBookmarks   QuestionBookmark[]
-  documentBookmarks   DocumentBookmark[]
-  bookmarkCollections BookmarkCollection[]
-  questionAttempts    QuestionAttempt[]
-  practiceAttempts    PracticeAttempt[]
-  createdPracticeSets PracticeSet[]       @relation("PracticeSetCreator")
-  createdExams        Exam[]              @relation("ExamCreator")
-  createdModelTests   ModelTest[]         @relation("ModelTestCreator")
-  examAttempts        ExamAttempt[]
-  modelTestAttempts   ModelTestAttempt[]
-  modelTestGuideUpdates ModelTestGuideConfig[] @relation("ModelTestGuideUpdater")
-  examGuideUpdates      ExamGuideConfig[]      @relation("ExamGuideUpdater")
-  questionUploadBatches QuestionUploadBatch[]
-  writtenUploadBatches  WrittenUploadBatch[]
-  topicUploadBatches    TopicUploadBatch[]
-  browsingSessions    BrowsingSession[]
-  subscriptions       UserSubscription[]
-  createdNews         News[]              @relation("NewsCreator")
-  createdDocuments    Document[]          @relation("DocumentCreator")
-  auditLogs             AuditLog[]
-  passwordResetTokens   PasswordResetToken[]
-  emailVerificationTokens EmailVerificationToken[]
-  learningActivityEvents LearningActivityEvent[]
-  supportConversationsAsUser   SupportConversation[] @relation("SupportConversationUser")
-  supportConversationsAssigned SupportConversation[] @relation("SupportConversationAssignee")
-  supportMessagesSent          SupportMessage[]      @relation("SupportMessageSender")
+  avatarAsset                  MediaAsset?              @relation("UserAvatar", fields: [avatarAssetId], references: [id], onDelete: SetNull)
+  uploadedAssets               MediaAsset[]             @relation("UploadedBy")
+  authSessions                 AuthSession[]
+  createdQuestions             Question[]               @relation("QuestionCreator")
+  createdWrittenQuestions      WrittenQuestion[]        @relation("WrittenQuestionCreator")
+  lastQuestion                 Question?                @relation("UserLastQuestion", fields: [lastQuestionId], references: [id], onDelete: SetNull)
+  questionBookmarks            QuestionBookmark[]
+  documentBookmarks            DocumentBookmark[]
+  bookmarkCollections          BookmarkCollection[]
+  questionAttempts             QuestionAttempt[]
+  practiceAttempts             PracticeAttempt[]
+  createdPracticeSets          PracticeSet[]            @relation("PracticeSetCreator")
+  createdExams                 Exam[]                   @relation("ExamCreator")
+  createdModelTests            ModelTest[]              @relation("ModelTestCreator")
+  examAttempts                 ExamAttempt[]
+  modelTestAttempts            ModelTestAttempt[]
+  modelTestGuideUpdates        ModelTestGuideConfig[]   @relation("ModelTestGuideUpdater")
+  examGuideUpdates             ExamGuideConfig[]        @relation("ExamGuideUpdater")
+  questionUploadBatches        QuestionUploadBatch[]
+  writtenUploadBatches         WrittenUploadBatch[]
+  topicUploadBatches           TopicUploadBatch[]
+  browsingSessions             BrowsingSession[]
+  subscription                 UserSubscription?
+  subscriptionEvents           SubscriptionEvent[]      @relation("SubscriptionEventUser")
+  subscriptionActions          SubscriptionEvent[]      @relation("SubscriptionEventActor")
+  paymentOrders                PaymentOrder[]
+  createdNews                  News[]                   @relation("NewsCreator")
+  createdDocuments             Document[]               @relation("DocumentCreator")
+  auditLogs                    AuditLog[]
+  passwordResetTokens          PasswordResetToken[]
+  emailVerificationTokens      EmailVerificationToken[]
+  learningActivityEvents       LearningActivityEvent[]
+  supportConversationsAsUser   SupportConversation[]    @relation("SupportConversationUser")
+  supportConversationsAssigned SupportConversation[]    @relation("SupportConversationAssignee")
+  supportMessagesSent          SupportMessage[]         @relation("SupportMessageSender")
   supportInternalNotes         SupportInternalNote[]
-  linkedSupportGuestSessions   SupportGuestSession[] @relation("SupportGuestLinkedUser")
-  homepageContentUpdates       HomepageContent[]     @relation("HomepageContentUpdater")
-  homepageRevisions            HomepageRevision[]    @relation("HomepageRevisionCreator")
+  linkedSupportGuestSessions   SupportGuestSession[]    @relation("SupportGuestLinkedUser")
+  homepageContentUpdates       HomepageContent[]        @relation("HomepageContentUpdater")
+  homepageRevisions            HomepageRevision[]       @relation("HomepageRevisionCreator")
 
   @@index([status])
-  @@index([trialEndsAt])
   @@index([createdAt])
   @@map("users")
 }
 
 model PasswordResetToken {
-  id        String    @id @default(uuid()) @db.Uuid
-  userId    String    @map("user_id") @db.Uuid
-  tokenHash String    @unique @map("token_hash")
-  expiresAt DateTime  @map("expires_at") @db.Timestamptz(3)
-  usedAt    DateTime? @map("used_at") @db.Timestamptz(3)
+  id            String    @id @default(uuid()) @db.Uuid
+  userId        String    @map("user_id") @db.Uuid
+  tokenHash     String    @unique @map("token_hash")
+  expiresAt     DateTime  @map("expires_at") @db.Timestamptz(3)
+  usedAt        DateTime? @map("used_at") @db.Timestamptz(3)
   /// Admin-assisted reset by email: this address is marked verified once the link is used
   /// (only if it is still the account's email). Null for self-service and WhatsApp links.
-  verifiesEmail String? @map("verifies_email") @db.VarChar(255)
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  verifiesEmail String?   @map("verifies_email") @db.VarChar(255)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -277,19 +302,19 @@ model EmailVerificationToken {
 }
 
 model AuthSession {
-  id                   String    @id @default(uuid()) @db.Uuid
-  userId               String    @map("user_id") @db.Uuid
-  refreshTokenHash     String    @unique @map("refresh_token_hash")
-  familyId             String    @map("family_id") @db.Uuid
-  userAgent            String?   @map("user_agent")
-  ipAddress            String?   @map("ip_address") @db.VarChar(64)
-  expiresAt            DateTime  @map("expires_at") @db.Timestamptz(3)
-  revokedAt            DateTime? @map("revoked_at") @db.Timestamptz(3)
+  id                  String    @id @default(uuid()) @db.Uuid
+  userId              String    @map("user_id") @db.Uuid
+  refreshTokenHash    String    @unique @map("refresh_token_hash")
+  familyId            String    @map("family_id") @db.Uuid
+  userAgent           String?   @map("user_agent")
+  ipAddress           String?   @map("ip_address") @db.VarChar(64)
+  expiresAt           DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt           DateTime? @map("revoked_at") @db.Timestamptz(3)
   /// Why the session ended: LOGOUT | ROTATED | REPLACED (newer login, single-device rule) |
   /// ADMIN_LOGOUT | ADMIN_RESET | PASSWORD_CHANGE | PASSWORD_RESET | SUSPENDED | TOKEN_REUSE.
-  revokedReason        String?   @map("revoked_reason") @db.VarChar(32)
-  replacedBySessionId  String?   @map("replaced_by_session_id") @db.Uuid
-  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  revokedReason       String?   @map("revoked_reason") @db.VarChar(32)
+  replacedBySessionId String?   @map("replaced_by_session_id") @db.Uuid
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -313,26 +338,26 @@ model Category {
   createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  parent          Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict)
-  children         Category[]     @relation("CategoryTree")
-  questions        Question[]     @relation("QuestionCategory")
-  subQuestions     Question[]     @relation("QuestionSubcategory")
-  writtenQuestions WrittenQuestion[] @relation("WrittenQuestionCategory")
-  writtenSubQuestions WrittenQuestion[] @relation("WrittenQuestionSubcategory")
-  topicQuestions      TopicQuestion[] @relation("TopicQuestionCategory")
-  topicSubQuestions   TopicQuestion[] @relation("TopicQuestionSubcategory")
-  topicChildQuestions TopicQuestion[] @relation("TopicQuestionChildCategory")
-  topicBatchesAsCategory    TopicUploadBatch[] @relation("TopicBatchCategory")
-  topicBatchesAsSubcategory TopicUploadBatch[] @relation("TopicBatchSubcategory")
-  topicBatchesAsChildCategory TopicUploadBatch[] @relation("TopicBatchChildCategory")
-  documents        Document[]
-  attempts         QuestionAttempt[]
-  practiceSets     PracticeSet[]  @relation("PracticeSetCategory")
-  practiceSetTopics PracticeSet[] @relation("PracticeSetSubcategory")
-  batchPlacementsAsCategory    QuestionUploadBatchPlacement[] @relation("BatchPlacementCategory")
-  batchPlacementsAsSubcategory QuestionUploadBatchPlacement[] @relation("BatchPlacementSubcategory")
-  writtenBatchPlacementsAsCategory    WrittenUploadBatchPlacement[] @relation("WrittenBatchPlacementCategory")
-  writtenBatchPlacementsAsSubcategory WrittenUploadBatchPlacement[] @relation("WrittenBatchPlacementSubcategory")
+  parent                              Category?                      @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children                            Category[]                     @relation("CategoryTree")
+  questions                           Question[]                     @relation("QuestionCategory")
+  subQuestions                        Question[]                     @relation("QuestionSubcategory")
+  writtenQuestions                    WrittenQuestion[]              @relation("WrittenQuestionCategory")
+  writtenSubQuestions                 WrittenQuestion[]              @relation("WrittenQuestionSubcategory")
+  topicQuestions                      TopicQuestion[]                @relation("TopicQuestionCategory")
+  topicSubQuestions                   TopicQuestion[]                @relation("TopicQuestionSubcategory")
+  topicChildQuestions                 TopicQuestion[]                @relation("TopicQuestionChildCategory")
+  topicBatchesAsCategory              TopicUploadBatch[]             @relation("TopicBatchCategory")
+  topicBatchesAsSubcategory           TopicUploadBatch[]             @relation("TopicBatchSubcategory")
+  topicBatchesAsChildCategory         TopicUploadBatch[]             @relation("TopicBatchChildCategory")
+  documents                           Document[]
+  attempts                            QuestionAttempt[]
+  practiceSets                        PracticeSet[]                  @relation("PracticeSetCategory")
+  practiceSetTopics                   PracticeSet[]                  @relation("PracticeSetSubcategory")
+  batchPlacementsAsCategory           QuestionUploadBatchPlacement[] @relation("BatchPlacementCategory")
+  batchPlacementsAsSubcategory        QuestionUploadBatchPlacement[] @relation("BatchPlacementSubcategory")
+  writtenBatchPlacementsAsCategory    WrittenUploadBatchPlacement[]  @relation("WrittenBatchPlacementCategory")
+  writtenBatchPlacementsAsSubcategory WrittenUploadBatchPlacement[]  @relation("WrittenBatchPlacementSubcategory")
 
   @@unique([scope, slug])
   @@index([parentId])
@@ -344,48 +369,48 @@ model Category {
 }
 
 model Question {
-  id             String         @id @default(uuid()) @db.Uuid
-  title          String         @db.VarChar(200)
-  content        String
-  explanation    String?
-  categoryId     String         @map("category_id") @db.Uuid
-  subcategoryId  String?        @map("subcategory_id") @db.Uuid
-  difficulty     Difficulty     @default(MEDIUM)
-  status         QuestionStatus @default(DRAFT)
+  id            String         @id @default(uuid()) @db.Uuid
+  title         String         @db.VarChar(200)
+  content       String
+  explanation   String?
+  categoryId    String         @map("category_id") @db.Uuid
+  subcategoryId String?        @map("subcategory_id") @db.Uuid
+  difficulty    Difficulty     @default(MEDIUM)
+  status        QuestionStatus @default(DRAFT)
   /// Govt-job track tags (e.g. bcs-prelim, bank, primary-teacher). Not real PYQ unless marked.
-  examTags       String[]       @default([]) @map("exam_tags")
+  examTags      String[]       @default([]) @map("exam_tags")
   /// Optional human-readable source note (e.g. "Demo — BCS-style practice").
-  sourceNote     String?        @map("source_note") @db.VarChar(240)
+  sourceNote    String?        @map("source_note") @db.VarChar(240)
   /// Excel `প্রশ্ন নং` / serial from the upload sheet.
-  sourceSerial   String?        @map("source_serial") @db.VarChar(32)
+  sourceSerial  String?        @map("source_serial") @db.VarChar(32)
   /// Exam year extracted from sheet / derived from questionDate (public year filters).
-  examYear       String?        @map("exam_year") @db.VarChar(16)
+  examYear      String?        @map("exam_year") @db.VarChar(16)
   /// Actual exam / question date set by admin (sort + year filter source of truth).
-  questionDate   DateTime?      @map("question_date") @db.Timestamptz(3)
+  questionDate  DateTime?      @map("question_date") @db.Timestamptz(3)
   /// Section heading that preceded this MCQ in the Excel sheet (first-column preamble rows).
-  sectionTitle   String?        @map("section_title") @db.VarChar(500)
+  sectionTitle  String?        @map("section_title") @db.VarChar(500)
   /// SHA-256 of normalized question text + correct answer content (informational; duplicates allowed since 2026-11-17).
-  contentHash    String?        @map("content_hash") @db.VarChar(64)
-  uploadBatchId  String?        @map("upload_batch_id") @db.Uuid
-  imageAssetId   String?        @map("image_asset_id") @db.Uuid
-  createdById    String?        @map("created_by_id") @db.Uuid
-  publishedAt    DateTime?      @map("published_at") @db.Timestamptz(3)
-  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt      DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
-  deletedAt      DateTime?      @map("deleted_at") @db.Timestamptz(3)
+  contentHash   String?        @map("content_hash") @db.VarChar(64)
+  uploadBatchId String?        @map("upload_batch_id") @db.Uuid
+  imageAssetId  String?        @map("image_asset_id") @db.Uuid
+  createdById   String?        @map("created_by_id") @db.Uuid
+  publishedAt   DateTime?      @map("published_at") @db.Timestamptz(3)
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt     DateTime?      @map("deleted_at") @db.Timestamptz(3)
 
-  category    Category          @relation("QuestionCategory", fields: [categoryId], references: [id], onDelete: Restrict)
-  subcategory Category?         @relation("QuestionSubcategory", fields: [subcategoryId], references: [id], onDelete: SetNull)
-  imageAsset  MediaAsset?       @relation("QuestionImage", fields: [imageAssetId], references: [id], onDelete: SetNull)
-  createdBy   User?             @relation("QuestionCreator", fields: [createdById], references: [id], onDelete: SetNull)
-  uploadBatch QuestionUploadBatch? @relation(fields: [uploadBatchId], references: [id], onDelete: SetNull)
-  lastOpenedBy User[]           @relation("UserLastQuestion")
-  options     QuestionOption[]
-  bookmarks   QuestionBookmark[]
-  attempts    QuestionAttempt[]
-  practiceItems PracticeSetItem[]
+  category        Category                @relation("QuestionCategory", fields: [categoryId], references: [id], onDelete: Restrict)
+  subcategory     Category?               @relation("QuestionSubcategory", fields: [subcategoryId], references: [id], onDelete: SetNull)
+  imageAsset      MediaAsset?             @relation("QuestionImage", fields: [imageAssetId], references: [id], onDelete: SetNull)
+  createdBy       User?                   @relation("QuestionCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  uploadBatch     QuestionUploadBatch?    @relation(fields: [uploadBatchId], references: [id], onDelete: SetNull)
+  lastOpenedBy    User[]                  @relation("UserLastQuestion")
+  options         QuestionOption[]
+  bookmarks       QuestionBookmark[]
+  attempts        QuestionAttempt[]
+  practiceItems   PracticeSetItem[]
   practiceAnswers PracticeAttemptAnswer[]
-  importRows  QuestionImportRow[] @relation("ImportRowCreatedQuestion")
+  importRows      QuestionImportRow[]     @relation("ImportRowCreatedQuestion")
 
   @@index([status, publishedAt(sort: Desc), id(sort: Desc)])
   @@index([status, createdAt(sort: Desc), id(sort: Desc)])
@@ -409,8 +434,8 @@ model QuestionOption {
   isCorrect  Boolean @default(false) @map("is_correct")
   sortOrder  Int     @default(0) @map("sort_order")
 
-  question              Question                 @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  attempts              QuestionAttempt[]
+  question               Question                @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  attempts               QuestionAttempt[]
   practiceAttemptAnswers PracticeAttemptAnswer[]
 
   @@index([questionId, sortOrder])
@@ -528,14 +553,14 @@ model MediaAsset {
 
 /// Marketing homepage CMS document (DEC-038). Exactly one DRAFT and one PUBLISHED row.
 model HomepageContent {
-  id               String                 @id @default(uuid()) @db.Uuid
-  status           HomepageContentStatus  @unique
+  id               String                @id @default(uuid()) @db.Uuid
+  status           HomepageContentStatus @unique
   payload          Json
-  heroImageAssetId String?                @map("hero_image_asset_id") @db.Uuid
-  publishedAt      DateTime?              @map("published_at") @db.Timestamptz(3)
-  updatedById      String?                @map("updated_by_id") @db.Uuid
-  createdAt        DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt        DateTime               @updatedAt @map("updated_at") @db.Timestamptz(3)
+  heroImageAssetId String?               @map("hero_image_asset_id") @db.Uuid
+  publishedAt      DateTime?             @map("published_at") @db.Timestamptz(3)
+  updatedById      String?               @map("updated_by_id") @db.Uuid
+  createdAt        DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   heroImage MediaAsset? @relation("HomepageHeroImage", fields: [heroImageAssetId], references: [id], onDelete: SetNull)
   updatedBy User?       @relation("HomepageContentUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
@@ -633,59 +658,134 @@ model BrowsingSession {
   @@map("browsing_sessions")
 }
 
-model SubscriptionPlan {
-  id            String   @id @default(uuid()) @db.Uuid
-  code          String   @unique @db.VarChar(64)
-  name          String   @db.VarChar(120)
-  description   String?
-  durationDays  Int      @map("duration_days")
-  priceCents    Int      @default(0) @map("price_cents")
-  currency      String   @default("USD") @db.Char(3)
-  entitlements  Json     @default("[]")
-  isActive      Boolean  @default(true) @map("is_active")
-  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+/// DEC-060 — single-row site switches read on every request (no redeploy needed).
+model SiteSetting {
+  id                  String   @id @default("default") @db.VarChar(32)
+  paidSystemEnabled   Boolean  @default(false) @map("paid_system_enabled")
+  preliFreeSetCount   Int      @default(10) @map("preli_free_set_count")
+  writtenFreeSetCount Int      @default(10) @map("written_free_set_count")
+  /// Plain id (no FK) so deleting a staff account never blocks on settings history.
+  updatedById         String?  @map("updated_by_id") @db.Uuid
+  updatedAt           DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  subscriptions UserSubscription[]
-
-  @@map("subscription_plans")
+  @@map("site_settings")
 }
 
+/// DEC-060 — admin-managed packages. Soft-deleted once purchased so orders keep their package.
+model SubscriptionPackage {
+  id          String          @id @default(uuid()) @db.Uuid
+  name        String          @db.VarChar(120)
+  duration    PackageDuration
+  priceBdt    Decimal         @map("price_bdt") @db.Decimal(12, 2)
+  description String?
+  features    String[]        @default([])
+  isActive    Boolean         @default(true) @map("is_active")
+  sortOrder   Int             @default(0) @map("sort_order")
+  deletedAt   DateTime?       @map("deleted_at") @db.Timestamptz(3)
+  createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  subscriptions UserSubscription[]
+  orders        PaymentOrder[]
+  events        SubscriptionEvent[]
+
+  @@index([isActive, deletedAt, sortOrder])
+  @@map("subscription_packages")
+}
+
+/// DEC-060 — one row per user. Paid = not disabled and startsAt <= now < endsAt (checked per request).
 model UserSubscription {
-  id         String             @id @default(uuid()) @db.Uuid
-  userId     String             @map("user_id") @db.Uuid
-  planId     String             @map("plan_id") @db.Uuid
-  status     SubscriptionStatus @default(ACTIVE)
-  startsAt   DateTime           @map("starts_at") @db.Timestamptz(3)
-  endsAt     DateTime           @map("ends_at") @db.Timestamptz(3)
-  canceledAt DateTime?          @map("canceled_at") @db.Timestamptz(3)
-  createdAt  DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt  DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @unique @map("user_id") @db.Uuid
+  /// Last package applied; null for custom-date grants and migrated legacy subscriptions.
+  packageId    String?   @map("package_id") @db.Uuid
+  startsAt     DateTime  @map("starts_at") @db.Timestamptz(3)
+  endsAt       DateTime  @map("ends_at") @db.Timestamptz(3)
+  disabledAt   DateTime? @map("disabled_at") @db.Timestamptz(3)
+  disabledById String?   @map("disabled_by_id") @db.Uuid
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  plan     SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
-  payments Payment[]
+  user    User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  package SubscriptionPackage? @relation(fields: [packageId], references: [id], onDelete: SetNull)
 
-  @@index([userId, status])
   @@index([endsAt])
   @@map("user_subscriptions")
 }
 
-model Payment {
-  id                 String        @id @default(uuid()) @db.Uuid
-  userSubscriptionId String        @map("user_subscription_id") @db.Uuid
-  provider           String        @db.VarChar(64)
-  providerRef        String        @map("provider_ref") @db.VarChar(255)
-  amountCents        Int           @map("amount_cents")
-  currency           String        @db.Char(3)
-  status             PaymentStatus @default(PENDING)
-  rawPayload         Json?         @map("raw_payload")
-  createdAt          DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+/// DEC-060 — append-only log of every subscription change (manual, payment, migration).
+model SubscriptionEvent {
+  id             String                  @id @default(uuid()) @db.Uuid
+  userId         String                  @map("user_id") @db.Uuid
+  actorUserId    String?                 @map("actor_user_id") @db.Uuid
+  source         SubscriptionEventSource
+  action         SubscriptionEventAction
+  packageId      String?                 @map("package_id") @db.Uuid
+  paymentOrderId String?                 @map("payment_order_id") @db.Uuid
+  previousEndsAt DateTime?               @map("previous_ends_at") @db.Timestamptz(3)
+  newEndsAt      DateTime?               @map("new_ends_at") @db.Timestamptz(3)
+  note           String?                 @db.VarChar(500)
+  createdAt      DateTime                @default(now()) @map("created_at") @db.Timestamptz(3)
 
-  userSubscription UserSubscription @relation(fields: [userSubscriptionId], references: [id], onDelete: Cascade)
+  user         User                 @relation("SubscriptionEventUser", fields: [userId], references: [id], onDelete: Cascade)
+  actor        User?                @relation("SubscriptionEventActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+  package      SubscriptionPackage? @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  paymentOrder PaymentOrder?        @relation(fields: [paymentOrderId], references: [id], onDelete: SetNull)
 
-  @@unique([provider, providerRef])
-  @@map("payments")
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("subscription_events")
+}
+
+/// DEC-060 — SSLCommerz order. Amount / package snapshot taken at checkout; tran_id is the idempotency key.
+model PaymentOrder {
+  id            String             @id @default(uuid()) @db.Uuid
+  tranId        String             @unique @map("tran_id") @db.VarChar(64)
+  userId        String             @map("user_id") @db.Uuid
+  packageId     String             @map("package_id") @db.Uuid
+  packageName   String             @map("package_name") @db.VarChar(120)
+  duration      PackageDuration
+  amount        Decimal            @db.Decimal(12, 2)
+  currency      String             @default("BDT") @db.Char(3)
+  status        PaymentOrderStatus @default(PENDING)
+  valId         String?            @map("val_id") @db.VarChar(100)
+  bankTranId    String?            @map("bank_tran_id") @db.VarChar(100)
+  cardType      String?            @map("card_type") @db.VarChar(80)
+  gatewayStatus String?            @map("gateway_status") @db.VarChar(40)
+  riskLevel     Int?               @map("risk_level")
+  riskTitle     String?            @map("risk_title") @db.VarChar(200)
+  failureReason String?            @map("failure_reason") @db.VarChar(300)
+  validatedAt   DateTime?          @map("validated_at") @db.Timestamptz(3)
+  /// Set in the same transaction that extends the subscription — never applied twice.
+  appliedAt     DateTime?          @map("applied_at") @db.Timestamptz(3)
+  lastCheckedAt DateTime?          @map("last_checked_at") @db.Timestamptz(3)
+  createdAt     DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user    User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  package SubscriptionPackage @relation(fields: [packageId], references: [id], onDelete: Restrict)
+  logs    PaymentGatewayLog[]
+  events  SubscriptionEvent[]
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status, createdAt])
+  @@map("payment_orders")
+}
+
+/// DEC-060 — every gateway request / response / callback, secrets removed.
+model PaymentGatewayLog {
+  id             String   @id @default(uuid()) @db.Uuid
+  paymentOrderId String?  @map("payment_order_id") @db.Uuid
+  tranId         String?  @map("tran_id") @db.VarChar(64)
+  kind           String   @db.VarChar(40)
+  httpStatus     Int?     @map("http_status")
+  payload        Json
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  paymentOrder PaymentOrder? @relation(fields: [paymentOrderId], references: [id], onDelete: SetNull)
+
+  @@index([tranId])
+  @@index([createdAt])
+  @@map("payment_gateway_logs")
 }
 
 model AuditLog {
@@ -731,16 +831,16 @@ model LearningActivityEvent {
 
 /// Public guest timed exams (Quizzory-style; DEC-039). Separate from Question bank / PracticeSet.
 model Exam {
-  id                 String   @id @default(uuid()) @db.Uuid
-  title              String   @db.VarChar(200)
-  slug               String   @unique @db.VarChar(220)
-  description        String?
-  totalQuestions     Int      @map("total_questions")
-  durationInMinutes  Int      @map("duration_in_minutes")
-  isPublished        Boolean  @default(true) @map("is_published")
-  createdById        String?  @map("created_by_id") @db.Uuid
-  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  id                String   @id @default(uuid()) @db.Uuid
+  title             String   @db.VarChar(200)
+  slug              String   @unique @db.VarChar(220)
+  description       String?
+  totalQuestions    Int      @map("total_questions")
+  durationInMinutes Int      @map("duration_in_minutes")
+  isPublished       Boolean  @default(true) @map("is_published")
+  createdById       String?  @map("created_by_id") @db.Uuid
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   createdBy User?          @relation("ExamCreator", fields: [createdById], references: [id], onDelete: SetNull)
   questions ExamQuestion[]
@@ -782,20 +882,20 @@ model ExamQuestion {
 }
 
 model ExamAttempt {
-  id           String   @id @default(uuid()) @db.Uuid
-  examId       String   @map("exam_id") @db.Uuid
+  id             String   @id @default(uuid()) @db.Uuid
+  examId         String   @map("exam_id") @db.Uuid
   /// Set when submitter is authenticated (or claimed after register).
-  userId       String?  @map("user_id") @db.Uuid
-  userName     String   @map("user_name") @db.VarChar(120)
-  score        Int
-  correctCount Int      @map("correct_count")
-  wrongCount   Int      @map("wrong_count")
+  userId         String?  @map("user_id") @db.Uuid
+  userName       String   @map("user_name") @db.VarChar(120)
+  score          Int
+  correctCount   Int      @map("correct_count")
+  wrongCount     Int      @map("wrong_count")
   /// Map of questionId → selected option text (or empty if skipped).
-  userAnswers  Json     @map("user_answers")
+  userAnswers    Json     @map("user_answers")
   /// Wall-clock seconds from client start to submit (informational).
-  elapsedSeconds Int?   @map("elapsed_seconds")
-  timedOut     Boolean  @default(false) @map("timed_out")
-  submittedAt  DateTime @default(now()) @map("submitted_at") @db.Timestamptz(3)
+  elapsedSeconds Int?     @map("elapsed_seconds")
+  timedOut       Boolean  @default(false) @map("timed_out")
+  submittedAt    DateTime @default(now()) @map("submitted_at") @db.Timestamptz(3)
 
   exam Exam  @relation(fields: [examId], references: [id], onDelete: Cascade)
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -821,19 +921,21 @@ model ModelTestCategory {
 /// Public guest Model Tests — parallel to Exam (DEC-039) with preamble-aware Excel import.
 /// Does not reuse bank `Question` or guest `Exam` tables.
 model ModelTest {
-  id                String   @id @default(uuid()) @db.Uuid
-  title             String   @db.VarChar(200)
-  slug              String   @unique @db.VarChar(220)
+  id                String        @id @default(uuid()) @db.Uuid
+  title             String        @db.VarChar(200)
+  slug              String        @unique @db.VarChar(220)
   description       String?
   /// Optional year extracted from spreadsheet preamble / admin input (listing filter).
-  examYear          Int?     @map("exam_year")
-  categoryId        String?  @map("category_id") @db.Uuid
-  totalQuestions    Int      @map("total_questions")
-  durationInMinutes Int      @map("duration_in_minutes")
-  isPublished       Boolean  @default(true) @map("is_published")
-  createdById       String?  @map("created_by_id") @db.Uuid
-  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  examYear          Int?          @map("exam_year")
+  categoryId        String?       @map("category_id") @db.Uuid
+  totalQuestions    Int           @map("total_questions")
+  durationInMinutes Int           @map("duration_in_minutes")
+  isPublished       Boolean       @default(true) @map("is_published")
+  /// DEC-060 — PAID tests are locked for free users while the paid system is on.
+  access            ContentAccess @default(FREE)
+  createdById       String?       @map("created_by_id") @db.Uuid
+  createdAt         DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   category  ModelTestCategory?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   createdBy User?               @relation("ModelTestCreator", fields: [createdById], references: [id], onDelete: SetNull)
@@ -863,20 +965,20 @@ model ModelTestQuestion {
 }
 
 model ModelTestAttempt {
-  id            String   @id @default(uuid()) @db.Uuid
-  modelTestId   String   @map("model_test_id") @db.Uuid
+  id             String   @id @default(uuid()) @db.Uuid
+  modelTestId    String   @map("model_test_id") @db.Uuid
   /// Set when submitter is authenticated (or claimed after register).
-  userId        String?  @map("user_id") @db.Uuid
-  userName      String   @map("user_name") @db.VarChar(120)
-  score         Int
-  correctCount  Int      @map("correct_count")
-  wrongCount    Int      @map("wrong_count")
-  skippedCount  Int      @default(0) @map("skipped_count")
+  userId         String?  @map("user_id") @db.Uuid
+  userName       String   @map("user_name") @db.VarChar(120)
+  score          Int
+  correctCount   Int      @map("correct_count")
+  wrongCount     Int      @map("wrong_count")
+  skippedCount   Int      @default(0) @map("skipped_count")
   /// Map of questionId → selected option text (or empty if skipped).
-  userAnswers   Json     @map("user_answers")
-  elapsedSeconds Int?    @map("elapsed_seconds")
-  timedOut      Boolean  @default(false) @map("timed_out")
-  submittedAt   DateTime @default(now()) @map("submitted_at") @db.Timestamptz(3)
+  userAnswers    Json     @map("user_answers")
+  elapsedSeconds Int?     @map("elapsed_seconds")
+  timedOut       Boolean  @default(false) @map("timed_out")
+  submittedAt    DateTime @default(now()) @map("submitted_at") @db.Timestamptz(3)
 
   modelTest ModelTest @relation(fields: [modelTestId], references: [id], onDelete: Cascade)
   user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -922,9 +1024,9 @@ model PracticeSet {
   createdAt            DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt            DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  category    Category?          @relation("PracticeSetCategory", fields: [categoryId], references: [id], onDelete: SetNull)
-  subcategory Category?          @relation("PracticeSetSubcategory", fields: [subcategoryId], references: [id], onDelete: SetNull)
-  createdBy   User?              @relation("PracticeSetCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  category    Category?         @relation("PracticeSetCategory", fields: [categoryId], references: [id], onDelete: SetNull)
+  subcategory Category?         @relation("PracticeSetSubcategory", fields: [subcategoryId], references: [id], onDelete: SetNull)
+  createdBy   User?             @relation("PracticeSetCreator", fields: [createdById], references: [id], onDelete: SetNull)
   items       PracticeSetItem[]
   attempts    PracticeAttempt[]
 
@@ -981,20 +1083,20 @@ model PracticeAttempt {
 }
 
 model PracticeAttemptAnswer {
-  id               String    @id @default(uuid()) @db.Uuid
-  attemptId        String    @map("attempt_id") @db.Uuid
-  questionId       String    @map("question_id") @db.Uuid
-  selectedOptionId String?   @map("selected_option_id") @db.Uuid
-  isCorrect        Boolean?  @map("is_correct")
+  id                      String    @id @default(uuid()) @db.Uuid
+  attemptId               String    @map("attempt_id") @db.Uuid
+  questionId              String    @map("question_id") @db.Uuid
+  selectedOptionId        String?   @map("selected_option_id") @db.Uuid
+  isCorrect               Boolean?  @map("is_correct")
   /// Learner flag for later review (does not affect scoring).
-  markedForReview  Boolean   @default(false) @map("marked_for_review")
+  markedForReview         Boolean   @default(false) @map("marked_for_review")
   /// Last progress save / final answer time (mid-attempt autosave).
-  answeredAt       DateTime? @map("answered_at") @db.Timestamptz(3)
+  answeredAt              DateTime? @map("answered_at") @db.Timestamptz(3)
   /// Snapshots so review survives later MCQ edits (DEC-035).
-  questionTitleSnapshot    String? @map("question_title_snapshot") @db.VarChar(200)
-  questionContentSnapshot  String? @map("question_content_snapshot")
-  explanationSnapshot      String? @map("explanation_snapshot")
-  optionsSnapshot          Json?   @map("options_snapshot")
+  questionTitleSnapshot   String?   @map("question_title_snapshot") @db.VarChar(200)
+  questionContentSnapshot String?   @map("question_content_snapshot")
+  explanationSnapshot     String?   @map("explanation_snapshot")
+  optionsSnapshot         Json?     @map("options_snapshot")
 
   attempt        PracticeAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
   question       Question        @relation(fields: [questionId], references: [id], onDelete: Cascade)
@@ -1007,40 +1109,40 @@ model PracticeAttemptAnswer {
 
 /// Excel/CSV bulk upload batch with unique identity + file hash (DEC-024).
 model QuestionUploadBatch {
-  id                 String               @id @default(uuid()) @db.Uuid
-  batchCode          String               @unique @map("batch_code") @db.VarChar(80)
-  displayName        String               @map("display_name") @db.VarChar(200)
-  description        String?
-  originalFilename   String               @map("original_filename") @db.VarChar(255)
-  mimeType           String               @map("mime_type") @db.VarChar(127)
-  fileSha256         String               @map("file_sha256") @db.VarChar(64)
-  storagePath        String               @map("storage_path") @db.VarChar(500)
-  status             QuestionUploadStatus @default(VALIDATED)
-  totalRows          Int                  @default(0) @map("total_rows")
-  validCount         Int                  @default(0) @map("valid_count")
-  invalidCount       Int                  @default(0) @map("invalid_count")
-  duplicateCount     Int                  @default(0) @map("duplicate_count")
-  importedCount      Int                  @default(0) @map("imported_count")
-  skippedCount       Int                  @default(0) @map("skipped_count")
-  failedCount        Int                  @default(0) @map("failed_count")
-  subjectHint        String?              @map("subject_hint") @db.VarChar(120)
-  topicHint          String?              @map("topic_hint") @db.VarChar(120)
-  examCategoryHint   String?              @map("exam_category_hint") @db.VarChar(120)
+  id                   String               @id @default(uuid()) @db.Uuid
+  batchCode            String               @unique @map("batch_code") @db.VarChar(80)
+  displayName          String               @map("display_name") @db.VarChar(200)
+  description          String?
+  originalFilename     String               @map("original_filename") @db.VarChar(255)
+  mimeType             String               @map("mime_type") @db.VarChar(127)
+  fileSha256           String               @map("file_sha256") @db.VarChar(64)
+  storagePath          String               @map("storage_path") @db.VarChar(500)
+  status               QuestionUploadStatus @default(VALIDATED)
+  totalRows            Int                  @default(0) @map("total_rows")
+  validCount           Int                  @default(0) @map("valid_count")
+  invalidCount         Int                  @default(0) @map("invalid_count")
+  duplicateCount       Int                  @default(0) @map("duplicate_count")
+  importedCount        Int                  @default(0) @map("imported_count")
+  skippedCount         Int                  @default(0) @map("skipped_count")
+  failedCount          Int                  @default(0) @map("failed_count")
+  subjectHint          String?              @map("subject_hint") @db.VarChar(120)
+  topicHint            String?              @map("topic_hint") @db.VarChar(120)
+  examCategoryHint     String?              @map("exam_category_hint") @db.VarChar(120)
   /// First-column text above the MCQ header row (shown before questions on the set page).
-  sheetPreamble      String?              @map("sheet_preamble")
+  sheetPreamble        String?              @map("sheet_preamble")
   /// Primary exam year for this collection (public year filter; derived from questionDate when set).
-  examYear           String?              @map("exam_year") @db.VarChar(16)
+  examYear             String?              @map("exam_year") @db.VarChar(16)
   /// Collection question date (newest / primary); used for public set sorting.
-  questionDate       DateTime?            @map("question_date") @db.Timestamptz(3)
-  duplicateFileBatchId String?            @map("duplicate_file_batch_id") @db.Uuid
-  errorMessage       String?              @map("error_message")
-  uploadedById       String               @map("uploaded_by_id") @db.Uuid
-  importedAt         DateTime?            @map("imported_at") @db.Timestamptz(3)
-  archivedAt         DateTime?            @map("archived_at") @db.Timestamptz(3)
-  createdAt          DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt          DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
+  questionDate         DateTime?            @map("question_date") @db.Timestamptz(3)
+  duplicateFileBatchId String?              @map("duplicate_file_batch_id") @db.Uuid
+  errorMessage         String?              @map("error_message")
+  uploadedById         String               @map("uploaded_by_id") @db.Uuid
+  importedAt           DateTime?            @map("imported_at") @db.Timestamptz(3)
+  archivedAt           DateTime?            @map("archived_at") @db.Timestamptz(3)
+  createdAt            DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  uploadedBy User                @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+  uploadedBy User                           @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
   rows       QuestionImportRow[]
   questions  Question[]
   placements QuestionUploadBatchPlacement[]
@@ -1101,8 +1203,8 @@ model QuestionImportRow {
   createdQuestionId  String?                 @map("created_question_id") @db.Uuid
   createdAt          DateTime                @default(now()) @map("created_at") @db.Timestamptz(3)
 
-  batch            QuestionUploadBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
-  createdQuestion  Question?           @relation("ImportRowCreatedQuestion", fields: [createdQuestionId], references: [id], onDelete: SetNull)
+  batch           QuestionUploadBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  createdQuestion Question?           @relation("ImportRowCreatedQuestion", fields: [createdQuestionId], references: [id], onDelete: SetNull)
 
   @@unique([batchId, rowNumber])
   @@index([batchId, status])
@@ -1112,13 +1214,13 @@ model QuestionImportRow {
 
 /// Guest visitor identity for support chat (DEC-029). Opaque token hashed in DB.
 model SupportGuestSession {
-  id             String    @id @default(uuid()) @db.Uuid
-  tokenHash      String    @unique @map("token_hash")
-  name           String    @db.VarChar(120)
-  whatsappNumber String    @map("whatsapp_number") @db.VarChar(32)
-  linkedUserId   String?   @map("linked_user_id") @db.Uuid
-  expiresAt      DateTime  @map("expires_at") @db.Timestamptz(3)
-  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  id             String   @id @default(uuid()) @db.Uuid
+  tokenHash      String   @unique @map("token_hash")
+  name           String   @db.VarChar(120)
+  whatsappNumber String   @map("whatsapp_number") @db.VarChar(32)
+  linkedUserId   String?  @map("linked_user_id") @db.Uuid
+  expiresAt      DateTime @map("expires_at") @db.Timestamptz(3)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   linkedUser    User?                 @relation("SupportGuestLinkedUser", fields: [linkedUserId], references: [id], onDelete: SetNull)
   conversations SupportConversation[]
@@ -1147,11 +1249,11 @@ model SupportConversation {
   createdAt          DateTime                  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt          DateTime                  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  user         User?                 @relation("SupportConversationUser", fields: [userId], references: [id], onDelete: Cascade)
-  guestSession SupportGuestSession?  @relation(fields: [guestSessionId], references: [id], onDelete: Cascade)
-  assignedAdmin User?                @relation("SupportConversationAssignee", fields: [assignedAdminId], references: [id], onDelete: SetNull)
-  messages     SupportMessage[]
-  notes        SupportInternalNote[]
+  user          User?                 @relation("SupportConversationUser", fields: [userId], references: [id], onDelete: Cascade)
+  guestSession  SupportGuestSession?  @relation(fields: [guestSessionId], references: [id], onDelete: Cascade)
+  assignedAdmin User?                 @relation("SupportConversationAssignee", fields: [assignedAdminId], references: [id], onDelete: SetNull)
+  messages      SupportMessage[]
+  notes         SupportInternalNote[]
 
   @@index([status, lastMessageAt(sort: Desc)])
   @@index([userId, status])
@@ -1173,8 +1275,8 @@ model SupportMessage {
   readAt          DateTime?          @map("read_at") @db.Timestamptz(3)
   createdAt       DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
 
-  conversation SupportConversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  senderUser   User?                @relation("SupportMessageSender", fields: [senderUserId], references: [id], onDelete: SetNull)
+  conversation SupportConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderUser   User?               @relation("SupportMessageSender", fields: [senderUserId], references: [id], onDelete: SetNull)
   attachments  SupportAttachment[]
 
   @@unique([conversationId, clientMessageId])
@@ -1185,11 +1287,11 @@ model SupportMessage {
 }
 
 model SupportAttachment {
-  id               String   @id @default(uuid()) @db.Uuid
-  messageId        String   @map("message_id") @db.Uuid
-  mediaAssetId     String   @map("media_asset_id") @db.Uuid
-  originalFilename String   @map("original_filename") @db.VarChar(255)
-  mimeType         String   @map("mime_type") @db.VarChar(127)
+  id               String @id @default(uuid()) @db.Uuid
+  messageId        String @map("message_id") @db.Uuid
+  mediaAssetId     String @map("media_asset_id") @db.Uuid
+  originalFilename String @map("original_filename") @db.VarChar(255)
+  mimeType         String @map("mime_type") @db.VarChar(127)
   bytes            Int
 
   message    SupportMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
@@ -1217,27 +1319,27 @@ model SupportInternalNote {
 
 /// DEC-040 — Written Question Bank (descriptive / model-answer questions; parallel to Preli MCQ bank).
 model WrittenQuestion {
-  id             String         @id @default(uuid()) @db.Uuid
-  title          String         @db.VarChar(200)
-  content        String
-  modelAnswer    String?        @map("model_answer")
-  marks          Decimal?       @map("marks") @db.Decimal(6, 2)
-  categoryId     String         @map("category_id") @db.Uuid
-  subcategoryId  String?        @map("subcategory_id") @db.Uuid
-  status         QuestionStatus @default(DRAFT)
-  examTags       String[]       @default([]) @map("exam_tags")
-  sourceNote     String?        @map("source_note") @db.VarChar(240)
-  sourceSerial   String?        @map("source_serial") @db.VarChar(32)
-  examYear       String?        @map("exam_year") @db.VarChar(16)
-  questionDate   DateTime?      @map("question_date") @db.Timestamptz(3)
-  sectionTitle   String?        @map("section_title") @db.VarChar(500)
-  contentHash    String?        @map("content_hash") @db.VarChar(64)
-  uploadBatchId  String?        @map("upload_batch_id") @db.Uuid
-  createdById    String?        @map("created_by_id") @db.Uuid
-  publishedAt    DateTime?      @map("published_at") @db.Timestamptz(3)
-  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt      DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
-  deletedAt      DateTime?      @map("deleted_at") @db.Timestamptz(3)
+  id            String         @id @default(uuid()) @db.Uuid
+  title         String         @db.VarChar(200)
+  content       String
+  modelAnswer   String?        @map("model_answer")
+  marks         Decimal?       @map("marks") @db.Decimal(6, 2)
+  categoryId    String         @map("category_id") @db.Uuid
+  subcategoryId String?        @map("subcategory_id") @db.Uuid
+  status        QuestionStatus @default(DRAFT)
+  examTags      String[]       @default([]) @map("exam_tags")
+  sourceNote    String?        @map("source_note") @db.VarChar(240)
+  sourceSerial  String?        @map("source_serial") @db.VarChar(32)
+  examYear      String?        @map("exam_year") @db.VarChar(16)
+  questionDate  DateTime?      @map("question_date") @db.Timestamptz(3)
+  sectionTitle  String?        @map("section_title") @db.VarChar(500)
+  contentHash   String?        @map("content_hash") @db.VarChar(64)
+  uploadBatchId String?        @map("upload_batch_id") @db.Uuid
+  createdById   String?        @map("created_by_id") @db.Uuid
+  publishedAt   DateTime?      @map("published_at") @db.Timestamptz(3)
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deletedAt     DateTime?      @map("deleted_at") @db.Timestamptz(3)
 
   category    Category            @relation("WrittenQuestionCategory", fields: [categoryId], references: [id], onDelete: Restrict)
   subcategory Category?           @relation("WrittenQuestionSubcategory", fields: [subcategoryId], references: [id], onDelete: SetNull)
@@ -1353,27 +1455,27 @@ model WrittenImportRow {
 
 /// Topic Base Question Analysis upload batch (DEC-042). One-shot import; no row rejection.
 model TopicUploadBatch {
-  id               String             @id @default(uuid()) @db.Uuid
-  batchCode        String             @unique @map("batch_code") @db.VarChar(80)
-  displayName      String             @map("display_name") @db.VarChar(200)
-  originalFilename String             @map("original_filename") @db.VarChar(255)
-  fileSha256       String             @map("file_sha256") @db.VarChar(64)
-  categoryId       String             @map("category_id") @db.Uuid
-  subcategoryId    String             @map("subcategory_id") @db.Uuid
+  id               String               @id @default(uuid()) @db.Uuid
+  batchCode        String               @unique @map("batch_code") @db.VarChar(80)
+  displayName      String               @map("display_name") @db.VarChar(200)
+  originalFilename String               @map("original_filename") @db.VarChar(255)
+  fileSha256       String               @map("file_sha256") @db.VarChar(64)
+  categoryId       String               @map("category_id") @db.Uuid
+  subcategoryId    String               @map("subcategory_id") @db.Uuid
   /// Optional Level-3 Topic child category (DEC-042 three-level hierarchy).
-  childCategoryId  String?            @map("child_category_id") @db.Uuid
+  childCategoryId  String?              @map("child_category_id") @db.Uuid
   status           QuestionUploadStatus @default(COMPLETED)
-  totalRows        Int                @default(0) @map("total_rows")
-  importedCount    Int                @default(0) @map("imported_count")
-  uploadedById     String             @map("uploaded_by_id") @db.Uuid
-  importedAt       DateTime?          @map("imported_at") @db.Timestamptz(3)
-  createdAt        DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt        DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+  totalRows        Int                  @default(0) @map("total_rows")
+  importedCount    Int                  @default(0) @map("imported_count")
+  uploadedById     String               @map("uploaded_by_id") @db.Uuid
+  importedAt       DateTime?            @map("imported_at") @db.Timestamptz(3)
+  createdAt        DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  uploadedBy    User           @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
-  category      Category       @relation("TopicBatchCategory", fields: [categoryId], references: [id], onDelete: Restrict)
-  subcategory   Category       @relation("TopicBatchSubcategory", fields: [subcategoryId], references: [id], onDelete: Restrict)
-  childCategory Category?      @relation("TopicBatchChildCategory", fields: [childCategoryId], references: [id], onDelete: Restrict)
+  uploadedBy    User            @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+  category      Category        @relation("TopicBatchCategory", fields: [categoryId], references: [id], onDelete: Restrict)
+  subcategory   Category        @relation("TopicBatchSubcategory", fields: [subcategoryId], references: [id], onDelete: Restrict)
+  childCategory Category?       @relation("TopicBatchChildCategory", fields: [childCategoryId], references: [id], onDelete: Restrict)
   questions     TopicQuestion[]
 
   @@index([status, createdAt(sort: Desc)])
@@ -1402,28 +1504,28 @@ model SocialLink {
 
 /// Topic Base MCQ (8-column Excel). Always imported; duplicates / soft gaps allowed.
 model TopicQuestion {
-  id               String           @id @default(uuid()) @db.Uuid
-  batchId          String           @map("batch_id") @db.Uuid
-  categoryId       String           @map("category_id") @db.Uuid
-  subcategoryId    String           @map("subcategory_id") @db.Uuid
+  id              String   @id @default(uuid()) @db.Uuid
+  batchId         String   @map("batch_id") @db.Uuid
+  categoryId      String   @map("category_id") @db.Uuid
+  subcategoryId   String   @map("subcategory_id") @db.Uuid
   /// Optional Level-3 Topic child category.
-  childCategoryId  String?          @map("child_category_id") @db.Uuid
-  sourceSerial     String?          @map("source_serial") @db.VarChar(32)
-  questionText     String           @map("question_text")
+  childCategoryId String?  @map("child_category_id") @db.Uuid
+  sourceSerial    String?  @map("source_serial") @db.VarChar(32)
+  questionText    String   @map("question_text")
   /// Excel `পরীক্ষার নাম ও সাল`.
-  examLabel        String?          @map("exam_label") @db.VarChar(240)
-  optionA          String           @default("") @map("option_a")
-  optionB          String           @default("") @map("option_b")
-  optionC          String           @default("") @map("option_c")
-  optionD          String           @default("") @map("option_d")
+  examLabel       String?  @map("exam_label") @db.VarChar(240)
+  optionA         String   @default("") @map("option_a")
+  optionB         String   @default("") @map("option_b")
+  optionC         String   @default("") @map("option_c")
+  optionD         String   @default("") @map("option_d")
   /// Normalized key a|b|c|d when parseable; null when blank/unrecognized (still imported).
-  correctKey       String?          @map("correct_key") @db.VarChar(1)
+  correctKey      String?  @map("correct_key") @db.VarChar(1)
   /// Resolved option text for correctKey (nullable).
-  correctAnswer    String?          @map("correct_answer")
-  sortOrder        Int              @default(0) @map("sort_order")
-  rowNumber        Int              @map("row_number")
-  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+  correctAnswer   String?  @map("correct_answer")
+  sortOrder       Int      @default(0) @map("sort_order")
+  rowNumber       Int      @map("row_number")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   batch         TopicUploadBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
   category      Category         @relation("TopicQuestionCategory", fields: [categoryId], references: [id], onDelete: Restrict)

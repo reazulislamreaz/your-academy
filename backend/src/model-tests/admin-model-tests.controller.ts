@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -14,7 +15,12 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { createSuccessResponse, cursorPaginationMeta } from '@your-academy/shared';
+import { ContentAccess } from '@prisma/client';
+import {
+  createErrorResponse,
+  createSuccessResponse,
+  cursorPaginationMeta,
+} from '@your-academy/shared';
 import type { Response } from 'express';
 import { memoryStorage } from 'multer';
 import type { RequestUser } from '../auth/auth.types';
@@ -27,6 +33,12 @@ import { parseLimit } from '../common/pagination';
 import { newRequestId } from '../common/request-id';
 import { UpdateModelTestGuideDto } from './dto/update-model-test-guide.dto';
 import { ModelTestsService } from './model-tests.service';
+
+/** DEC-060 — Free / Paid toggle value (allowlisted). */
+function parseAccess(raw: unknown): ContentAccess | undefined {
+  const v = typeof raw === 'string' ? raw.trim().toUpperCase() : '';
+  return v === ContentAccess.FREE || v === ContentAccess.PAID ? v : undefined;
+}
 
 @Controller('api/v1/admin/model-tests')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -107,6 +119,7 @@ export class AdminModelTestsController {
     @Body('examYear') examYear?: string,
     @Body('categoryId') categoryId?: string,
     @Body('isPublished') isPublished?: string,
+    @Body('access') access?: string,
   ) {
     const duration = Number(durationInMinutes);
     const yearRaw = examYear?.trim() ? Number(examYear) : null;
@@ -122,6 +135,7 @@ export class AdminModelTestsController {
       examYear: yearRaw != null && Number.isFinite(yearRaw) ? yearRaw : null,
       categoryId: categoryId?.trim() || null,
       isPublished: published,
+      access: parseAccess(access) ?? ContentAccess.FREE,
       file,
       createdById: user.userId,
     });
@@ -140,14 +154,22 @@ export class AdminModelTestsController {
       examYear?: number | null;
       categoryId?: string | null;
       isPublished?: boolean;
+      access?: string;
     },
   ) {
+    const access = body.access === undefined ? undefined : parseAccess(body.access);
+    if (body.access !== undefined && !access) {
+      throw new BadRequestException(
+        createErrorResponse('INVALID_ACCESS', 'access must be FREE or PAID', newRequestId()),
+      );
+    }
     const hasMeta =
       body.title !== undefined ||
       body.description !== undefined ||
       body.durationInMinutes !== undefined ||
       body.examYear !== undefined ||
-      body.categoryId !== undefined;
+      body.categoryId !== undefined ||
+      access !== undefined;
 
     if (typeof body.isPublished === 'boolean' && !hasMeta) {
       const data = await this.modelTests.setPublished(id, body.isPublished);
@@ -164,6 +186,7 @@ export class AdminModelTestsController {
       durationInMinutes: body.durationInMinutes,
       examYear: body.examYear,
       categoryId: body.categoryId,
+      access,
     });
     return createSuccessResponse(data, newRequestId());
   }

@@ -11,7 +11,7 @@ import { newRequestId } from '../common/request-id';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../database/prisma.service';
 import { LearningActivityService } from '../learning-activity/learning-activity.service';
-import { AccessControlService } from '../subscriptions/access-control.service';
+import { AccessPolicyService } from '../billing/access-policy.service';
 import { parseQuestionDate } from '../question-import/question-date.util';
 import { hashQuestionIdentity } from '../question-import/question-normalize';
 import type { CreateQuestionDto } from './dto/create-question.dto';
@@ -21,7 +21,7 @@ import type { UpdateQuestionDto } from './dto/update-question.dto';
 export class QuestionsService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly access: AccessControlService,
+    private readonly access: AccessPolicyService,
     private readonly audit: AuditService,
     private readonly learningActivity: LearningActivityService,
   ) {}
@@ -277,7 +277,10 @@ export class QuestionsService {
     },
   ) {
     const limit = Math.min(params.limit ?? 20, 100);
+    // DEC-060: questions of locked Preli sets are left out for viewers without access.
+    const open = await this.access.openPreliQuestionsWhere(await this.access.resolve(user));
     const where: Prisma.QuestionWhereInput = {
+      ...(open ? { AND: [open] } : {}),
       status: QuestionStatus.PUBLISHED,
       deletedAt: null,
       ...(params.categoryId ? { categoryId: params.categoryId } : {}),
@@ -330,8 +333,10 @@ export class QuestionsService {
       );
     }
 
-    const dbUser = await this.prisma.user.findUniqueOrThrow({ where: { id: user.userId } });
-    const canView = await this.access.canViewAnswers(dbUser);
+    await this.access.assertAccess(await this.access.resolve(user), {
+      kind: 'PRELI_QUESTION',
+      uploadBatchId: question.uploadBatchId,
+    });
     const bookmark = await this.prisma.questionBookmark.findUnique({
       where: {
         userId_questionId: { userId: user.userId, questionId: id },
@@ -343,12 +348,13 @@ export class QuestionsService {
       },
     });
 
-    const options = question.options.map(({ id: oid, label, content, isCorrect, sortOrder }) =>
-      this.access.stripAnswerFields(
-        { id: oid, label, content, isCorrect, sortOrder },
-        canView,
-      ),
-    );
+    const options = question.options.map(({ id: oid, label, content, isCorrect, sortOrder }) => ({
+      id: oid,
+      label,
+      content,
+      isCorrect,
+      sortOrder,
+    }));
 
     return {
       id: question.id,
@@ -360,28 +366,28 @@ export class QuestionsService {
       category: question.category,
       subcategory: question.subcategory,
       options,
-      explanation: canView ? (question.explanation ?? undefined) : undefined,
+      explanation: question.explanation ?? null,
       publishedAt: question.publishedAt,
       bookmarked: Boolean(bookmark),
       collection: bookmark?.collection ?? null,
-      answersVisible: canView,
     };
   }
 
-  /**
-   * Record a practice check. Correctness is computed server-side so post-trial
-   * learners still get personal analytics without answer fields on GET detail.
-   */
+  /** Record a practice check; correctness is computed server-side. */
   async recordAttempt(user: RequestUser, questionId: string, selectedOptionId: string) {
     const question = await this.prisma.question.findFirst({
       where: { id: questionId, status: QuestionStatus.PUBLISHED, deletedAt: null },
-      select: { id: true, categoryId: true, subcategoryId: true },
+      select: { id: true, categoryId: true, subcategoryId: true, uploadBatchId: true },
     });
     if (!question) {
       throw new NotFoundException(
         createErrorResponse('QUESTION_NOT_FOUND', 'Question not found', newRequestId()),
       );
     }
+    await this.access.assertAccess(await this.access.resolve(user), {
+      kind: 'PRELI_QUESTION',
+      uploadBatchId: question.uploadBatchId,
+    });
 
     const option = await this.prisma.questionOption.findFirst({
       where: { id: selectedOptionId, questionId },
@@ -423,20 +429,17 @@ export class QuestionsService {
       meta: { attemptId: attempt.id },
     });
 
-    const dbUser = await this.prisma.user.findUniqueOrThrow({ where: { id: user.userId } });
-    const canView = await this.access.canViewAnswers(dbUser);
-
     return {
       id: attempt.id,
       questionId: attempt.questionId,
       selectedOptionId: attempt.selectedOptionId,
       createdAt: attempt.createdAt.toISOString(),
-      // Only echo correctness when answers are already entitled on the detail UI.
-      ...(canView ? { isCorrect: attempt.isCorrect } : {}),
+      isCorrect: attempt.isCorrect,
     };
   }
 
   async navigation(
+    user: RequestUser,
     id: string,
     filters: {
       categoryId?: string;
@@ -455,7 +458,10 @@ export class QuestionsService {
       );
     }
 
+    // Prev / next never point into a locked set (DEC-060).
+    const open = await this.access.openPreliQuestionsWhere(await this.access.resolve(user));
     const base: Prisma.QuestionWhereInput = {
+      ...(open ? { AND: [open] } : {}),
       status: QuestionStatus.PUBLISHED,
       deletedAt: null,
       ...(filters.categoryId ? { categoryId: filters.categoryId } : {}),

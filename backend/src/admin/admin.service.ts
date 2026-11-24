@@ -9,11 +9,11 @@ import {
   PracticeAttemptStatus,
   Prisma,
   QuestionStatus,
-  SubscriptionStatus,
   UserRole,
   UserStatus,
 } from '@prisma/client';
 import { createErrorResponse } from '@your-academy/shared';
+import { SubscriptionsService } from '../billing/subscriptions.service';
 import { newRequestId } from '../common/request-id';
 import { PrismaService } from '../database/prisma.service';
 import {
@@ -28,6 +28,7 @@ export class AdminService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly learningActivity: LearningActivityService,
+    private readonly subscriptions: SubscriptionsService,
   ) {}
 
   async dashboard() {
@@ -39,7 +40,7 @@ export class AdminService {
     const [
       totalUsers,
       activeUsers,
-      trialActiveUsers,
+      paidActiveUsers,
       totalQuestions,
       publishedQuestions,
       draftQuestions,
@@ -59,12 +60,12 @@ export class AdminService {
     ] = await Promise.all([
       this.prisma.user.count({ where: { deletedAt: null } }),
       this.prisma.user.count({ where: { status: UserStatus.ACTIVE, deletedAt: null } }),
-      this.prisma.user.count({
+      this.prisma.userSubscription.count({
         where: {
-          deletedAt: null,
-          status: UserStatus.ACTIVE,
-          trialStartedAt: { lte: now },
-          trialEndsAt: { gt: now },
+          disabledAt: null,
+          startsAt: { lte: now },
+          endsAt: { gt: now },
+          user: { deletedAt: null },
         },
       }),
       this.prisma.question.count({ where: { deletedAt: null } }),
@@ -130,13 +131,8 @@ export class AdminService {
       }),
     ]);
 
-    const trialExpiredUsers = await this.prisma.user.count({
-      where: {
-        deletedAt: null,
-        status: UserStatus.ACTIVE,
-        trialEndsAt: { lte: now },
-        role: UserRole.USER,
-      },
+    const paidExpiredUsers = await this.prisma.userSubscription.count({
+      where: { disabledAt: null, endsAt: { lte: now }, user: { deletedAt: null } },
     });
 
     const subjectIds = topSubjectsRaw.map((r) => r.categoryId);
@@ -152,8 +148,8 @@ export class AdminService {
       users: {
         total: totalUsers,
         active: activeUsers,
-        trialActive: trialActiveUsers,
-        trialExpired: trialExpiredUsers,
+        paidActive: paidActiveUsers,
+        paidExpired: paidExpiredUsers,
         online: onlineCount,
         newRegistrations24h,
       },
@@ -239,8 +235,6 @@ export class AdminService {
         email: true,
         role: true,
         status: true,
-        trialEndsAt: true,
-        trialStartedAt: true,
         createdAt: true,
         avatarAssetId: true,
         avatarAsset: {
@@ -258,17 +252,8 @@ export class AdminService {
             practiceAttempts: true,
           },
         },
-        subscriptions: {
-          where: { status: SubscriptionStatus.ACTIVE, endsAt: { gt: now } },
-          orderBy: { endsAt: 'desc' },
-          take: 1,
-          select: {
-            id: true,
-            status: true,
-            startsAt: true,
-            endsAt: true,
-            plan: { select: { id: true, code: true, name: true } },
-          },
+        subscription: {
+          select: { startsAt: true, endsAt: true, disabledAt: true, package: { select: { name: true } } },
         },
       },
     });
@@ -281,8 +266,6 @@ export class AdminService {
         const lastSession = u.browsingSessions[0] ?? null;
         const online =
           lastSession != null && lastSession.lastHeartbeatAt.getTime() >= onlineSince.getTime();
-        const trialActive = u.trialEndsAt > now && u.trialStartedAt <= now;
-        const sub = u.subscriptions[0] ?? null;
         return {
           id: u.id,
           name: u.name,
@@ -290,24 +273,13 @@ export class AdminService {
           email: u.email,
           role: u.role,
           status: u.status,
-          trialEndsAt: u.trialEndsAt.toISOString(),
-          trialStartedAt: u.trialStartedAt.toISOString(),
-          trialActive,
           createdAt: u.createdAt.toISOString(),
           avatarAssetId: u.avatarAssetId,
           lastHeartbeatAt: lastSession?.lastHeartbeatAt.toISOString() ?? null,
           online,
           attemptCount: u._count.questionAttempts,
           practiceAttemptCount: u._count.practiceAttempts,
-          subscription: sub
-            ? {
-                id: sub.id,
-                status: sub.status,
-                startsAt: sub.startsAt.toISOString(),
-                endsAt: sub.endsAt.toISOString(),
-                plan: sub.plan,
-              }
-            : null,
+          subscription: this.subscriptions.toSummary(u.subscription, now),
         };
       }),
       nextCursor,
@@ -327,8 +299,6 @@ export class AdminService {
         email: true,
         role: true,
         status: true,
-        trialStartedAt: true,
-        trialEndsAt: true,
         createdAt: true,
         onboardingCompletedAt: true,
         preferredCategoryIds: true,
@@ -336,17 +306,8 @@ export class AdminService {
         avatarAsset: {
           select: { id: true, publicId: true, deliveryType: true },
         },
-        subscriptions: {
-          orderBy: { endsAt: 'desc' },
-          take: 5,
-          select: {
-            id: true,
-            status: true,
-            startsAt: true,
-            endsAt: true,
-            canceledAt: true,
-            plan: { select: { id: true, code: true, name: true, durationDays: true } },
-          },
+        subscription: {
+          select: { startsAt: true, endsAt: true, disabledAt: true, package: { select: { name: true } } },
         },
       },
     });
@@ -479,10 +440,6 @@ export class AdminService {
         };
       });
 
-    const activeSub =
-      user.subscriptions.find((s) => s.status === SubscriptionStatus.ACTIVE && s.endsAt > now) ??
-      null;
-
     return {
       profile: {
         id: user.id,
@@ -491,9 +448,6 @@ export class AdminService {
         email: user.email,
         role: user.role,
         status: user.status,
-        trialStartedAt: user.trialStartedAt.toISOString(),
-        trialEndsAt: user.trialEndsAt.toISOString(),
-        trialActive: user.trialEndsAt > now && user.trialStartedAt <= now,
         createdAt: user.createdAt.toISOString(),
         onboardingCompletedAt: user.onboardingCompletedAt?.toISOString() ?? null,
         preferredCategoryIds: user.preferredCategoryIds,
@@ -501,24 +455,7 @@ export class AdminService {
         online: Boolean(onlineSession),
         lastHeartbeatAt: onlineSession?.lastHeartbeatAt.toISOString() ?? null,
       },
-      subscription: activeSub
-        ? {
-            id: activeSub.id,
-            status: activeSub.status,
-            startsAt: activeSub.startsAt.toISOString(),
-            endsAt: activeSub.endsAt.toISOString(),
-            canceledAt: activeSub.canceledAt?.toISOString() ?? null,
-            plan: activeSub.plan,
-          }
-        : null,
-      subscriptions: user.subscriptions.map((s) => ({
-        id: s.id,
-        status: s.status,
-        startsAt: s.startsAt.toISOString(),
-        endsAt: s.endsAt.toISOString(),
-        canceledAt: s.canceledAt?.toISOString() ?? null,
-        plan: s.plan,
-      })),
+      subscription: this.subscriptions.toSummary(user.subscription, now),
       study: {
         activeSeconds: sessionAgg._sum.accruedSeconds ?? 0,
         sessionCount: sessionAgg._count._all,

@@ -6,12 +6,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { createErrorResponse } from '@your-academy/shared';
-import { QuestionStatus } from '@prisma/client';
+import { Prisma, QuestionStatus } from '@prisma/client';
 import type { RequestUser } from '../auth/auth.types';
 import { newRequestId } from '../common/request-id';
 import { PrismaService } from '../database/prisma.service';
 import { LearningActivityService } from '../learning-activity/learning-activity.service';
-import { AccessControlService } from '../subscriptions/access-control.service';
+import { AccessPolicyService } from '../billing/access-policy.service';
 
 const MAX_COLLECTIONS_PER_USER = 50;
 /** Upper bound for one saved-questions exam (keeps the score query and the sheet bounded). */
@@ -24,11 +24,10 @@ export type SavedPracticeScoreItem = {
   id: string;
   selectedOptionId: string | null;
   isSkipped: boolean;
-  /** Entitled viewers only (DEC-051). */
-  isCorrect?: boolean;
-  correctOptionId?: string | null;
-  correctAnswerLabel?: string;
-  explanation?: string | null;
+  isCorrect: boolean;
+  correctOptionId: string | null;
+  correctAnswerLabel: string;
+  explanation: string | null;
 };
 
 @Injectable()
@@ -36,7 +35,7 @@ export class BookmarksService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly learningActivity: LearningActivityService,
-    private readonly access: AccessControlService,
+    private readonly access: AccessPolicyService,
   ) {}
 
   /** Owner-checked Prisma filter for a folder selection. */
@@ -47,9 +46,14 @@ export class BookmarksService {
     return { collectionId };
   }
 
-  private async canViewAnswers(userId: string): Promise<boolean> {
-    const dbUser = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
-    return this.access.canViewAnswers(dbUser);
+  /** DEC-060: saved MCQs from locked Preli sets are skipped (no stem / key sent). */
+  private async openQuestionWhere(user: RequestUser): Promise<Prisma.QuestionWhereInput> {
+    const open = await this.access.openPreliQuestionsWhere(await this.access.resolve(user));
+    return {
+      status: QuestionStatus.PUBLISHED,
+      deletedAt: null,
+      ...(open ? { AND: [open] } : {}),
+    };
   }
 
   private normalizeName(name: string): string {
@@ -508,9 +512,8 @@ export class BookmarksService {
   }
 
   /**
-   * Saved MCQs with stem + options for the Saved page "View All" sheet and the
-   * saved-questions exam. Answer fields follow the same gate as `/questions/:id`
-   * (DEC-051): `isCorrect` / `explanation` are omitted unless the user is entitled.
+   * Saved MCQs with stem + options + key for the Saved page "View All" sheet and the
+   * saved-questions exam. Same lock as `/questions/:id` (DEC-060).
    */
   async listQuestionDetails(
     user: RequestUser,
@@ -518,12 +521,13 @@ export class BookmarksService {
   ) {
     const take = Math.min(Math.max(opts.limit ?? 20, 1), 100);
     const collectionFilter = await this.collectionWhere(user.userId, opts.collectionId);
-    const [rows, canView] = await Promise.all([
+    const questionWhere = await this.openQuestionWhere(user);
+    const [rows] = await Promise.all([
       this.prisma.questionBookmark.findMany({
         where: {
           userId: user.userId,
           ...collectionFilter,
-          question: { status: QuestionStatus.PUBLISHED, deletedAt: null },
+          question: questionWhere,
         },
         take: take + 1,
         ...(opts.cursor ? { cursor: { id: opts.cursor }, skip: 1 } : {}),
@@ -548,7 +552,6 @@ export class BookmarksService {
           },
         },
       }),
-      this.canViewAnswers(user.userId),
     ]);
     const nextCursor = rows.length > take ? rows.pop()!.id : null;
 
@@ -560,19 +563,18 @@ export class BookmarksService {
         collection: row.collection,
         question: {
           ...question,
-          options: options.map((o) => this.access.stripAnswerFields(o, canView)),
-          // Absent (not null) when locked, so clients cannot tell "no explanation" from "hidden".
-          ...(canView ? { explanation: explanation ?? null } : {}),
+          options,
+          explanation: explanation ?? null,
         },
       };
     });
-    return { items, nextCursor, answersVisible: canView };
+    return { items, nextCursor };
   }
 
   /**
    * Score an exam taken from saved questions. Only questions the user has saved
    * count — any other id in the request is ignored — so the endpoint cannot be
-   * used to grade arbitrary bank questions. Per-question keys only when entitled.
+   * used to grade arbitrary bank questions; locked-set questions are skipped (DEC-060).
    */
   async scoreSavedPractice(
     user: RequestUser,
@@ -580,13 +582,14 @@ export class BookmarksService {
     answersRaw: Record<string, unknown>,
   ) {
     const requested = [...new Set(questionIdsRaw)].slice(0, MAX_SAVED_EXAM_QUESTIONS);
-    const [owned, canView] = await Promise.all([
+    const questionWhere = await this.openQuestionWhere(user);
+    const [owned] = await Promise.all([
       requested.length
         ? this.prisma.questionBookmark.findMany({
             where: {
               userId: user.userId,
               questionId: { in: requested },
-              question: { status: QuestionStatus.PUBLISHED, deletedAt: null },
+              question: questionWhere,
             },
             select: {
               question: {
@@ -602,7 +605,6 @@ export class BookmarksService {
             },
           })
         : Promise.resolve([]),
-      this.canViewAnswers(user.userId),
     ]);
     const byId = new Map(owned.map((b) => [b.question.id, b.question]));
 
@@ -627,14 +629,10 @@ export class BookmarksService {
         id,
         selectedOptionId,
         isSkipped,
-        ...(canView
-          ? {
-              isCorrect,
-              correctOptionId: correct?.id ?? null,
-              correctAnswerLabel: correct?.label ?? '',
-              explanation: q.explanation ?? null,
-            }
-          : {}),
+        isCorrect,
+        correctOptionId: correct?.id ?? null,
+        correctAnswerLabel: correct?.label ?? '',
+        explanation: q.explanation ?? null,
       });
     }
 
@@ -646,7 +644,6 @@ export class BookmarksService {
       skippedCount,
       score: correctCount,
       percent: totalQuestions === 0 ? 0 : Math.round((correctCount / totalQuestions) * 1000) / 10,
-      answersVisible: canView,
       answerSheet,
     };
   }

@@ -11,8 +11,7 @@ import { Button } from '@/components/ui/button';
 import { SearchField } from '@/components/ui/search-field';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AnswerVisibilityToggle } from '@/features/public-question-bank/answer-visibility-toggle';
-import { hasAnyAnswerKey, useAnswerVisibility } from '@/features/public-question-bank/use-answer-visibility';
-import { AnswersLockedNote } from '@/components/marketing/answers-locked-note';
+import { useAnswerVisibility } from '@/features/public-question-bank/use-answer-visibility';
 import { getTopicSet, listTopicSetQuestions } from '@/lib/api/topic-questions';
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import { cn } from '@/lib/utils';
@@ -67,9 +66,7 @@ export function TopicSetView({
   });
 
   const items = list.data?.pages.flatMap((p) => p.data) ?? [];
-  // DEC-051: free viewers get no answer key — swap the toggle for a subscription note.
-  const answersLocked = items.length > 0 && !hasAnyAnswerKey(items);
-  const visibility = useAnswerVisibility({ answersAvailable: !answersLocked });
+  const visibility = useAnswerVisibility();
   const individualMode = visibility.mode === 'hide-all';
 
   const backHref = setQry.data
@@ -121,11 +118,7 @@ export function TopicSetView({
       ) : null}
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        {answersLocked ? (
-          <AnswersLockedNote />
-        ) : (
-          <AnswerVisibilityToggle mode={visibility.mode} onChange={visibility.setMode} />
-        )}
+        <AnswerVisibilityToggle mode={visibility.mode} onChange={visibility.setMode} />
         <SearchField
           value={qInput}
           onChange={setQInput}

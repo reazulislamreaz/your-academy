@@ -17,13 +17,11 @@ describe('UsersService study prefs', () => {
   };
 
   const access = {
-    getAccessSnapshot: jest.fn().mockResolvedValue({
-      trialStartedAt: new Date().toISOString(),
-      trialEndsAt: new Date().toISOString(),
-      isTrialActive: true,
-      hasActiveSubscription: false,
-      role: UserRole.USER,
-      entitlements: [],
+    snapshot: jest.fn().mockResolvedValue({
+      paidSystemEnabled: false,
+      fullAccess: true,
+      isPaid: false,
+      subscriptionEndsAt: null,
     }),
   };
 

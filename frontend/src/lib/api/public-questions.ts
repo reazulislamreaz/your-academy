@@ -16,9 +16,8 @@ export type PublicQuestionCard = {
   category: { id: string; name: string; slug: string };
   subcategory: { id: string; name: string; slug: string } | null;
   options: Array<{ id: string; label: string; content: string; sortOrder: number }>;
-  /** DEC-051: omitted unless the viewer is entitled (admin / active subscription). */
-  correctAnswerLabel?: string;
-  correctAnswerBn?: string;
+  correctAnswerLabel: string;
+  correctAnswerBn: string;
   createdAt: string;
   publishedAt: string | null;
   uploadBatchId?: string | null;
@@ -27,6 +26,8 @@ export type PublicQuestionCard = {
 
 export type PublicQuestionSet = {
   id: string;
+  /** DEC-060 — the viewer must buy a plan to open this set (questions are withheld). */
+  locked: boolean;
   batchCode: string;
   title: string;
   description: string | null;
@@ -137,7 +138,7 @@ export async function getPublicQuestionsServer(params: {
   }
 }
 
-/** DEC-051 — server-side Preli Practice scoring (answer key never ships to free viewers). */
+/** Server-side Preli Practice scoring (locked sets are refused — DEC-060). */
 export async function scorePublicSetPractice(setId: string, answers: Record<string, string>) {
   return apiFetch<PublicPracticeScore>(
     `/public/question-sets/${encodeURIComponent(setId)}/practice-score`,

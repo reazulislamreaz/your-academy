@@ -11,6 +11,8 @@ import {
   type PublicPracticeScore,
   type PublicPracticeScoreItem,
 } from '@your-academy/shared';
+import { AccessPolicyService, type ViewerAccess } from '../billing/access-policy.service';
+import { SET_DISPLAY_ORDER } from '../billing/set-order';
 import { newRequestId } from '../common/request-id';
 import { PrismaService } from '../database/prisma.service';
 
@@ -45,20 +47,18 @@ export type PublicQuestionCard = {
   category: { id: string; name: string; slug: string };
   subcategory: { id: string; name: string; slug: string } | null;
   options: Array<{ id: string; label: string; content: string; sortOrder: number }>;
-  /** DEC-051: present only for entitled viewers (admin / active subscription). */
-  correctAnswerLabel?: string;
-  correctAnswerBn?: string;
+  correctAnswerLabel: string;
+  correctAnswerBn: string;
   createdAt: string;
   publishedAt: string | null;
   uploadBatchId: string | null;
   rowNumber: number | null;
 };
 
-/** DEC-051: answer visibility resolved by the controller via AccessControlService. */
-export type AnswerViewOptions = { canViewAnswers: boolean };
-
 export type PublicQuestionSet = {
   id: string;
+  /** DEC-060 — true when this viewer must buy a plan to open the set (questions withheld). */
+  locked: boolean;
   batchCode: string;
   title: string;
   description: string | null;
@@ -83,8 +83,7 @@ export type PublicWrittenQuestionCard = {
   id: string;
   title: string;
   content: string;
-  /** DEC-051: present only for entitled viewers (admin / active subscription). */
-  modelAnswer?: string | null;
+  modelAnswer: string | null;
   marks: string | null;
   sourceSerial: string | null;
   examYear: string | null;
@@ -99,7 +98,10 @@ export type PublicWrittenQuestionCard = {
 
 @Injectable()
 export class PublicService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly access: AccessPolicyService,
+  ) {}
 
   /**
    * Ensure filter IDs belong to the requested bank scope.
@@ -214,14 +216,17 @@ export class PublicService {
   }
 
   /** Public Question Sets = completed/archived upload batches with live published MCQs. */
-  async listQuestionSets(params: {
-    cursor?: string;
-    limit?: number;
-    q?: string;
-    categoryId?: string;
-    subcategoryId?: string;
-    year?: string;
-  }) {
+  async listQuestionSets(
+    params: {
+      cursor?: string;
+      limit?: number;
+      q?: string;
+      categoryId?: string;
+      subcategoryId?: string;
+      year?: string;
+    },
+    access: ViewerAccess,
+  ) {
     const limit = Math.min(Math.max(params.limit ?? 20, 1), 100);
     const q = params.q?.trim();
     const year = params.year?.trim() || undefined;
@@ -345,11 +350,7 @@ export class PublicService {
       where,
       take: limit + 1,
       ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {}),
-      orderBy: [
-        { questionDate: { sort: 'desc', nulls: 'last' } },
-        { createdAt: 'desc' },
-        { id: 'desc' },
-      ],
+      orderBy: [...SET_DISPLAY_ORDER],
       select: {
         id: true,
         batchCode: true,
@@ -388,14 +389,18 @@ export class PublicService {
     });
 
     const nextCursor = batches.length > limit ? batches.pop()!.id : null;
-    const items: PublicQuestionSet[] = batches.map((b) => this.mapSet(b));
+    // DEC-060: locked sets stay listed (title only) so learners see what a plan unlocks.
+    const free = access.fullAccess ? null : await this.access.freePreliSetIds(access);
+    const items: PublicQuestionSet[] = batches.map((b) =>
+      this.mapSet(b, free !== null && !free.has(b.id)),
+    );
 
     const total = await this.prisma.questionUploadBatch.count({ where });
 
     return { items, nextCursor, total };
   }
 
-  async getQuestionSet(id: string): Promise<PublicQuestionSet> {
+  async getQuestionSet(id: string, access: ViewerAccess): Promise<PublicQuestionSet> {
     const batch = await this.prisma.questionUploadBatch.findFirst({
       where: {
         id,
@@ -437,15 +442,17 @@ export class PublicService {
         createErrorResponse('QUESTION_SET_NOT_FOUND', 'Question set not found', newRequestId()),
       );
     }
-    return this.mapSet(batch);
+    const open = await this.access.canAccess(access, { kind: 'PRELI_SET', id: batch.id });
+    return this.mapSet(batch, !open);
   }
 
   async listSetQuestions(
     batchId: string,
     params: { cursor?: string; limit?: number; q?: string },
-    view: AnswerViewOptions = { canViewAnswers: false },
+    access: ViewerAccess,
   ) {
-    await this.getQuestionSet(batchId);
+    // DEC-060: a locked set's questions are never loaded.
+    if ((await this.getQuestionSet(batchId, access)).locked) throw this.access.lockedError(access);
     const limit = Math.min(Math.max(params.limit ?? 20, 1), 100);
     const { rows, allIds } = await this.resolveSetQuestionIds(batchId, params.q?.trim());
     const total = allIds.length;
@@ -505,26 +512,19 @@ export class PublicService {
       .map((id) => byId.get(id))
       .filter((q): q is NonNullable<typeof q> => Boolean(q))
       .map((q) =>
-        this.toCard(
-          q,
-          rowNumberById.get(q.id) ?? q.importRows[0]?.rowNumber ?? null,
-          view.canViewAnswers,
-        ),
+        this.toCard(q, rowNumberById.get(q.id) ?? q.importRows[0]?.rowNumber ?? null),
       );
 
     return { items, nextCursor, total };
   }
 
-  /**
-   * DEC-051: score a Preli Practice run on the server so the public set never ships
-   * its answer key. Non-entitled viewers get totals + their own selections only.
-   */
+  /** Score a Preli Practice run on the server (locked sets cannot be scored — DEC-060). */
   async scoreSetPractice(
     batchId: string,
     answersRaw: Record<string, unknown>,
-    view: AnswerViewOptions,
+    access: ViewerAccess,
   ): Promise<PublicPracticeScore> {
-    await this.getQuestionSet(batchId);
+    if ((await this.getQuestionSet(batchId, access)).locked) throw this.access.lockedError(access);
     const { allIds } = await this.resolveSetQuestionIds(batchId);
     const questions = allIds.length
       ? await this.prisma.question.findMany({
@@ -563,13 +563,9 @@ export class PublicService {
         id,
         selectedOptionId,
         isSkipped,
-        ...(view.canViewAnswers
-          ? {
-              isCorrect,
-              correctOptionId: correct?.id ?? null,
-              correctAnswerLabel: correct?.label ?? '',
-            }
-          : {}),
+        isCorrect,
+        correctOptionId: correct?.id ?? null,
+        correctAnswerLabel: correct?.label ?? '',
       });
     }
 
@@ -583,7 +579,6 @@ export class PublicService {
       score: correctCount,
       percent:
         totalQuestions === 0 ? 0 : Math.round((correctCount / totalQuestions) * 1000) / 10,
-      answersVisible: view.canViewAnswers,
       answerSheet,
     };
   }
@@ -655,7 +650,7 @@ export class PublicService {
     q?: string;
     examTag?: string;
     uploadBatchId?: string;
-  }, view: AnswerViewOptions = { canViewAnswers: false }) {
+  }, access: ViewerAccess) {
     const limit = Math.min(Math.max(params.limit ?? 20, 1), 100);
     if (params.uploadBatchId) {
       return this.listSetQuestions(
@@ -665,11 +660,15 @@ export class PublicService {
           limit,
           q: params.q,
         },
-        view,
+        access,
       );
     }
 
-    const where = this.buildWhere(params);
+    // DEC-060: questions from locked Preli sets are left out entirely.
+    const open = await this.access.openPreliQuestionsWhere(access);
+    const where: Prisma.QuestionWhereInput = open
+      ? { AND: [this.buildWhere(params), open] }
+      : this.buildWhere(params);
     const [total, items] = await Promise.all([
       this.prisma.question.count({ where }),
       this.prisma.question.findMany({
@@ -712,9 +711,7 @@ export class PublicService {
     ]);
 
     const nextCursor = items.length > limit ? items.pop()!.id : null;
-    const cards = items.map((q) =>
-      this.toCard(q, q.importRows[0]?.rowNumber ?? null, view.canViewAnswers),
-    );
+    const cards = items.map((q) => this.toCard(q, q.importRows[0]?.rowNumber ?? null));
     return { items: cards, nextCursor, total };
   }
 
@@ -744,7 +741,6 @@ export class PublicService {
       importRows?: Array<{ serial?: string | null; sectionTitle?: string | null }>;
     },
     rowNumber: number | null,
-    canViewAnswers: boolean,
   ): PublicQuestionCard {
     const correct = q.options.find((o) => o.isCorrect);
     const correctAnswerLabel = correct?.label ?? '';
@@ -769,13 +765,8 @@ export class PublicService {
         content,
         sortOrder,
       })),
-      // DEC-051: omit (never fake) the key for non-entitled viewers.
-      ...(canViewAnswers
-        ? {
-            correctAnswerLabel,
-            correctAnswerBn: BN_LABEL[correctAnswerLabel] ?? correctAnswerLabel,
-          }
-        : {}),
+      correctAnswerLabel,
+      correctAnswerBn: BN_LABEL[correctAnswerLabel] ?? correctAnswerLabel,
       createdAt: q.createdAt.toISOString(),
       publishedAt: q.publishedAt?.toISOString() ?? null,
       uploadBatchId: q.uploadBatchId,
@@ -802,9 +793,10 @@ export class PublicService {
       subcategory: { name: string };
     }>;
     _count: { questions: number };
-  }): PublicQuestionSet {
+  }, locked = false): PublicQuestionSet {
     return {
       id: batch.id,
+      locked,
       batchCode: batch.batchCode,
       title: this.setTitle(batch),
       description: batch.description,
@@ -910,14 +902,17 @@ export class PublicService {
     return [...years].sort((a, b) => Number(b) - Number(a) || b.localeCompare(a));
   }
 
-  async listWrittenQuestionSets(params: {
-    cursor?: string;
-    limit?: number;
-    q?: string;
-    categoryId?: string;
-    subcategoryId?: string;
-    year?: string;
-  }) {
+  async listWrittenQuestionSets(
+    params: {
+      cursor?: string;
+      limit?: number;
+      q?: string;
+      categoryId?: string;
+      subcategoryId?: string;
+      year?: string;
+    },
+    access: ViewerAccess,
+  ) {
     const limit = Math.min(Math.max(params.limit ?? 20, 1), 100);
     const q = params.q?.trim();
     const year = params.year?.trim() || undefined;
@@ -1004,11 +999,7 @@ export class PublicService {
       where,
       take: limit + 1,
       ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {}),
-      orderBy: [
-        { questionDate: { sort: 'desc', nulls: 'last' } },
-        { createdAt: 'desc' },
-        { id: 'desc' },
-      ],
+      orderBy: [...SET_DISPLAY_ORDER],
       select: {
         id: true,
         batchCode: true,
@@ -1047,12 +1038,13 @@ export class PublicService {
     });
 
     const nextCursor = batches.length > limit ? batches.pop()!.id : null;
-    const items = batches.map((b) => this.mapSet(b));
+    const free = access.fullAccess ? null : await this.access.freeWrittenSetIds(access);
+    const items = batches.map((b) => this.mapSet(b, free !== null && !free.has(b.id)));
     const total = await this.prisma.writtenUploadBatch.count({ where });
     return { items, nextCursor, total };
   }
 
-  async getWrittenQuestionSet(id: string): Promise<PublicQuestionSet> {
+  async getWrittenQuestionSet(id: string, access: ViewerAccess): Promise<PublicQuestionSet> {
     const batch = await this.prisma.writtenUploadBatch.findFirst({
       where: {
         id,
@@ -1098,15 +1090,18 @@ export class PublicService {
         ),
       );
     }
-    return this.mapSet(batch);
+    const open = await this.access.canAccess(access, { kind: 'WRITTEN_SET', id: batch.id });
+    return this.mapSet(batch, !open);
   }
 
   async listWrittenSetQuestions(
     batchId: string,
     params: { cursor?: string; limit?: number; q?: string },
-    view: AnswerViewOptions = { canViewAnswers: false },
+    access: ViewerAccess,
   ) {
-    await this.getWrittenQuestionSet(batchId);
+    if ((await this.getWrittenQuestionSet(batchId, access)).locked) {
+      throw this.access.lockedError(access);
+    }
     const limit = Math.min(Math.max(params.limit ?? 20, 1), 100);
     const q = params.q?.trim();
 
@@ -1122,10 +1117,7 @@ export class PublicService {
                 OR: [
                   { title: { contains: q, mode: 'insensitive' } },
                   { content: { contains: q, mode: 'insensitive' } },
-                  // DEC-051: searching model answers would be an answer oracle.
-                  ...(view.canViewAnswers
-                    ? [{ modelAnswer: { contains: q, mode: 'insensitive' as const } }]
-                    : []),
+                  { modelAnswer: { contains: q, mode: 'insensitive' } },
                   { sourceNote: { contains: q, mode: 'insensitive' } },
                 ],
               }
@@ -1151,9 +1143,7 @@ export class PublicService {
               OR: [
                 { title: { contains: q, mode: 'insensitive' } },
                 { content: { contains: q, mode: 'insensitive' } },
-                ...(view.canViewAnswers
-                  ? [{ modelAnswer: { contains: q, mode: 'insensitive' as const } }]
-                  : []),
+                { modelAnswer: { contains: q, mode: 'insensitive' } },
               ],
             }
           : {}),
@@ -1206,7 +1196,7 @@ export class PublicService {
         id: item.id,
         title: item.title,
         content: item.content,
-        ...(view.canViewAnswers ? { modelAnswer: item.modelAnswer } : {}),
+        modelAnswer: item.modelAnswer,
         marks: item.marks != null ? String(item.marks) : null,
         sourceSerial: item.sourceSerial,
         examYear: item.examYear,
@@ -1407,7 +1397,7 @@ export class PublicService {
     cursor?: string;
     limit: number;
     q?: string;
-  }, view: AnswerViewOptions = { canViewAnswers: false }) {
+  }) {
     const meta = await this.getTopicSubcategory(params.subcategoryId);
 
     // Folder selection includes nested Topic questions under that node.
@@ -1496,12 +1486,8 @@ export class PublicService {
             }
           : null,
         options,
-        ...(view.canViewAnswers
-          ? {
-              correctAnswerLabel,
-              correctAnswerBn: correctAnswerLabel ? BN_LABEL[correctAnswerLabel] ?? '' : '',
-            }
-          : {}),
+        correctAnswerLabel,
+        correctAnswerBn: correctAnswerLabel ? BN_LABEL[correctAnswerLabel] ?? '' : '',
         createdAt: q.createdAt.toISOString(),
         publishedAt: q.createdAt.toISOString(),
         uploadBatchId: q.batchId,
@@ -1640,7 +1626,7 @@ export class PublicService {
     cursor?: string;
     limit: number;
     q?: string;
-  }, view: AnswerViewOptions = { canViewAnswers: false }) {
+  }) {
     await this.getTopicSet(params.batchId);
 
     const where: Prisma.TopicQuestionWhereInput = {
@@ -1715,12 +1701,8 @@ export class PublicService {
             }
           : null,
         options,
-        ...(view.canViewAnswers
-          ? {
-              correctAnswerLabel,
-              correctAnswerBn: correctAnswerLabel ? BN_LABEL[correctAnswerLabel] ?? '' : '',
-            }
-          : {}),
+        correctAnswerLabel,
+        correctAnswerBn: correctAnswerLabel ? BN_LABEL[correctAnswerLabel] ?? '' : '',
         createdAt: q.createdAt.toISOString(),
         publishedAt: q.createdAt.toISOString(),
         uploadBatchId: q.batchId,

@@ -14,12 +14,13 @@ describe('QuestionsService.recordAttempt', () => {
     );
   }
 
-  it('stores server-computed correctness and omits isCorrect when not entitled', async () => {
+  it('stores server-computed correctness and returns it', async () => {
     const prisma = {
       question: {
         findFirst: jest.fn().mockResolvedValue({
           id: 'q1',
           categoryId: 'cat1',
+          uploadBatchId: null,
         }),
       },
       questionOption: {
@@ -39,7 +40,8 @@ describe('QuestionsService.recordAttempt', () => {
       },
     };
     const access = {
-      canViewAnswers: jest.fn().mockResolvedValue(false),
+      resolve: jest.fn().mockResolvedValue({ fullAccess: true }),
+      assertAccess: jest.fn().mockResolvedValue(undefined),
     };
     const service = buildService(prisma, access);
 
@@ -61,8 +63,8 @@ describe('QuestionsService.recordAttempt', () => {
       questionId: 'q1',
       selectedOptionId: 'opt1',
       createdAt: '2026-11-11T00:00:00.000Z',
+      isCorrect: true,
     });
-    expect(result).not.toHaveProperty('isCorrect');
   });
 
   it('rejects options that do not belong to the question', async () => {
@@ -78,7 +80,10 @@ describe('QuestionsService.recordAttempt', () => {
         findFirst: jest.fn().mockResolvedValue(null),
       },
     };
-    const service = buildService(prisma, {});
+    const service = buildService(prisma, {
+      resolve: jest.fn().mockResolvedValue({ fullAccess: true }),
+      assertAccess: jest.fn().mockResolvedValue(undefined),
+    });
     await expect(service.recordAttempt(user, 'q1', 'opt-x')).rejects.toBeInstanceOf(
       BadRequestException,
     );

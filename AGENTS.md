@@ -18,7 +18,7 @@
 6. Never expose secrets, API keys, or unrestricted upload credentials.
 7. Never return restricted answers/explanations to non-entitled users — **backend only**.
 8. Never introduce unnecessary dependencies.
-9. Write tests for auth, access control, and answer privacy.
+9. Write tests for auth, access control, and Free vs Paid locks (DEC-060).
 10. Update docs when architecture or requirements change.
 11. Verify (`build` / `lint` / `typecheck` / targeted tests) before marking done.
 12. **Before push to GitHub:** always check link issues (nav, CTAs, `Link`/`href`/`router` paths, API client routes, docs URLs) and fix broken or stale links in the same change set — see `.cursor/rules/link-check-before-push.mdc`.
@@ -55,7 +55,7 @@ Package names: `@your-academy/frontend|backend|worker|shared`.
 | Infra | Docker Compose, Nginx, GitHub Actions, Ubuntu VPS |
 | Monorepo | pnpm workspaces + Turborepo |
 
-Forbidden without approval: microservices, GraphQL, alternate ORMs, payment providers in v1.
+Forbidden without approval: microservices, GraphQL, alternate ORMs, payment providers other than SSLCommerz (DEC-060).
 
 ---
 
@@ -63,17 +63,17 @@ Forbidden without approval: microservices, GraphQL, alternate ORMs, payment prov
 
 | ID | Rule |
 |----|------|
-| Trial | **Disabled** — registration does not grant a free-trial window; `AccessControlService.isTrialActive` always false. Schema columns remain for compatibility. |
-| Without entitlement | Login, homepage, browse/search/filter questions, titles/content/options, save MCQs, profile, bookmarks, activity, news, **published PDFs** (DEC-001) |
-| Answers gated | Correct answers, indicators, explanations — **omit from API** unless admin or active subscription |
+| Trial | **None** — registration gives the free plan; trial columns were dropped (DEC-060). |
+| Free plan (paid system ON) | First **N** Preli and first **N** Written sets (admin-set, default 10, display order), FREE Model Tests, Topic Base, Quizzes, practice sets, news, non-PREMIUM PDFs, profile, bookmarks. Paid system **OFF** → everything open (DEC-060) |
+| Locked content | Sets beyond N, PAID Model Tests, PREMIUM PDFs: listed with `locked: true`, content routes return **403 `CONTENT_LOCKED`** and never load questions. Decided only by `AccessPolicyService` (Admin → switch → free item → active subscription). Answers are **not** separately gated (DEC-060 replaces DEC-051) |
 | Questions CRUD | **Admin or Moderator** (content sections only — DEC-048) |
-| Question browse | Public Preli / Written / Topic banks + homepage via `/api/v1/public/*` (DEC-031/040/042) — text + options public, **answers / model answers subscriber-only** (omitted unless Admin or active subscription, DEC-051); learner practice `/questions*` remains authenticated (DEC-003) |
-| Payments | Not in v1; keep subscription tables modular. Admins grant/revoke subscriptions manually (DEC-052) |
+| Question browse | Public Preli / Written / Topic banks + homepage via `/api/v1/public/*` (DEC-031/040/042); a bank MCQ inherits its set's lock; learner practice `/questions*` remains authenticated (DEC-003) |
+| Payments | **SSLCommerz** (DEC-060): server-priced checkout, activation only after Order Validation API + amount/currency/tran_id/store match, IPN is source of truth, idempotent apply. Admins also grant/extend/disable manually; every change logged in `subscription_events` |
 | Register fields | name, WhatsApp (unique), password; avatar optional; email optional at register |
 | Password reset | Self-service by **email** (DEC-004, no enumeration); Admin-assisted email link / WhatsApp link / temporary password for accounts without email (DEC-054) |
 | Sessions | **One device at a time** for learners (DEC-053): new login revokes others → `401 SESSION_REPLACED`; staff opt-in via `SINGLE_SESSION_STAFF` |
 | Web auth | HTTP-only cookies + CSRF (DEC-012); never `localStorage` for tokens |
-| Guest exams | Public timed `Exam` / `ExamQuestion` / `ExamAttempt` (DEC-039) + Model Tests; separate from bank `Question` + PracticeSet; results show score + own selections to everyone, **answer key / explanations / correctness subscriber-only** (DEC-051) |
+| Guest exams | Public timed `Exam` / `ExamQuestion` / `ExamAttempt` (DEC-039) + Model Tests; separate from bank `Question` + PracticeSet; results include the key. PAID Model Tests (detail, submit, result) need access (DEC-060) |
 | Dashboard roles | `ADMIN` (everything) / `MODERATOR` (Preli, Written, Topic, Quiz, Model Test, Newspaper only). Permissions in `shared/src/permissions.ts`; every `/admin/*` route needs `@RequirePermission` (DEC-048). Staff accounts are Admin-created only |
 
 ---
@@ -134,8 +134,8 @@ Forbidden without approval: microservices, GraphQL, alternate ORMs, payment prov
 
 ### Access control
 
-- Central `AccessControlService` (Phase 5) — do not duplicate trial/subscription math.
-- Strip `isCorrect` / `explanation` / `correctOptionId` when not entitled; absence only (never fake `false`).
+- Central `AccessPolicyService` (`backend/src/billing/`, DEC-060) — do not duplicate paid-switch / free-N / subscription math anywhere else.
+- Never load or return locked content; refuse with `403 CONTENT_LOCKED` (`AccessPolicyService.assertAccess`).
 - RBAC guards on every protected route; IDOR checks on user-owned resources.
 - Staff: content management via `/admin/*` guarded by `PermissionsGuard` + `@RequirePermission` (DEC-048) — never add an `/admin/*` route without one. Learner answer bypass per DEC-014 stays **Admin-only**.
 
@@ -222,7 +222,7 @@ Forbidden without approval: microservices, GraphQL, alternate ORMs, payment prov
 
 ## 14. Testing Rules
 
-- Critical: trial/subscription answer privacy, auth, RBAC, publish validation, bookmark ownership.
+- Critical: Free vs Paid locks, payment validation + idempotency, auth, RBAC, publish validation, bookmark ownership.
 - Backend: Jest + Supertest.
 - Do not mark access-control work done without automated tests.
 - Prefer factories/fixtures; never use real personal WhatsApp numbers.
@@ -233,7 +233,7 @@ Forbidden without approval: microservices, GraphQL, alternate ORMs, payment prov
 
 - Catalog: `docs/17-environment-variables.md`.
 - Required for local: copy `.env.example` → `.env` (gitignored).
-- `TRIAL_DAYS` is unused for entitlement (free trials disabled); prefer `0` in `.env.example`.
+- SSLCommerz: `SSLCZ_STORE_ID`, `SSLCZ_STORE_PASSWORD`, `SSLCZ_IS_LIVE` (env only; empty = payments off). Setup: README "Payments (SSLCommerz)".
 - Seed admin via `BOOTSTRAP_ADMIN_*` — change default password before real use.
 
 ---
@@ -246,7 +246,7 @@ Forbidden without approval: microservices, GraphQL, alternate ORMs, payment prov
 | `docs/19` DEC-031 | Public Preli Question Bank (no login) |
 | `docs/19` DEC-046 | Admin-managed footer social links |
 | `docs/19` DEC-048 | Admin / Moderator roles, account settings, email verification |
-| `docs/19` DEC-051 / DEC-052 | Answers subscriber-only on public routes; Admin-granted subscriptions |
+| `docs/19` DEC-060 | Free vs Paid system, packages, SSLCommerz payments (supersedes DEC-051 / DEC-052) |
 | `docs/04`–`06` | Architecture, DB, API |
 | `docs/07`–`08` | Auth, access control |
 | `docs/09`–`10` | Cloudinary, BullMQ |
@@ -268,7 +268,7 @@ Cursor rules (always apply / path-scoped): `.cursor/rules/*.mdc`.
 - [ ] Types clean; lint/typecheck/build pass
 - [ ] Tests for critical business paths
 - [ ] Docs/`AGENTS.md` updated if behavior or architecture changed
-- [ ] Answer privacy preserved when touching questions API
+- [ ] Free vs Paid locks preserved when touching questions / sets / model tests API
 - [ ] Links checked and fixed (nav, CTAs, routes, API clients) before GitHub push
 
 ---

@@ -17,6 +17,11 @@ export const ADMIN_ROUTE_PERMISSIONS: ReadonlyArray<{
   { prefix: '/admin/practice-attempts', permission: 'examResults' },
   { prefix: '/admin/homepage', permission: 'homepage' },
   { prefix: '/admin/social-links', permission: 'settings' },
+  // DEC-060 — Free vs Paid system (admin-only)
+  { prefix: '/admin/paid-system', permission: 'subscriptions' },
+  { prefix: '/admin/packages', permission: 'subscriptions' },
+  { prefix: '/admin/subscribers', permission: 'subscriptions' },
+  { prefix: '/admin/payments', permission: 'payments' },
   // Moderator content sections
   { prefix: '/admin/questions', permission: 'preli' },
   { prefix: '/admin/question-imports', permission: 'preli' },

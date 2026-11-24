@@ -50,9 +50,6 @@ async function main() {
   const adminWhatsapp = process.env.BOOTSTRAP_ADMIN_WHATSAPP ?? '+8801000000000';
   const adminPassword = process.env.BOOTSTRAP_ADMIN_PASSWORD ?? 'ChangeMeAdmin123';
   const adminEmail = process.env.BOOTSTRAP_ADMIN_EMAIL ?? 'admin@your-academy.local';
-  // Free trials disabled — equal timestamps, no trial window.
-  const trialStartedAt = new Date();
-  const trialEndsAt = trialStartedAt;
   const passwordHash = await argon2.hash(adminPassword, { type: argon2.argon2id });
 
   const admin = await prisma.user.upsert({
@@ -74,8 +71,6 @@ async function main() {
       passwordHash,
       role: UserRole.ADMIN,
       status: UserStatus.ACTIVE,
-      trialStartedAt,
-      trialEndsAt,
     },
   });
 
@@ -87,8 +82,6 @@ async function main() {
       passwordHash: await argon2.hash('LearnerPass123', { type: argon2.argon2id }),
       deletedAt: null,
       role: UserRole.USER,
-      trialStartedAt,
-      trialEndsAt,
     },
     create: {
       name: 'Test Learner',
@@ -97,29 +90,11 @@ async function main() {
       passwordHash: await argon2.hash('LearnerPass123', { type: argon2.argon2id }),
       role: UserRole.USER,
       status: UserStatus.ACTIVE,
-      trialStartedAt,
-      trialEndsAt,
     },
   });
 
-  await prisma.subscriptionPlan.upsert({
-    where: { code: 'PREMIUM' },
-    update: {
-      name: 'Premium',
-      isActive: true,
-      entitlements: ['VIEW_ANSWERS', 'VIEW_EXPLANATIONS', 'VIEW_DOCUMENTS'],
-    },
-    create: {
-      code: 'PREMIUM',
-      name: 'Premium',
-      description: 'Full access to answers and explanations (future paid plan)',
-      durationDays: 30,
-      priceCents: 0,
-      currency: 'USD',
-      entitlements: ['VIEW_ANSWERS', 'VIEW_EXPLANATIONS', 'VIEW_DOCUMENTS'],
-      isActive: true,
-    },
-  });
+  // DEC-060: paid-system settings row (OFF by default). Packages are created by an admin.
+  await prisma.siteSetting.upsert({ where: { id: 'default' }, update: {}, create: { id: 'default' } });
 
   for (const link of BOOTSTRAP_SOCIAL_LINKS) {
     const existing = await prisma.socialLink.findUnique({ where: { platform: link.platform } });

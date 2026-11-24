@@ -27,7 +27,7 @@ docs/       Architecture & requirements
 ## Features
 
 - Auth (register/login/refresh/logout, CSRF cookies, password reset tokens)
-- 7-day trial with **API-enforced** answer/explanation privacy after expiry
+- Free vs Paid plans (admin switch, free set counts, Free/Paid Model Tests) enforced by the API, with **SSLCommerz** payments (DEC-060)
 - Categories + MCQ create/publish (admin)
 - Bookmarks, profile stats, browsing heartbeats
 - News publish/browse
@@ -55,6 +55,40 @@ Seeded admin: WhatsApp from `BOOTSTRAP_ADMIN_WHATSAPP` / password `BOOTSTRAP_ADM
 | http://localhost:3000 | App UI |
 | http://localhost:5000/health | API health |
 | http://localhost:5000/ready | API + DB readiness |
+
+## Payments (SSLCommerz)
+
+Payments and subscriptions work as soon as the store credentials are set — no code changes.
+
+**1. Environment** (`.env` locally, `.env.production` on the VPS, then restart the API):
+
+```bash
+SSLCZ_STORE_ID=your_store_id
+SSLCZ_STORE_PASSWORD=your_store_password   # the API password, not your panel login
+SSLCZ_IS_LIVE=false                        # true = live gateway
+API_PUBLIC_URL=https://youracademy.com.bd  # public origin the gateway posts back to
+```
+
+Without `SSLCZ_STORE_ID` / `SSLCZ_STORE_PASSWORD` the site keeps working and the Packages
+page says online payment is not configured. Sandbox store: <https://developer.sslcommerz.com/registration/>.
+
+**2. SSLCommerz merchant panel** — set the **IPN URL** (IPN Settings → enable HTTP listener):
+
+| Setting | Value |
+|---------|-------|
+| IPN URL | `https://youracademy.com.bd/api/v1/payments/sslcommerz/ipn` |
+
+Success / fail / cancel URLs are sent with every payment by the API
+(`…/api/v1/payments/sslcommerz/success|fail|cancel`) — nothing to enter for those.
+SSLCommerz must be able to reach these URLs over **HTTPS** from the internet (not `localhost`;
+use a tunnel such as `cloudflared` to test callbacks locally).
+
+**3. Dashboard** (Admin): create packages in **Packages**, then switch **Paid system** ON and
+set how many Preli / Written sets are free. Mark Model Tests Free / Paid on their create / edit
+form. **Subscribers** grants / extends / disables plans by hand; **Payments** lists every
+transaction with **Re-check** (asks SSLCommerz again) and **Approve** for risk-held payments.
+
+How it works and what is validated: `docs/19-decisions-and-assumptions.md` (DEC-060).
 
 ## Docs
 

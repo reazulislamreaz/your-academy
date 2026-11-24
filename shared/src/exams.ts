@@ -48,10 +48,9 @@ export type ExamAnswerSheetItem = {
   options: string[];
   selectedAnswer: string | null;
   isSkipped: boolean;
-  /** DEC-051: present only when the viewer is entitled (`answersVisible`). */
-  correctAnswer?: string;
-  explanation?: string | null;
-  isCorrect?: boolean;
+  correctAnswer: string;
+  explanation: string | null;
+  isCorrect: boolean;
 };
 
 export type ExamAttemptResult = {
@@ -71,8 +70,6 @@ export type ExamAttemptResult = {
     totalQuestions: number;
     durationInMinutes: number;
   };
-  /** DEC-051: false → answer key, explanations and per-question correctness omitted. */
-  answersVisible: boolean;
   answerSheet: ExamAnswerSheetItem[];
 };
 

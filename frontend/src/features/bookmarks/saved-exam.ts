@@ -97,21 +97,20 @@ type ScoreResponse = {
   skippedCount: number;
   score: number;
   percent: number;
-  answersVisible: boolean;
   answerSheet: Array<{
     id: string;
     selectedOptionId: string | null;
     isSkipped: boolean;
-    isCorrect?: boolean;
-    correctOptionId?: string | null;
-    correctAnswerLabel?: string;
-    explanation?: string | null;
+    isCorrect: boolean;
+    correctOptionId: string | null;
+    correctAnswerLabel: string;
+    explanation: string | null;
   }>;
 };
 
 /**
- * Scores on the server (only the user's own saved MCQs count; keys only when
- * entitled — DEC-051) and stores the result in this tab for the result page.
+ * Scores on the server (only the user's own saved MCQs from open sets count) and
+ * stores the result in this tab for the result page.
  * The exam player records option text, so it is mapped back to option ids here.
  */
 export async function submitSavedExam(input: {
@@ -148,7 +147,6 @@ export async function submitSavedExam(input: {
     skippedCount: score.skippedCount,
     score: score.score,
     percent: score.percent,
-    answersVisible: score.answersVisible,
     // Questions unsaved mid-exam are not scored, so they are left off the sheet too.
     answerSheet: input.questions.flatMap((q) => {
       const item = scored.get(q.id);
@@ -160,14 +158,10 @@ export async function submitSavedExam(input: {
           options: q.options.map((o) => ({ id: o.id, label: o.label, content: o.content })),
           selectedOptionId: item.selectedOptionId,
           isSkipped: item.isSkipped,
-          ...(score.answersVisible
-            ? {
-                correctOptionId: item.correctOptionId ?? null,
-                correctAnswerLabel: item.correctAnswerLabel,
-                isCorrect: item.isCorrect,
-                explanation: item.explanation ?? null,
-              }
-            : {}),
+          correctOptionId: item.correctOptionId,
+          correctAnswerLabel: item.correctAnswerLabel,
+          isCorrect: item.isCorrect,
+          explanation: item.explanation,
         },
       ];
     }),

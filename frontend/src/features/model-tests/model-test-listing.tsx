@@ -27,6 +27,7 @@ import {
   listPublicModelTests,
   listPublicModelTestYears,
 } from '@/lib/api/model-tests';
+import { useUnlockHref } from '@/components/access/locked-content';
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import { cn } from '@/lib/utils';
 
@@ -43,6 +44,7 @@ type Props = {
 
 export function ModelTestListing({ basePath = '/model-test', embedded = false }: Props) {
   const takeBase = basePath.replace(/\/$/, '') || '/model-test';
+  const unlockHref = useUnlockHref();
   const [q, setQ] = useState('');
   const [year, setYear] = useState('');
   const [categoryId, setCategoryId] = useState('');
@@ -226,7 +228,8 @@ export function ModelTestListing({ basePath = '/model-test', embedded = false }:
                 {sorted.map((item) => (
                   <li key={item.id}>
                     <ExamCard
-                      href={`${takeBase}/${item.slug}`}
+                      href={item.locked ? unlockHref : `${takeBase}/${item.slug}`}
+                      locked={item.locked}
                       title={item.title}
                       kindLabel="Model test"
                       tags={[

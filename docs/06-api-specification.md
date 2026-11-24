@@ -294,7 +294,7 @@ Marketing UI: homepage Top 4 + Others → `/topic-categories` folder explorer. L
 
 ### 2.5c Public guest exams (DEC-039)
 
-Quizzory-style timed exams with name-only entry. Separate from bank `Question` / PracticeSet. Correct answers are omitted until after submit, and after submit only for entitled viewers (Admin or active subscription — DEC-051).
+Quizzory-style timed exams with name-only entry. Separate from bank `Question` / PracticeSet. Correct answers are omitted until after submit; results include the key (DEC-060).
 
 Admin Excel template (7 columns): `প্রশ্ন নং | প্রশ্ন | ক | খ | গ | ঘ | উত্তর`. `উত্তর` must be `a`/`b`/`c`/`d` (case-insensitive) or Bangla `ক`/`খ`/`গ`/`ঘ`; the API stores the resolved option text. `প্রশ্ন নং` is optional reference only. Row-level validation errors are returned on `EXCEL_PARSE_FAILED`.
 
@@ -422,19 +422,31 @@ Admin vs user allowed MIME/size differ by purpose (`avatar`, `question-image`, `
 
 ---
 
-### 2.9 Subscriptions (v1 read-mostly)
+### 2.9 Free vs Paid, packages, payments (DEC-060)
 
 | Method | Endpoint | Description | Auth | Role |
 |--------|----------|-------------|------|------|
-| GET | `/me/access` | Trial + subscription + entitlements | User | USER/ADMIN |
-| GET | `/admin/subscription-plans` | List plans | User | ADMIN |
-| POST | `/admin/subscription-plans` | Create/update plans | User | ADMIN |
-| GET | `/admin/users/:id/subscription` | DEC-052 `AdminUserSubscriptionOverview`: `isAdmin`, `hasActiveSubscription`, `current`, `history` (last 20) | User | ADMIN (`users`) |
-| POST | `/admin/users/:id/subscription` | Grant `{ endsAt, startsAt?, note? }` (ISO; end after start and in the future → else `422 SUBSCRIPTION_INVALID_DATES`; Admin target → `409 SUBSCRIPTION_NOT_NEEDED`). Cancels open ACTIVE rows + creates ACTIVE `PREMIUM` row in one transaction; audit `SUBSCRIPTION_GRANT`. Returns overview | User + CSRF | ADMIN (`users`) |
-| POST | `/admin/users/:id/subscription/revoke` | Revoke `{ note? }` — cancels every ACTIVE subscription not yet ended; `404 SUBSCRIPTION_NOT_FOUND` if none; audit `SUBSCRIPTION_REVOKE`. Returns overview | User + CSRF | ADMIN (`users`) |
-| DELETE | `/admin/users/:id/subscription` | Same as revoke (no note) | User + CSRF | ADMIN (`users`) |
+| GET | `/public/access-config` | `{ paidSystemEnabled, paymentsConfigured }` | Public | — |
+| GET | `/public/packages` | Active, non-deleted packages (`priceBdt` decimal string) | Public | — |
+| GET | `/me/access` | `UserAccessSnapshot` `{ paidSystemEnabled, fullAccess, isPaid, subscriptionEndsAt }` (also `user.access` on `/users/me`) | User | any |
+| GET | `/me/subscription` | Own plan (`SubscriptionSummary`) + last 50 payments | User | any |
+| POST | `/payments/checkout` | `{ packageId }` → `{ tranId, gatewayUrl }`. Price/user from server. `403 PAID_SYSTEM_OFF`, `503 PAYMENT_NOT_CONFIGURED`, `503 PAYMENT_GATEWAY_UNAVAILABLE` (order stays PENDING), `502 PAYMENT_GATEWAY_ERROR`, `409 SUBSCRIPTION_NOT_NEEDED` (Admin), `409 PACKAGE_PRICE_INVALID` (< ৳10 / > ৳500,000). Throttled 10/min | User + CSRF | USER / MODERATOR |
+| GET | `/payments/orders/:tranId/status` | `PaymentOrderPublicStatus` for result pages (no session needed; tran_id is random) | Public | — |
+| POST | `/payments/sslcommerz/success` · `/fail` · `/cancel` | Gateway browser callbacks (form POST, **no CSRF / JWT**). Validated server-side, then `303` → `${APP_PUBLIC_URL}/payment/{success|failed|cancelled}?tran_id=` | Gateway | — |
+| POST | `/payments/sslcommerz/ipn` | IPN listener (source of truth). `200 { received, outcome }`; `503` when the validation API was unreachable (gateway retries) | Gateway | — |
+| GET/PATCH | `/admin/access-settings` | `{ paidSystemEnabled, preliFreeSetCount, writtenFreeSetCount }` | User + CSRF | `subscriptions` |
+| GET/POST | `/admin/packages` | List (with `orderCount`) / create | User + CSRF | `subscriptions` |
+| PATCH/DELETE | `/admin/packages/:id` | Update / delete → `{ softDeleted }` (soft when referenced) | User + CSRF | `subscriptions` |
+| GET | `/admin/subscribers` | Users + `SubscriptionSummary`; `q`, `state` (FREE/ACTIVE/SCHEDULED/EXPIRED/DISABLED), `packageId`, cursor | User | `subscriptions` |
+| GET | `/admin/subscribers/:userId` | Detail + events + payments | User | `subscriptions` |
+| POST | `/admin/subscribers/:userId/grant` | `{ packageId }` (adds duration) **or** `{ endsAt }` (sets end), `note?` | User + CSRF | `subscriptions` |
+| POST | `/admin/subscribers/:userId/extend` | `{ days (1–3650), note? }` | User + CSRF | `subscriptions` |
+| POST | `/admin/subscribers/:userId/disable` · `/enable` | Revoke / restore immediately (`note?`) | User + CSRF | `subscriptions` |
+| GET | `/admin/payments` | Orders; `status`, `q` (tran_id / val_id / user), `packageId`, `from`, `to`, cursor | User | `payments` |
+| GET | `/admin/payments/:id` · `/:id/logs` | Order · redacted gateway log | User | `payments` |
+| POST | `/admin/payments/:id/recheck` · `/approve` · `/mark-refunded` | Transaction Query re-check · accept a RISK hold (re-validated) · label refunded | User + CSRF | `payments` |
 
-No payment capture endpoints in v1; subscriptions are Admin-granted (DEC-052).
+**Locks:** set lists, `/public/model-tests` and `/public/question-sets/:id` / `written-question-sets/:id` return `locked: boolean`. Set questions, practice-score, `/public/questions?uploadBatchId=`, `/questions/:id` (+ attempts), Model Test detail / attempts / results answer **`403 CONTENT_LOCKED`** with `details: [{ reason: 'PAID_REQUIRED', loginRequired }]` for viewers without access. Question lists simply omit MCQs of locked sets.
 
 ---
 

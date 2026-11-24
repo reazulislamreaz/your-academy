@@ -5,6 +5,7 @@ import { AdminModule } from './admin/admin.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
+import { BillingModule } from './billing/billing.module';
 import { BookmarksModule } from './bookmarks/bookmarks.module';
 import { CategoriesModule } from './categories/categories.module';
 import { ApiExceptionFilter } from './common/filters/api-exception.filter';
@@ -25,8 +26,6 @@ import { PublicModule } from './public/public.module';
 import { QueueModule } from './queue/queue.module';
 import { QuestionsModule } from './questions/questions.module';
 import { StorageModule } from './storage/storage.module';
-import { SubscriptionsModule } from './subscriptions/subscriptions.module';
-import { AdminSubscriptionsModule } from './subscriptions/admin-subscriptions.module';
 import { SocialLinksModule } from './social-links/social-links.module';
 import { SupportModule } from './support/support.module';
 import { UsersModule } from './users/users.module';
@@ -55,7 +54,7 @@ import { UsersModule } from './users/users.module';
     QueueModule,
     AuditModule,
     LearningActivityModule,
-    SubscriptionsModule,
+    BillingModule,
     AuthModule,
     UsersModule,
     CategoriesModule,
@@ -74,7 +73,6 @@ import { UsersModule } from './users/users.module';
     PublicModule,
     AnalyticsModule,
     AdminModule,
-    AdminSubscriptionsModule,
     StorageModule,
     SupportModule,
     HealthModule,

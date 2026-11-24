@@ -29,7 +29,7 @@ import { getJwtAccessSecret } from '../config/env';
 import { PrismaService } from '../database/prisma.service';
 import { LearningActivityService } from '../learning-activity/learning-activity.service';
 import { EmailQueueService } from '../queue/email-queue.service';
-import { AccessControlService } from '../subscriptions/access-control.service';
+import { AccessPolicyService } from '../billing/access-policy.service';
 import type { JwtPayload, RequestUser } from './auth.types';
 import { issuePasswordResetToken } from './password-reset-tokens';
 import { SESSION_REPLACED_MESSAGE, lockUserSessions } from './session-lock';
@@ -59,7 +59,7 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
-    private readonly access: AccessControlService,
+    private readonly access: AccessPolicyService,
     private readonly emailQueue: EmailQueueService,
     private readonly audit: AuditService,
     private readonly learningActivity: LearningActivityService,
@@ -89,10 +89,6 @@ export class AuthService {
       }
     }
 
-    // Free trials disabled — persist equal timestamps so schema columns stay filled
-    // without granting a trial window (AccessControlService never treats trial as active).
-    const trialStartedAt = new Date();
-    const trialEndsAt = trialStartedAt;
     const passwordHash = await argon2.hash(dto.password, { type: argon2.argon2id });
 
     const user = await this.prisma.user.create({
@@ -103,8 +99,6 @@ export class AuthService {
         passwordHash,
         role: UserRole.USER,
         status: UserStatus.ACTIVE,
-        trialStartedAt,
-        trialEndsAt,
       },
     });
 
@@ -325,7 +319,7 @@ export class AuthService {
   }
 
   async toPublicUser(user: User) {
-    const access = await this.access.getAccessSnapshot(user);
+    const access = await this.access.snapshot(user.id);
     const withStudy = await this.prisma.user.findUnique({
       where: { id: user.id },
       include: {

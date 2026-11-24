@@ -1,3 +1,5 @@
+import { validateSslcommerzEnv } from '../billing/sslcommerz/sslcommerz.config';
+
 const DEV_JWT_FALLBACK = 'dev-only-change-me-access-secret-32chars';
 
 function isProduction(): boolean {
@@ -35,6 +37,7 @@ export function getWebOrigins(): string[] {
  * Production refuses weak/missing secrets and insecure cookie settings.
  */
 export function validateEnv(): void {
+  validateSslcommerzEnv(isProduction());
   const required = ['DATABASE_URL', 'REDIS_URL', 'JWT_ACCESS_SECRET'] as const;
   const missing = required.filter((key) => !process.env[key]?.trim());
 
@@ -45,11 +48,6 @@ export function validateEnv(): void {
     getJwtAccessSecret();
     if (process.env.COOKIE_SECURE !== 'true') {
       throw new Error('COOKIE_SECURE must be "true" when NODE_ENV=production');
-    }
-    // TRIAL_DAYS is unused for entitlement (free trials disabled). Allow 0+ for env compat.
-    const trialDays = Number(process.env.TRIAL_DAYS ?? 0);
-    if (!Number.isFinite(trialDays) || trialDays < 0) {
-      throw new Error('TRIAL_DAYS must be a non-negative number when set');
     }
     const origins = getWebOrigins();
     if (

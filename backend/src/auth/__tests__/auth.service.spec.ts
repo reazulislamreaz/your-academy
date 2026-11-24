@@ -56,7 +56,7 @@ describe('AuthService hardening paths', () => {
     return arg;
   });
   const jwt = { signAsync: jest.fn().mockResolvedValue('access.jwt') };
-  const access = { getAccessSnapshot: jest.fn() };
+  const access = { snapshot: jest.fn() };
   const emailQueue = { enqueuePasswordReset: jest.fn() };
   const audit = { record: jest.fn() };
   const learningActivity = { record: jest.fn() };
@@ -73,10 +73,9 @@ describe('AuthService hardening paths', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jwt.signAsync.mockResolvedValue('access.jwt');
-    process.env.TRIAL_DAYS = '0';
   });
 
-  it('does not grant a free-trial window on registration', async () => {
+  it('registers a free learner (no trial / subscription fields written)', async () => {
     prisma.user.findUnique.mockResolvedValue(null);
     const created = {
       id: 'u1',
@@ -85,14 +84,11 @@ describe('AuthService hardening paths', () => {
       email: null,
       role: UserRole.USER,
       status: UserStatus.ACTIVE,
-      trialStartedAt: new Date('2026-11-02T00:00:00.000Z'),
-      trialEndsAt: new Date('2026-11-02T00:00:00.000Z'),
       passwordHash: 'hash',
     };
     prisma.user.create.mockImplementation(async ({ data }: { data: Record<string, unknown> }) => {
-      const trialStartedAt = data.trialStartedAt as Date;
-      const trialEndsAt = data.trialEndsAt as Date;
-      expect(trialEndsAt.getTime()).toBe(trialStartedAt.getTime());
+      expect(data).not.toHaveProperty('trialStartedAt');
+      expect(data).not.toHaveProperty('trialEndsAt');
       return { ...created, ...data, passwordHash: 'hash' };
     });
     prisma.authSession.create.mockResolvedValue({

@@ -23,7 +23,16 @@ import {
   uploadAdminModelTest,
 } from '@/lib/api/model-tests';
 import { adminDownloadUrl } from '@/lib/api/upload';
-import type { AdminModelTestUploadResult } from '@your-academy/shared';
+import type {
+  AdminModelTestListItem,
+  AdminModelTestUploadResult,
+  ContentAccessLevel,
+} from '@your-academy/shared';
+import {
+  ContentAccessBadge,
+  ContentAccessToggle,
+} from '@/features/admin/billing/content-access-toggle';
+import { ModelTestEditDialog } from '@/features/admin/billing/model-test-edit-dialog';
 
 export default function AdminModelTestUploadPage() {
   const qc = useQueryClient();
@@ -35,6 +44,8 @@ export default function AdminModelTestUploadPage() {
   const [newCategoryName, setNewCategoryName] = useState('');
   const [showNewCategory, setShowNewCategory] = useState(false);
   const [isPublished, setIsPublished] = useState(true);
+  const [access, setAccess] = useState<ContentAccessLevel>('FREE');
+  const [editing, setEditing] = useState<AdminModelTestListItem | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [result, setResult] = useState<AdminModelTestUploadResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -179,6 +190,10 @@ export default function AdminModelTestUploadPage() {
                   <option value="draft">Hidden</option>
                 </select>
               </Field>
+              <Field>
+                <Label htmlFor="mt-access">Access</Label>
+                <ContentAccessToggle id="mt-access" value={access} onChange={setAccess} />
+              </Field>
             </div>
 
             <div className="rounded-[var(--radius)] border border-dashed border-[var(--line)] bg-[var(--bg-desk)]/60 p-3">
@@ -247,6 +262,7 @@ export default function AdminModelTestUploadPage() {
                     examYear: examYear.trim() ? Number(examYear) : undefined,
                     categoryId: categoryId || undefined,
                     isPublished,
+                    access,
                     file,
                   });
                 }}
@@ -310,7 +326,10 @@ export default function AdminModelTestUploadPage() {
                     className="flex flex-col gap-2.5 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-2"
                   >
                     <div className="min-w-0">
-                      <p className="text-sm font-medium break-words text-[var(--ink)]">{item.title}</p>
+                      <p className="flex flex-wrap items-center gap-1.5 text-sm font-medium break-words text-[var(--ink)]">
+                        {item.title}
+                        <ContentAccessBadge access={item.access ?? 'FREE'} />
+                      </p>
                       <p className="mt-0.5 text-xs text-[var(--muted)]">
                         {item.totalQuestions} Q · {item.durationInMinutes} min
                         {item.category ? ` · ${item.category.name}` : ''}
@@ -324,6 +343,14 @@ export default function AdminModelTestUploadPage() {
                           View
                         </Button>
                       </Link>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 px-2.5 text-xs"
+                        onClick={() => setEditing(item)}
+                      >
+                        Edit
+                      </Button>
                       <Button
                         size="sm"
                         variant="outline"
@@ -371,6 +398,12 @@ export default function AdminModelTestUploadPage() {
           )}
         </AdminFormPanel>
       </AdminSection>
+
+      <ModelTestEditDialog
+        item={editing}
+        categories={categories.data ?? []}
+        onClose={() => setEditing(null)}
+      />
     </AdminPage>
   );
 }

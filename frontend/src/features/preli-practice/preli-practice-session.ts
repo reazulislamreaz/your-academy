@@ -20,19 +20,16 @@ export type PreliPracticeResult = {
   skippedCount: number;
   score: number;
   percent: number;
-  /** DEC-051: false → no answer key / per-question correctness (non-entitled viewer). */
-  answersVisible?: boolean;
   answerSheet: Array<{
     id: string;
     questionText: string;
     options: Array<{ id: string; label: string; content: string }>;
     selectedOptionId: string | null;
-    /** Entitled viewers only (DEC-051). */
-    correctOptionId?: string | null;
-    correctAnswerLabel?: string;
-    isCorrect?: boolean;
+    correctOptionId: string | null;
+    correctAnswerLabel: string;
+    isCorrect: boolean;
     isSkipped: boolean;
-    explanation?: string | null;
+    explanation: string | null;
   }>;
   finishedAtMs: number;
 };

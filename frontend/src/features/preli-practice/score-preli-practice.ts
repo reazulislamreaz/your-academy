@@ -4,10 +4,7 @@ import {
 } from '@/lib/api/public-questions';
 import type { PreliPracticeResult } from './preli-practice-session';
 
-/**
- * DEC-051: scoring happens on the server — public cards no longer carry the answer key
- * for free viewers. Per-question correctness / key come back only for entitled viewers.
- */
+/** Scoring happens on the server; it returns the key and per-question correctness. */
 export async function scorePreliPractice(input: {
   setId: string;
   setTitle: string;
@@ -33,13 +30,9 @@ export async function scorePreliPractice(input: {
       options: q.options.map((o) => ({ id: o.id, label: o.label, content: o.content })),
       selectedOptionId,
       isSkipped: !selectedOptionId,
-      ...(score.answersVisible && scored
-        ? {
-            correctOptionId: scored.correctOptionId ?? null,
-            correctAnswerLabel: scored.correctAnswerLabel,
-            isCorrect: scored.isCorrect,
-          }
-        : {}),
+      correctOptionId: scored?.correctOptionId ?? null,
+      correctAnswerLabel: scored?.correctAnswerLabel ?? '',
+      isCorrect: scored?.isCorrect ?? false,
       explanation: null,
     };
   });
@@ -56,7 +49,6 @@ export async function scorePreliPractice(input: {
     skippedCount: score.skippedCount,
     score: score.score,
     percent: score.percent,
-    answersVisible: score.answersVisible,
     answerSheet,
     finishedAtMs: Date.now(),
   };
