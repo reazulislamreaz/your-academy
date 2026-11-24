@@ -21,6 +21,7 @@ import { QuickLink } from '@/components/dashboard/quick-link';
 import { RecentExamAttempts } from '@/components/dashboard/recent-exam-attempts';
 import { RecommendedExams } from '@/components/dashboard/recommended-exams';
 import { SubjectProgress } from '@/components/dashboard/subject-progress';
+import { TrialStatusCard } from '@/components/dashboard/trial-status-card';
 import { LoadError } from '@/components/loading';
 import { Reveal } from '@/components/motion/reveal';
 import { Stagger } from '@/components/motion/stagger';
@@ -196,6 +197,8 @@ export default function StudyHomePage() {
           primaryLabel={last ? 'Resume practice' : 'Start practicing'}
         />
       </Reveal>
+
+      <TrialStatusCard access={me.data.access} isAdmin={me.data.role === 'ADMIN'} />
 
       {statsFailed || analyticsFailed || examPerf.isError ? (
         <LoadError

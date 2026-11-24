@@ -169,6 +169,18 @@ function cloneBody(body: BodyInit | null | undefined): BodyInit | null | undefin
   return copy;
 }
 
+/** True for `403 CONTENT_LOCKED` whose detail says the viewer looked signed out. */
+async function peekLoginRequiredLock(res: Response): Promise<boolean> {
+  try {
+    const body = (await res.clone().json()) as {
+      error?: { code?: string; details?: Array<{ loginRequired?: boolean }> };
+    };
+    return body.error?.code === 'CONTENT_LOCKED' && body.error.details?.[0]?.loginRequired === true;
+  } catch {
+    return false;
+  }
+}
+
 /** Read an error code without consuming the body the caller will parse later. */
 async function peekErrorCode(res: Response): Promise<string | undefined> {
   try {
@@ -232,9 +244,7 @@ export async function apiFetchResult<T>(
   const doFetch = async () => {
     const controller = timeoutMs > 0 ? new AbortController() : null;
     const timer =
-      controller && timeoutMs > 0
-        ? setTimeout(() => controller.abort(), timeoutMs)
-        : null;
+      controller && timeoutMs > 0 ? setTimeout(() => controller.abort(), timeoutMs) : null;
     // Honour caller abort + our timeout.
     const onCallerAbort = () => controller?.abort();
     if (signal) {
@@ -274,7 +284,30 @@ export async function apiFetchResult<T>(
   }
 
   const replacedNow = res.status === 401 && (await peekErrorCode(res)) === 'SESSION_REPLACED';
-  if (replacedNow && shouldAttemptRefresh(path, skipRefresh)) {
+  // Public routes read the session optionally: an expired access cookie looks like a guest
+  // and gets a "log in" lock (DEC-060/061). With session cookies present, refresh once and retry.
+  const staleLock =
+    res.status === 403 &&
+    likelyHasSessionCookies() &&
+    (await peekLoginRequiredLock(res)) &&
+    shouldAttemptRefresh(path, false);
+  if (staleLock) {
+    const refreshed = await refreshSession();
+    if (refreshed === 'replaced') {
+      handleSessionReplaced();
+    } else if (refreshed) {
+      try {
+        res = await doFetch();
+      } catch (err) {
+        if (err instanceof ApiError) throw err;
+        throw new ApiError(
+          'NETWORK_ERROR',
+          err instanceof Error ? err.message : 'Network request failed',
+          0,
+        );
+      }
+    }
+  } else if (replacedNow && shouldAttemptRefresh(path, skipRefresh)) {
     handleSessionReplaced();
   } else if (res.status === 401 && shouldAttemptRefresh(path, skipRefresh)) {
     const refreshed = await refreshSession();

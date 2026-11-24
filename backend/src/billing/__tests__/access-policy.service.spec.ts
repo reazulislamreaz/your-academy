@@ -24,7 +24,13 @@ describe('AccessPolicyService (DEC-060)', () => {
     } as never,
   );
 
-  const learner = { role: UserRole.USER, status: UserStatus.ACTIVE, deletedAt: null };
+  const trialOver = new Date('2026-11-01T00:00:00.000Z');
+  const learner = {
+    role: UserRole.USER,
+    status: UserStatus.ACTIVE,
+    deletedAt: null,
+    trialEndsAt: trialOver,
+  };
 
   beforeEach(() => {
     jest.resetAllMocks();
@@ -84,12 +90,74 @@ describe('AccessPolicyService (DEC-060)', () => {
     });
   });
 
+  describe('7-day trial (DEC-061)', () => {
+    it('running trial → full access while the paid system is ON', async () => {
+      prisma.user.findUnique.mockResolvedValue({
+        ...learner,
+        trialEndsAt: new Date(now.getTime() + 3 * 86_400_000 - 1000),
+      });
+      const a = await service.resolve({ userId: 'u1' }, now);
+      expect(a).toMatchObject({ fullAccess: true, isTrialActive: true, isPaid: false });
+    });
+
+    it('trial ended (server time) and no subscription → locked', async () => {
+      prisma.user.findUnique.mockResolvedValue({ ...learner, trialEndsAt: now });
+      const a = await service.resolve({ userId: 'u1' }, now);
+      expect(a).toMatchObject({ fullAccess: false, isTrialActive: false });
+    });
+
+    it('snapshot reports whole days left (rounded up) and 0 after the end', async () => {
+      prisma.userSubscription.findUnique.mockResolvedValue(null);
+      prisma.user.findUnique.mockResolvedValue({
+        ...learner,
+        trialEndsAt: new Date(now.getTime() + 2.1 * 86_400_000),
+      });
+      expect((await service.snapshot('u1', now)).trialDaysLeft).toBe(3);
+      prisma.user.findUnique.mockResolvedValue({ ...learner, trialEndsAt: trialOver });
+      const s = await service.snapshot('u1', now);
+      expect(s).toMatchObject({ trialDaysLeft: 0, isTrialActive: false });
+    });
+  });
+
+  describe('Topic Base (DEC-061)', () => {
+    const base = {
+      isAdmin: false,
+      isPaid: false,
+      isTrialActive: false,
+      trialEndsAt: null,
+      paidSystemEnabled: true,
+      preliFreeSetCount: 10,
+      writtenFreeSetCount: 10,
+    };
+
+    it('guests are refused even when the paid system is OFF (login required)', async () => {
+      const guestOff = { ...base, userId: null, paidSystemEnabled: false, fullAccess: true };
+      expect(await service.canAccess(guestOff, { kind: 'TOPIC' })).toBe(false);
+      const err = await service.assertAccess(guestOff, { kind: 'TOPIC' }).catch((e: unknown) => e);
+      const body = (err as ForbiddenException).getResponse() as {
+        error: { details: Array<{ loginRequired: boolean }> };
+      };
+      expect(body.error.details[0]!.loginRequired).toBe(true);
+    });
+
+    it('signed-in user: open with full access (trial / paid / switch OFF), locked otherwise', async () => {
+      expect(
+        await service.canAccess({ ...base, userId: 'u1', fullAccess: true }, { kind: 'TOPIC' }),
+      ).toBe(true);
+      expect(
+        await service.canAccess({ ...base, userId: 'u1', fullAccess: false }, { kind: 'TOPIC' }),
+      ).toBe(false);
+    });
+  });
+
   describe('canAccess()', () => {
     const free: ViewerAccess = {
       userId: 'u1',
       fullAccess: false,
       isAdmin: false,
       isPaid: false,
+      isTrialActive: false,
+      trialEndsAt: null,
       paidSystemEnabled: true,
       preliFreeSetCount: 10,
       writtenFreeSetCount: 10,

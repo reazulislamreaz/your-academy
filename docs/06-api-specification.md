@@ -446,6 +446,8 @@ Admin vs user allowed MIME/size differ by purpose (`avatar`, `question-image`, `
 | GET | `/admin/payments/:id` · `/:id/logs` | Order · redacted gateway log | User | `payments` |
 | POST | `/admin/payments/:id/recheck` · `/approve` · `/mark-refunded` | Transaction Query re-check · accept a RISK hold (re-validated) · label refunded | User + CSRF | `payments` |
 
+**Topic Base (DEC-061):** `/public/topic-subcategories/:id/questions` and `/public/topic-sets/:id/questions` need a session (always) plus trial / subscription when the paid system is ON, else `403 CONTENT_LOCKED`. `user.access` adds `isTrialActive`, `trialEndsAt`, `trialDaysLeft`.
+
 **Locks:** set lists, `/public/model-tests` and `/public/question-sets/:id` / `written-question-sets/:id` return `locked: boolean`. Set questions, practice-score, `/public/questions?uploadBatchId=`, `/questions/:id` (+ attempts), Model Test detail / attempts / results answer **`403 CONTENT_LOCKED`** with `details: [{ reason: 'PAID_REQUIRED', loginRequired }]` for viewers without access. Question lists simply omit MCQs of locked sets.
 
 ---

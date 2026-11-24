@@ -47,6 +47,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | DEC-051 | Answers are subscriber-only on public routes (amends DEC-031/039/040/042) | SUPERSEDED by DEC-060 |
 | DEC-052 | Admin grants / revokes learner subscriptions | SUPERSEDED by DEC-060 |
 | DEC-060 | Free vs Paid system + SSLCommerz payments (replaces DEC-051/052) | CONFIRMED |
+| DEC-061 | 7-day full-access trial + Topic Base login / paywall (amends DEC-060) | CONFIRMED |
 
 ---
 
@@ -659,6 +660,15 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Residual risk | The re-check loop runs inside the API process (not the BullMQ worker) so payment validation lives in one codebase; with several API replicas the `SKIP LOCKED` claim prevents double work and applying is idempotent anyway. Refunds are made in the SSLCommerz panel; "Mark refunded" only labels the order and does not revoke access (disable the subscription separately). |
 | Impact | `backend/src/billing/*` (replaces `backend/src/subscriptions/*`), public / questions / bookmarks / model-tests / documents / auth / users / admin services, shared `billing.ts`, frontend `features/billing`, `/packages`, `/payment/*`, admin Packages / Paid system / Subscribers / Payments, lock UI on lists and detail pages, profile "My plan". |
 | Status | **CONFIRMED** (owner approval 2026-11-24) |
+
+### DEC-061 — 7-day free trial and Topic Base access
+
+| Field | Value |
+|-------|-------|
+| Question | Topic Base was free and trials were removed by DEC-060. The owner now wants topic categories behind login, a 7-day trial for every account, and a paywall afterwards. |
+| Decision | **Trial:** `users.trial_ends_at` (NOT NULL, DB default `now() + 7 days`, so every creation path uses server time). Existing accounts are backfilled with `created_at + 7 days` (owner chose sign-up date, so most existing accounts are already past their trial). A running trial is **full access everywhere** — same as an active subscription in `AccessPolicyService` (sets beyond N, PAID Model Tests, PREMIUM PDFs, Topic Base). `/users/me` → `access.{ isTrialActive, trialEndsAt, trialDaysLeft }` (days rounded up, computed by the API); the learner dashboard and profile show them. **Topic Base:** directory and set names stay public; `GET /public/topic-subcategories/:id/questions` and `/public/topic-sets/:id/questions` require a signed-in account **always** (also with the paid system OFF), then trial / subscription / Admin when the paid system is ON, else `403 CONTENT_LOCKED` (`loginRequired` true for guests). Topic set pages redirect signed-out visitors to `/login?next=<same page>` and show a paywall (plans, prices, **Subscribe Now** → SSLCommerz checkout) to signed-in users without access; a 403 from the API also shows the paywall. The web client refreshes an expired access cookie and retries once when a public route answers `CONTENT_LOCKED` with `loginRequired` while session cookies exist. |
+| Impact | Migration `20261125090000_seven_day_trial`; `AccessPolicyService` (`TOPIC` kind, trial), `PublicController` topic routes, shared `UserAccessSnapshot`; frontend `TopicAccessGate`, `Paywall`, `TrialStatusCard`, `lib/api/client.ts`. Admin subscriber list still shows subscription state only (a trial user appears as Free). |
+| Status | **CONFIRMED** (owner decisions 2026-11-25) |
 ### Deferred / NEEDS APPROVAL (explicitly out of Phase 1)
 
 | Item | Notes |

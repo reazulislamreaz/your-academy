@@ -1,13 +1,9 @@
 'use client';
 
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Check } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
-import {
-  PACKAGE_DURATION_LABELS,
-  type SubscriptionPackageDto,
-} from '@your-academy/shared';
+import { PACKAGE_DURATION_LABELS, type SubscriptionPackageDto } from '@your-academy/shared';
 import { PageHeader } from '@/components/layout/page-header';
 import { ListCardSkeleton, LoadError } from '@/components/loading';
 import { Alert } from '@/components/ui/alert';
@@ -15,24 +11,18 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Surface } from '@/components/ui/surface';
 import { useMe } from '@/features/auth/use-auth';
-import { getAccessConfig, listPackages, startCheckout } from '@/lib/api/billing';
+import { getAccessConfig, listPackages } from '@/lib/api/billing';
 import { ApiError } from '@/lib/api/client';
 import { formatBdt, formatDate } from './format';
+import { useCheckout } from './use-checkout';
 
 /** DEC-060 — public Pricing / Packages page with server-priced SSLCommerz checkout. */
 export function PackagesView() {
   const me = useMe();
   const config = useQuery({ queryKey: ['access-config'], queryFn: getAccessConfig });
   const packages = useQuery({ queryKey: ['public-packages'], queryFn: listPackages });
-  const [buying, setBuying] = useState<string | null>(null);
-
-  const checkout = useMutation({
-    mutationFn: (packageId: string) => startCheckout(packageId),
-    onMutate: (packageId) => setBuying(packageId),
-    // Hand the browser to SSLCommerz; the result comes back on /payment/*.
-    onSuccess: (res) => window.location.assign(res.gatewayUrl),
-    onError: () => setBuying(null),
-  });
+  const checkout = useCheckout();
+  const buying = checkout.buying;
 
   const loggedIn = Boolean(me.data);
   const isAdmin = me.data?.role === 'ADMIN';
@@ -49,9 +39,7 @@ export function PackagesView() {
       />
 
       {config.data && !paidOn ? (
-        <Alert variant="success">
-          All content is free right now — no purchase needed.
-        </Alert>
+        <Alert variant="success">All content is free right now — no purchase needed.</Alert>
       ) : null}
       {paidOn && config.data && !configured ? (
         <Alert variant="warning">
@@ -112,14 +100,14 @@ export function PackagesView() {
       )}
 
       <p className="text-xs text-[var(--muted)]">
-        Payments are processed securely by SSLCommerz (cards, bKash, Nagad, Rocket and more).
-        Your plan starts as soon as the payment is confirmed.
+        Payments are processed securely by SSLCommerz (cards, bKash, Nagad, Rocket and more). Your
+        plan starts as soon as the payment is confirmed.
       </p>
     </div>
   );
 }
 
-function PackageCard({
+export function PackageCard({
   pkg,
   action,
 }: {

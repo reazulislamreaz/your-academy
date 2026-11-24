@@ -208,6 +208,8 @@ model User {
   /// Set when the current `email` was confirmed via link; cleared whenever email changes.
   emailVerifiedAt       DateTime?  @map("email_verified_at") @db.Timestamptz(3)
   passwordHash          String     @map("password_hash")
+  /// DEC-061 — 7-day full-access trial; DB server time at insert. Backfilled from created_at.
+  trialEndsAt           DateTime   @default(dbgenerated("(now() + '7 days'::interval)")) @map("trial_ends_at") @db.Timestamptz(3)
   /// Set when an Admin issues a temporary password; every API call except change-password is refused until cleared.
   mustChangePassword    Boolean    @default(false) @map("must_change_password")
   role                  UserRole   @default(USER)

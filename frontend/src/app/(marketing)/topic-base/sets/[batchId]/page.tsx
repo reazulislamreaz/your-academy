@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { TopicAccessGate } from '@/features/topic-base/topic-access-gate';
 import { TopicSetView } from '@/features/topic-base/topic-set-view';
 
 type Props = { params: Promise<{ batchId: string }> };
@@ -15,7 +16,9 @@ export default async function TopicSetPage({ params }: Props) {
   const { batchId } = await params;
   return (
     <main className="marketing-container section-pad">
-      <TopicSetView batchId={batchId} />
+      <TopicAccessGate>
+        <TopicSetView batchId={batchId} />
+      </TopicAccessGate>
     </main>
   );
 }

@@ -20,10 +20,13 @@ export type AccessViewer = { userId: string } | null | undefined;
  */
 export type ViewerAccess = {
   userId: string | null;
-  /** Admin, paid system OFF, or an active subscriber — nothing is locked. */
+  /** Admin, paid system OFF, active subscriber or 7-day trial — nothing is locked. */
   fullAccess: boolean;
   isAdmin: boolean;
   isPaid: boolean;
+  /** DEC-061 — `now < users.trial_ends_at`. */
+  isTrialActive: boolean;
+  trialEndsAt: Date | null;
   paidSystemEnabled: boolean;
   preliFreeSetCount: number;
   writtenFreeSetCount: number;
@@ -35,12 +38,15 @@ export type LockableContent =
   /** A bank MCQ inherits its Preli set's lock; no set → free. */
   | { kind: 'PRELI_QUESTION'; uploadBatchId: string | null }
   | { kind: 'MODEL_TEST'; access: ContentAccess }
-  | { kind: 'DOCUMENT'; visibility: DocumentVisibility };
+  | { kind: 'DOCUMENT'; visibility: DocumentVisibility }
+  /** DEC-061 — Topic Base content: login always, then trial / subscription (when paid ON). */
+  | { kind: 'TOPIC' };
 
 /**
- * DEC-060 — the one place that decides Free vs Paid access:
+ * DEC-060 / DEC-061 — the one place that decides Free vs Paid access:
+ *   0. Topic Base content always needs a signed-in account.
  *   1. Admin → everything.  2. Paid system OFF → everything.
- *   3. Content is free → open.  4. Active subscription → open.  Otherwise locked.
+ *   3. Content is free → open.  4. Active subscription or 7-day trial → open.  Otherwise locked.
  * Locked content must not be sent at all — callers check before loading it.
  */
 @Injectable()
@@ -64,13 +70,15 @@ export class AccessPolicyService {
         userId: null,
         isAdmin: false,
         isPaid: false,
+        isTrialActive: false,
+        trialEndsAt: null,
         fullAccess: !base.paidSystemEnabled,
       };
     }
 
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { role: true, status: true, deletedAt: true },
+      select: { role: true, status: true, deletedAt: true, trialEndsAt: true },
     });
     // Unknown / suspended / deleted accounts are treated like guests (fail closed).
     if (!user || user.deletedAt || user.status !== UserStatus.ACTIVE) {
@@ -79,17 +87,23 @@ export class AccessPolicyService {
         userId: null,
         isAdmin: false,
         isPaid: false,
+        isTrialActive: false,
+        trialEndsAt: null,
         fullAccess: !base.paidSystemEnabled,
       };
     }
     const isAdmin = user.role === UserRole.ADMIN;
     const isPaid = await this.isUserPaid(userId, now);
+    // Server clock only — the browser never decides whether the trial is running.
+    const isTrialActive = user.trialEndsAt.getTime() > now.getTime();
     return {
       ...base,
       userId,
       isAdmin,
       isPaid,
-      fullAccess: isAdmin || isPaid || !base.paidSystemEnabled,
+      isTrialActive,
+      trialEndsAt: user.trialEndsAt,
+      fullAccess: isAdmin || isPaid || isTrialActive || !base.paidSystemEnabled,
     };
   }
 
@@ -107,6 +121,9 @@ export class AccessPolicyService {
       fullAccess: access.fullAccess,
       isPaid: access.isPaid,
       subscriptionEndsAt: sub && !sub.disabledAt ? sub.endsAt.toISOString() : null,
+      isTrialActive: access.isTrialActive,
+      trialEndsAt: access.trialEndsAt?.toISOString() ?? null,
+      trialDaysLeft: trialDaysLeft(access.trialEndsAt, now),
     };
   }
 
@@ -120,6 +137,9 @@ export class AccessPolicyService {
   }
 
   async canAccess(access: ViewerAccess, content: LockableContent): Promise<boolean> {
+    // Before the full-access shortcut: guests get full access while the paid system is OFF,
+    // but Topic Base still requires an account.
+    if (content.kind === 'TOPIC' && access.userId === null) return false;
     if (access.fullAccess) return true;
     switch (content.kind) {
       case 'MODEL_TEST':
@@ -135,6 +155,8 @@ export class AccessPolicyService {
           content.uploadBatchId === null ||
           (await this.freePreliSetIds(access)).has(content.uploadBatchId)
         );
+      case 'TOPIC':
+        return false;
     }
   }
 
@@ -150,7 +172,9 @@ export class AccessPolicyService {
     return new ForbiddenException(
       createErrorResponse(
         CONTENT_LOCKED,
-        'Become a paid user to unlock this content',
+        access.userId === null
+          ? 'Log in or sign up to view this content'
+          : 'Become a paid user to unlock this content',
         newRequestId(),
         [detail],
       ),
@@ -194,4 +218,11 @@ export class AccessPolicyService {
     const free = [...(await this.freePreliSetIds(access))];
     return { OR: [{ uploadBatchId: null }, { uploadBatchId: { in: free } }] };
   }
+}
+
+/** Whole days left, rounded up ("2.1 days" → 3); 0 once the trial has ended. */
+export function trialDaysLeft(trialEndsAt: Date | null, now = new Date()): number {
+  if (!trialEndsAt) return 0;
+  const ms = trialEndsAt.getTime() - now.getTime();
+  return ms > 0 ? Math.ceil(ms / 86_400_000) : 0;
 }

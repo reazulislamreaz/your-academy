@@ -61,7 +61,9 @@ erDiagram
 
 ### 3.1 User
 
-**Purpose:** Account identity, role, profile.
+**Purpose:** Account identity, role, profile, trial window.
+
+`trial_ends_at` TIMESTAMPTZ NOT NULL — DB default `now() + 7 days` (DEC-061); existing rows backfilled from `created_at`.
 
 | Field | Type | Notes |
 |-------|------|-------|

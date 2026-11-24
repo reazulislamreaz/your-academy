@@ -295,16 +295,21 @@ export class PublicController {
     );
   }
 
-  /** Topic Base is free for everyone (not part of the DEC-060 paid system). */
+  /** DEC-061 — Topic Base questions: login required, then trial / subscription (paid ON). */
   @Get('topic-subcategories/:id/questions')
-  @Header('Cache-Control', SHORT_PUBLIC_CACHE)
+  @UseGuards(OptionalJwtAuthGuard)
   async topicQuestions(
     @Param('id') id: string,
+    @Req() req: ViewerRequest,
+    @Res({ passthrough: true }) res: Response,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
     @Query('q') q?: string,
   ) {
     const take = Math.min(Math.max(Number(limit) || 20, 1), 100);
+    await this.access.assertAccess(await this.viewerAccess(req, res, 'no-store'), {
+      kind: 'TOPIC',
+    });
     const data = await this.publicService.listTopicQuestions({
       subcategoryId: id,
       cursor,
@@ -339,16 +344,21 @@ export class PublicController {
     return createSuccessResponse(await this.publicService.getTopicSet(id), newRequestId());
   }
 
-  /** Topic Base is free for everyone (not part of the DEC-060 paid system). */
+  /** DEC-061 — Topic Base questions: login required, then trial / subscription (paid ON). */
   @Get('topic-sets/:id/questions')
-  @Header('Cache-Control', SHORT_PUBLIC_CACHE)
+  @UseGuards(OptionalJwtAuthGuard)
   async topicSetQuestions(
     @Param('id') id: string,
+    @Req() req: ViewerRequest,
+    @Res({ passthrough: true }) res: Response,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
     @Query('q') q?: string,
   ) {
     const take = Math.min(Math.max(Number(limit) || 20, 1), 100);
+    await this.access.assertAccess(await this.viewerAccess(req, res, 'no-store'), {
+      kind: 'TOPIC',
+    });
     const data = await this.publicService.listTopicSetQuestions({
       batchId: id,
       cursor,

@@ -12,10 +12,11 @@ payloads, not in SSR HTML). The UI lock icon is UX only.
 
 `backend/src/billing/access-policy.service.ts`, resolved once per request:
 
+0. **Topic Base** questions (`TOPIC`) need a signed-in account first — even when the paid system is OFF (DEC-061).
 1. **Admin** → full access.
 2. **Paid system OFF** (`site_settings.paid_system_enabled`) → full access for everyone.
 3. **Content is free** → open.
-4. **Active subscription** (`disabled_at IS NULL AND starts_at <= now < ends_at`) → open.
+4. **Active subscription** (`disabled_at IS NULL AND starts_at <= now < ends_at`) **or running 7-day trial** (`now < users.trial_ends_at`, DEC-061) → open.
 5. Otherwise → `403 CONTENT_LOCKED` (`error.details[0].loginRequired` for guests).
 
 Suspended / deleted / unknown accounts are treated as guests. Moderators have no paid bypass.
@@ -30,7 +31,8 @@ Expiry needs no job: the check runs at request time.
 | Bank MCQ (`Question`) | Inherits its set's lock; MCQs without a set are free |
 | Model Tests | Per test `access = FREE | PAID` (create / edit toggle) |
 | Documents | `PREMIUM` = paid; `PUBLIC` / `AUTHENTICATED` free |
-| Topic Base, Quizzes, practice sets, news | Free |
+| Topic Base questions | Login always; then trial / subscription when paid system ON (names stay public) — DEC-061 |
+| Quizzes, practice sets, news | Free |
 
 Display order (`billing/set-order.ts`, shared by lists and the rule):
 `questionDate DESC NULLS LAST, createdAt DESC, id DESC`, over the **unfiltered** list of

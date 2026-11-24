@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { Paywall } from '@/features/billing/paywall';
+import { isContentLockedError } from '@/lib/api/billing';
 import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
 import { ListCardSkeleton, LoadError } from '@/components/loading';
@@ -39,11 +41,7 @@ type Props = {
   topicsBasePath?: string;
 };
 
-export function TopicSetView({
-  batchId,
-  className,
-  topicsBasePath = '/topic-categories',
-}: Props) {
+export function TopicSetView({ batchId, className, topicsBasePath = '/topic-categories' }: Props) {
   const topicsRoot = topicsBasePath.replace(/\/$/, '') || '/topic-categories';
   const [qInput, setQInput] = useState('');
   const q = useDebouncedValue(qInput.trim(), 350);
@@ -78,11 +76,7 @@ export function TopicSetView({
     : topicsRoot;
 
   const pathLabel = setQry.data
-    ? [
-        setQry.data.category.name,
-        setQry.data.subcategory.name,
-        setQry.data.childCategory?.name,
-      ]
+    ? [setQry.data.category.name, setQry.data.subcategory.name, setQry.data.childCategory?.name]
         .filter(Boolean)
         .join(' / ')
     : '';
@@ -130,10 +124,12 @@ export function TopicSetView({
 
       {list.isLoading ? <ListCardSkeleton rows={3} rowClassName="min-h-56 py-6" /> : null}
       {list.isError ? (
-        <LoadError
-          message="Could not load questions."
-          onRetry={() => void list.refetch()}
-        />
+        // DEC-061: the API is the source of truth (e.g. trial ended since the page loaded).
+        isContentLockedError(list.error) ? (
+          <Paywall title={setQry.data?.title} />
+        ) : (
+          <LoadError message="Could not load questions." onRetry={() => void list.refetch()} />
+        )
       ) : null}
       {!list.isLoading && !list.isError && items.length === 0 ? (
         <EmptyState align="center" title="No matching questions" />

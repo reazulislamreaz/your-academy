@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Surface } from '@/components/ui/surface';
+import { useMe } from '@/features/auth/use-auth';
 import { getAccessConfig, getMySubscription } from '@/lib/api/billing';
 import { formatBdt, formatDate, formatDateTime } from './format';
 
@@ -40,6 +41,7 @@ const PAYMENT_LABEL: Record<PaymentOrderStatus, string> = {
 /** DEC-060 — profile: current plan, expiry and payment history. */
 export function MyPlanCard() {
   const mine = useQuery({ queryKey: ['my-subscription'], queryFn: getMySubscription });
+  const trial = useMe().data?.access;
   const config = useQuery({ queryKey: ['access-config'], queryFn: getAccessConfig });
 
   if (mine.isLoading) return <Skeleton className="h-40 w-full" />;
@@ -68,15 +70,17 @@ export function MyPlanCard() {
             ? 'Admins have full access to everything.'
             : !paidOn
               ? 'All content is free right now.'
-              : sub.state === 'ACTIVE' && sub.endsAt
-                ? `Full access until ${formatDate(sub.endsAt)}.`
-                : sub.state === 'SCHEDULED' && sub.startsAt
-                  ? `Your plan starts on ${formatDate(sub.startsAt)}.`
-                  : sub.state === 'EXPIRED' && sub.endsAt
-                    ? `Your plan ended on ${formatDate(sub.endsAt)}. You are on the free plan.`
-                    : sub.state === 'DISABLED'
-                      ? 'Your plan was disabled by an admin. Contact support if this is unexpected.'
-                      : 'You are on the free plan: the first sets of each bank and free Model Tests are open.'}
+              : sub.state !== 'ACTIVE' && trial?.isTrialActive && trial.trialEndsAt
+                ? `Free trial: full access until ${formatDate(trial.trialEndsAt)} (${trial.trialDaysLeft} ${trial.trialDaysLeft === 1 ? 'day' : 'days'} left).`
+                : sub.state === 'ACTIVE' && sub.endsAt
+                  ? `Full access until ${formatDate(sub.endsAt)}.`
+                  : sub.state === 'SCHEDULED' && sub.startsAt
+                    ? `Your plan starts on ${formatDate(sub.startsAt)}.`
+                    : sub.state === 'EXPIRED' && sub.endsAt
+                      ? `Your plan ended on ${formatDate(sub.endsAt)}. You are on the free plan.`
+                      : sub.state === 'DISABLED'
+                        ? 'Your plan was disabled by an admin. Contact support if this is unexpected.'
+                        : 'You are on the free plan: the first sets of each bank and free Model Tests are open.'}
         </p>
         {!isAdmin && paidOn ? (
           <Link href="/packages">
@@ -93,13 +97,17 @@ export function MyPlanCard() {
       ) : (
         <ul className="divide-y divide-[var(--line)] rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--bg-elevated)]">
           {payments.map((p) => (
-            <li key={p.tranId} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 text-sm">
+            <li
+              key={p.tranId}
+              className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 text-sm"
+            >
               <span className="min-w-0 flex-1">
                 <span className="block font-semibold break-words text-[var(--ink)]">
                   {p.packageName}
                 </span>
                 <span className="block text-xs text-[var(--muted)]">
-                  {formatDateTime(p.createdAt)} · <span className="font-mono break-all">{p.tranId}</span>
+                  {formatDateTime(p.createdAt)} ·{' '}
+                  <span className="font-mono break-all">{p.tranId}</span>
                 </span>
               </span>
               <span className="font-semibold tabular-nums">{formatBdt(p.amount)}</span>

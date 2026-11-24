@@ -63,8 +63,9 @@ Forbidden without approval: microservices, GraphQL, alternate ORMs, payment prov
 
 | ID | Rule |
 |----|------|
-| Trial | **None** — registration gives the free plan; trial columns were dropped (DEC-060). |
-| Free plan (paid system ON) | First **N** Preli and first **N** Written sets (admin-set, default 10, display order), FREE Model Tests, Topic Base, Quizzes, practice sets, news, non-PREMIUM PDFs, profile, bookmarks. Paid system **OFF** → everything open (DEC-060) |
+| Trial | **7 days of full access** from account creation (DEC-061): `users.trial_ends_at` = DB `now() + 7 days` at insert (existing accounts backfilled from `created_at`). Server time only; counts as full access in `AccessPolicyService`. Days left on the learner dashboard |
+| Free plan (paid system ON, after trial) | First **N** Preli and first **N** Written sets (admin-set, default 10, display order), FREE Model Tests, Quizzes, practice sets, news, non-PREMIUM PDFs, profile, bookmarks. Paid system **OFF** → everything open (DEC-060) |
+| Topic Base | Directory / set **names** public; topic **questions** require login **always** (even with paid system OFF), then trial or active subscription when paid system is ON → else 403 `CONTENT_LOCKED` + paywall (DEC-061). Signed-out visitors are sent to `/login?next=<page>` |
 | Locked content | Sets beyond N, PAID Model Tests, PREMIUM PDFs: listed with `locked: true`, content routes return **403 `CONTENT_LOCKED`** and never load questions. Decided only by `AccessPolicyService` (Admin → switch → free item → active subscription). Answers are **not** separately gated (DEC-060 replaces DEC-051) |
 | Questions CRUD | **Admin or Moderator** (content sections only — DEC-048) |
 | Question browse | Public Preli / Written / Topic banks + homepage via `/api/v1/public/*` (DEC-031/040/042); a bank MCQ inherits its set's lock; learner practice `/questions*` remains authenticated (DEC-003) |
@@ -247,6 +248,7 @@ Forbidden without approval: microservices, GraphQL, alternate ORMs, payment prov
 | `docs/19` DEC-046 | Admin-managed footer social links |
 | `docs/19` DEC-048 | Admin / Moderator roles, account settings, email verification |
 | `docs/19` DEC-060 | Free vs Paid system, packages, SSLCommerz payments (supersedes DEC-051 / DEC-052) |
+| `docs/19` DEC-061 | 7-day trial + Topic Base login / paywall |
 | `docs/04`–`06` | Architecture, DB, API |
 | `docs/07`–`08` | Auth, access control |
 | `docs/09`–`10` | Cloudinary, BullMQ |

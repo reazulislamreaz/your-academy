@@ -60,6 +60,11 @@ export type UserAccessSnapshot = {
   /** Active subscription right now. */
   isPaid: boolean;
   subscriptionEndsAt: string | null;
+  /** DEC-061 — 7-day trial from account creation (server time). */
+  isTrialActive: boolean;
+  trialEndsAt: string | null;
+  /** Whole days left, rounded up; 0 when ended. */
+  trialDaysLeft: number;
 };
 
 /** Paid-system switches (admin dashboard → Subscription settings). */
