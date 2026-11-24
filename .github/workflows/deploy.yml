@@ -15,13 +15,24 @@ on:
   workflow_dispatch:
     inputs:
       action:
-        description: deploy = deploy this commit · rollback = switch back to a kept version
+        description: >-
+          deploy = deploy this commit · rollback = switch back to a kept version ·
+          migration-status = show failed DB migrations · resolve-migration = clear one (runbook §6a)
         type: choice
-        options: [deploy, rollback]
+        options: [deploy, rollback, migration-status, resolve-migration]
         default: deploy
       rollback_to:
         description: Version (commit SHA tag) to roll back to — empty = the previous one
         required: false
+        default: ''
+      migration_name:
+        description: resolve-migration only — e.g. 20261124120000_document_bookmark_folders
+        required: false
+        default: ''
+      resolve_as:
+        description: resolve-migration only — rolled-back (nothing was applied) or applied
+        type: choice
+        options: ['', rolled-back, applied]
         default: ''
       image_source:
         description: Where images come from (empty = repository variable DEPLOY_IMAGE_SOURCE, else build)
@@ -137,6 +148,8 @@ jobs:
           IMAGE_PREFIX: ${{ needs.prepare.outputs.prefix }}
           DEPLOY_ACTION: ${{ needs.prepare.outputs.action }}
           ROLLBACK_TO: ${{ inputs.rollback_to }}
+          MIGRATION_NAME: ${{ inputs.migration_name }}
+          RESOLVE_AS: ${{ inputs.resolve_as }}
           GHCR_USER: ${{ github.actor }}
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           APP_DIR_SECRET: ${{ secrets.DEPLOY_PATH }}
@@ -148,7 +161,7 @@ jobs:
           port: 22
           # Server-side builds can take well over the action's 10-minute default.
           command_timeout: 60m
-          envs: DEPLOY_SHA,DEPLOY_TAG,IMAGE_SOURCE,IMAGE_PREFIX,DEPLOY_ACTION,ROLLBACK_TO,GHCR_USER,GHCR_TOKEN,APP_DIR_SECRET,DOMAIN
+          envs: DEPLOY_SHA,DEPLOY_TAG,IMAGE_SOURCE,IMAGE_PREFIX,DEPLOY_ACTION,ROLLBACK_TO,MIGRATION_NAME,RESOLVE_AS,GHCR_USER,GHCR_TOKEN,APP_DIR_SECRET,DOMAIN
           script: |
             set -euo pipefail
             echo "==> Deploy request: action=$DEPLOY_ACTION commit=$DEPLOY_SHA images=$IMAGE_SOURCE"
@@ -162,8 +175,25 @@ jobs:
               trap 'docker logout ghcr.io >/dev/null 2>&1 || true' EXIT
             fi
 
+            # Every action runs the scripts of this commit (rollback only switches images).
+            echo "==> Checking out $DEPLOY_SHA"
+            git fetch --prune origin
+            # Production mirrors the tested commit exactly. Ignored files (.env.production,
+            # certs, backups/, .deploy/ state) are preserved (no -x).
+            git checkout -q --force --detach "$DEPLOY_SHA"
+            git clean -fd
+            chmod +x scripts/deploy.sh scripts/backup-db.sh scripts/restore-db.sh
+
+            if [ "$DEPLOY_ACTION" = migration-status ]; then
+              ./scripts/deploy.sh migration-status
+              exit 0
+            fi
+            if [ "$DEPLOY_ACTION" = resolve-migration ]; then
+              ./scripts/deploy.sh resolve-migration "$MIGRATION_NAME" "$RESOLVE_AS"
+              exit 0
+            fi
+
             if [ "$DEPLOY_ACTION" = rollback ]; then
-              chmod +x scripts/deploy.sh
               if [ -n "$ROLLBACK_TO" ]; then
                 ./scripts/deploy.sh rollback "$ROLLBACK_TO"
               else
@@ -172,13 +202,6 @@ jobs:
               exit 0
             fi
 
-            echo "==> Checking out $DEPLOY_SHA"
-            git fetch --prune origin
-            # Production mirrors the tested commit exactly. Ignored files (.env.production,
-            # certs, backups/, .deploy/ state) are preserved (no -x).
-            git checkout -q --force --detach "$DEPLOY_SHA"
-            git clean -fd
-            chmod +x scripts/deploy.sh scripts/backup-db.sh scripts/restore-db.sh
             ./scripts/deploy.sh deploy
 
             if [ -n "${DOMAIN:-}" ]; then

@@ -4,6 +4,9 @@
 #   scripts/deploy.sh                 deploy the checked-out commit (default)
 #   scripts/deploy.sh rollback [TAG]  switch back to a kept version (default: the previous one)
 #   scripts/deploy.sh status          show the running / kept versions and free disk
+#   scripts/deploy.sh migration-status            failed Prisma migrations + their error log
+#   scripts/deploy.sh resolve-migration NAME rolled-back|applied
+#                                     clear a failed migration record (see runbook first)
 #
 # How a deploy stays safe:
 #   1. Disk check + cleanup that never touches volumes, database data or kept versions.
@@ -265,6 +268,11 @@ pending_migrations() {
   done
 }
 
+failed_migrations() {
+  compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc \
+    "select migration_name from _prisma_migrations where finished_at is null and rolled_back_at is null" 2>/dev/null || true
+}
+
 backup_db() {
   mkdir -p backups
   local out
@@ -400,6 +408,14 @@ do_deploy() {
   log "Currently running: ${CURRENT:-nothing (first deploy)}"
   [[ "$NEW_TAG" != "$CURRENT" ]] || log "Same version as running — redeploying it."
 
+  step "Failed migration records"
+  local failed
+  failed="$(failed_migrations | tr '\n' ' ')"
+  if [[ -n "${failed// /}" ]]; then
+    die "Prisma has failed migration record(s): ${failed}— nothing was built or changed. Inspect with 'scripts/deploy.sh migration-status', then resolve (runbook §6a) and re-run."
+  fi
+  log "None"
+
   step "Disk space"
   ensure_disk
 
@@ -514,9 +530,44 @@ do_deploy() {
   summary "SUCCESS"
 }
 
+do_migration_status() {
+  echo "Failed Prisma migrations (finished_at is null, not rolled back):"
+  compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
+    "select migration_name, started_at, left(coalesce(logs,''), 2000) as error_log from _prisma_migrations where finished_at is null and rolled_back_at is null order by started_at" ||
+    die "Could not query _prisma_migrations"
+  echo "Last applied migrations:"
+  compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
+    "select migration_name, finished_at from _prisma_migrations where finished_at is not null order by finished_at desc limit 5"
+}
+
+do_resolve_migration() {
+  local name="${2:-}" mode="${3:-}" tag
+  [[ "$name" =~ ^[0-9]{14}_[a-z0-9_]+$ ]] || die "Usage: resolve-migration <migration_name> rolled-back|applied"
+  [[ "$mode" == rolled-back || "$mode" == applied ]] || die "Mode must be 'rolled-back' or 'applied'"
+  grep -qxF "$name" <<<"$(failed_migrations)" || die "$name is not a failed migration record — nothing to resolve."
+  # Newest local api image that ships this migration (the Prisma CLI checks the folder).
+  local ref
+  tag=""
+  while read -r ref; do
+    [[ "$ref" == *"<none>"* ]] && continue
+    if docker run --rm --entrypoint test "$ref" -f "/app/backend/prisma/migrations/$name/migration.sql" 2>/dev/null; then
+      tag="${ref##*:}"
+      break
+    fi
+  done < <(docker image ls --format '{{.Repository}}:{{.Tag}}' "$IMAGE_PREFIX-api")
+  [[ -n "$tag" ]] || die "No local $IMAGE_PREFIX-api image contains $name — run a deploy build first."
+  step "prisma migrate resolve --$mode $name (Prisma CLI from $IMAGE_PREFIX-api:$tag)"
+  compose_tag "$tag" run --rm --no-deps -T --entrypoint /app/backend/node_modules/.bin/prisma migrate \
+    migrate resolve "--$mode" "$name" --schema /app/backend/prisma/schema.prisma ||
+    die "prisma migrate resolve failed"
+  log "Resolved. Re-run the deploy."
+}
+
 case "$ACTION" in
   deploy) do_deploy ;;
+  migration-status) do_migration_status ;;
+  resolve-migration) do_resolve_migration "$@" ;;
   rollback) do_rollback "$@" ;;
   status) do_status ;;
-  *) die "Unknown action '$ACTION' (use: deploy | rollback [TAG] [--force] | status)" ;;
+  *) die "Unknown action '$ACTION' (use: deploy | rollback [TAG] [--force] | status | migration-status | resolve-migration NAME MODE)" ;;
 esac

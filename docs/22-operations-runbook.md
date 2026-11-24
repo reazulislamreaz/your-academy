@@ -167,6 +167,14 @@ The first deploy with this script adopts the containers that were already runnin
 
 ---
 
+### 6a. Failed migration record (Prisma P3009)
+
+A migration that crashed mid-deploy (e.g. disk full) leaves a "failed" row in `_prisma_migrations`; Prisma then refuses every later migration, and the deploy stops **before building** with this message. The live site keeps running.
+
+1. Actions → **Deploy** → *Run workflow* → action `migration-status` (or `./scripts/deploy.sh migration-status` on the server). It prints the failed migration and Prisma's stored error.
+2. Decide: a migration **without** its own `BEGIN/COMMIT` runs as one transaction in Postgres, so a failure leaves nothing behind → `rolled-back` (it re-applies on the next deploy). Only if its changes are fully present in the DB → `applied`. If unsure, check the DB for the objects it creates.
+3. Run action `resolve-migration` with `migration_name` and `resolve_as`, then run the deploy again.
+
 ## 7. Incident quick checks
 
 | Symptom | Likely cause |
