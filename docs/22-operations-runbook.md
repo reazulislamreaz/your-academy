@@ -72,15 +72,22 @@ curl -fsS http://your.domain/ready
 
 Triggered by GitHub Actions `Deploy` workflow after successful CI on `main`, or manually (`workflow_dispatch`).
 
-On the host, equivalent:
+The workflow checks out **exactly the commit CI tested** and runs `scripts/deploy.sh`, which:
 
-```bash
-cd "$DEPLOY_PATH"
-git pull --ff-only
-./scripts/deploy.sh
-```
+1. Takes a lock (one deploy at a time; the workflow also has a `production-deploy` concurrency group).
+2. Checks free disk (`MIN_FREE_GB`, default 5). Below it, runs the safe cleanup; still below → stops, site untouched.
+3. Safe cleanup every deploy: `docker container prune -f`, `docker image prune -af --filter until=72h` (app images excluded — they follow version retention), `docker builder prune -af --filter until=72h`. **Volumes are never pruned.**
+4. Validates the nginx config, then builds (or pulls from GHCR) `your-academy-{api,web,worker}:<sha12>` while the current version keeps serving.
+5. Pending migrations must pass `scripts/check-migrations.mjs` (backward-compatible only); DB backup to `backups/pre-deploy_<sha>_*.sql.gz` (last 5 kept), then `migrate`.
+6. Blue/green per service (api → web → worker): new container starts next to the old one, must be healthy (+ `/health` 200 and `/ready` for api, `/` for web), nginx re-resolves, old container is drained and removed.
+7. Final `/health` through nginx. Any failure after a switch → automatic rollback of the switched services to the previous version.
+8. Records the version in `.deploy/history`, keeps the last `KEEP_VERSIONS` (3) image sets, prints a summary (deployed / previous / rollback).
 
-Migrations run via the one-shot `migrate` Compose service **before** `api`/`worker` start.
+On the host, equivalent: `git checkout --detach <sha> && ./scripts/deploy.sh` · state: `./scripts/deploy.sh status`.
+
+**Image source:** set repository variable `DEPLOY_IMAGE_SOURCE=ghcr` to build on GitHub Actions and push to `ghcr.io/<owner>/your-academy-*` — the server then only pulls. Also set repository variables `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` (and `NEXT_PUBLIC_API_BASE_URL` if not `/api/v1`), because the web image bakes them in at build time. Default `build` keeps building on the server.
+
+**Migrations must be expand-only** (add tables / nullable or defaulted columns / indexes). Drop, rename or retype in a *later* release once no running version uses the old shape. CI and the deploy block anything else unless it is listed in `backend/prisma/breaking-migrations.txt`; for those, the deploy backs up first and `rollback` refuses to go below that version without `--force` (restore the backup first).
 
 ---
 
@@ -142,12 +149,21 @@ See `docs/15-docker-and-deployment.md` §10 for RPO/RTO and last drill note.
 
 ## 6. Rollback
 
-1. `git log -5 --oneline` → note previous good SHA.
-2. `git checkout <sha>`
-3. `./scripts/deploy.sh`
-4. If migration caused failure, restore DB from last backup **before** re-deploying older code that expects prior schema.
+Failed deploys roll back by themselves. To go back manually to a kept version (last 3, no rebuild, zero downtime):
 
-Prefer image/git tags for releases once you add tagged deploys.
+- **GitHub:** Actions → **Deploy** → *Run workflow* → action `rollback`, `rollback_to` = version tag (empty = previous one). Use the same image source as the deploy.
+- **On the server:**
+
+```bash
+cd "$DEPLOY_PATH"
+./scripts/deploy.sh status              # running version, history, kept versions
+./scripts/deploy.sh rollback            # back to the previous version
+./scripts/deploy.sh rollback 26d64d5a1b2c   # back to a specific kept version
+```
+
+Rollback switches images only — it does **not** touch the database (expand-only migrations keep older versions working). If a later deploy applied a migration listed in `breaking-migrations.txt`, rollback below it is refused: restore that deploy's `backups/pre-deploy_*.sql.gz` with `scripts/restore-db.sh` first, then `rollback <tag> --force`. The repo checkout stays on the newer commit; the next normal deploy moves forward again.
+
+The first deploy with this script adopts the containers that were already running as version `legacy`, so even that deploy can roll back.
 
 ---
 
@@ -162,7 +178,9 @@ Prefer image/git tags for releases once you add tagged deploys.
 | Web `EACCES` on `.next/cache` | Image must chown cache dirs to `youracademy` (see `docker/web.Dockerfile`). |
 | Cookies fail on HTTPS | `COOKIE_SECURE` not `true` or wrong `WEB_ORIGIN` |
 | TLS error / Cloudflare **525** | Origin cert untrusted by some CF edges (Let’s Encrypt **YE/YR** chains caused DAC/CGP 525 under Full strict — use ZeroSSL/Sectigo or Cloudflare Origin CA); missing/expired files in `TLS_CERTS_DIR`; Origin max HTTP version still HTTP/2; Authenticated Origin Pulls on without client certs; broken client IPv6 (CF IPv6 **off**) |
-| Migrate failed | Check `migrate` container logs; fix SQL/env; re-run deploy |
+| Migrate failed | Previous version keeps serving. Check the deploy log; fix SQL/env; re-run deploy |
+| Deploy stopped: low disk | `df -h`, `docker system df`; delete old files in `backups/`; never `docker volume prune`. `MIN_FREE_GB` sets the limit |
+| Deploy stopped: migration not backward-compatible | Split into expand/contract, or (intended) list it in `backend/prisma/breaking-migrations.txt` |
 
 ---
 
@@ -174,6 +192,8 @@ Prefer image/git tags for releases once you add tagged deploys.
 | `DEPLOY_USER` | SSH user |
 | `DEPLOY_SSH_KEY` | Private key |
 | `DEPLOY_PATH` | Absolute path to repo on VPS |
-| `DEPLOY_DOMAIN` | Public hostname for post-deploy health gate (HTTPS preferred, HTTP fallback) |
+| `DEPLOY_DOMAIN` | Public hostname for the post-deploy check (`https://<domain>/health`; reports only — the origin checks decide rollback) |
+
+Repository **variables** (optional): `DEPLOY_IMAGE_SOURCE` (`build` default / `ghcr`), `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`, `NEXT_PUBLIC_API_BASE_URL` (GHCR builds only). GHCR uses the workflow's `GITHUB_TOKEN` (login on the server only for the pull, then logout).
 
 Configure environment **production** protection rules as needed.

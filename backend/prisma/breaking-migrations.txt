@@ -1,0 +1,12 @@
+# Migrations that are intentionally NOT backward-compatible (see scripts/check-migrations.mjs).
+# The deploy backs up the database before applying one, and `deploy.sh rollback` refuses to
+# go back past it without --force (only after restoring that backup).
+# Add a name here only when a breaking change is truly intended — prefer expand/contract.
+
+# Drops a temporary helper table used only inside the migration itself.
+20261119100000_category_scope_written_preli
+# Drops topic "content kind" columns/enum after the code stopped using them.
+20261121130000_topic_drop_content_kind
+# DEC-060: replaces the old subscription tables (data copied into the new ones first).
+# Versions before this one cannot run on the new schema — rollback below it = restore backup.
+20261124180000_paid_system_sslcommerz

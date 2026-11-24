@@ -33,6 +33,8 @@ services:
       - internal
 
   api:
+    # Tagged per deploy with the git SHA (scripts/deploy.sh); `dev` for local builds.
+    image: ${IMAGE_PREFIX:-your-academy}-api:${IMAGE_TAG:-dev}
     build:
       context: ..
       dockerfile: docker/api.Dockerfile
@@ -71,6 +73,7 @@ services:
       - edge
 
   worker:
+    image: ${IMAGE_PREFIX:-your-academy}-worker:${IMAGE_TAG:-dev}
     build:
       context: ..
       dockerfile: docker/worker.Dockerfile
@@ -90,6 +93,7 @@ services:
       - internal
 
   web:
+    image: ${IMAGE_PREFIX:-your-academy}-web:${IMAGE_TAG:-dev}
     build:
       context: ..
       dockerfile: docker/web.Dockerfile

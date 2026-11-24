@@ -1,19 +1,30 @@
-node_modules
+# Allowlist: the build context is ONLY what the Dockerfiles need. Everything else on the
+# server (DB dumps in backups/, uploads, certs, stray caches such as **/200/, logs, deploy
+# state) never reaches the Docker daemon — that is what made the context ~338 MB.
+*
+
+!package.json
+!pnpm-workspace.yaml
+!pnpm-lock.yaml
+!turbo.json
+!tsconfig.base.json
+!.npmrc
+!shared/
+!backend/
+!frontend/
+!worker/
+
+# Re-exclude heavy / local-only paths inside the allowed packages.
 **/node_modules
-.git
-.turbo
-**/.next
 **/dist
+**/.next
+**/.turbo
 **/coverage
-docs
-*.md
-!.env.example
-.env
-.env.*
-!.env.example
-docker/data
-agent-transcripts
-.cursor
+**/.cache
+**/200
 **/*.log
-pnpm-store
-.pnpm-store
+**/*.tsbuildinfo
+**/.env
+**/.env.*
+backend/storage
+frontend/.vercel

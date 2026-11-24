@@ -29,6 +29,12 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: Migrations are backward-compatible (zero-downtime deploys)
+        run: node scripts/check-migrations.mjs
+
+      - name: Shellcheck deploy script
+        run: shellcheck -S warning scripts/deploy.sh
+
       - name: Typecheck
         run: pnpm typecheck
 

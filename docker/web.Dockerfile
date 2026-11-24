@@ -10,7 +10,8 @@ ENV NODE_ENV=development
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* turbo.json tsconfig.base.json ./
 COPY shared/package.json shared/
 COPY frontend/package.json frontend/
-RUN pnpm install --filter @your-academy/frontend... --frozen-lockfile
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
+  pnpm install --filter @your-academy/frontend... --frozen-lockfile --store-dir /pnpm/store
 
 FROM base AS build
 COPY --from=deps /app /app
@@ -23,6 +24,7 @@ ENV NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=$NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
 RUN pnpm --filter @your-academy/shared build && pnpm --filter @your-academy/frontend build
 
 FROM node:20-alpine AS runner
+LABEL com.your-academy.app="true"
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000

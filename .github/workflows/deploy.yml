@@ -1,70 +1,196 @@
 name: Deploy
 
+# Zero-downtime production deploy. The server script (scripts/deploy.sh) keeps the current
+# version serving, health-checks the new one before switching, and rolls back on failure.
+#
+# Image source (repository variable DEPLOY_IMAGE_SOURCE, or the manual input):
+#   build — the server builds images itself (default, previous behaviour)
+#   ghcr  — GitHub Actions builds + pushes to GHCR; the server only pulls (less disk / CPU)
+
 on:
   workflow_run:
     workflows: [CI]
     types: [completed]
     branches: [main, master]
   workflow_dispatch:
+    inputs:
+      action:
+        description: deploy = deploy this commit · rollback = switch back to a kept version
+        type: choice
+        options: [deploy, rollback]
+        default: deploy
+      rollback_to:
+        description: Version (commit SHA tag) to roll back to — empty = the previous one
+        required: false
+        default: ''
+      image_source:
+        description: Where images come from (empty = repository variable DEPLOY_IMAGE_SOURCE, else build)
+        type: choice
+        options: ['', build, ghcr]
+        default: ''
 
+# Never two deploys at once; a queued one waits instead of cancelling a running deploy.
 concurrency:
   group: production-deploy
   cancel-in-progress: false
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
-  deploy:
+  prepare:
     if: >
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.event == 'push')
+      (github.event_name == 'workflow_dispatch' &&
+        (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')) ||
+      (github.event_name == 'workflow_run' &&
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.meta.outputs.sha }}
+      tag: ${{ steps.meta.outputs.tag }}
+      source: ${{ steps.meta.outputs.source }}
+      prefix: ${{ steps.meta.outputs.prefix }}
+      action: ${{ steps.meta.outputs.action }}
+    steps:
+      - name: Resolve version and image source
+        id: meta
+        env:
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+          INPUT_SOURCE: ${{ inputs.image_source }}
+          VAR_SOURCE: ${{ vars.DEPLOY_IMAGE_SOURCE }}
+          INPUT_ACTION: ${{ inputs.action }}
+        run: |
+          set -euo pipefail
+          # Deploy exactly the commit CI tested (workflow_run), not whatever main points to now.
+          sha="${RUN_SHA:-$GITHUB_SHA}"
+          source="${INPUT_SOURCE:-${VAR_SOURCE:-build}}"
+          case "$source" in build|ghcr) ;; *) echo "Unknown image source '$source'" >&2; exit 1 ;; esac
+          owner="$(echo "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')"
+          prefix="your-academy"
+          [ "$source" = ghcr ] && prefix="ghcr.io/${owner}/your-academy"
+          {
+            echo "sha=$sha"
+            echo "tag=${sha:0:12}"
+            echo "source=$source"
+            echo "prefix=$prefix"
+            echo "action=${INPUT_ACTION:-deploy}"
+          } >> "$GITHUB_OUTPUT"
+          echo "### Deploy plan" >> "$GITHUB_STEP_SUMMARY"
+          echo "action=${INPUT_ACTION:-deploy} · commit \`${sha:0:12}\` · images: $source ($prefix)" >> "$GITHUB_STEP_SUMMARY"
+
+  images:
+    name: Build & push images (GHCR)
+    needs: prepare
+    if: needs.prepare.outputs.source == 'ghcr' && needs.prepare.outputs.action == 'deploy'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        service: [api, web, worker]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push ${{ matrix.service }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/${{ matrix.service }}.Dockerfile
+          push: true
+          tags: ${{ needs.prepare.outputs.prefix }}-${{ matrix.service }}:${{ needs.prepare.outputs.tag }}
+          # Web bakes NEXT_PUBLIC_* in at build time — set these as repository variables.
+          build-args: |
+            NEXT_PUBLIC_API_BASE_URL=${{ vars.NEXT_PUBLIC_API_BASE_URL || '/api/v1' }}
+            NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=${{ vars.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'demo' }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ needs.prepare.outputs.sha }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+
+  deploy:
+    needs: [prepare, images]
+    # Runs after `images` succeeded, or when it was skipped (server build / rollback).
+    if: >
+      always() && needs.prepare.result == 'success' &&
+      (needs.images.result == 'success' || needs.images.result == 'skipped')
     runs-on: ubuntu-latest
     environment: production
     steps:
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.2.0
+        env:
+          DEPLOY_SHA: ${{ needs.prepare.outputs.sha }}
+          DEPLOY_TAG: ${{ needs.prepare.outputs.tag }}
+          IMAGE_SOURCE: ${{ needs.prepare.outputs.source == 'ghcr' && 'pull' || 'build' }}
+          IMAGE_PREFIX: ${{ needs.prepare.outputs.prefix }}
+          DEPLOY_ACTION: ${{ needs.prepare.outputs.action }}
+          ROLLBACK_TO: ${{ inputs.rollback_to }}
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APP_DIR_SECRET: ${{ secrets.DEPLOY_PATH }}
+          DOMAIN: ${{ secrets.DEPLOY_DOMAIN }}
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: 22
-          script_stop: true
+          # Server-side builds can take well over the action's 10-minute default.
+          command_timeout: 60m
+          envs: DEPLOY_SHA,DEPLOY_TAG,IMAGE_SOURCE,IMAGE_PREFIX,DEPLOY_ACTION,ROLLBACK_TO,GHCR_USER,GHCR_TOKEN,APP_DIR_SECRET,DOMAIN
           script: |
             set -euo pipefail
-            APP_DIR="${{ secrets.DEPLOY_PATH }}"
-            if [ -z "$APP_DIR" ]; then
-              APP_DIR="$HOME/your-academy"
-            fi
+            echo "==> Deploy request: action=$DEPLOY_ACTION commit=$DEPLOY_SHA images=$IMAGE_SOURCE"
+            APP_DIR="${APP_DIR_SECRET:-$HOME/your-academy}"
             cd "$APP_DIR"
-            git fetch --prune origin
-            git checkout main 2>/dev/null || git checkout master
-            # Production must mirror origin exactly. Discard local hotfixes/untracked
-            # copies so deploy never fails with "local changes would be overwritten".
-            # Ignored files (.env.production, certs, etc.) are preserved (no -x).
-            git reset --hard "origin/$(git rev-parse --abbrev-ref HEAD)"
-            git clean -fd
-            export ENV_FILE=.env.production
-            chmod +x scripts/deploy.sh scripts/backup-db.sh scripts/restore-db.sh
-            ./scripts/deploy.sh
-            DOMAIN="${{ secrets.DEPLOY_DOMAIN }}"
-            if [ -n "$DOMAIN" ]; then
-              # Prefer HTTPS; retry briefly (Cloudflare can briefly 525 during edge warm-up).
-              ok=0
-              for i in 1 2 3 4 5; do
-                if curl -fsS "https://${DOMAIN}/ready" >/dev/null 2>&1; then
-                  curl -fsS "https://${DOMAIN}/health" >/dev/null 2>&1 || true
-                  echo "Public health green (https) for ${DOMAIN}"
-                  ok=1
-                  break
-                fi
-                if curl -fsS "http://${DOMAIN}/ready" >/dev/null 2>&1; then
-                  echo "Public health green (http) for ${DOMAIN}"
-                  ok=1
-                  break
-                fi
-                sleep 3
-              done
-              if [ "$ok" -ne 1 ]; then
-                echo "Public health check failed for ${DOMAIN}" >&2
-                exit 1
+            export ENV_FILE=.env.production DEPLOY_TAG IMAGE_SOURCE IMAGE_PREFIX
+
+            if [ "$IMAGE_SOURCE" = pull ]; then
+              echo "==> Logging in to GHCR (token valid for this run only)"
+              echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin >/dev/null
+              trap 'docker logout ghcr.io >/dev/null 2>&1 || true' EXIT
+            fi
+
+            if [ "$DEPLOY_ACTION" = rollback ]; then
+              chmod +x scripts/deploy.sh
+              if [ -n "$ROLLBACK_TO" ]; then
+                ./scripts/deploy.sh rollback "$ROLLBACK_TO"
+              else
+                ./scripts/deploy.sh rollback
               fi
+              exit 0
+            fi
+
+            echo "==> Checking out $DEPLOY_SHA"
+            git fetch --prune origin
+            # Production mirrors the tested commit exactly. Ignored files (.env.production,
+            # certs, backups/, .deploy/ state) are preserved (no -x).
+            git checkout -q --force --detach "$DEPLOY_SHA"
+            git clean -fd
+            chmod +x scripts/deploy.sh scripts/backup-db.sh scripts/restore-db.sh
+            ./scripts/deploy.sh deploy
+
+            if [ -n "${DOMAIN:-}" ]; then
+              echo "==> Public check https://${DOMAIN}/health"
+              for i in 1 2 3 4 5 6; do
+                if curl -fsS --max-time 10 "https://${DOMAIN}/health" >/dev/null 2>&1; then
+                  echo "Public health green for ${DOMAIN}"
+                  exit 0
+                fi
+                sleep 5
+              done
+              # The server-side checks already passed; this usually means Cloudflare / DNS.
+              echo "Public health check failed for ${DOMAIN} (origin checks passed — no rollback)" >&2
+              exit 1
             fi

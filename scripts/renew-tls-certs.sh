@@ -38,7 +38,7 @@ if [[ -f "$ENV_FILE" ]]; then
     -f docker/docker-compose.yml \
     -f docker/docker-compose.prod.yml \
     --env-file "$ENV_FILE" \
-    exec -T nginx nginx -s reload
+    exec -T nginx sh -c 'kill -HUP 1'
 fi
 
 echo "TLS certs refreshed for ${DOMAIN}"

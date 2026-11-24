@@ -12,5 +12,6 @@ services:
   nginx:
     ports: !override
       - '80:80'
+    command: ['nginx', '-c', '/etc/nginx/ya/nginx.prod-http.conf', '-g', 'daemon off;']
     volumes: !override
-      - ./nginx/nginx.prod-http.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx:/etc/nginx/ya:ro

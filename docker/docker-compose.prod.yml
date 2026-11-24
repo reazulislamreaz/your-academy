@@ -22,9 +22,8 @@ services:
     logging: *default-logging
 
   migrate:
-    build:
-      context: ..
-      dockerfile: docker/api.Dockerfile
+    # Same image as the api of this deploy — built once, never a second time.
+    image: ${IMAGE_PREFIX:-your-academy}-api:${IMAGE_TAG:-dev}
     restart: 'no'
     env_file:
       - ../.env.production
@@ -111,8 +110,12 @@ services:
     ports:
       - '80:80'
       - '443:443'
+    # The config DIRECTORY is mounted (not a single file): a changed config from `git checkout`
+    # is visible to the running nginx and applied with a zero-downtime reload (HUP), instead of
+    # recreating the container. Reload: docker compose … exec nginx sh -c 'kill -HUP 1'
+    command: ['nginx', '-c', '/etc/nginx/ya/nginx.prod.conf', '-g', 'daemon off;']
     volumes:
-      - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx:/etc/nginx/ya:ro
       - ${TLS_CERTS_DIR:-./certs}:/etc/nginx/certs:ro
       - ${CERTBOT_WWW_DIR:-./certbot-www}:/var/www/certbot:ro
     depends_on:

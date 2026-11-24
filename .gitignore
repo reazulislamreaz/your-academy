@@ -68,3 +68,6 @@ docker/certbot-www/
 *.sql.gz
 *.dump
 .tmp/
+
+# Deploy state (scripts/deploy.sh): version history, lock, log
+.deploy/
