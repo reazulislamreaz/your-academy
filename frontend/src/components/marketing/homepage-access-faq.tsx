@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Plus } from 'lucide-react';
 import { createDefaultExtendedSections, type HomepagePayload } from '@your-academy/shared';
 import { Button } from '@/components/ui/button';
 import { HomepageReveal } from '@/components/marketing/homepage-gsap';
@@ -27,7 +27,7 @@ export function HomepageAccessFaq({ content }: Props) {
             {data.highlights.map((item) => (
               <li key={item} className="flex items-start gap-2.5">
                 <span
-                  className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--highlight)] shadow-[0_0_10px_-1px_color-mix(in_srgb,var(--highlight)_60%,transparent)]"
+                  className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--highlight)]"
                   aria-hidden
                 />
                 <span>
@@ -66,9 +66,9 @@ export function HomepageAccessFaq({ content }: Props) {
                     {item.question}
                     <span
                       aria-hidden
-                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[var(--hp-panel-border)] text-[var(--muted)] transition-transform duration-200 group-open:rotate-45 group-open:border-[var(--highlight)] group-open:text-[var(--highlight)]"
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[var(--hp-panel-border)] text-[var(--muted)] transition-[transform,border-color,color] duration-200 ease-out group-open:rotate-45 group-open:border-[var(--highlight)] group-open:text-[var(--highlight)] motion-reduce:transition-none"
                     >
-                      +
+                      <Plus className="h-3.5 w-3.5" strokeWidth={2.25} />
                     </span>
                   </span>
                 </summary>

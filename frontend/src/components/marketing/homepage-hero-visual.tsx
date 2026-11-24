@@ -162,7 +162,7 @@ export function HomepageHeroVisual({ primarySrc }: Props) {
         {/* LAYER 1 — soft brand glow */}
         <div
           aria-hidden
-          className="hero-visual-glow pointer-events-none absolute top-1/2 left-1/2 z-0 size-[130%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(0,32,80,0.18)_0%,rgba(227,30,36,0.10)_45%,transparent_70%)] blur-3xl"
+          className="hero-visual-glow pointer-events-none absolute top-1/2 left-1/2 z-0 size-[130%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(0,32,80,0.18)_0%,rgba(227,30,36,0.10)_45%,transparent_70%)]"
         />
 
         {/* LAYER 2 — tilted outline frames (static) */}

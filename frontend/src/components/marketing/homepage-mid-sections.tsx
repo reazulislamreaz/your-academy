@@ -30,7 +30,7 @@ export function HomepageMidSections({ why }: Props) {
                   data-hp-stagger
                   className="flex items-start gap-2.5 rounded-xl border border-transparent bg-[color-mix(in_srgb,var(--bg-elevated)_70%,transparent)] px-3 py-2.5 text-sm font-medium text-[var(--ink-soft)] transition-[border-color,background-color] duration-200 hover:border-[var(--hp-panel-border)] hover:bg-[var(--bg-elevated)]"
                 >
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--highlight)] text-white shadow-[0_0_12px_-2px_color-mix(in_srgb,var(--highlight)_55%,transparent)]">
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--highlight)] text-white">
                     <Check className="h-3 w-3" strokeWidth={3} aria-hidden />
                   </span>
                   {point}

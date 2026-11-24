@@ -21,7 +21,7 @@ export function NewsletterBar({ newsletter }: Props) {
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute -bottom-28 left-1/4 h-40 w-56 rounded-full bg-sky-400/10 blur-3xl"
+        className="pointer-events-none absolute -bottom-28 left-1/4 h-40 w-56 rounded-full bg-white/[0.04] blur-3xl"
       />
 
       <div className="relative z-[1] grid min-w-0 items-center gap-5 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:gap-10">

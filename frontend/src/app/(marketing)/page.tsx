@@ -6,6 +6,7 @@ import { getPublicDocumentsServer } from '@/lib/api/public-documents';
 import { getPublicQuestionsServer } from '@/lib/api/public-questions';
 import { getPublicPlatformStats } from '@/lib/api/public-stats';
 import { presentHomepagePayload } from '@/lib/marketing/homepage-presentation';
+import '@/styles/homepage-polish.css';
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://youracademy.com.bd';
 

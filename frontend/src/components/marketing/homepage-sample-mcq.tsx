@@ -82,7 +82,7 @@ function McqPreviewCard({ question }: { question: PublicQuestionCard }) {
                   onClick={() => setPicked(opt.id)}
                   disabled={picked != null}
                   className={cn(
-                    'font-reading group/opt flex w-full min-h-12 gap-3 rounded-2xl border px-3.5 py-3 text-left text-sm transition-[transform,border-color,background-color,box-shadow] duration-200',
+                    'font-reading group/opt flex w-full min-h-12 gap-3 rounded-[0.875rem] border px-3.5 py-3 text-left text-sm transition-[transform,border-color,background-color,box-shadow] duration-200',
                     !revealed &&
                       'border-[var(--hp-panel-border)] bg-[var(--bg)] text-[var(--ink-soft)] hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--highlight)_28%,var(--line))] hover:bg-[var(--bg-elevated)] hover:shadow-[var(--shadow-sm)]',
                     revealed &&
@@ -127,7 +127,7 @@ function McqPreviewCard({ question }: { question: PublicQuestionCard }) {
         {picked && hasAnswer ? (
           <p
             className={cn(
-              'rounded-2xl px-3.5 py-3 text-sm font-semibold',
+              'rounded-[0.875rem] px-3.5 py-3 text-sm font-semibold',
               picked ===
                 question.options.find((o) => o.label === correctLabel)?.id
                 ? 'bg-[var(--success-soft)] text-[var(--success-fg)]'
@@ -224,7 +224,7 @@ export function HomepageSampleMcq({ initial = null, content }: Props) {
         <div className="relative">
           <div
             aria-hidden
-            className="pointer-events-none absolute -inset-4 rounded-[2rem] bg-[radial-gradient(ellipse_at_50%_40%,color-mix(in_srgb,var(--highlight)_8%,transparent),transparent_70%)] blur-2xl"
+            className="pointer-events-none absolute -inset-4 rounded-[2rem] bg-[radial-gradient(ellipse_at_50%_40%,color-mix(in_srgb,var(--highlight)_8%,transparent),transparent_70%)]"
           />
           <div className="relative">
             {showSkeleton ? <ListCardSkeleton /> : null}

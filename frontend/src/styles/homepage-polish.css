@@ -1,0 +1,304 @@
+/*
+  Homepage polish layer — imported only by app/(marketing)/page.tsx.
+  Everything is scoped to `.homepage-shell.hp-polish` (the homepage renderer root),
+  so directory pages that reuse `.homepage-shell` are untouched.
+
+  Direction: deep navy + brand red only, crisp 1px lines, tight consistent radii,
+  layered low-blur shadows, short transform/opacity motion.
+*/
+
+.homepage-shell.hp-polish {
+  --hp-radius: 1rem;
+  --hp-radius-lg: 1.25rem;
+  --hp-radius-sm: 0.75rem;
+  --hp-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --hp-panel-border: color-mix(in srgb, var(--ink) 11%, #eef1f6);
+  --hp-panel-border-strong: color-mix(in srgb, var(--ink) 22%, #e2e8f0);
+  --hp-shadow:
+    0 1px 2px rgba(0, 32, 80, 0.05), 0 6px 14px -10px rgba(0, 32, 80, 0.16),
+    0 18px 32px -26px rgba(0, 32, 80, 0.26);
+  --hp-shadow-hover:
+    0 1px 2px rgba(0, 32, 80, 0.06), 0 12px 22px -14px rgba(0, 32, 80, 0.22),
+    0 26px 44px -28px rgba(0, 32, 80, 0.34);
+  --hp-cta-shadow: 0 10px 22px -12px rgba(227, 30, 36, 0.5);
+
+  /* Navy + red lighting only (drops the sky-blue tint). */
+  background-image:
+    radial-gradient(
+      ellipse 80% 42% at 50% -12%,
+      color-mix(in srgb, var(--highlight) 6%, transparent),
+      transparent 64%
+    ),
+    radial-gradient(
+      ellipse 50% 36% at 100% 18%,
+      color-mix(in srgb, var(--ink) 5%, transparent),
+      transparent 60%
+    ),
+    linear-gradient(
+      180deg,
+      #fbfcfe 0%,
+      #f7f9fc 18%,
+      color-mix(in srgb, var(--bg-desk) 55%, #f7f9fc) 100%
+    );
+}
+
+/* Finer blueprint grid at the top of the page. */
+.homepage-shell.hp-polish::before {
+  opacity: 0.5;
+  background-size: 40px 40px;
+}
+
+.homepage-shell.hp-polish .hero-mesh {
+  background:
+    radial-gradient(
+      ellipse 56% 48% at 8% 0%,
+      color-mix(in srgb, var(--highlight) 8%, transparent),
+      transparent 68%
+    ),
+    radial-gradient(
+      ellipse 46% 42% at 96% 8%,
+      color-mix(in srgb, var(--ink) 6%, transparent),
+      transparent 70%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--bg-desk) 28%, #fbfcfe) 0%,
+      #fbfcfe 46%,
+      transparent 100%
+    );
+}
+
+/* ---------- Section rhythm & type scale ---------- */
+
+@media (min-width: 768px) {
+  .homepage-shell.hp-polish .hp-section {
+    padding-block: 5rem;
+  }
+
+  .homepage-shell.hp-polish .hp-library-pair-top {
+    padding-bottom: 2rem;
+  }
+
+  .homepage-shell.hp-polish .hp-library-pair-bottom {
+    padding-top: 2rem;
+  }
+
+  .homepage-shell.hp-polish .hp-newsletter-section {
+    padding-block: 3.5rem 2.75rem;
+  }
+}
+
+/* Brand tick above every section title: solid red stroke + faded tail. */
+.homepage-shell.hp-polish .hp-mark {
+  width: 1.75rem;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    var(--highlight) 0 58%,
+    color-mix(in srgb, var(--highlight) 22%, transparent) 58% 100%
+  );
+  box-shadow: none;
+}
+
+.homepage-shell.hp-polish .hp-eyebrow {
+  font-size: 0.6875rem;
+  color: color-mix(in srgb, var(--ink) 62%, var(--muted));
+}
+
+/* One heading scale for section titles (stats strip keeps its compact size). */
+.homepage-shell.hp-polish h2.hp-heading:not(#stats-heading) {
+  font-size: clamp(1.45rem, 1.12rem + 1.35vw, 1.95rem);
+  line-height: 1.16;
+}
+
+.homepage-shell.hp-polish .hp-lede {
+  max-width: 62ch;
+}
+
+/* ---------- Surfaces ---------- */
+
+.homepage-shell.hp-polish .hp-stat-card {
+  border-radius: var(--hp-radius-sm);
+}
+
+.homepage-shell.hp-polish .hp-icon-chip {
+  border-radius: 0.7rem;
+}
+
+/* Latest Collections rows: the markup is index · title · arrow on one line. The
+   legacy `display:block` stacked them; restore the intended row. */
+.homepage-shell.hp-polish .hp-list-link {
+  display: flex;
+}
+
+.homepage-shell.hp-polish .hp-collection-index {
+  font-variant-numeric: tabular-nums;
+  height: 2.25rem;
+  border-right: 1px solid var(--hp-panel-border);
+  padding-right: 0.75rem;
+  width: 3rem;
+  justify-content: flex-start;
+}
+
+/* "Others" tiles share the card radius instead of a larger one-off. */
+.homepage-shell.hp-polish a.motion-hover-lift.border-dashed {
+  border-radius: var(--hp-radius);
+}
+
+/* Final CTA + newsletter: deep navy with a red key light and a fine line grid. */
+.homepage-shell.hp-polish .hp-cta-panel {
+  border-color: color-mix(in srgb, var(--bg-inverse) 80%, white);
+  background:
+    radial-gradient(ellipse 60% 80% at 100% 0%, rgba(227, 30, 36, 0.2), transparent 58%),
+    radial-gradient(ellipse 55% 70% at 0% 100%, rgba(255, 255, 255, 0.05), transparent 60%),
+    linear-gradient(155deg, #0a2a5c 0%, var(--bg-inverse) 48%, #00163a 100%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 24px 48px -28px rgba(0, 32, 80, 0.55);
+}
+
+.homepage-shell.hp-polish .hp-cta-panel::before {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: radial-gradient(ellipse 70% 90% at 85% 0%, #000 10%, transparent 70%);
+}
+
+/* ---------- Hover: brand hairline that draws in along the top edge ---------- */
+
+.homepage-shell.hp-polish :is(.hp-card, .hp-step, .hp-tile, .hp-list-link, .hp-stat-card)::after {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 2;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    var(--highlight),
+    color-mix(in srgb, var(--highlight) 0%, transparent) 85%
+  );
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 380ms var(--hp-ease);
+}
+
+.homepage-shell.hp-polish
+  :is(.hp-card, .hp-step, .hp-tile, .hp-list-link, .hp-stat-card):is(:hover, :focus-visible)::after {
+  transform: scaleX(1);
+}
+
+/* Quieter lift: 2px reads crisper than 3px with the tighter shadows. */
+@media (prefers-reduced-motion: no-preference) {
+  .homepage-shell.hp-polish :is(.motion-hover-lift, .hp-tile, .hp-card-interactive, .hp-step, .hp-list-link):hover {
+    transform: translateY(-2px);
+  }
+
+  .homepage-shell.hp-polish .hp-section a:hover > button {
+    transform: translateY(-1px);
+  }
+
+  .homepage-shell.hp-polish .hp-section a:active > button {
+    transform: translateY(0);
+  }
+}
+
+.homepage-shell.hp-polish .hp-tile:hover {
+  border-color: var(--hp-panel-border-strong) !important;
+}
+
+/* ---------- Focus ---------- */
+
+.homepage-shell.hp-polish :is(a, summary, [role='tab'], #mcq-preview li > button):focus-visible {
+  outline: 2px solid var(--highlight);
+  outline-offset: 3px;
+}
+
+.homepage-shell.hp-polish .hp-cta-panel a:focus-visible {
+  outline-color: #fff;
+}
+
+/* ---------- FAQ ---------- */
+
+.homepage-shell.hp-polish .hp-faq-item {
+  border-radius: var(--hp-radius-sm);
+}
+
+.homepage-shell.hp-polish .hp-faq-item summary:hover {
+  color: var(--highlight);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .homepage-shell.hp-polish .hp-faq-item[open] > :not(summary) {
+    animation: hp-faq-in 260ms var(--hp-ease) both;
+  }
+}
+
+@keyframes hp-faq-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------- Motion: hero entrance (transform only — LCP-safe) ---------- */
+
+@media (prefers-reduced-motion: no-preference) {
+  .homepage-shell.hp-polish .hp-hero-entrance > [data-hp-hero] {
+    animation: hp-hero-rise 560ms var(--hp-ease) both;
+  }
+
+  .homepage-shell.hp-polish .hp-hero-entrance > [data-hp-hero]:nth-child(2) {
+    animation-delay: 50ms;
+  }
+
+  .homepage-shell.hp-polish .hp-hero-entrance > [data-hp-hero]:nth-child(3) {
+    animation-delay: 100ms;
+  }
+
+  .homepage-shell.hp-polish .hp-hero-entrance > [data-hp-hero]:nth-child(4) {
+    animation-delay: 150ms;
+  }
+}
+
+@keyframes hp-hero-rise {
+  from {
+    transform: translate3d(0, 10px, 0);
+  }
+  to {
+    transform: none;
+  }
+}
+
+/* ---------- Motion: scroll reveal (classes added by HomepageReveal via JS only) ---------- */
+
+@media (prefers-reduced-motion: no-preference) {
+  .homepage-shell.hp-polish .hp-rv {
+    opacity: 0;
+    transform: translate3d(0, var(--hp-rv-y, 14px), 0);
+    transition:
+      opacity 480ms var(--hp-ease) var(--hp-rv-delay, 0ms),
+      transform 620ms var(--hp-ease) var(--hp-rv-delay, 0ms);
+  }
+
+  .homepage-shell.hp-polish .hp-rv.hp-rv-in {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .homepage-shell.hp-polish :is(.hp-card, .hp-step, .hp-tile, .hp-list-link, .hp-stat-card)::after {
+    transition: none;
+  }
+}

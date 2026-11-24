@@ -69,7 +69,7 @@ export function HomepageDashboardPreview({ content }: Props) {
         <div className="relative mx-auto w-full max-w-lg lg:mx-0 lg:max-w-none">
           <div
             aria-hidden
-            className="pointer-events-none absolute -inset-5 rounded-[2rem] bg-[radial-gradient(ellipse_at_55%_40%,color-mix(in_srgb,var(--highlight)_8%,transparent),transparent_68%)] blur-2xl sm:-inset-7"
+            className="pointer-events-none absolute -inset-5 rounded-[2rem] bg-[radial-gradient(ellipse_at_55%_40%,color-mix(in_srgb,var(--highlight)_8%,transparent),transparent_68%)] sm:-inset-7"
           />
 
           <div
@@ -94,7 +94,7 @@ export function HomepageDashboardPreview({ content }: Props) {
                 return (
                   <div
                     key={tile.label}
-                    className="rounded-[0.9rem] border border-[var(--hp-panel-border)] bg-[var(--bg)] p-4 shadow-[var(--shadow-sm)] transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-[var(--hp-panel-border-strong)] hover:shadow-[var(--hp-shadow)]"
+                    className="rounded-xl border border-[var(--hp-panel-border)] bg-[var(--bg)] p-4 shadow-[var(--shadow-sm)] transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-[var(--hp-panel-border-strong)] hover:shadow-[var(--hp-shadow)]"
                   >
                     <span className="hp-icon-chip h-9 w-9">
                       <Icon className="h-4 w-4" />
