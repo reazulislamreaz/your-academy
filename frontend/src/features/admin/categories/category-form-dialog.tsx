@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { HOMEPAGE_ICON_KEYS, type HomepageIconKey } from '@your-academy/shared';
 import { Field } from '@/components/ui/field';
 import { FormDialog } from '@/components/ui/form-dialog';
@@ -57,8 +57,14 @@ export function CategoryFormDialog({
   const [isActive, setIsActive] = useState(true);
   const [iconKey, setIconKey] = useState<HomepageIconKey | ''>('book');
 
+  // Reset the fields when the dialog opens or targets another category — not when a
+  // background refetch hands us a new copy of the same record (that would wipe typing).
+  const initialRef = useRef(initial);
+  initialRef.current = initial;
+  const initialId = initial?.id;
   useEffect(() => {
     if (!open) return;
+    const initial = initialRef.current;
     setName(initial?.name ?? '');
     setDescription(initial?.description ?? '');
     setIsActive(initial?.isActive ?? true);
@@ -75,7 +81,7 @@ export function CategoryFormDialog({
     } else {
       setParentId('');
     }
-  }, [open, initial, mode, defaultParentId]);
+  }, [open, initialId, mode, defaultParentId]);
 
   const isChild = mode === 'create-child' || (mode === 'edit' && Boolean(initial?.parentId));
   const parentIsSubcategory = Boolean(

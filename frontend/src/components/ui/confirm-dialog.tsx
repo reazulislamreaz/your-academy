@@ -76,14 +76,23 @@ export function ConfirmDialog({
 
   useBodyScrollLock(mounted);
 
+  // Latest handlers in refs so a parent re-render (new inline callback) never re-runs the
+  // focus effect below and steals focus.
+  const onCancelRef = useRef(onCancel);
+  const pendingRef = useRef(pending);
+  useEffect(() => {
+    onCancelRef.current = onCancel;
+    pendingRef.current = pending;
+  });
+
   useEffect(() => {
     if (!mounted || !visible) return;
     const prev = document.activeElement as HTMLElement | null;
     cancelRef.current?.focus();
 
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !pending) {
-        onCancel();
+      if (e.key === 'Escape' && !pendingRef.current) {
+        onCancelRef.current();
         return;
       }
       if (e.key !== 'Tab') return;
@@ -108,7 +117,7 @@ export function ConfirmDialog({
       document.removeEventListener('keydown', onKey);
       prev?.focus?.();
     };
-  }, [mounted, visible, pending, onCancel]);
+  }, [mounted, visible]);
 
   if (!mounted || typeof document === 'undefined') return null;
 

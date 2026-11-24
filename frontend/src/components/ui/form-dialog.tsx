@@ -76,6 +76,17 @@ export function FormDialog({
 
   useBodyScrollLock(mounted);
 
+  // Latest handlers in refs: parents usually pass inline callbacks, and a new function on
+  // every parent render must NOT re-run the focus effect below (that moved focus away from
+  // the field being typed in — the admin category edit bug).
+  const onCloseRef = useRef(onClose);
+  const pendingRef = useRef(pending);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+    pendingRef.current = pending;
+  });
+
+  // Runs once per open: focus the first field, trap Tab, Escape closes, restore focus on close.
   useEffect(() => {
     if (!mounted || !visible) return;
     const prev = document.activeElement as HTMLElement | null;
@@ -85,8 +96,8 @@ export function FormDialog({
     (focusables?.[0] ?? closeRef.current)?.focus();
 
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !pending) {
-        onClose();
+      if (e.key === 'Escape' && !pendingRef.current) {
+        onCloseRef.current();
         return;
       }
       if (e.key !== 'Tab') return;
@@ -111,7 +122,7 @@ export function FormDialog({
       document.removeEventListener('keydown', onKey);
       prev?.focus?.();
     };
-  }, [mounted, visible, pending, onClose]);
+  }, [mounted, visible]);
 
   if (!mounted || typeof document === 'undefined') return null;
 
