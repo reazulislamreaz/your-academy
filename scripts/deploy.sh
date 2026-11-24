@@ -294,6 +294,9 @@ rollback_switched() {
     return
   fi
   step "Automatic rollback to $CURRENT"
+  if [[ "${BREAKING_APPLIED:--}" != "-" ]]; then
+    warn "This deploy applied breaking migration(s) ($BREAKING_APPLIED): $CURRENT may not work on the new schema. If errors continue, restore backups/pre-deploy_${NEW_TAG}_*.sql.gz with scripts/restore-db.sh, or fix forward."
+  fi
   for ((i = ${#SWITCHED[@]} - 1; i >= 0; i--)); do
     svc="${SWITCHED[i]}"
     rollout "$svc" "$CURRENT" || warn "Rollback of $svc failed — check 'docker compose ps' now"
@@ -450,6 +453,7 @@ do_deploy() {
     echo "$check" | sed 's/^/    /'
     breaking="$(sed -n 's/^ALLOWLISTED-BREAKING: //p' <<<"$check" | tr '\n' ',' | sed 's/,$//')"
     breaking="${breaking:--}"
+    BREAKING_APPLIED="$breaking"
     backup_db
     if ! compose_tag "$NEW_TAG" run --rm --no-deps -T migrate; then
       die "Migration failed — the previous version keeps serving (migrations are backward-compatible). Backup: backups/pre-deploy_${NEW_TAG}_*.sql.gz"
