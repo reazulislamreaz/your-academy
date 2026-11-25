@@ -63,7 +63,7 @@ Docker Compose overrides `DATABASE_URL` host to `postgres` for `api` / `worker` 
 | `THROTTLE_LIMIT` | no | Requests per window |
 | `CONTENT_RATE_LIMIT_PER_10_MIN` | no | Question/exam content requests per user or guest IP per 10 min (default 300, DEC-055) |
 | `TRUST_PROXY` | no | Express `trust proxy` (default `loopback, linklocal, uniquelocal`) |
-| `TRUSTED_CLIENT_IP_HEADER` | no | e.g. `cf-connecting-ip`; only when the origin accepts Cloudflare traffic only |
+| `TRUSTED_CLIENT_IP_HEADER` | no | e.g. `cf-connecting-ip`. Not needed behind the bundled nginx, which resolves the real client IP (Cloudflare ranges only) and overwrites `X-Forwarded-For` / `CF-Connecting-IP` |
 | `SINGLE_SESSION_STAFF` | no | `true` = one device at a time also for Admin/Moderator (default `false`, DEC-053) |
 | `SINGLE_SESSION_ENABLED` | no | `false` disables the one-device rule entirely (default on) |
 | `NEXT_PUBLIC_SUPPORT_WHATSAPP` | web (build) | Support WhatsApp digits with country code for the forgot-password "no email" button |
