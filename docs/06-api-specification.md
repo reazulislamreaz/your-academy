@@ -438,7 +438,8 @@ Admin vs user allowed MIME/size differ by purpose (`avatar`, `question-image`, `
 | POST | `/payments/sslcommerz/ipn` | IPN listener (source of truth). `200 { received, outcome }`; `503` when the validation API was unreachable (gateway retries) | Gateway | — |
 | GET/PATCH | `/admin/access-settings` | `{ paidSystemEnabled, preliFreeSetCount, writtenFreeSetCount }` | User + CSRF | `subscriptions` |
 | GET/POST | `/admin/packages` | List (with `orderCount`) / create | User + CSRF | `subscriptions` |
-| PATCH/DELETE | `/admin/packages/:id` | Update / delete → `{ softDeleted }` (soft when referenced). `422 PACKAGE_DISCOUNT_INVALID` (discount ≥ price), `422 PACKAGE_DURATION_RETIRED` (switching to MONTHLY) | User + CSRF | `subscriptions` |
+| POST | `/admin/packages/reorder` | `{ ids }` — every live package in display order (DEC-068) | User + CSRF | `subscriptions` |
+| PATCH/DELETE | `/admin/packages/:id` | Update (setting `isPopular` unmarks all others) / delete → `{ deleted }`; `409 PACKAGE_IN_USE` when the package has orders, subscriptions or history (deactivate instead) (DEC-068). `422 PACKAGE_DISCOUNT_INVALID` (discount ≥ price), `422 PACKAGE_DURATION_RETIRED` (switching to MONTHLY) | User + CSRF | `subscriptions` |
 | GET | `/admin/activity/kpis` · `/admin/activity/users/lookup?q=` | DEC-067 KPIs; name / email / WhatsApp ↔ User ID (full or prefix) | User | `activity` |
 | GET | `/admin/audit` · `/admin/audit/actions` | Audit list (`scope` staff/user, `q`, `action`, `severity`, `from`, `to`, cursor) · distinct actions | User | `audit` |
 | POST | `/admin/logs/purge/preview` · `/admin/logs/purge` | `{ target: audit/activity/all, mode: retention/before/range, before?, from?, to? }` (+ `confirm: "DELETE"`) → counts / deleted. Admin only, audited | User + CSRF | `audit` |

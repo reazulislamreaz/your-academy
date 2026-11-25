@@ -124,7 +124,7 @@ export function PackageCard({
           <p className="text-xs font-semibold tracking-[0.12em] text-[var(--highlight)] uppercase">
             {PACKAGE_DURATION_LABELS[pkg.duration]}
           </p>
-          {pkg.isPopular ? <Badge variant="highlight">Popular</Badge> : null}
+          {pkg.isPopular ? <Badge variant="highlight">Recommended</Badge> : null}
         </div>
         <h2 className="font-display mt-1 text-xl font-bold tracking-tight text-[var(--ink)]">
           {pkg.name}

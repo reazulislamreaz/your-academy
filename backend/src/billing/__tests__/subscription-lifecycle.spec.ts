@@ -323,6 +323,10 @@ describe('DEC-062 package discount', () => {
           .mockResolvedValue({ id: 'p', priceBdt: D('600'), discountedPriceBdt: D('450') }),
       },
     };
+    // update() runs in a transaction (single-Recommended rule) — the callback gets this mock.
+    Object.assign(prisma, {
+      $transaction: jest.fn(async (fn: (t: unknown) => unknown): Promise<unknown> => fn(prisma)),
+    });
     const service = new PackagesService(prisma as never, { record: jest.fn() } as never);
     const base = { name: '3 Months', duration: PackageDuration.THREE_MONTHS, priceBdt: '600' };
     await expect(

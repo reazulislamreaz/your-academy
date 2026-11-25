@@ -187,7 +187,7 @@ export function PackageFormDialog({
               checked={draft.isPopular}
               onChange={(e) => set('isPopular', e.target.checked)}
             />
-            Show a “Popular” badge
+            Recommended (highlighted on the homepage — only one package at a time)
           </label>
         </Field>
       </div>

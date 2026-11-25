@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { PackageDuration, Prisma } from '@prisma/client';
 import {
   SELLABLE_PACKAGE_DURATIONS,
@@ -61,7 +66,11 @@ export class PackagesService {
 
   async create(input: PackageInput, actorUserId: string): Promise<SubscriptionPackageDto> {
     this.assertDiscount(input.priceBdt, input.discountedPriceBdt ?? null);
-    const row = await this.prisma.subscriptionPackage.create({ data: this.toData(input) });
+    const row = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.subscriptionPackage.create({ data: this.toData(input) });
+      if (created.isPopular) await this.unmarkOtherPopular(tx, created.id);
+      return created;
+    });
     await this.audit.record({
       actorUserId,
       action: 'PACKAGE_CREATE',
@@ -100,9 +109,13 @@ export class PackagesService {
           : input.discountedPriceBdt,
       );
     }
-    const row = await this.prisma.subscriptionPackage.update({
-      where: { id },
-      data: this.toData(input),
+    const row = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.subscriptionPackage.update({
+        where: { id },
+        data: this.toData(input),
+      });
+      if (input.isPopular === true) await this.unmarkOtherPopular(tx, id);
+      return updated;
     });
     await this.audit.record({
       actorUserId,
@@ -114,30 +127,82 @@ export class PackagesService {
     return this.toDto(row);
   }
 
-  async remove(id: string, actorUserId: string): Promise<{ id: string; softDeleted: boolean }> {
+  /**
+   * Hard delete only a package nobody ever bought or was given. One with orders, subscriptions
+   * or history is refused (409 PACKAGE_IN_USE) — the admin deactivates it instead, which hides
+   * it from the homepage and /packages but keeps every record.
+   */
+  async remove(id: string, actorUserId: string): Promise<{ id: string; deleted: true }> {
     await this.findLive(id);
-    const softDeleted = await this.prisma.$transaction(async (tx) => {
-      const used =
-        (await tx.paymentOrder.count({ where: { packageId: id } })) > 0 ||
-        (await tx.subscriptionEvent.count({ where: { packageId: id } })) > 0 ||
-        (await tx.userSubscription.count({ where: { packageId: id } })) > 0;
-      if (used) {
-        await tx.subscriptionPackage.update({
-          where: { id },
-          data: { deletedAt: new Date(), isActive: false },
-        });
-        return true;
+    await this.prisma.$transaction(async (tx) => {
+      const [orders, subscribers, events] = await Promise.all([
+        tx.paymentOrder.count({ where: { packageId: id } }),
+        tx.userSubscription.count({
+          where: { OR: [{ packageId: id }, { scheduledPackageId: id }] },
+        }),
+        tx.subscriptionEvent.count({ where: { packageId: id } }),
+      ]);
+      if (orders || subscribers || events) {
+        throw new ConflictException(
+          createErrorResponse(
+            'PACKAGE_IN_USE',
+            `This package can't be deleted: it has ${subscribers} subscriber(s) and ${orders} payment(s) on record. Deactivate it instead — it disappears from the homepage and Packages page, and all history is kept.`,
+            newRequestId(),
+            [{ subscribers, orders, events }],
+          ),
+        );
       }
       await tx.subscriptionPackage.delete({ where: { id } });
-      return false;
     });
     await this.audit.record({
       actorUserId,
-      action: softDeleted ? 'PACKAGE_SOFT_DELETE' : 'PACKAGE_DELETE',
+      action: 'PACKAGE_DELETE',
       entityType: 'SubscriptionPackage',
       entityId: id,
     });
-    return { id, softDeleted };
+    return { id, deleted: true };
+  }
+
+  /** `ids` = every live package in the new display order (homepage + /packages follow it). */
+  async reorder(ids: string[], actorUserId: string): Promise<AdminSubscriptionPackageDto[]> {
+    const live = await this.prisma.subscriptionPackage.findMany({
+      where: { deletedAt: null },
+      select: { id: true },
+    });
+    const known = new Set(live.map((r) => r.id));
+    if (
+      ids.length !== known.size ||
+      new Set(ids).size !== ids.length ||
+      !ids.every((i) => known.has(i))
+    ) {
+      throw new UnprocessableEntityException(
+        createErrorResponse(
+          'PACKAGE_ORDER_INVALID',
+          'Send every package exactly once',
+          newRequestId(),
+        ),
+      );
+    }
+    await this.prisma.$transaction(
+      ids.map((id, index) =>
+        this.prisma.subscriptionPackage.update({ where: { id }, data: { sortOrder: index } }),
+      ),
+    );
+    await this.audit.record({
+      actorUserId,
+      action: 'PACKAGE_REORDER',
+      entityType: 'SubscriptionPackage',
+      metadata: { ids },
+    });
+    return this.listAdmin();
+  }
+
+  /** Only one package carries the Recommended / Popular badge at a time. */
+  private unmarkOtherPopular(tx: Prisma.TransactionClient, keepId: string) {
+    return tx.subscriptionPackage.updateMany({
+      where: { id: { not: keepId }, isPopular: true },
+      data: { isPopular: false },
+    });
   }
 
   /** Package a learner may buy right now (active, not deleted). */

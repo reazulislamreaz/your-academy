@@ -54,6 +54,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | DEC-065 | Homepage Free vs Paid plan cards, admin-editable (display only) | CONFIRMED |
 | DEC-066 | Technical SEO: dynamic sitemap, crawlable bank pages, canonical host | CONFIRMED |
 | DEC-067 | Activity KPIs + user lookup, staff/user audit trail, log retention | CONFIRMED |
+| DEC-068 | Three paid plans, package reorder / single Recommended / safe delete, four-card pricing | CONFIRMED |
 
 ---
 
@@ -723,6 +724,12 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Decision | **Activity:** `GET /admin/activity/kpis` (registrations 24h/7d/30d, online now + 5 min, DAU = heartbeat or activity in 24h, active paid / free, first-purchase conversions 7d/30d), `GET /admin/activity/users/lookup` (full UUID exact, UUID prefix via parameterized `id::text LIKE`, else name / email / WhatsApp; never 500), feed filters `plan` (FREE/PAID) and `role`; malformed `userId` → 400. New `LearningActivityType` values REGISTER, PASSWORD_CHANGE, PROFILE_UPDATE, SUBSCRIPTION, MODEL_TEST_SUBMIT, QUIZ_SUBMIT, SET_VIEW (set views at most once per user + set per 30 min). **Audit:** `audit_logs` gains `actor_role`, `severity` (INFO/WARNING/CRITICAL, derived from the action when not given) and `user_agent`; a global `StaffAuditInterceptor` records every successful staff POST/PUT/PATCH/DELETE under `/api/v1/admin` (route, target id, redacted body summary, IP, UA). User events: USER_REGISTER, AUTH_LOGIN, AUTH_LOGIN_FAILED (masked number + reason), PASSWORD_RESET_REQUESTED, PASSWORD_CHANGE, EMAIL_CHANGE, SUBSCRIPTION_PURCHASE / CANCEL / RESUME / SCHEDULE_CHANGE. Non-UUID audit targets go to `metadata.targetRef` (they previously failed silently). `GET /admin/audit` filters: scope (staff/user), q (actor name / WhatsApp / User ID), action, severity, from/to; `GET /admin/audit/actions`. **Retention:** `POST /admin/logs/purge/preview` and `POST /admin/logs/purge` (audit, activity or both; older than 90 days, before a date, or a range; body `confirm: "DELETE"`; Admin role re-checked; writes an un-purgeable CRITICAL `LOGS_PURGED` entry). Optional daily automatic 90-day purge with `LOG_RETENTION_AUTO_PURGE=true` (off by default). Migration `20261126150000_audit_activity_upgrade` (expand-only, `down.sql`). |
 | Rollback note | Older app versions cannot read the new `LearningActivityType` values; rolling back below this release breaks the activity feed until those rows are removed. |
 | Status | **CONFIRMED** (owner request 2026-11-26) |
+### DEC-068 — Three paid plans, package admin rules, four-card pricing
+
+| Field | Value |
+|-------|-------|
+| Decision | Migration `20261126170000_three_paid_plans` adds 6 Months (৳449) and 1 Year (৳899, Recommended) only if those durations are missing, marks exactly one package Recommended, and replaces the 3 Months placeholder text only while it still equals the test text (ID, price, subscribers untouched). Admin → Packages: up/down reorder (`POST /admin/packages/reorder`), saving a Recommended package unmarks all others (same transaction), delete only for packages with no orders / subscriptions / history — otherwise `409 PACKAGE_IN_USE` and the admin is offered Deactivate (hidden from homepage and /packages, records kept). Homepage: Free + one card per active package in admin order; paid features = shared Paid `plan_features` + the package's extras (deduplicated); savings vs the 3 Months per-month price; "Recommended" only on the admin-marked package; "Upgrade" starts checkout for that package (logged-out → login, then /packages); no generic Paid card when nothing is on sale. Renewal adds the remaining days (`SubscriptionsService.extendWithin` starts from the current end date while the plan runs). |
+| Status | **CONFIRMED** (owner approval 2026-11-26) |
 ### Deferred / NEEDS APPROVAL (explicitly out of Phase 1)
 
 | Item | Notes |

@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { ArrowDown, ArrowUp, Plus } from 'lucide-react';
 import { PACKAGE_DURATION_LABELS, type AdminSubscriptionPackageDto } from '@your-academy/shared';
 import { AdminPage } from '@/components/admin/admin-page';
 import {
@@ -21,6 +21,7 @@ import { ConfirmButton } from '@/components/ui/confirm-button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { errorMessage, formatBdt } from '@/features/admin/billing/billing-format';
 import { PackageFormDialog } from '@/features/admin/billing/package-form-dialog';
+import { ApiError } from '@/lib/api/client';
 import { adminBillingApi, type PackageInput } from '@/lib/api/admin-billing';
 
 const QUERY_KEY = ['admin-packages'];
@@ -63,18 +64,38 @@ export default function AdminPackagesPage() {
     onError: (err) => setMessage({ kind: 'danger', text: errorMessage(err, 'Update failed') }),
   });
 
+  /** Package the server refused to delete (has subscribers / payments) — offer Deactivate. */
+  const [inUse, setInUse] = useState<AdminSubscriptionPackageDto | null>(null);
+
   const remove = useMutation({
     mutationFn: (pkg: AdminSubscriptionPackageDto) => adminBillingApi.deletePackage(pkg.id),
-    onSuccess: (res) => {
-      setMessage({
-        kind: 'success',
-        text: res.softDeleted
-          ? 'Package hidden — it was already purchased, so it is kept for payment history.'
-          : 'Package deleted.',
-      });
+    onSuccess: (_res, pkg) => {
+      setInUse(null);
+      setMessage({ kind: 'success', text: `“${pkg.name}” deleted.` });
       refresh();
     },
-    onError: (err) => setMessage({ kind: 'danger', text: errorMessage(err, 'Delete failed') }),
+    onError: (err, pkg) => {
+      if (err instanceof ApiError && err.code === 'PACKAGE_IN_USE') {
+        setInUse(pkg);
+        setMessage(null);
+        return;
+      }
+      setMessage({ kind: 'danger', text: errorMessage(err, 'Delete failed') });
+    },
+  });
+
+  const move = useMutation({
+    mutationFn: ({ from, to }: { from: number; to: number }) => {
+      const ids = (packages.data ?? []).map((p) => p.id);
+      const [id] = ids.splice(from, 1);
+      ids.splice(to, 0, id!);
+      return adminBillingApi.reorderPackages(ids);
+    },
+    onSuccess: (rows) => {
+      qc.setQueryData(QUERY_KEY, rows);
+      refresh();
+    },
+    onError: (err) => setMessage({ kind: 'danger', text: errorMessage(err, 'Could not reorder') }),
   });
 
   const openDialog = (pkg: AdminSubscriptionPackageDto | null) => {
@@ -88,7 +109,7 @@ export default function AdminPackagesPage() {
       <PageHeader
         eyebrow="Billing"
         title="Packages"
-        description="Active packages appear on the public Packages page with a Buy button. Purchased packages are hidden (soft-deleted) instead of removed so payment history stays correct."
+        description="Active packages appear on the homepage and the public Packages page in this order. Only one package can be Recommended. A package with subscribers or payments can't be deleted — disable it instead to hide it while keeping its history."
         actions={
           <Button size="sm" className="gap-1.5" onClick={() => openDialog(null)}>
             <Plus className="size-4" aria-hidden />
@@ -98,6 +119,30 @@ export default function AdminPackagesPage() {
       />
 
       {message ? <Alert variant={message.kind}>{message.text}</Alert> : null}
+      {inUse ? (
+        <Alert variant="warning">
+          <span>
+            “{inUse.name}” can&apos;t be deleted because people have bought or been given it —
+            deleting it would break their subscription and payment history.{' '}
+            {inUse.isActive
+              ? 'Deactivate it instead: it disappears from the homepage and Packages page, and every record is kept.'
+              : 'It is already deactivated, so it is hidden from learners.'}
+          </span>{' '}
+          {inUse.isActive ? (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={toggleActive.isPending}
+              onClick={() => {
+                toggleActive.mutate(inUse);
+                setInUse(null);
+              }}
+            >
+              Deactivate “{inUse.name}”
+            </Button>
+          ) : null}
+        </Alert>
+      ) : null}
       {packages.isLoading ? <Skeleton className="h-48 w-full" /> : null}
       {packages.error ? (
         <LoadError message="Could not load packages." onRetry={() => void packages.refetch()} />
@@ -108,6 +153,7 @@ export default function AdminPackagesPage() {
           <AdminTable>
             <thead>
               <tr>
+                <AdminTh>Order</AdminTh>
                 <AdminTh>Package</AdminTh>
                 <AdminTh>Duration</AdminTh>
                 <AdminTh>Price</AdminTh>
@@ -118,18 +164,40 @@ export default function AdminPackagesPage() {
             </thead>
             <tbody>
               {packages.data.length === 0 ? (
-                <AdminEmptyRow colSpan={6}>
+                <AdminEmptyRow colSpan={7}>
                   No packages yet — create one so learners can subscribe.
                 </AdminEmptyRow>
               ) : (
-                packages.data.map((pkg) => (
+                packages.data.map((pkg, i, all) => (
                   <tr key={pkg.id}>
+                    <AdminTd>
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          aria-label={`Move “${pkg.name}” up`}
+                          disabled={i === 0 || move.isPending}
+                          onClick={() => move.mutate({ from: i, to: i - 1 })}
+                        >
+                          <ArrowUp className="size-4" aria-hidden />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          aria-label={`Move “${pkg.name}” down`}
+                          disabled={i === all.length - 1 || move.isPending}
+                          onClick={() => move.mutate({ from: i, to: i + 1 })}
+                        >
+                          <ArrowDown className="size-4" aria-hidden />
+                        </Button>
+                      </div>
+                    </AdminTd>
                     <AdminTd className="max-w-[20rem]">
                       <p className="font-semibold text-[var(--ink)]">
                         {pkg.name}
                         {pkg.isPopular ? (
                           <Badge variant="warning" className="ml-2 align-middle">
-                            Popular
+                            Recommended
                           </Badge>
                         ) : null}
                       </p>
@@ -178,8 +246,8 @@ export default function AdminPackagesPage() {
                           confirmTitle={`Delete “${pkg.name}”?`}
                           confirmMessage={
                             pkg.orderCount > 0
-                              ? 'This package has payments, so it will be hidden (soft-deleted) and kept for payment history. Existing subscribers keep their access.'
-                              : 'This package has never been purchased and will be deleted permanently.'
+                              ? 'This package has payments on record, so it cannot be deleted — you will be offered Deactivate instead. Nothing is removed.'
+                              : 'If nobody has bought or been given this package, it is deleted permanently. Otherwise you will be offered Deactivate instead.'
                           }
                           confirmLabel="Delete"
                           onConfirm={() => remove.mutateAsync(pkg)}

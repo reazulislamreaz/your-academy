@@ -55,8 +55,15 @@ export const adminBillingApi = {
       method: 'PATCH',
       body: json(input),
     }),
+  /** 409 PACKAGE_IN_USE when the package has subscribers / payments (deactivate instead). */
   deletePackage: (id: string) =>
-    apiFetch<{ id: string; softDeleted: boolean }>(`/admin/packages/${id}`, { method: 'DELETE' }),
+    apiFetch<{ id: string; deleted: true }>(`/admin/packages/${id}`, { method: 'DELETE' }),
+  /** Every live package id in the new display order. */
+  reorderPackages: (ids: string[]) =>
+    apiFetch<AdminSubscriptionPackageDto[]>('/admin/packages/reorder', {
+      method: 'POST',
+      body: json({ ids }),
+    }),
 
   /** DEC-062 — send due 7- / 3-day reminders now (also runs hourly by itself). */
   runReminders: () =>

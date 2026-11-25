@@ -230,3 +230,11 @@ export class ReorderPlanFeaturesDto {
   @IsUUID('all', { each: true })
   ids!: string[];
 }
+
+/** Plan 1 — Admin → Packages up/down order. */
+export class ReorderPackagesDto {
+  @IsArray()
+  @ArrayMaxSize(50)
+  @IsUUID('all', { each: true })
+  ids!: string[];
+}

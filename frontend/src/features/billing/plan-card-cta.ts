@@ -6,6 +6,8 @@ export type PlanCardViewer =
 export type PlanCardCta =
   | { type: 'link'; label: string; href: string }
   | { type: 'contact'; label: string }
+  /** Start SSLCommerz checkout for this package (signed-in learners). */
+  | { type: 'checkout'; label: string; packageId: string }
   | { type: 'current'; label: string }
   | { type: 'note'; label: string }
   | { type: 'none' };
@@ -32,6 +34,8 @@ export function paidCardCta(
   viewer: PlanCardViewer,
   opts: { paidSystemEnabled: boolean; paymentsConfigured: boolean },
   isCurrentPackage: boolean | null = null,
+  /** When given, "Upgrade" checks out this exact package (logged-out → login, then /packages). */
+  packageId?: string,
 ): PlanCardCta {
   if (viewer.kind === 'admin') return { type: 'note', label: 'Admins have full access' };
   if (viewer.kind === 'learner' && viewer.isPaid) {
@@ -42,5 +46,14 @@ export function paidCardCta(
   if (!opts.paidSystemEnabled) return { type: 'none' };
   // Never send people to a "payment isn't configured" page.
   if (!opts.paymentsConfigured) return { type: 'contact', label: 'Contact us to upgrade' };
+  if (packageId) {
+    return viewer.kind === 'guest'
+      ? {
+          type: 'link',
+          label: 'Upgrade',
+          href: `/login?callbackUrl=${encodeURIComponent('/packages')}`,
+        }
+      : { type: 'checkout', label: 'Upgrade', packageId };
+  }
   return { type: 'link', label: 'Upgrade', href: '/packages' };
 }

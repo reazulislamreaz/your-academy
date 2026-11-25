@@ -19,9 +19,11 @@ import {
   type PlanCardCta,
   type PlanCardViewer,
 } from '@/features/billing/plan-card-cta';
-import { describePackages } from '@/features/billing/plan-pricing';
+import { describePackages, mergePaidFeatures } from '@/features/billing/plan-pricing';
+import { useCheckout } from '@/features/billing/use-checkout';
 import { openSupportChat } from '@/features/support/support-events';
 import { getMySubscription } from '@/lib/api/billing';
+import { ApiError } from '@/lib/api/client';
 import { getPlanComparison } from '@/lib/api/plan-features';
 import { cn } from '@/lib/utils';
 
@@ -79,7 +81,7 @@ export function HomepagePlanComparison({ content, legacyIntro, faq }: Props) {
   const packages = data ? describePackages(data.paid.packages) : [];
   const myPackageId = mine.data?.billing.packageId ?? null;
   const knowsMyPackage = Boolean(myPackageId && packages.some((p) => p.pkg.id === myPackageId));
-  const cardCount = 1 + Math.max(packages.length, 1);
+  const cardCount = 1 + packages.length;
 
   return (
     <HomepageReveal className="marketing-container min-w-0 space-y-8 sm:space-y-10">
@@ -126,71 +128,38 @@ export function HomepagePlanComparison({ content, legacyIntro, faq }: Props) {
                 cta={freeCardCta(viewer, content.cta)}
               />
             </li>
-            {packages.length ? (
-              packages.map(({ pkg, perMonthBdt, savingsPercent, highlight }) => (
-                <li key={pkg.id} className="min-w-0">
-                  <PlanCard
-                    id={pkg.id}
-                    title={pkg.name}
-                    badge={
-                      highlight === 'popular'
-                        ? 'Popular'
-                        : highlight === 'best-value'
-                          ? 'Best value'
-                          : highlight === 'recommended'
-                            ? 'Recommended'
-                            : undefined
-                    }
-                    highlighted={highlight !== null}
-                    price={formatBdt(pkg.effectivePriceBdt)}
-                    priceNote={`/ ${PACKAGE_DURATION_LABELS[pkg.duration].toLowerCase()}`}
-                    strikePrice={pkg.discountedPriceBdt ? formatBdt(pkg.priceBdt) : undefined}
-                    subPrice={
-                      pkg.duration === 'MONTHLY'
-                        ? undefined
-                        : `≈ ${formatBdt(String(perMonthBdt))}/month${savingsPercent ? ` · save ${savingsPercent}%` : ''}`
-                    }
-                    description={
-                      pkg.description?.trim() ||
-                      'Unlock every question set, Model Test and premium PDF.'
-                    }
-                    features={
-                      pkg.features.length
-                        ? pkg.features.map((label, i) => ({
-                            id: `${pkg.id}-${i}`,
-                            label,
-                            isIncluded: true,
-                          }))
-                        : data.paid.features
-                    }
-                    cta={paidCardCta(
-                      viewer,
-                      data,
-                      // Known package → mark that card. Unknown (e.g. admin grant) → only a lone
-                      // paid card may say "Current Plan"; with several, none does.
-                      knowsMyPackage
-                        ? pkg.id === myPackageId
-                        : packages.length === 1
-                          ? null
-                          : false,
-                    )}
-                  />
-                </li>
-              ))
-            ) : (
-              // No package on sale yet: one generic Paid card (no price).
-              <li className="min-w-0">
+            {packages.map(({ pkg, perMonthBdt, savingsPercent, highlight }) => (
+              <li key={pkg.id} className="min-w-0">
                 <PlanCard
-                  id="paid"
-                  title="Paid"
-                  highlighted
-                  badge="Recommended"
-                  description="Unlock every question set, Model Test and premium PDF."
-                  features={data.paid.features}
-                  cta={paidCardCta(viewer, data)}
+                  id={pkg.id}
+                  title={pkg.name}
+                  badge={highlight === 'recommended' ? 'Recommended' : undefined}
+                  highlighted={highlight !== null}
+                  price={formatBdt(pkg.effectivePriceBdt)}
+                  priceNote={`/ ${PACKAGE_DURATION_LABELS[pkg.duration].toLowerCase()}`}
+                  strikePrice={pkg.discountedPriceBdt ? formatBdt(pkg.priceBdt) : undefined}
+                  subPrice={
+                    pkg.duration === 'MONTHLY'
+                      ? undefined
+                      : `≈ ${formatBdt(String(perMonthBdt))}/month${savingsPercent ? ` · save ${savingsPercent}%` : ''}`
+                  }
+                  description={
+                    pkg.description?.trim() ||
+                    'Unlock every question set, Model Test and premium PDF.'
+                  }
+                  features={mergePaidFeatures(data.paid.features, pkg)}
+                  cta={paidCardCta(
+                    viewer,
+                    data,
+                    // Known package → mark that card. Unknown (e.g. admin grant) → only a lone
+                    // paid card may say "Current Plan"; with several, none does.
+                    knowsMyPackage ? pkg.id === myPackageId : packages.length === 1 ? null : false,
+                    pkg.id,
+                  )}
                 />
               </li>
-            )}
+            ))}
+            {/* No active package → only the Free card. */}
           </ul>
           {packages.length ? (
             <p className="text-xs text-[var(--muted-strong)]">
@@ -307,6 +276,7 @@ function PlanCard({
 }
 
 function PlanCtaButton({ cta, highlighted }: { cta: PlanCardCta; highlighted: boolean }) {
+  const checkout = useCheckout();
   const className = 'min-h-10 w-full rounded-full text-sm font-semibold';
   switch (cta.type) {
     case 'link':
@@ -317,6 +287,29 @@ function PlanCtaButton({ cta, highlighted }: { cta: PlanCardCta; highlighted: bo
             <ArrowRight className="size-4" aria-hidden />
           </Button>
         </Link>
+      );
+    case 'checkout':
+      return (
+        <div className="space-y-1.5">
+          <Button
+            type="button"
+            className={className}
+            variant={highlighted ? 'primary' : 'outline'}
+            loading={checkout.isPending}
+            disabled={checkout.isPending}
+            onClick={() => checkout.mutate(cta.packageId)}
+          >
+            {cta.label}
+            <ArrowRight className="size-4" aria-hidden />
+          </Button>
+          {checkout.error ? (
+            <p role="alert" className="text-center text-xs text-[var(--danger-fg)]">
+              {checkout.error instanceof ApiError
+                ? checkout.error.message
+                : 'Could not start the payment. Please try again.'}
+            </p>
+          ) : null}
+        </div>
       );
     case 'contact':
       return (

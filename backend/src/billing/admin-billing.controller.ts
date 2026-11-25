@@ -29,6 +29,7 @@ import { parseLimit } from '../common/pagination';
 import { newRequestId } from '../common/request-id';
 import {
   CreatePackageDto,
+  ReorderPackagesDto,
   ExtendSubscriptionDto,
   ManualGrantDto,
   SubscriptionNoteDto,
@@ -102,7 +103,15 @@ export class AdminSubscriptionsController {
     return createSuccessResponse(await this.packages.update(id, dto, user.userId), newRequestId());
   }
 
-  /** Hard delete when never used; soft delete (hidden, history kept) once purchased. */
+  /** `{ ids }` = every live package in display order. */
+  @Post('packages/reorder')
+  @HttpCode(200)
+  @UseGuards(CsrfGuard)
+  async reorderPackages(@CurrentUser() user: RequestUser, @Body() dto: ReorderPackagesDto) {
+    return createSuccessResponse(await this.packages.reorder(dto.ids, user.userId), newRequestId());
+  }
+
+  /** Hard delete only when never used; otherwise 409 PACKAGE_IN_USE (deactivate instead). */
   @Delete('packages/:id')
   @UseGuards(CsrfGuard)
   async deletePackage(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {
