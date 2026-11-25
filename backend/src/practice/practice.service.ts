@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import {
   PracticeAttemptStatus,
   PracticeSetKind,
@@ -8,6 +13,8 @@ import {
 } from '@prisma/client';
 import { createErrorResponse } from '@your-academy/shared';
 import type { RequestUser } from '../auth/auth.types';
+import { AccessPolicyService } from '../billing/access-policy.service';
+import { SiteSettingsService } from '../billing/site-settings.service';
 import { newRequestId } from '../common/request-id';
 import { PrismaService } from '../database/prisma.service';
 import { LearningActivityService } from '../learning-activity/learning-activity.service';
@@ -48,6 +55,8 @@ export class PracticeService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly learningActivity: LearningActivityService,
+    private readonly access: AccessPolicyService,
+    private readonly siteSettings: SiteSettingsService,
   ) {}
 
   async listPublished(params: {
@@ -955,6 +964,7 @@ export class PracticeService {
       );
     }
     await this.assertQuestionsExist(dto.questionIds);
+    await this.assertNoLockedSetQuestions(dto.questionIds);
 
     return this.prisma.practiceSet.create({
       data: {
@@ -996,6 +1006,7 @@ export class PracticeService {
     }
     if (dto.questionIds?.length) {
       await this.assertQuestionsExist(dto.questionIds);
+      await this.assertNoLockedSetQuestions(dto.questionIds);
     }
 
     return this.prisma.$transaction(async (tx) => {
@@ -1406,6 +1417,45 @@ export class PracticeService {
         ),
       );
     }
+  }
+
+  /**
+   * SEC-2 — practice sets (Quiz) are free for everyone and never call AccessPolicyService, so
+   * they must not contain MCQs from Preli sets beyond the free N: that would hand out paid
+   * questions, answers and explanations. Checked against the free-N list even while the paid
+   * system is OFF, so switching it on later can't turn an existing quiz into a leak.
+   * Questions without a set (created by hand) are always allowed.
+   */
+  private async assertNoLockedSetQuestions(questionIds: string[]): Promise<void> {
+    const { preliFreeSetCount } = await this.siteSettings.get();
+    const freeSetIds = [...(await this.access.freePreliSetIds({ preliFreeSetCount }))];
+    const lockedWhere = {
+      id: { in: questionIds },
+      uploadBatchId: { not: null, notIn: freeSetIds },
+    };
+    const lockedCount = await this.prisma.question.count({ where: lockedWhere });
+    if (lockedCount === 0) return;
+    const examples = await this.prisma.question.findMany({
+      where: lockedWhere,
+      select: { uploadBatch: { select: { displayName: true } } },
+      distinct: ['uploadBatchId'],
+      take: 3,
+    });
+    const sets = examples
+      .map((q) => q.uploadBatch?.displayName)
+      .filter((name): name is string => Boolean(name))
+      .map((name) => `“${name}”`)
+      .join(', ');
+    throw new UnprocessableEntityException(
+      createErrorResponse(
+        'PRACTICE_SET_LOCKED_QUESTIONS',
+        `${lockedCount} selected question(s) come from paid Preli sets (beyond the first ${preliFreeSetCount} free sets)` +
+          (sets ? `, e.g. ${sets}` : '') +
+          '. Practice sets are free for everyone, so these questions would be given away to learners without a subscription. ' +
+          'Remove them, or use questions from the free sets or questions created by hand.',
+        newRequestId(),
+      ),
+    );
   }
 
   private parseKind(kind?: string): PracticeSetKind | undefined {

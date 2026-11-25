@@ -56,6 +56,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | DEC-067 | Activity KPIs + user lookup, staff/user audit trail, log retention | CONFIRMED |
 | DEC-068 | Three paid plans, package reorder / single Recommended / safe delete, four-card pricing | CONFIRMED |
 | DEC-069 | All public marketing text editable in the homepage CMS (sections, pricing labels, footer, page headers) | CONFIRMED |
+| DEC-070 | Practice sets may not contain MCQs from paid Preli sets (audit SEC-2) | CONFIRMED |
 
 ---
 
@@ -737,6 +738,13 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 |-------|-------|
 | Decision | No new table or second system: new keys in the existing homepage CMS payload (`homepage_content`, draft → publish → revisions → `homepage` cache purge). Added: `hero.quickLinks` + `quickLinksLabel`; `liveStats.labels`; `sampleMcq.label / heading / bullets / emptyTitle / emptyDescription`; `dashboardPreview.tiles` (4, icons by position); `accessFaq.pricing` (every plan-card label — prices, per-month and savings stay computed); `footer` (tagline, Account heading + links, help note, copyright); `pageHeaders` for `/preli-question-bank`, `/written-question-bank`, `/model-test`, `/exams`, `/news`, `/packages`, `/written-question-bank-categories` (eyebrow, H1, intro, SEO title + description). Defaults live in the shared schema **at field level** and equal the previous live text, so stored payloads without these keys render unchanged — no data migration (owner choice). Links must be internal paths or `https://`. Admin → Homepage panels edit the section fields (with links to Packages and Pricing Features and a per-section Preview link); new **Admin → Page Headers & Footer** edits `pageHeaders` + `footer`, merging into the latest draft. Pages read the *published* payload server-side via `lib/site-content.ts` and fall back to the defaults on missing content or API failure; publishing also revalidates the seven listing paths. |
 | Status | **CONFIRMED** (owner approval 2026-11-26) |
+### DEC-070 — No paid-set MCQs in free practice sets (audit SEC-2)
+
+| Field | Value |
+|-------|-------|
+| Decision | Practice sets (Quiz, Model-Test kind, daily/subject/topic quizzes) are free under DEC-060 and never consult `AccessPolicyService`, so they must not contain bank MCQs from Preli sets beyond the free N. Admin create/update rejects such questions with `422 PRACTICE_SET_LOCKED_QUESTIONS` and a message naming up to three of the paid sets. The check uses the free-N list even while the paid system is OFF, so turning it on later cannot turn an existing quiz into a leak. Hand-made questions (no set) are always allowed. Existing practice sets are **not** changed (owner choice); a read-only SQL report lists any that already contain such questions. |
+| Status | **CONFIRMED** (owner choice, option 1, 2026-11-25) |
+
 ### Deferred / NEEDS APPROVAL (explicitly out of Phase 1)
 
 | Item | Notes |
