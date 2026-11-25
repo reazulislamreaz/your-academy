@@ -1,3 +1,4 @@
+import { AuditFloodGuard } from '../audit/audit-flood-guard';
 import {
   ConflictException,
   Injectable,
@@ -51,6 +52,8 @@ export function singleSessionApplies(role: UserRole): boolean {
   if (isStaffRole(role)) return process.env.SINGLE_SESSION_STAFF === 'true';
   return true;
 }
+
+const failedLoginAuditGuard = new AuditFloodGuard(10, 10 * 60_000);
 
 @Injectable()
 export class AuthService {
@@ -170,13 +173,18 @@ export class AuthService {
   ) {
     const masked =
       whatsappNumber.length > 4 ? `${'•'.repeat(whatsappNumber.length - 4)}${whatsappNumber.slice(-4)}` : '••••';
+    // AUD-1: at most 10 rows per source IP and per number every 10 minutes.
+    const byIp = failedLoginAuditGuard.admit(`ip:${meta.ipAddress ?? 'unknown'}`);
+    const byNumber = byIp === null ? null : failedLoginAuditGuard.admit(`wa:${whatsappNumber}`);
+    if (byIp === null || byNumber === null) return Promise.resolve();
+    const suppressed = byIp + byNumber;
     return this.audit.record({
       actorUserId: user?.id ?? null,
       actorRole: user?.role ?? null,
       action: 'AUTH_LOGIN_FAILED',
       entityType: 'User',
       entityId: user?.id ?? null,
-      metadata: { reason, whatsapp: masked },
+      metadata: { reason, whatsapp: masked, ...(suppressed > 0 ? { suppressedSimilar: suppressed } : {}) },
       ipAddress: meta.ipAddress ?? null,
       userAgent: meta.userAgent ?? null,
     });
