@@ -9,6 +9,7 @@ import { createErrorResponse } from '@your-academy/shared';
 import type { RequestUser } from '../auth/auth.types';
 import { newRequestId } from '../common/request-id';
 import { AuditService } from '../audit/audit.service';
+import { IBA_EXAM_TAG } from '../question-import/exam-tag-map';
 import { PrismaService } from '../database/prisma.service';
 import { LearningActivityService } from '../learning-activity/learning-activity.service';
 import { AccessPolicyService } from '../billing/access-policy.service';
@@ -63,6 +64,7 @@ export class QuestionsService {
         examYear,
         contentHash,
         createdById: user.userId,
+        ...(dto.isIba ? { examTags: [IBA_EXAM_TAG] } : {}),
         options: {
           create: dto.options.map((o, index) => ({
             label: o.label,
@@ -130,6 +132,14 @@ export class QuestionsService {
           ...(dto.categoryId ? { categoryId: dto.categoryId } : {}),
           ...(dto.subcategoryId !== undefined ? { subcategoryId: dto.subcategoryId } : {}),
           ...(dto.difficulty ? { difficulty: dto.difficulty } : {}),
+          // IBA flag toggles only the `iba` tag; other exam tags are kept as they are.
+          ...(dto.isIba !== undefined
+            ? {
+                examTags: dto.isIba
+                  ? [...existing.examTags.filter((t) => t !== IBA_EXAM_TAG), IBA_EXAM_TAG]
+                  : existing.examTags.filter((t) => t !== IBA_EXAM_TAG),
+              }
+            : {}),
           ...(datePatch
             ? { questionDate: datePatch.questionDate, examYear: datePatch.examYear }
             : {}),

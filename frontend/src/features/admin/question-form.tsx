@@ -21,7 +21,14 @@ export type QuestionFormValues = {
   difficulty: 'EASY' | 'MEDIUM' | 'HARD';
   options: string[];
   correct: string;
+  /**
+   * IBA question: 5 options (Option E shown). `undefined` = never touched → not sent, so a
+   * regular question's save request is exactly as before.
+   */
+  isIba?: boolean;
 };
+
+const OPTION_LETTERS = ['A', 'B', 'C', 'D', 'E'] as const;
 
 type Props = {
   categories: CategoryNode[];
@@ -188,9 +195,27 @@ export function QuestionForm({
             while drafting.
           </p>
         </div>
+        <label className="flex w-fit cursor-pointer items-center gap-2 text-sm font-medium text-[var(--ink)]">
+          <input
+            type="checkbox"
+            className="size-4 accent-[var(--highlight)]"
+            checked={Boolean(values.isIba)}
+            onChange={(e) => {
+              const on = e.target.checked;
+              setValues((v) => ({
+                ...v,
+                isIba: on,
+                // IBA = 5 options; switching back drops Option E (and an E answer).
+                options: on ? [...v.options.slice(0, 4), v.options[4] ?? ''] : v.options.slice(0, 4),
+                correct: !on && v.correct === 'E' ? '' : v.correct,
+              }));
+            }}
+          />
+          IBA question (5 options)
+        </label>
         <div className="grid gap-3 sm:grid-cols-2">
           {values.options.map((opt, i) => {
-            const label = ['A', 'B', 'C', 'D'][i]!;
+            const label = OPTION_LETTERS[i]!;
             const isMarked = values.correct === label;
             return (
               <Field key={i}>
@@ -223,7 +248,7 @@ export function QuestionForm({
             onChange={(e) => setValues((v) => ({ ...v, correct: e.target.value }))}
           >
             <option value="">None (missing)</option>
-            {['A', 'B', 'C', 'D'].map((l) => (
+            {OPTION_LETTERS.slice(0, values.options.length).map((l) => (
               <option key={l} value={l}>
                 {l}
               </option>
@@ -243,7 +268,7 @@ export function QuestionForm({
 }
 
 export function toQuestionPayload(values: QuestionFormValues) {
-  const labels = ['A', 'B', 'C', 'D'];
+  const labels = OPTION_LETTERS;
   return {
     title: values.title,
     content: values.content,
@@ -257,5 +282,6 @@ export function toQuestionPayload(values: QuestionFormValues) {
       content: text,
       isCorrect: Boolean(values.correct) && labels[i] === values.correct,
     })),
+    ...(values.isIba !== undefined ? { isIba: values.isIba } : {}),
   };
 }

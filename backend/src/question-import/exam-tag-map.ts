@@ -1,3 +1,6 @@
+/** Added to Question.examTags for questions imported through an IBA (5-option) upload. */
+export const IBA_EXAM_TAG = 'iba';
+
 /** Map free-text Exam Category cells → Question.examTags values. */
 const MAP: Array<{ match: RegExp; tag: string }> = [
   { match: /\bbcs\b.*prelim|prelim.*bcs|\bbcs\b/i, tag: 'bcs-prelim' },

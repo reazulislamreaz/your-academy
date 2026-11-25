@@ -50,6 +50,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | DEC-061 | 7-day full-access trial + Topic Base login / paywall (amends DEC-060) | CONFIRMED |
 | DEC-062 | 3-month plan, discounts, learner cancel / upgrade / downgrade, 7- / 3-day expiry reminders (no auto-charge) | CONFIRMED |
 | DEC-063 | 7-day trial scoped to Topic Base only — no site-wide trial (amends DEC-061) | CONFIRMED |
+| DEC-064 | IBA (5-option) Preli bulk upload + single-question Option E | CONFIRMED |
 
 ---
 
@@ -690,6 +691,13 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Decision | `AccessPolicyService.resolve`: `fullAccess = isAdmin \|\| isPaid \|\| !paidSystemEnabled` (trial removed). `canAccess({ kind: 'TOPIC' })`: login required → full access → else `isTrialActive`. All other kinds are unchanged, so trial users see the normal free plan (first N sets, FREE Model Tests, non-PREMIUM PDFs, …). `UserAccessSnapshot.topicAccess` (= signed in and (`fullAccess` or trial)) drives the web `TopicAccessGate`; the API enforces the same rule on `/public/topic-subcategories/:id/questions` and `/public/topic-sets/:id/questions`. No schema change (`users.trial_ends_at` is reused). Dashboard / profile / paywall copy now says "Topic-Based free access". |
 | Impact | `access-policy.service.ts` (+ tests), shared `UserAccessSnapshot`, frontend `topic-access-gate.tsx`, `trial-status-card.tsx`, `my-plan-card.tsx`, `paywall.tsx`. Amends DEC-061. |
 | Status | **CONFIRMED** (owner request 2026-11-25) |
+### DEC-064 — IBA (5-option) Preli bulk upload
+
+| Field | Value |
+|-------|-------|
+| Question | IBA exam questions have 5 options (A–E); the Preli bulk upload only handled 4. The owner asked to add IBA support without changing the existing flow. |
+| Decision | Upload page checkbox **IBA Questions (5 options)**, off by default. Off = existing parser, validation, template and import exactly as before (a `ঙ` / `option_e` column is ignored; answer E stays invalid). On = `ঙ` (option E) column required, all five options and an answer ক–ঙ / A–E required; failing rows are INVALID with a reason and skipped, valid rows import. Questions get a 5th `question_options` row (label `E`) and the `iba` exam tag (existing `exam_tags`; no new question column — options are rows, not columns). Staging: `question_upload_batches.is_iba`, `question_import_rows.option_e` (migration `20261126090000_iba_five_option_import`, manual rollback in its `down.sql`). Parser additions apply to both modes but cannot change accepted files: UTF-8 BOM stripped from headers, snake_case headers `option_a…option_e` / `correct_answer` recognised. Single-question form: "IBA question" checkbox shows Option E and sets / clears the `iba` tag (`isIba` on create / update; omitted = unchanged). Learner views label the 5th option ঙ. Import keeps its existing 25-row transaction chunks. Model Tests and timed Exams (own 4-option storage and uploads) are unchanged. |
+| Status | **CONFIRMED** (owner approval 2026-11-26) |
 ### Deferred / NEEDS APPROVAL (explicitly out of Phase 1)
 
 | Item | Notes |

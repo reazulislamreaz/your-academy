@@ -117,7 +117,7 @@ export function PreliPracticeResultView({
                   const isCorrect =
                     item.correctOptionId != null && item.correctOptionId === option.id;
                   const letter =
-                    ['ক', 'খ', 'গ', 'ঘ'][optIdx] ?? option.label ?? String.fromCharCode(65 + optIdx);
+                    ['ক', 'খ', 'গ', 'ঘ', 'ঙ'][optIdx] ?? option.label ?? String.fromCharCode(65 + optIdx);
                   return (
                     <li
                       key={option.id}

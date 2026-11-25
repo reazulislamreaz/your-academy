@@ -3,6 +3,7 @@ import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
   IsArray,
+  IsBoolean,
   IsEnum,
   IsOptional,
   IsString,
@@ -56,4 +57,8 @@ export class UpdateQuestionDto {
   @ValidateNested({ each: true })
   @Type(() => QuestionOptionDto)
   options?: QuestionOptionDto[];
+  /** IBA question (5 options, ক–ঙ): adds the `iba` exam tag. Omit = not IBA (create) / unchanged (update). */
+  @IsOptional()
+  @IsBoolean()
+  isIba?: boolean;
 }

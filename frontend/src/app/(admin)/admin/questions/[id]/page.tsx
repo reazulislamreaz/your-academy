@@ -41,7 +41,9 @@ export default function EditQuestionPage() {
     const q = detail.data;
     if (!q) return null;
     const sorted = [...q.options].sort((a, b) => a.sortOrder - b.sortOrder);
-    const labels = ['A', 'B', 'C', 'D'];
+    // IBA questions carry a 5th option (E) — load it too, or saving would delete it.
+    const isIba = sorted.some((o) => o.label === 'E') || Boolean(q.examTags?.includes('iba'));
+    const labels = isIba ? ['A', 'B', 'C', 'D', 'E'] : ['A', 'B', 'C', 'D'];
     const options = labels.map((label) => sorted.find((o) => o.label === label)?.content ?? '');
     const correct = sorted.find((o) => o.isCorrect)?.label ?? '';
     return {
@@ -54,6 +56,7 @@ export default function EditQuestionPage() {
       difficulty: q.difficulty as QuestionFormValues['difficulty'],
       options,
       correct,
+      ...(isIba ? { isIba: true } : {}),
     };
   }, [detail.data]);
 

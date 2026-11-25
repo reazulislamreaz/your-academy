@@ -24,6 +24,20 @@ export const TEMPLATE_HEADERS = [
   'উত্তর',
 ] as const;
 
+/** IBA template: same columns plus ঙ (option E) right after ঘ. */
+export const IBA_TEMPLATE_HEADERS = [
+  'প্রশ্ন নং',
+  'প্রশ্ন',
+  'পরীক্ষার নাম ও সাল',
+  'প্রশ্নের তারিখ',
+  'ক',
+  'খ',
+  'গ',
+  'ঘ',
+  'ঙ',
+  'উত্তর',
+] as const;
+
 export type ParsedImportRow = {
   rowNumber: number;
   serial: string;
@@ -32,6 +46,8 @@ export type ParsedImportRow = {
   optionB: string;
   optionC: string;
   optionD: string;
+  /** ঙ / option E — read when present; used only by IBA uploads (ignored otherwise). */
+  optionE: string;
   correctAnswer: string;
   explanation: string;
   subject: string;
@@ -75,13 +91,17 @@ function cellText(value: ExcelJS.CellValue | undefined): string {
 }
 
 function normalizeHeader(h: string): string {
-  return h
-    .normalize('NFC')
-    .trim()
-    .toLowerCase()
-    .replace(/\u00a0/g, ' ')
-    .replace(/\s+/g, ' ')
-    .replace(/[:：]+$/g, '');
+  return (
+    h
+      .normalize('NFC')
+      // UTF-8 BOM (Excel "CSV UTF-8") sticks to the first header — strip it so it still matches.
+      .replace(/^\uFEFF/, '')
+      .trim()
+      .toLowerCase()
+      .replace(/\u00a0/g, ' ')
+      .replace(/\s+/g, ' ')
+      .replace(/[:：]+$/g, '')
+  );
 }
 
 /** Map header labels (Bangla + English aliases) → parsed field. */
@@ -101,6 +121,7 @@ const HEADER_ALIASES: Record<string, FieldKey> = {
   খ: 'optionB',
   গ: 'optionC',
   ঘ: 'optionD',
+  ঙ: 'optionE',
   উত্তর: 'correctAnswer',
   'সঠিক উত্তর': 'correctAnswer',
   ব্যাখ্যা: 'explanation',
@@ -126,10 +147,19 @@ const HEADER_ALIASES: Record<string, FieldKey> = {
   'option b': 'optionB',
   'option c': 'optionC',
   'option d': 'optionD',
+  'option e': 'optionE',
+  // snake_case CSV headers (option_a … option_e, correct_answer) — previously unrecognised.
+  option_a: 'optionA',
+  option_b: 'optionB',
+  option_c: 'optionC',
+  option_d: 'optionD',
+  option_e: 'optionE',
+  correct_answer: 'correctAnswer',
   a: 'optionA',
   b: 'optionB',
   c: 'optionC',
   d: 'optionD',
+  e: 'optionE',
   'correct answer': 'correctAnswer',
   answer: 'correctAnswer',
   explanation: 'explanation',
@@ -233,8 +263,14 @@ export function isBlankAnswerToken(raw: string | null | undefined): boolean {
   return false;
 }
 
-/** Normalize উত্তর / Correct Answer → A|B|C|D. Empty / placeholder → null (allowed). */
-export function normalizeCorrectAnswer(raw: string | null | undefined): string | null {
+/**
+ * Normalize উত্তর / Correct Answer → A|B|C|D. Empty / placeholder → null (allowed).
+ * `allowE` (IBA uploads only) also accepts E / ঙ / 5 / ৫; without it E stays invalid as before.
+ */
+export function normalizeCorrectAnswer(
+  raw: string | null | undefined,
+  opts: { allowE?: boolean } = {},
+): string | null {
   if (isBlankAnswerToken(raw)) return null;
   const v = String(raw).normalize('NFC').trim();
   const compact = v.replace(/[.\s)\]）】]+$/g, '').replace(/^[([【]+/, '');
@@ -256,11 +292,14 @@ export function normalizeCorrectAnswer(raw: string | null | undefined): string |
     '২': 'B',
     '৩': 'C',
     '৪': 'D',
+    ...(opts.allowE ? { E: 'E', '5': 'E', ঙ: 'E', '৫': 'E' } : {}),
   };
   if (map[compact]) return map[compact];
   if (map[upper]) return map[upper];
   // "Option A" / "উত্তর: খ"
-  const letter = compact.match(/(?:^|[\s:])([ABCDকখগঘ])$/i)?.[1];
+  const letter = compact.match(
+    opts.allowE ? /(?:^|[\s:])([ABCDEকখগঘঙ])$/i : /(?:^|[\s:])([ABCDকখগঘ])$/i,
+  )?.[1];
   if (letter) return map[letter] ?? map[letter.toUpperCase()] ?? null;
   return null;
 }
@@ -294,6 +333,7 @@ function emptyParsed(rowNumber: number): ParsedImportRow {
     optionB: '',
     optionC: '',
     optionD: '',
+    optionE: '',
     correctAnswer: '',
     explanation: '',
     subject: '',
@@ -455,7 +495,8 @@ export async function parseQuestionWorkbook(
   return { preamble, rows };
 }
 
-export async function buildTemplateBuffer(): Promise<Buffer> {
+export async function buildTemplateBuffer(opts: { iba?: boolean } = {}): Promise<Buffer> {
+  if (opts.iba) return buildIbaTemplateBuffer();
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet('MCQ Questions');
   sheet.addRow([...TEMPLATE_HEADERS]);
@@ -500,6 +541,44 @@ export async function buildTemplateBuffer(): Promise<Buffer> {
     col.width = widths[i] ?? 18;
   });
 
+  const buf = await workbook.xlsx.writeBuffer();
+  return Buffer.from(buf);
+}
+
+/** IBA (5-option) template — separate builder so the 4-option file stays byte-for-byte the same. */
+async function buildIbaTemplateBuffer(): Promise<Buffer> {
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet('IBA MCQ Questions');
+  sheet.addRow([...IBA_TEMPLATE_HEADERS]);
+  sheet.getRow(1).font = { bold: true };
+  sheet.addRow([
+    '১',
+    'Which of the following words is closest in meaning to "abundant"?',
+    'IBA MBA Admission: 2024',
+    '2024-02-09',
+    'Scarce',
+    'Plentiful',
+    'Hidden',
+    'Fragile',
+    'Ordinary',
+    'খ',
+  ]);
+  sheet.addRow([
+    '২',
+    'বাংলাদেশের জাতীয় সংসদের আসন সংখ্যা কত?',
+    'IBA BBA Admission: 2023',
+    '2023-10-20',
+    '৩০০',
+    '৩২০',
+    '৩৩০',
+    '৩৪০',
+    '৩৫০',
+    'ঙ',
+  ]);
+  const widths = [10, 48, 36, 14, 24, 24, 24, 24, 24, 10];
+  sheet.columns.forEach((col, i) => {
+    col.width = widths[i] ?? 18;
+  });
   const buf = await workbook.xlsx.writeBuffer();
   return Buffer.from(buf);
 }

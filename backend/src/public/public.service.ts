@@ -21,6 +21,8 @@ const BN_LABEL: Record<string, string> = {
   B: 'খ',
   C: 'গ',
   D: 'ঘ',
+  // IBA questions (5 options) — DEC IBA upload.
+  E: 'ঙ',
 };
 
 /** Normalize admin-entered exam year / question-date year to a 4-digit calendar year. */

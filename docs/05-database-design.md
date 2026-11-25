@@ -159,6 +159,8 @@ erDiagram
 **Constraints:** Partial unique index: **at most one** `isCorrect=true` per question (unique on questionId WHERE isCorrect). Publish-time service ensures exactly one.  
 **Indexes:** (questionId, sortOrder).
 
+**IBA (DEC-064):** IBA questions have a 5th option row, label `E` (ঙ); no column on `questions`. They carry the `iba` value in `questions.exam_tags`. Bulk-upload staging: `question_upload_batches.is_iba` BOOLEAN default false, `question_import_rows.option_e` TEXT NULL (null for every 4-option row).
+
 ### 3.6 News
 
 | Field | Type | Notes |

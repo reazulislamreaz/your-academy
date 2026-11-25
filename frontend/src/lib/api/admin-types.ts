@@ -20,6 +20,8 @@ export type AdminQuestionDetail = {
   subcategoryId?: string | null;
   questionDate?: string | null;
   examYear?: string | null;
+  /** Exam track tags; `iba` marks an IBA (5-option) question. */
+  examTags?: string[];
   options: Array<{
     id: string;
     label: string;

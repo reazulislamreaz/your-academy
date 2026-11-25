@@ -62,4 +62,8 @@ export class CreateQuestionDto {
   @ValidateNested({ each: true })
   @Type(() => QuestionOptionDto)
   options!: QuestionOptionDto[];
+  /** IBA question (5 options, ক–ঙ): adds the `iba` exam tag. Omit = not IBA (create) / unchanged (update). */
+  @IsOptional()
+  @IsBoolean()
+  isIba?: boolean;
 }

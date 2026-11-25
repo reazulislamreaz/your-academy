@@ -43,6 +43,20 @@ const TEMPLATE_COLUMNS = [
   'উত্তর',
 ];
 
+/** IBA upload (5 options): ঙ = option E, right after ঘ. */
+const IBA_TEMPLATE_COLUMNS = [
+  'প্রশ্ন নং',
+  'প্রশ্ন',
+  'পরীক্ষার নাম ও সাল',
+  'প্রশ্নের তারিখ',
+  'ক',
+  'খ',
+  'গ',
+  'ঘ',
+  'ঙ',
+  'উত্তর',
+];
+
 /** One Excel can appear under up to 8 subcategories (homepage / Preli bank slots). */
 const MAX_PLACEMENTS = 8;
 
@@ -57,6 +71,8 @@ export default function NewQuestionImportPage() {
   const [placementSubcategoryIds, setPlacementSubcategoryIds] = useState<string[]>([]);
   const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** IBA: 5 options (ক–ঙ / A–E). Off by default = the regular 4-option upload. */
+  const [isIba, setIsIba] = useState(false);
 
   const categories = useQuery({
     queryKey: ['categories', 'PRELIMINARY'],
@@ -102,6 +118,8 @@ export default function NewQuestionImportPage() {
       if (questionDate.trim()) {
         form.append('questionDate', questionDate.trim());
       }
+      // Sent only when ON, so the regular upload request is exactly as before.
+      if (isIba) form.append('isIba', 'true');
       setProgress(55);
       const result = await apiUploadForm<UploadBatch>('/admin/question-imports/upload', form);
       setProgress(100);
@@ -186,19 +204,56 @@ export default function NewQuestionImportPage() {
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h2 className="font-display text-lg font-bold">Select Excel file</h2>
-              <p className="text-sm leading-relaxed text-[var(--muted-strong)]">
-                Upload the Google Sheets MCQ template as `.xlsx` or `.csv` — no column renaming needed.
-                Answers (`উত্তর`) are optional; when present use ক / খ / গ / ঘ. Serial numbers (`প্রশ্ন নং`)
-                and sheet preamble rows are kept.
-              </p>
+              {isIba ? (
+                <p className="text-sm leading-relaxed text-[var(--muted-strong)]">
+                  IBA questions have 5 options: add a `ঙ` (option E) column right after `ঘ`. Every
+                  option and the answer (`উত্তর`: ক / খ / গ / ঘ / ঙ or A–E) are required; rows
+                  missing them are skipped and listed in the preview.
+                </p>
+              ) : (
+                <p className="text-sm leading-relaxed text-[var(--muted-strong)]">
+                  Upload the Google Sheets MCQ template as `.xlsx` or `.csv` — no column renaming needed.
+                  Answers (`উত্তর`) are optional; when present use ক / খ / গ / ঘ. Serial numbers (`প্রশ্ন নং`)
+                  and sheet preamble rows are kept.
+                </p>
+              )}
             </div>
-            <a href={adminDownloadUrl('/admin/question-imports/template')}>
+            <a
+              href={adminDownloadUrl(
+                isIba ? '/admin/question-imports/template?iba=1' : '/admin/question-imports/template',
+              )}
+            >
               <Button type="button" variant="outline" className="cursor-pointer">
                 <Download className="size-4" />
                 Download template
               </Button>
             </a>
           </div>
+
+          <label
+            className={cn(
+              'flex cursor-pointer items-start gap-3 rounded-[12px] border px-3 py-3 transition-colors',
+              isIba
+                ? 'border-[var(--highlight)] bg-[var(--highlight-soft)]'
+                : 'border-[var(--line)] bg-[var(--bg-elevated)] hover:border-[var(--highlight)]/40',
+            )}
+          >
+            <input
+              type="checkbox"
+              className="mt-1 size-4 accent-[var(--highlight)]"
+              checked={isIba}
+              onChange={(e) => setIsIba(e.target.checked)}
+            />
+            <span className="min-w-0">
+              <span className="block text-sm font-semibold text-[var(--ink)]">
+                IBA Questions (5 options)
+              </span>
+              <span className="mt-0.5 block text-xs text-[var(--muted-strong)]">
+                Adds option ঙ (E). Imported questions are tagged IBA. Leave off for regular 4-option
+                sheets.
+              </span>
+            </span>
+          </label>
 
           <FileDropzone file={file} onFileChange={setFile} />
 
@@ -208,7 +263,7 @@ export default function NewQuestionImportPage() {
               Template columns
             </p>
             <div className="flex flex-wrap gap-1.5">
-              {TEMPLATE_COLUMNS.map((col) => (
+              {(isIba ? IBA_TEMPLATE_COLUMNS : TEMPLATE_COLUMNS).map((col) => (
                 <span
                   key={col}
                   className="border border-[var(--line)] bg-[var(--bg-elevated)] px-2.5 py-1 text-xs font-semibold text-[var(--ink-soft)]"
@@ -418,6 +473,12 @@ export default function NewQuestionImportPage() {
               <p className="text-xs font-semibold text-[var(--muted-strong)]">File</p>
               <p className="text-sm font-semibold text-[var(--ink)]">{file?.name ?? '—'}</p>
             </div>
+            {isIba ? (
+              <div>
+                <p className="text-xs font-semibold text-[var(--muted-strong)]">Question type</p>
+                <p className="text-sm text-[var(--ink-soft)]">IBA — 5 options (ক–ঙ)</p>
+              </div>
+            ) : null}
             <div>
               <p className="text-xs font-semibold text-[var(--muted-strong)]">Title</p>
               <p className="text-sm font-semibold text-[var(--ink)]">{displayName || '—'}</p>

@@ -35,16 +35,20 @@ import { QuestionImportService } from './question-import.service';
 export class QuestionImportController {
   constructor(private readonly imports: QuestionImportService) {}
 
+  /** `?iba=1` → 5-option IBA template (adds ঙ); otherwise the unchanged 4-option file. */
   @Get('template')
-  async template(@Res() res: Response) {
-    const buffer = await this.imports.getTemplateBuffer();
+  async template(@Res() res: Response, @Query('iba') iba?: string) {
+    const isIba = iba === '1' || iba === 'true';
+    const buffer = await this.imports.getTemplateBuffer({ iba: isIba });
     res.setHeader(
       'Content-Type',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     );
     res.setHeader(
       'Content-Disposition',
-      'attachment; filename="your-academy-question-template.xlsx"',
+      isIba
+        ? 'attachment; filename="your-academy-iba-question-template.xlsx"'
+        : 'attachment; filename="your-academy-question-template.xlsx"',
     );
     res.send(buffer);
   }
@@ -104,6 +108,8 @@ export class QuestionImportController {
     @Body('examCategoryHint') examCategoryHint?: string,
     @Body('placementSubcategoryIds') placementSubcategoryIdsRaw?: string,
     @Body('questionDate') questionDate?: string,
+    /** Multipart text field: "true" / "1" = IBA 5-option upload. Absent = existing flow. */
+    @Body('isIba') isIbaRaw?: string,
   ) {
     let placementSubcategoryIds: string[] | undefined;
     if (placementSubcategoryIdsRaw?.trim()) {
@@ -129,6 +135,7 @@ export class QuestionImportController {
         examCategoryHint,
         placementSubcategoryIds,
         questionDate,
+        isIba: isIbaRaw === 'true' || isIbaRaw === '1',
       }),
       newRequestId(),
     );

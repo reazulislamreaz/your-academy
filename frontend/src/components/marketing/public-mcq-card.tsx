@@ -13,6 +13,8 @@ const BN_OPTION: Record<string, string> = {
   B: 'খ',
   C: 'গ',
   D: 'ঘ',
+  // IBA questions have a 5th option.
+  E: 'ঙ',
 };
 
 type Props = {

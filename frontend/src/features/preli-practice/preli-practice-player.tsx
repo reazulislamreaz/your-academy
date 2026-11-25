@@ -28,7 +28,8 @@ type Props = {
   basePath?: string;
 };
 
-const BN_LABELS = ['ক', 'খ', 'গ', 'ঘ'] as const;
+/** ঙ = 5th option on IBA questions; 4-option questions never reach it. */
+const BN_LABELS = ['ক', 'খ', 'গ', 'ঘ', 'ঙ'] as const;
 
 /** Timed Preli Practice player — Model Test chrome, client-side scoring, no name gate. */
 export function PreliPracticePlayer({ setId, basePath = '/preli-practice' }: Props) {

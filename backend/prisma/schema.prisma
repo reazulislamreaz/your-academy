@@ -1151,6 +1151,8 @@ model QuestionUploadBatch {
   subjectHint          String?              @map("subject_hint") @db.VarChar(120)
   topicHint            String?              @map("topic_hint") @db.VarChar(120)
   examCategoryHint     String?              @map("exam_category_hint") @db.VarChar(120)
+  /// IBA upload: rows carry a 5th option (ঙ / E) and imported questions are tagged `iba`.
+  isIba                Boolean              @default(false) @map("is_iba")
   /// First-column text above the MCQ header row (shown before questions on the set page).
   sheetPreamble        String?              @map("sheet_preamble")
   /// Primary exam year for this collection (public year filter; derived from questionDate when set).
@@ -1210,6 +1212,8 @@ model QuestionImportRow {
   optionB            String?                 @map("option_b")
   optionC            String?                 @map("option_c")
   optionD            String?                 @map("option_d")
+  /// IBA batches only — 5th option (ঙ / E); always null for 4-option batches.
+  optionE            String?                 @map("option_e")
   correctAnswer      String?                 @map("correct_answer") @db.VarChar(1)
   explanation        String?
   subjectName        String?                 @map("subject_name") @db.VarChar(120)

@@ -20,12 +20,13 @@ import { randomUUID } from 'crypto';
 import type { RequestUser } from '../auth/auth.types';
 import { newRequestId } from '../common/request-id';
 import { PrismaService } from '../database/prisma.service';
-import { mapExamCategoryToTag, parseDifficulty } from './exam-tag-map';
+import { IBA_EXAM_TAG, mapExamCategoryToTag, parseDifficulty } from './exam-tag-map';
 import {
   buildImportReportBuffer,
   buildTemplateBuffer,
   isBlankAnswerToken,
   normalizeCorrectAnswer,
+  IBA_TEMPLATE_HEADERS,
   parseQuestionWorkbook,
   TEMPLATE_HEADERS,
 } from './excel-parser';
@@ -70,8 +71,8 @@ export class QuestionImportService {
     return root;
   }
 
-  async getTemplateBuffer(): Promise<Buffer> {
-    return buildTemplateBuffer();
+  async getTemplateBuffer(opts: { iba?: boolean } = {}): Promise<Buffer> {
+    return buildTemplateBuffer(opts);
   }
 
   async getStats() {
@@ -362,8 +363,11 @@ export class QuestionImportService {
       placementSubcategoryIds?: string[];
       /** Default question date applied when Excel rows omit প্রশ্নের তারিখ. */
       questionDate?: string;
+      /** IBA upload: 5 options (ক–ঙ / A–E), all required, answer A–E. Default false = 4-option flow. */
+      isIba?: boolean;
     },
   ) {
+    const isIba = input.isIba === true;
     if (!file?.buffer?.length) {
       throw new BadRequestException(
         createErrorResponse('FILE_REQUIRED', 'Excel or CSV file is required', newRequestId()),
@@ -578,10 +582,27 @@ export class QuestionImportService {
       if (!row.optionD) errors.push('Column "ঘ": option is required');
 
       const answerRaw = row.correctAnswer?.trim() ?? '';
-      const correct = normalizeCorrectAnswer(row.correctAnswer);
+      const correct = normalizeCorrectAnswer(row.correctAnswer, { allowE: isIba });
+      if (isIba) {
+        // IBA rows: all five options and a valid answer (A–E) are required.
+        if (!row.optionE) {
+          errors.push(
+            correct === 'E'
+              ? 'Answer is "E" (ঙ) but column "ঙ" (option E) is empty'
+              : 'Column "ঙ" (option E): option is required',
+          );
+        }
+        if (!answerRaw || isBlankAnswerToken(answerRaw)) {
+          errors.push('Column "উত্তর": answer is required for IBA questions (ক–ঙ or A–E)');
+        } else if (!correct) {
+          errors.push(
+            `Column "উত্তর": invalid answer "${answerRaw}" — must be ক/খ/গ/ঘ/ঙ (or A–E)`,
+          );
+        }
+      }
       // Missing / blank-placeholder answers are allowed (null → DRAFT on import).
       // Only reject genuinely unparseable non-empty values (e.g. "maybe", "5").
-      if (answerRaw && !isBlankAnswerToken(answerRaw) && !correct) {
+      if (!isIba && answerRaw && !isBlankAnswerToken(answerRaw) && !correct) {
         errors.push(
           'Column "উত্তর": must be ক/খ/গ/ঘ (or A/B/C/D) when provided. Got: ' + answerRaw,
         );
@@ -592,6 +613,7 @@ export class QuestionImportService {
         B: row.optionB,
         C: row.optionC,
         D: row.optionD,
+        ...(isIba ? { E: row.optionE } : {}),
       });
       /** Informational identity hash — duplicates are allowed and still import as VALID. */
       const hash = hashQuestionIdentity(row.question ?? '', correctContent);
@@ -672,6 +694,8 @@ export class QuestionImportService {
           optionB: row.optionB || null,
           optionC: row.optionC || null,
           optionD: row.optionD || null,
+          // option_e is stored for IBA batches only; ignored (null) for 4-option uploads.
+          optionE: isIba ? row.optionE || null : null,
           correctAnswer: correct,
           explanation: row.explanation || null,
           subjectName: subjectName || null,
@@ -700,6 +724,7 @@ export class QuestionImportService {
         optionB: row.optionB,
         optionC: row.optionC,
         optionD: row.optionD,
+        optionE: isIba ? row.optionE : null,
         correctAnswer: correct,
         explanation: row.explanation || null,
         subjectName,
@@ -733,6 +758,7 @@ export class QuestionImportService {
           subjectHint: collectionSubject || null,
           topicHint: resolvedTopicHint || null,
           examCategoryHint: collectionExam || null,
+          isIba,
           sheetPreamble,
           examYear: batchExamYear ?? examYearFromDate(batchQuestionDate),
           questionDate: batchQuestionDate,
@@ -802,7 +828,13 @@ export class QuestionImportService {
   private async runImport(user: RequestUser, batchId: string) {
     const batch = await this.prisma.questionUploadBatch.findUniqueOrThrow({
       where: { id: batchId },
-      select: { id: true, examYear: true, examCategoryHint: true, questionDate: true },
+      select: {
+        id: true,
+        examYear: true,
+        examCategoryHint: true,
+        questionDate: true,
+        isIba: true,
+      },
     });
     const categoryIndex = await this.buildCategoryIndex();
     // Import VALID rows and any legacy DUPLICATE rows from older uploads.
@@ -879,12 +911,25 @@ export class QuestionImportService {
               row.correctAnswer === 'A' ||
               row.correctAnswer === 'B' ||
               row.correctAnswer === 'C' ||
-              row.correctAnswer === 'D';
+              row.correctAnswer === 'D' ||
+              (batch.isIba && row.correctAnswer === 'E');
             const options = [
               { label: 'A', content: row.optionA!, isCorrect: row.correctAnswer === 'A' },
               { label: 'B', content: row.optionB!, isCorrect: row.correctAnswer === 'B' },
               { label: 'C', content: row.optionC!, isCorrect: row.correctAnswer === 'C' },
               { label: 'D', content: row.optionD!, isCorrect: row.correctAnswer === 'D' },
+            ];
+            // IBA batches: 5th option row (label E). 4-option batches never get one.
+            if (batch.isIba && row.optionE) {
+              options.push({
+                label: 'E',
+                content: row.optionE,
+                isCorrect: row.correctAnswer === 'E',
+              });
+            }
+            const examTags = [
+              ...(examTag ? [examTag] : []),
+              ...(batch.isIba ? [IBA_EXAM_TAG] : []),
             ];
 
             // Unanswered imports stay draft so they do not enter the learner bank
@@ -902,7 +947,7 @@ export class QuestionImportService {
                 difficulty,
                 status: publishNow ? QuestionStatus.PUBLISHED : QuestionStatus.DRAFT,
                 publishedAt: publishNow ? new Date() : null,
-                examTags: examTag ? [examTag] : [],
+                examTags,
                 sourceNote: sourceParts.join(' · ').slice(0, 240),
                 sourceSerial: row.serial?.trim().slice(0, 32) || null,
                 examYear,
@@ -1066,8 +1111,8 @@ export class QuestionImportService {
     const ExcelJS = await import('exceljs');
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet('MCQ Questions');
-    sheet.addRow([...TEMPLATE_HEADERS]);
-    const letterToBn: Record<string, string> = { A: 'ক', B: 'খ', C: 'গ', D: 'ঘ' };
+    sheet.addRow([...(batch.isIba ? IBA_TEMPLATE_HEADERS : TEMPLATE_HEADERS)]);
+    const letterToBn: Record<string, string> = { A: 'ক', B: 'খ', C: 'গ', D: 'ঘ', E: 'ঙ' };
     let serial = 1;
     for (const q of questions) {
       const byLabel = Object.fromEntries(q.options.map((o) => [o.label, o]));
@@ -1081,6 +1126,7 @@ export class QuestionImportService {
         byLabel.B?.content ?? '',
         byLabel.C?.content ?? '',
         byLabel.D?.content ?? '',
+        ...(batch.isIba ? [byLabel.E?.content ?? ''] : []),
         letterToBn[correctLabel] ?? correctLabel,
       ]);
       serial += 1;

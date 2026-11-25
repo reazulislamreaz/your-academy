@@ -32,6 +32,7 @@ import {
   type UploadBatch,
   statusTone,
 } from '@/features/admin/question-imports/types';
+import { IbaSkippedSummary } from '@/features/admin/question-imports/iba-skipped-summary';
 import { ApiError, apiFetch, apiFetchResult } from '@/lib/api/client';
 import type { CategoryNode } from '@/lib/api/types';
 import { adminDownloadUrl } from '@/lib/api/upload';
@@ -248,6 +249,7 @@ function QuestionImportDetailContent() {
       ) : null}
 
       {data.errorMessage ? <Alert variant="danger">{data.errorMessage}</Alert> : null}
+      {data.isIba ? <IbaSkippedSummary batch={data} /> : null}
 
       <div className="motion-stagger grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {summary.map((item) => (
@@ -271,6 +273,7 @@ function QuestionImportDetailContent() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant={statusTone(data.status)}>{data.status}</Badge>
+            {data.isIba ? <Badge variant="highlight">IBA · 5 options</Badge> : null}
             {data.subjectHint ? <Badge variant="outline">{data.subjectHint}</Badge> : null}
             {data.topicHint ? <Badge variant="outline">{data.topicHint}</Badge> : null}
             {data.examYear ? <Badge variant="outline">{data.examYear}</Badge> : null}
@@ -568,7 +571,11 @@ function QuestionImportDetailContent() {
                     )}
                   </td>
                   <td className="px-3 py-3 text-sm leading-relaxed text-[var(--ink)]">
-                    {(['A', 'B', 'C', 'D'] as const).map((label) => {
+                    {[
+                      ...(['A', 'B', 'C', 'D'] as const),
+                      // IBA rows only: option E is null for every 4-option row.
+                      ...(row.optionE ? (['E'] as const) : []),
+                    ].map((label) => {
                       const text =
                         label === 'A'
                           ? row.optionA
@@ -576,7 +583,9 @@ function QuestionImportDetailContent() {
                             ? row.optionB
                             : label === 'C'
                               ? row.optionC
-                              : row.optionD;
+                              : label === 'D'
+                                ? row.optionD
+                                : row.optionE;
                       const isCorrect = Boolean(row.correctAnswer) && row.correctAnswer === label;
                       return (
                         <p

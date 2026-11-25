@@ -63,11 +63,18 @@ export function hashQuestionIdentity(question: string, correctAnswerContent: str
 
 export function resolveCorrectOptionContent(
   correctLabel: string | null | undefined,
-  options: { A?: string | null; B?: string | null; C?: string | null; D?: string | null },
+  options: {
+    A?: string | null;
+    B?: string | null;
+    C?: string | null;
+    D?: string | null;
+    /** IBA only — callers pass E only for 5-option uploads. */
+    E?: string | null;
+  },
 ): string {
   if (!correctLabel) return '';
-  const key = correctLabel.toUpperCase() as 'A' | 'B' | 'C' | 'D';
-  if (key !== 'A' && key !== 'B' && key !== 'C' && key !== 'D') return '';
+  const key = correctLabel.toUpperCase() as 'A' | 'B' | 'C' | 'D' | 'E';
+  if (key !== 'A' && key !== 'B' && key !== 'C' && key !== 'D' && key !== 'E') return '';
   return options[key]?.toString() ?? '';
 }
 

@@ -240,9 +240,9 @@ Query params for list: `cursor`, `limit`, `categoryId`, `subcategoryId`, `diffic
 
 | Method | Endpoint | Description | Auth | Role |
 |--------|----------|-------------|------|------|
-| GET | `/admin/question-imports/template` | Download Bangla Google Sheets `.xlsx` template (`প্রশ্ন নং…উত্তর`) | User | ADMIN |
+| GET | `/admin/question-imports/template` | Download Bangla Google Sheets `.xlsx` template (`প্রশ্ন নং…উত্তর`); `?iba=1` → IBA 5-option template (adds `ঙ` after `ঘ`) — DEC-064 | User | ADMIN |
 | GET | `/admin/question-imports` | List batches (`status`, `q`, cursor) | User | ADMIN |
-| POST | `/admin/question-imports/upload` | Multipart `file` + `displayName`/`subjectHint`/`topicHint` + optional `placementSubcategoryIds` (JSON array, max 8) for multi-slot homepage/bank placement | User | ADMIN |
+| POST | `/admin/question-imports/upload` | Multipart `file` + `displayName`/`subjectHint`/`topicHint` + optional `placementSubcategoryIds` (JSON array, max 8) for multi-slot homepage/bank placement. Optional `isIba=true` (DEC-064): 5 options ক–ঙ / A–E all required, answer A–E required; invalid rows are listed and skipped. Absent = unchanged 4-option rules (`ঙ` / `option_e` column ignored) | User | ADMIN |
 | GET | `/admin/question-imports/:id` | Batch summary + duplicate-file warning | User | ADMIN |
 | GET | `/admin/question-imports/:id/rows` | Preview rows (`status` filter) | User | ADMIN |
 | POST | `/admin/question-imports/:id/confirm` | `{ skipDuplicates?: true }` import valid rows | User | ADMIN |

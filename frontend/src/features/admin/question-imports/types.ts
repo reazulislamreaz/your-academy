@@ -15,6 +15,8 @@ export type UploadBatch = {
   subjectHint?: string | null;
   topicHint?: string | null;
   examCategoryHint?: string | null;
+  /** IBA (5-option) upload. */
+  isIba?: boolean;
   examYear?: string | null;
   questionDate?: string | null;
   sheetPreamble?: string | null;
@@ -43,6 +45,8 @@ export type ImportRow = {
   optionB?: string | null;
   optionC?: string | null;
   optionD?: string | null;
+  /** IBA batches only. */
+  optionE?: string | null;
   correctAnswer?: string | null;
   /** Written bank (DEC-040). */
   modelAnswer?: string | null;
