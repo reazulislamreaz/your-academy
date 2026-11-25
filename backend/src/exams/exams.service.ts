@@ -16,6 +16,7 @@ import {
   type TimedAttemptSummary,
 } from '@your-academy/shared';
 import type { RequestUser } from '../auth/auth.types';
+import { LearningActivityService } from '../learning-activity/learning-activity.service';
 import { PrismaService } from '../database/prisma.service';
 import { newRequestId } from '../common/request-id';
 import { paginateById, parseLimit } from '../common/pagination';
@@ -50,7 +51,11 @@ function normalizeGuideItems(raw: unknown): ExamGuideItem[] {
 
 @Injectable()
 export class ExamsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    /** DEC-067 — activity feed for signed-in submissions (optional for unit tests). */
+    private readonly activity?: LearningActivityService,
+  ) {}
 
   async getTemplateBuffer(): Promise<Buffer> {
     return buildExamTemplateBuffer();
@@ -187,6 +192,13 @@ export class ExamsService {
         timedOut: Boolean(dto.timedOut),
       },
     });
+    if (userId) {
+      await this.activity?.record({
+        userId,
+        type: 'QUIZ_SUBMIT',
+        meta: { examId: exam.id, title: exam.title, attemptId: attempt.id, correctCount },
+      });
+    }
 
     return {
       attemptId: attempt.id,

@@ -150,3 +150,64 @@ export type ActivityTrends = {
     activeSeconds: number;
   }>;
 };
+
+/** DEC-067 — `GET /admin/activity/kpis`. */
+export type ActivityKpis = {
+  registrations: { today: number; d7: number; d30: number };
+  totalUsers: number;
+  online: { now: number; m5: number; windowMs: number };
+  dau: number;
+  paid: {
+    active: number;
+    free: number;
+    percent: number;
+    newConversions: { d7: number; d30: number };
+  };
+  generatedAt: string;
+};
+
+/** DEC-067 — `GET /admin/activity/users/lookup`. */
+export type UserLookupResult = {
+  query: string;
+  matchedBy: 'none' | 'id' | 'id-prefix' | 'text';
+  items: Array<{
+    id: string;
+    name: string;
+    email: string | null;
+    whatsappNumber: string;
+    role: string;
+    status: string;
+    createdAt: string;
+    plan: 'PAID' | 'FREE' | 'STAFF';
+    subscriptionEndsAt: string | null;
+    lastActiveAt: string | null;
+  }>;
+};
+
+/** DEC-067 — `GET /admin/audit`. */
+export type AuditRow = {
+  id: string;
+  action: string;
+  entityType: string;
+  entityId: string | null;
+  metadata: unknown;
+  severity: 'INFO' | 'WARNING' | 'CRITICAL';
+  actorRole: string | null;
+  ipAddress: string | null;
+  userAgent: string | null;
+  createdAt: string;
+  actor: { id: string; name: string; role: string } | null;
+};
+
+export type PurgeRequest = {
+  target: 'audit' | 'activity' | 'all';
+  mode: 'retention' | 'before' | 'range';
+  before?: string;
+  from?: string;
+  to?: string;
+};
+
+export type PurgePreview = {
+  criteria: { summary: string };
+  counts: { audit: number; activity: number; total: number };
+};

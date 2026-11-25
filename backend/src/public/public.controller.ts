@@ -22,6 +22,7 @@ import { DocumentsService } from '../documents/documents.service';
 import { parseLimit } from '../common/pagination';
 import { AccessPolicyService, type ViewerAccess } from '../billing/access-policy.service';
 import { ScorePracticeDto } from './dto/score-practice.dto';
+import { LearningActivityService } from '../learning-activity/learning-activity.service';
 import { PublicService } from './public.service';
 import { setViewerCacheHeaders } from './viewer-cache';
 
@@ -40,6 +41,7 @@ export class PublicController {
     private readonly publicService: PublicService,
     private readonly documentsService: DocumentsService,
     private readonly access: AccessPolicyService,
+    private readonly activity: LearningActivityService,
   ) {}
 
   /** Per-viewer access; signed-in responses are never shared-cached (locks differ). */
@@ -175,6 +177,8 @@ export class PublicController {
       },
       view,
     );
+    // DEC-067 — "Question bank access" in the activity feed (first page only, signed-in).
+    if (view.userId && !cursor) void this.activity.recordSetView(view.userId, id, 'PRELI');
     return createSuccessResponse(
       data.items,
       newRequestId(),
@@ -273,6 +277,7 @@ export class PublicController {
       },
       view,
     );
+    if (view.userId && !cursor) void this.activity.recordSetView(view.userId, id, 'WRITTEN');
     return createSuccessResponse(
       data.items,
       newRequestId(),

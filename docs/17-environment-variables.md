@@ -55,6 +55,7 @@ Docker Compose overrides `DATABASE_URL` host to `postgres` for `api` / `worker` 
 | `PAYMENT_RECHECK_MIN_AGE_MINUTES` | no | Only PENDING orders older than this are re-checked (default 15) |
 | `SUBSCRIPTION_REMINDERS_ENABLED` | no | `false` turns off the 7- / 3-day plan-expiry reminder emails (DEC-062, default on) |
 | `SUBSCRIPTION_REMINDER_INTERVAL_MINUTES` | no | How often the reminder pass runs (default 60, min 5); each reminder is still sent once per period |
+| `LOG_RETENTION_AUTO_PURGE` | no | `true` deletes audit + activity logs older than 90 days once a day (DEC-067, default off; each run is itself audited) |
 | `PAYMENT_PENDING_EXPIRE_MINUTES` | no | PENDING with no gateway transaction after this → FAILED (default 120, min 30) |
 | `APP_PUBLIC_URL` | no | Web origin for payment result redirects + email links (default: first `WEB_ORIGIN`) |
 | `SWAGGER_ENABLED` | no | Default true in dev |

@@ -102,6 +102,18 @@ export class AuthService {
       },
     });
 
+    // DEC-067 — account creation (audit) + activity feed entry.
+    await this.audit.record({
+      actorUserId: user.id,
+      actorRole: user.role,
+      action: 'USER_REGISTER',
+      entityType: 'User',
+      entityId: user.id,
+      ipAddress: meta.ipAddress ?? null,
+      userAgent: meta.userAgent ?? null,
+    });
+    await this.learningActivity.record({ userId: user.id, type: 'REGISTER' });
+
     return this.issueSession(user, meta);
   }
 
@@ -110,12 +122,19 @@ export class AuthService {
     // Same normalize path as register; invalid format still maps to generic credentials
     // so we do not leak whether a number is registered.
     if (!isValidWhatsapp(whatsappNumber)) {
+      await this.recordFailedLogin(null, whatsappNumber, 'INVALID_NUMBER', meta);
       throw new UnauthorizedException(
         createErrorResponse('INVALID_CREDENTIALS', 'Invalid credentials', newRequestId()),
       );
     }
     const user = await this.prisma.user.findUnique({ where: { whatsappNumber } });
     if (!user || user.deletedAt || user.status !== UserStatus.ACTIVE) {
+      await this.recordFailedLogin(
+        user && !user.deletedAt ? user : null,
+        whatsappNumber,
+        user ? 'ACCOUNT_INACTIVE' : 'UNKNOWN_ACCOUNT',
+        meta,
+      );
       throw new UnauthorizedException(
         createErrorResponse('INVALID_CREDENTIALS', 'Invalid credentials', newRequestId()),
       );
@@ -123,12 +142,44 @@ export class AuthService {
 
     const valid = await argon2.verify(user.passwordHash, dto.password);
     if (!valid) {
+      await this.recordFailedLogin(user, whatsappNumber, 'WRONG_PASSWORD', meta);
       throw new UnauthorizedException(
         createErrorResponse('INVALID_CREDENTIALS', 'Invalid credentials', newRequestId()),
       );
     }
 
-    return this.issueSession(user, meta);
+    const session = await this.issueSession(user, meta);
+    await this.audit.record({
+      actorUserId: user.id,
+      actorRole: user.role,
+      action: 'AUTH_LOGIN',
+      entityType: 'User',
+      entityId: user.id,
+      ipAddress: meta.ipAddress ?? null,
+      userAgent: meta.userAgent ?? null,
+    });
+    return session;
+  }
+
+  /** DEC-067 — failed sign-in (number masked; the reason is for admins only, never the client). */
+  private recordFailedLogin(
+    user: { id: string; role: UserRole } | null,
+    whatsappNumber: string,
+    reason: 'INVALID_NUMBER' | 'UNKNOWN_ACCOUNT' | 'ACCOUNT_INACTIVE' | 'WRONG_PASSWORD',
+    meta: ClientMeta,
+  ) {
+    const masked =
+      whatsappNumber.length > 4 ? `${'•'.repeat(whatsappNumber.length - 4)}${whatsappNumber.slice(-4)}` : '••••';
+    return this.audit.record({
+      actorUserId: user?.id ?? null,
+      actorRole: user?.role ?? null,
+      action: 'AUTH_LOGIN_FAILED',
+      entityType: 'User',
+      entityId: user?.id ?? null,
+      metadata: { reason, whatsapp: masked },
+      ipAddress: meta.ipAddress ?? null,
+      userAgent: meta.userAgent ?? null,
+    });
   }
 
   async refresh(refreshToken: string | undefined, meta: ClientMeta = {}) {
@@ -229,7 +280,10 @@ export class AuthService {
       action: 'PASSWORD_CHANGE',
       entityType: 'user',
       entityId: user.userId,
+      ipAddress: meta.ipAddress ?? null,
+      userAgent: meta.userAgent ?? null,
     });
+    await this.learningActivity.record({ userId: user.userId, type: 'PASSWORD_CHANGE' });
 
     return this.issueSession(await this.prisma.user.findUniqueOrThrow({ where: { id: user.userId } }), meta);
   }
@@ -249,6 +303,14 @@ export class AuthService {
     const email = user?.email;
     const emailUsable = Boolean(email && (!isStaffRole(user?.role) || user?.emailVerifiedAt));
     if (user && email && emailUsable && user.status === UserStatus.ACTIVE && !user.deletedAt) {
+      // DEC-067 — only real accounts are logged (no enumeration of unknown addresses).
+      await this.audit.record({
+        actorUserId: user.id,
+        actorRole: user.role,
+        action: 'PASSWORD_RESET_REQUESTED',
+        entityType: 'User',
+        entityId: user.id,
+      });
       const issued = await this.prisma.$transaction((tx) => issuePasswordResetToken(tx, user.id));
       try {
         await this.emailQueue.enqueuePasswordReset(
@@ -313,6 +375,11 @@ export class AuthService {
       entityType: 'user',
       entityId: result.userId,
       metadata: { via: 'reset_link' },
+    });
+    await this.learningActivity.record({
+      userId: result.userId,
+      type: 'PASSWORD_CHANGE',
+      meta: { via: 'reset_link' },
     });
 
     return { message: 'Password updated. Please sign in.' };

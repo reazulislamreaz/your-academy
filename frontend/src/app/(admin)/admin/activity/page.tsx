@@ -18,6 +18,8 @@ import { Select } from '@/components/ui/select';
 import { Surface } from '@/components/ui/surface';
 import { ContentIn } from '@/components/ui/skeleton';
 import { LoadMoreButton } from '@/components/ui/load-more-button';
+import { ActivityKpiGrid } from '@/features/admin/activity/activity-kpi-grid';
+import { UserLookup } from '@/features/admin/activity/user-lookup';
 import { apiFetch } from '@/lib/api/client';
 import type {
   ActivityEventRow,
@@ -54,7 +56,17 @@ const EVENT_TYPES = [
   'BOOKMARK_QUESTION',
   'BOOKMARK_DOCUMENT',
   'DOCUMENT_VIEW',
+  // DEC-067
+  'REGISTER',
+  'PASSWORD_CHANGE',
+  'PROFILE_UPDATE',
+  'SUBSCRIPTION',
+  'MODEL_TEST_SUBMIT',
+  'QUIZ_SUBMIT',
+  'SET_VIEW',
 ] as const;
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function formatDuration(seconds: number): string {
   if (seconds < 60) return `${seconds}s`;
@@ -80,6 +92,7 @@ function ActivityPageInner() {
   const debouncedOnlineQ = useDebouncedValue(onlineQ.trim(), 350);
   const [userId, setUserId] = useState(initialUserId);
   const [type, setType] = useState('');
+  const [plan, setPlan] = useState<'' | 'FREE' | 'PAID'>('');
   const [range, setRange] = useState<'7' | '14' | '30' | 'custom'>('14');
   const [from, setFrom] = useState(daysAgoIso(13).slice(0, 10));
   const [to, setTo] = useState(new Date().toISOString().slice(0, 10));
@@ -126,11 +139,13 @@ function ActivityPageInner() {
   });
 
   const events = useCursorList<ActivityEventRow>(
-    ['admin-activity-events', userId, type, dateQuery.from, dateQuery.to],
+    ['admin-activity-events', userId, type, plan, dateQuery.from, dateQuery.to],
     (cursor) => {
       const params = new URLSearchParams({ limit: '40' });
-      if (userId.trim()) params.set('userId', userId.trim());
+      // Only a complete UUID filters (partial input is for the lookup above).
+      if (UUID_RE.test(userId.trim())) params.set('userId', userId.trim());
       if (type) params.set('type', type);
+      if (plan) params.set('plan', plan);
       if (dateQuery.from) params.set('from', dateQuery.from);
       if (dateQuery.to) params.set('to', dateQuery.to);
       if (cursor) params.set('cursor', cursor);
@@ -202,6 +217,8 @@ function ActivityPageInner() {
           </Button>
         }
       />
+
+      <ActivityKpiGrid />
 
       <AdminStatGrid>
         <StatCard label="Registered" value={ov.registered} icon={Users} tone="navy" />
@@ -351,6 +368,12 @@ function ActivityPageInner() {
         title="Event timeline"
         description="LearningActivityEvent stream (no secrets / keystrokes)."
       >
+        <UserLookup activeUserId={userId.trim()} onSelect={setUserId} />
+        {userId.trim() && !UUID_RE.test(userId.trim()) ? (
+          <p className="text-xs text-[var(--muted-strong)]">
+            The user filter needs a full User ID — use the lookup above to find it.
+          </p>
+        ) : null}
         <AdminToolbar>
           <div className="admin-filter-grid">
             <Input
@@ -360,6 +383,16 @@ function ActivityPageInner() {
               className="h-10"
               aria-label="Filter by user UUID"
             />
+            <Select
+              value={plan}
+              onChange={(e) => setPlan(e.target.value as '' | 'FREE' | 'PAID')}
+              className="h-10 w-full sm:w-40"
+              aria-label="Learner plan"
+            >
+              <option value="">All plans</option>
+              <option value="FREE">Free learners</option>
+              <option value="PAID">Paid learners</option>
+            </Select>
             <Select
               value={type}
               onChange={(e) => setType(e.target.value)}

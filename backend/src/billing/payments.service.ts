@@ -20,6 +20,7 @@ import { randomBytes } from 'node:crypto';
 import { AuditService } from '../audit/audit.service';
 import { paginateById } from '../common/pagination';
 import { newRequestId } from '../common/request-id';
+import { LearningActivityService } from '../learning-activity/learning-activity.service';
 import { PrismaService } from '../database/prisma.service';
 import { PackagesService, effectivePrice } from './packages.service';
 import { SiteSettingsService } from './site-settings.service';
@@ -92,6 +93,8 @@ export class PaymentsService {
     private readonly packages: PackagesService,
     private readonly subscriptions: SubscriptionsService,
     private readonly audit: AuditService,
+    /** DEC-067 — activity feed (optional for unit tests). */
+    private readonly activity?: LearningActivityService,
   ) {}
 
   isConfigured(): boolean {
@@ -384,7 +387,7 @@ export class PaymentsService {
       return 'RISK';
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    const outcome = await this.prisma.$transaction(async (tx) => {
       // Row lock: IPN and success callback for one order run one after the other.
       await tx.$queryRaw`SELECT id FROM payment_orders WHERE id = ${order.id}::uuid FOR UPDATE`;
       const locked = await tx.paymentOrder.findUniqueOrThrow({ where: { id: order.id } });
@@ -405,6 +408,28 @@ export class PaymentsService {
       this.logger.log(`Payment ${order.tranId} applied (${source})`);
       return 'APPLIED' as const;
     });
+    // DEC-067 — recorded only after the payment committed (once per order: `appliedAt`).
+    if (outcome === 'APPLIED') {
+      const detail = {
+        tranId: order.tranId,
+        packageName: order.packageName,
+        amount: order.amount.toFixed(2),
+        source,
+      };
+      await this.audit.record({
+        actorUserId: order.userId,
+        action: 'SUBSCRIPTION_PURCHASE',
+        entityType: 'PaymentOrder',
+        entityId: order.id,
+        metadata: detail,
+      });
+      await this.activity?.record({
+        userId: order.userId,
+        type: 'SUBSCRIPTION',
+        meta: { action: 'PURCHASE', ...detail },
+      });
+    }
+    return outcome;
   }
 
   /**

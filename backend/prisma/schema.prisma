@@ -188,6 +188,21 @@ enum LearningActivityType {
   BOOKMARK_QUESTION
   BOOKMARK_DOCUMENT
   DOCUMENT_VIEW
+  /// DEC-067 — account + plan lifecycle, timed tests, set access.
+  REGISTER
+  PASSWORD_CHANGE
+  PROFILE_UPDATE
+  SUBSCRIPTION
+  MODEL_TEST_SUBMIT
+  QUIZ_SUBMIT
+  SET_VIEW
+}
+
+/// DEC-067 — audit entry importance (filters + log review).
+enum AuditSeverity {
+  INFO
+  WARNING
+  CRITICAL
 }
 
 /// DEC-029 — Support messaging
@@ -818,18 +833,24 @@ model PaymentGatewayLog {
 }
 
 model AuditLog {
-  id          String   @id @default(uuid()) @db.Uuid
-  actorUserId String?  @map("actor_user_id") @db.Uuid
-  action      String   @db.VarChar(80)
-  entityType  String   @map("entity_type") @db.VarChar(80)
-  entityId    String?  @map("entity_id") @db.Uuid
-  metadata    Json     @default("{}")
-  ipAddress   String?  @map("ip_address") @db.VarChar(64)
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  id          String        @id @default(uuid()) @db.Uuid
+  actorUserId String?       @map("actor_user_id") @db.Uuid
+  action      String        @db.VarChar(80)
+  entityType  String        @map("entity_type") @db.VarChar(80)
+  entityId    String?       @map("entity_id") @db.Uuid
+  metadata    Json          @default("{}")
+  ipAddress   String?       @map("ip_address") @db.VarChar(64)
+  /// DEC-067 — actor's role when the action happened (ADMIN / MODERATOR / USER; null = system / anonymous).
+  actorRole   String?       @map("actor_role") @db.VarChar(20)
+  severity    AuditSeverity @default(INFO)
+  userAgent   String?       @map("user_agent") @db.VarChar(400)
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
 
   actor User? @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
 
   @@index([createdAt(sort: Desc)])
+  @@index([actorRole, createdAt(sort: Desc)])
+  @@index([severity, createdAt(sort: Desc)])
   @@index([entityType, entityId])
   @@index([actorUserId, createdAt(sort: Desc)])
   @@index([action, createdAt(sort: Desc)])

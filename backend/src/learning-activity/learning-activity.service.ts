@@ -43,6 +43,28 @@ export class LearningActivityService {
     }
   }
 
+  /**
+   * DEC-067 — question-set opened by a signed-in learner. At most one event per user + set per
+   * 30 minutes so paging / re-opening a set does not flood the activity feed.
+   */
+  async recordSetView(userId: string, setId: string, bank: 'PRELI' | 'WRITTEN'): Promise<void> {
+    try {
+      const recent = await this.prisma.learningActivityEvent.findFirst({
+        where: {
+          userId,
+          type: 'SET_VIEW',
+          occurredAt: { gte: new Date(Date.now() - 30 * 60_000) },
+          meta: { path: ['setId'], equals: setId },
+        },
+        select: { id: true },
+      });
+      if (recent) return;
+      await this.record({ userId, type: 'SET_VIEW', meta: { setId, bank } });
+    } catch (err) {
+      this.logger.warn(`Failed to write set view: ${String(err)}`);
+    }
+  }
+
   onlineSince(now = new Date()): Date {
     return new Date(now.getTime() - ONLINE_HEARTBEAT_WINDOW_MS);
   }

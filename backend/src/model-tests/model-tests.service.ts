@@ -15,6 +15,7 @@ import {
 } from '@your-academy/shared';
 import type { RequestUser } from '../auth/auth.types';
 import { AccessPolicyService, type ViewerAccess } from '../billing/access-policy.service';
+import { LearningActivityService } from '../learning-activity/learning-activity.service';
 import { PrismaService } from '../database/prisma.service';
 import { newRequestId } from '../common/request-id';
 import { paginateById, parseLimit } from '../common/pagination';
@@ -54,6 +55,8 @@ export class ModelTestsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly accessPolicy: AccessPolicyService,
+    /** DEC-067 — activity feed for signed-in submissions (optional for unit tests). */
+    private readonly activity?: LearningActivityService,
   ) {}
 
   async getTemplateBuffer(): Promise<Buffer> {
@@ -332,6 +335,13 @@ export class ModelTestsService {
         timedOut: Boolean(dto.timedOut),
       },
     });
+    if (userId) {
+      await this.activity?.record({
+        userId,
+        type: 'MODEL_TEST_SUBMIT',
+        meta: { modelTestId: modelTest.id, title: modelTest.title, attemptId: attempt.id, correctCount },
+      });
+    }
 
     const totalQuestions = questions.length;
     const percent =

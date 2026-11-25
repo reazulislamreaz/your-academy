@@ -27,6 +27,7 @@ import {
 import { AuditService } from '../audit/audit.service';
 import { paginateById } from '../common/pagination';
 import { newRequestId } from '../common/request-id';
+import { LearningActivityService } from '../learning-activity/learning-activity.service';
 import { PrismaService } from '../database/prisma.service';
 import { PackagesService, effectivePrice } from './packages.service';
 
@@ -122,6 +123,8 @@ export class SubscriptionsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly packages: PackagesService,
+    /** DEC-067 — activity feed (optional for unit tests). */
+    private readonly activity?: LearningActivityService,
   ) {}
 
   // ─── Reads ──────────────────────────────────────────────────────────────────
@@ -599,7 +602,7 @@ export class SubscriptionsService {
     return current;
   }
 
-  private logSelf(
+  private async logSelf(
     tx: Tx,
     userId: string,
     action: SubscriptionEventAction,
@@ -607,6 +610,18 @@ export class SubscriptionsService {
     packageId: string | null,
     note: string,
   ) {
+    // DEC-067 — also visible in Admin → Activity / Audit (written outside the tx; best effort).
+    void this.activity
+      ?.record({ userId, type: 'SUBSCRIPTION', meta: { action, note } })
+      .then(() =>
+        this.audit.record({
+          actorUserId: userId,
+          action: `SUBSCRIPTION_${action}`,
+          entityType: 'UserSubscription',
+          entityId: userId,
+          metadata: { note },
+        }),
+      );
     return this.logEvent(tx, {
       userId,
       actorUserId: userId,

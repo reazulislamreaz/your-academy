@@ -246,6 +246,8 @@ export class AdminController {
     @Query('to') to?: string,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
+    @Query('plan') plan?: string,
+    @Query('role') role?: string,
   ) {
     const take = parseLimit(limit, 50);
     const data = await this.admin.activityEvents({
@@ -256,6 +258,8 @@ export class AdminController {
       to,
       cursor,
       limit: take,
+      plan,
+      role,
     });
     return createSuccessResponse(
       data.items,
@@ -293,17 +297,33 @@ export class AdminController {
   }
 
   @RequirePermission('audit')
+  @Get('audit/actions')
+  async auditActions() {
+    return createSuccessResponse(await this.admin.auditActions(), newRequestId());
+  }
+
+  @RequirePermission('audit')
   @Get('audit')
   async listAudit(
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
     @Query('action') action?: string,
+    @Query('scope') scope?: string,
+    @Query('q') q?: string,
+    @Query('severity') severity?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
   ) {
     const take = parseLimit(limit, 50);
     const data = await this.admin.listAudit({
       cursor,
       limit: take,
       action,
+      scope,
+      q,
+      severity,
+      from,
+      to,
     });
     return createSuccessResponse(
       data.items,

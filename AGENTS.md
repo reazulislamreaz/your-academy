@@ -254,6 +254,7 @@ Forbidden without approval: microservices, GraphQL, alternate ORMs, payment prov
 | `docs/19` DEC-064 | IBA (5-option) Preli bulk upload |
 | `docs/19` DEC-065 | Homepage Free vs Paid plan cards (admin-editable, display only) |
 | `docs/19` DEC-066 | Technical SEO (sitemap, robots, canonicals, crawlable bank pages) |
+| `docs/19` DEC-067 | Admin activity KPIs, audit trail, log retention |
 | `docs/19` DEC-062 | 3-month plan, discounts, cancel / upgrade / downgrade, expiry reminders (no auto-charge) |
 | `docs/04`–`06` | Architecture, DB, API |
 | `docs/07`–`08` | Auth, access control |

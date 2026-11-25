@@ -10,6 +10,8 @@ import { MediaResourceType, QuestionStatus } from '@prisma/client';
 import { createErrorResponse } from '@your-academy/shared';
 import type { RequestUser } from '../auth/auth.types';
 import { newRequestId } from '../common/request-id';
+import { LearningActivityService } from '../learning-activity/learning-activity.service';
+import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../database/prisma.service';
 import { PracticeService } from '../practice/practice.service';
 import { StorageService } from '../storage/storage.service';
@@ -26,6 +28,9 @@ export class UsersService {
     @Inject(forwardRef(() => PracticeService))
     private readonly practice: PracticeService,
     private readonly emailVerification: EmailVerificationService,
+    /** DEC-067 — activity feed (optional for unit tests). */
+    private readonly activity?: LearningActivityService,
+    private readonly audit?: AuditService,
   ) {}
 
   private async serializeMe(userId: string) {
@@ -140,9 +145,23 @@ export class UsersService {
     });
 
     if (emailChanged) {
+      // DEC-067 — security-sensitive account change.
+      await this.audit?.record({
+        actorUserId: user.userId,
+        action: 'EMAIL_CHANGE',
+        entityType: 'User',
+        entityId: user.userId,
+        severity: 'WARNING',
+        metadata: { emailSet: Boolean(nextEmail) },
+      });
       await this.emailVerification.invalidateOutstanding(user.userId);
       if (nextEmail) await this.emailVerification.sendForCurrentEmail(user.userId);
     }
+    await this.activity?.record({
+      userId: user.userId,
+      type: 'PROFILE_UPDATE',
+      meta: { fields: Object.keys(data).filter((k) => data[k as keyof typeof data] !== undefined) },
+    });
     return this.getMe(user);
   }
 

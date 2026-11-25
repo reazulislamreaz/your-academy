@@ -1,9 +1,10 @@
 import { Module } from '@nestjs/common';
-import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AdminModule } from './admin/admin.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { AuditModule } from './audit/audit.module';
+import { StaffAuditInterceptor } from './audit/staff-audit.interceptor';
 import { AuthModule } from './auth/auth.module';
 import { BillingModule } from './billing/billing.module';
 import { BookmarksModule } from './bookmarks/bookmarks.module';
@@ -80,6 +81,8 @@ import { UsersModule } from './users/users.module';
   providers: [
     { provide: APP_FILTER, useClass: ApiExceptionFilter },
     { provide: APP_GUARD, useClass: AppThrottlerGuard },
+    // DEC-067 — audit every successful staff change under /api/v1/admin.
+    { provide: APP_INTERCEPTOR, useClass: StaffAuditInterceptor },
   ],
 })
 export class AppModule {}

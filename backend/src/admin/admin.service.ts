@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  AuditSeverity,
   BrowsingSessionStatus,
   LearningActivityType,
   PracticeAttemptStatus,
@@ -22,6 +23,7 @@ import {
 } from '../learning-activity/learning-activity.service';
 
 const ACTIVITY_TYPES = new Set<string>(Object.values(LearningActivityType));
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 @Injectable()
 export class AdminService {
@@ -654,10 +656,38 @@ export class AdminService {
     to?: string;
     cursor?: string;
     limit?: number;
+    /** DEC-067 — FREE / PAID learners, or a role (USER / MODERATOR / ADMIN). */
+    plan?: string;
+    role?: string;
   }) {
     const limit = Math.min(params.limit ?? 50, 100);
     const type = this.parseActivityType(params.type);
+    // Malformed ids / dates are a 400, never a database error.
+    if (params.userId && !UUID_RE.test(params.userId)) {
+      throw new BadRequestException(
+        createErrorResponse('VALIDATION_ERROR', 'User ID must be a valid UUID', newRequestId()),
+      );
+    }
+    if (params.cursor && !UUID_RE.test(params.cursor)) params.cursor = undefined;
+    this.assertDates(params.from, params.to);
+    const now = new Date();
+    const activeSub: Prisma.UserSubscriptionWhereInput = {
+      disabledAt: null,
+      startsAt: { lte: now },
+      endsAt: { gt: now },
+    };
+    const userWhere: Prisma.UserWhereInput = {
+      ...(params.role && ['USER', 'MODERATOR', 'ADMIN'].includes(params.role)
+        ? { role: params.role as UserRole }
+        : {}),
+      ...(params.plan === 'PAID'
+        ? { role: UserRole.USER, subscription: { is: activeSub } }
+        : params.plan === 'FREE'
+          ? { role: UserRole.USER, NOT: { subscription: { is: activeSub } } }
+          : {}),
+    };
     const where: Prisma.LearningActivityEventWhereInput = {
+      ...(Object.keys(userWhere).length ? { user: userWhere } : {}),
       ...(params.userId ? { userId: params.userId } : {}),
       ...(type ? { type } : {}),
       ...(params.subjectId ? { subjectCategoryId: params.subjectId } : {}),
@@ -677,19 +707,47 @@ export class AdminService {
       take: limit + 1,
       ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {}),
       include: {
-        user: { select: { id: true, name: true, whatsappNumber: true } },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            whatsappNumber: true,
+            role: true,
+            subscription: { select: { startsAt: true, endsAt: true, disabledAt: true } },
+          },
+        },
       },
     });
     const nextCursor = rows.length > limit ? rows[limit]?.id ?? null : null;
     const page = rows.slice(0, limit);
 
     return {
-      items: page.map((e) => ({
-        ...this.mapEvent(e),
-        user: e.user,
-      })),
+      items: page.map((e) => {
+        const s = e.user.subscription;
+        const paid = Boolean(s && !s.disabledAt && s.startsAt <= now && s.endsAt > now);
+        return {
+          ...this.mapEvent(e),
+          user: {
+            id: e.user.id,
+            name: e.user.name,
+            whatsappNumber: e.user.whatsappNumber,
+            role: e.user.role,
+            plan: e.user.role === UserRole.USER ? (paid ? 'PAID' : 'FREE') : 'STAFF',
+          },
+        };
+      }),
       nextCursor,
     };
+  }
+
+  private assertDates(from?: string, to?: string) {
+    for (const v of [from, to]) {
+      if (v && Number.isNaN(new Date(v).getTime())) {
+        throw new BadRequestException(
+          createErrorResponse('VALIDATION_ERROR', 'Invalid date', newRequestId()),
+        );
+      }
+    }
   }
 
   async activityTrends(params: { from?: string; to?: string }) {
@@ -824,15 +882,69 @@ export class AdminService {
     return { filename: `activity-events-${stamp}.csv`, csv: lines.join('\n') };
   }
 
-  async listAudit(params: { cursor?: string; limit?: number; action?: string }) {
+  /**
+   * DEC-067 — audit log with scope (staff / user actions), actor search (name, WhatsApp or
+   * User ID), action, severity and date filters.
+   */
+  async listAudit(params: {
+    cursor?: string;
+    limit?: number;
+    action?: string;
+    scope?: string;
+    q?: string;
+    severity?: string;
+    from?: string;
+    to?: string;
+  }) {
     const limit = Math.min(params.limit ?? 50, 100);
+    this.assertDates(params.from, params.to);
+    const q = params.q?.trim().slice(0, 120);
+    const where: Prisma.AuditLogWhereInput = {
+      ...(params.action ? { action: { contains: params.action.trim(), mode: 'insensitive' } } : {}),
+      ...(params.severity && ['INFO', 'WARNING', 'CRITICAL'].includes(params.severity)
+        ? { severity: params.severity as AuditSeverity }
+        : {}),
+      ...(params.scope === 'staff'
+        ? { actorRole: { in: [UserRole.ADMIN, UserRole.MODERATOR] } }
+        : params.scope === 'user'
+          ? { OR: [{ actorRole: UserRole.USER }, { actorRole: null }] }
+          : {}),
+      ...(params.from || params.to
+        ? {
+            createdAt: {
+              ...(params.from ? { gte: new Date(params.from) } : {}),
+              ...(params.to ? { lte: new Date(params.to) } : {}),
+            },
+          }
+        : {}),
+      ...(q
+        ? UUID_RE.test(q)
+          ? { OR: [{ actorUserId: q }, { entityId: q }] }
+          : {
+              actor: {
+                OR: [
+                  { name: { contains: q, mode: 'insensitive' } },
+                  { whatsappNumber: { contains: q } },
+                  { email: { contains: q, mode: 'insensitive' } },
+                ],
+              },
+            }
+        : {}),
+    };
+    // Scope OR and actor-search OR must both hold.
+    if (params.scope === 'user' && q && UUID_RE.test(q)) {
+      delete where.OR;
+      where.AND = [
+        { OR: [{ actorRole: UserRole.USER }, { actorRole: null }] },
+        { OR: [{ actorUserId: q }, { entityId: q }] },
+      ];
+    }
+    const cursor = params.cursor && UUID_RE.test(params.cursor) ? params.cursor : undefined;
     const rows = await this.prisma.auditLog.findMany({
-      where: {
-        ...(params.action ? { action: params.action } : {}),
-      },
+      where,
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take: limit + 1,
-      ...(params.cursor ? { cursor: { id: params.cursor }, skip: 1 } : {}),
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       include: {
         actor: { select: { id: true, name: true, role: true } },
       },
@@ -845,6 +957,10 @@ export class AdminService {
         entityType: row.entityType,
         entityId: row.entityId,
         metadata: row.metadata,
+        severity: row.severity,
+        actorRole: row.actorRole ?? row.actor?.role ?? null,
+        ipAddress: row.ipAddress,
+        userAgent: row.userAgent,
         createdAt: row.createdAt.toISOString(),
         actor: row.actor
           ? { id: row.actor.id, name: row.actor.name, role: row.actor.role }
@@ -852,6 +968,17 @@ export class AdminService {
       })),
       nextCursor,
     };
+  }
+
+  /** Distinct action names (most frequent first) for the audit filter. */
+  async auditActions() {
+    const rows = await this.prisma.auditLog.groupBy({
+      by: ['action'],
+      _count: { action: true },
+      orderBy: { _count: { action: 'desc' } },
+      take: 200,
+    });
+    return rows.map((r) => ({ action: r.action, count: r._count.action }));
   }
 
   private async countDistinctUsersWithHeartbeat(since: Date): Promise<number> {

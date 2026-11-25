@@ -53,6 +53,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | DEC-064 | IBA (5-option) Preli bulk upload + single-question Option E | CONFIRMED |
 | DEC-065 | Homepage Free vs Paid plan cards, admin-editable (display only) | CONFIRMED |
 | DEC-066 | Technical SEO: dynamic sitemap, crawlable bank pages, canonical host | CONFIRMED |
+| DEC-067 | Activity KPIs + user lookup, staff/user audit trail, log retention | CONFIRMED |
 
 ---
 
@@ -714,6 +715,13 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 |-------|-------|
 | Problem | Search Console could not use the sitemap / did not index the Preli and Written bank pages. The sitemap was valid but listed only 10 static URLs; robots.txt blocked `/api/`, so Googlebot could not load the public data client-rendered pages fetch; the bank pages had no H1, no canonical and no server-rendered list; ~750 set pages shared one default title; `www` served duplicate pages with 200. |
 | Decision | `sitemap.xml` built from the public API hourly (static landing pages + free Preli / Written sets, PUBLIC PDFs, quizzes, free Model Tests); locked sets, login-only PDFs and Topic-Based sets are excluded and locked / unknown set pages send `noindex, follow`. robots.txt allows `/api/v1/public/`, `/api/v1/categories`, `/api/v1/news/`, `/api/pdf/` (blocks `/api/pdf/auth/`, `/payment/`). Bank pages server-render an H1, intro and the first 20 collections (client refetches with the viewer's session; filters unchanged). Public layout sets a self-referencing canonical (query strings dropped). Per-set / per-PDF / per-article titles, descriptions and BreadcrumbList; Organization + WebSite on the homepage; Article only for real news articles. nginx 301s `www` (http and https) to `https://youracademy.com.bd` in one hop. |
+| Status | **CONFIRMED** (owner request 2026-11-26) |
+### DEC-067 — Activity KPIs, user lookup, richer audit log, log retention
+
+| Field | Value |
+|-------|-------|
+| Decision | **Activity:** `GET /admin/activity/kpis` (registrations 24h/7d/30d, online now + 5 min, DAU = heartbeat or activity in 24h, active paid / free, first-purchase conversions 7d/30d), `GET /admin/activity/users/lookup` (full UUID exact, UUID prefix via parameterized `id::text LIKE`, else name / email / WhatsApp; never 500), feed filters `plan` (FREE/PAID) and `role`; malformed `userId` → 400. New `LearningActivityType` values REGISTER, PASSWORD_CHANGE, PROFILE_UPDATE, SUBSCRIPTION, MODEL_TEST_SUBMIT, QUIZ_SUBMIT, SET_VIEW (set views at most once per user + set per 30 min). **Audit:** `audit_logs` gains `actor_role`, `severity` (INFO/WARNING/CRITICAL, derived from the action when not given) and `user_agent`; a global `StaffAuditInterceptor` records every successful staff POST/PUT/PATCH/DELETE under `/api/v1/admin` (route, target id, redacted body summary, IP, UA). User events: USER_REGISTER, AUTH_LOGIN, AUTH_LOGIN_FAILED (masked number + reason), PASSWORD_RESET_REQUESTED, PASSWORD_CHANGE, EMAIL_CHANGE, SUBSCRIPTION_PURCHASE / CANCEL / RESUME / SCHEDULE_CHANGE. Non-UUID audit targets go to `metadata.targetRef` (they previously failed silently). `GET /admin/audit` filters: scope (staff/user), q (actor name / WhatsApp / User ID), action, severity, from/to; `GET /admin/audit/actions`. **Retention:** `POST /admin/logs/purge/preview` and `POST /admin/logs/purge` (audit, activity or both; older than 90 days, before a date, or a range; body `confirm: "DELETE"`; Admin role re-checked; writes an un-purgeable CRITICAL `LOGS_PURGED` entry). Optional daily automatic 90-day purge with `LOG_RETENTION_AUTO_PURGE=true` (off by default). Migration `20261126150000_audit_activity_upgrade` (expand-only, `down.sql`). |
+| Rollback note | Older app versions cannot read the new `LearningActivityType` values; rolling back below this release breaks the activity feed until those rows are removed. |
 | Status | **CONFIRMED** (owner request 2026-11-26) |
 ### Deferred / NEEDS APPROVAL (explicitly out of Phase 1)
 
