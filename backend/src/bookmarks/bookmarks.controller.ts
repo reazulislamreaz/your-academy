@@ -10,7 +10,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { Throttle } from '@nestjs/throttler';
 import { createSuccessResponse } from '@your-academy/shared';
 import type { RequestUser } from '../auth/auth.types';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -126,7 +126,7 @@ export class BookmarksController {
    */
   @Post('questions/practice-score')
   @HttpCode(200)
-  @UseGuards(CsrfGuard, ThrottlerGuard)
+  @UseGuards(CsrfGuard)
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   async scoreSavedPractice(
     @CurrentUser() user: RequestUser,

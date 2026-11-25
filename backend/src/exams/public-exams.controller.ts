@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Header, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { Throttle } from '@nestjs/throttler';
 import { createSuccessResponse, cursorPaginationMeta } from '@your-academy/shared';
 import type { Request } from 'express';
 import type { RequestUser } from '../auth/auth.types';
@@ -50,7 +50,7 @@ export class PublicExamsController {
   }
 
   @Post(':idOrSlug/attempts')
-  @UseGuards(OptionalJwtAuthGuard, ThrottlerGuard)
+  @UseGuards(OptionalJwtAuthGuard)
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
   async submit(
     @Param('idOrSlug') idOrSlug: string,

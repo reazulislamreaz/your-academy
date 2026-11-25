@@ -10,7 +10,7 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { Throttle } from '@nestjs/throttler';
 import { createSuccessResponse, type PublicAccessConfig } from '@your-academy/shared';
 import type { Response } from 'express';
 import type { RequestUser } from '../auth/auth.types';
@@ -110,7 +110,7 @@ export class BillingController {
   /** Body carries only the package id; user comes from the session, price from the DB. */
   @Post('payments/checkout')
   @HttpCode(200)
-  @UseGuards(JwtAuthGuard, CsrfGuard, ThrottlerGuard)
+  @UseGuards(JwtAuthGuard, CsrfGuard)
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   async checkout(@CurrentUser() user: RequestUser, @Body() dto: CheckoutDto) {
     return createSuccessResponse(
@@ -122,7 +122,6 @@ export class BillingController {
   /** Result pages — looked up by the unguessable tran_id, so no session is needed. */
   @Get('payments/orders/:tranId/status')
   @Header('Cache-Control', 'private, no-store')
-  @UseGuards(ThrottlerGuard)
   @Throttle({ default: { limit: 60, ttl: 60_000 } })
   async orderStatus(@Param('tranId') tranId: string) {
     return createSuccessResponse(await this.payments.publicStatus(tranId), newRequestId());

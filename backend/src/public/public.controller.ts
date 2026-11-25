@@ -11,7 +11,7 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { Throttle } from '@nestjs/throttler';
 import { Difficulty } from '@prisma/client';
 import type { Request, Response } from 'express';
 import { createSuccessResponse, cursorPaginationMeta } from '@your-academy/shared';
@@ -192,7 +192,7 @@ export class PublicController {
    */
   @Post('question-sets/:id/practice-score')
   @HttpCode(200)
-  @UseGuards(OptionalJwtAuthGuard, ThrottlerGuard)
+  @UseGuards(OptionalJwtAuthGuard)
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   async scoreQuestionSetPractice(
     @Param('id') id: string,
