@@ -30,6 +30,7 @@ describe('QuestionImportService — duplicates & blank stems allowed', () => {
 
   function makeTx() {
     return {
+      $executeRaw: jest.fn(),
       category: { create: jest.fn() },
       question: { create: jest.fn() },
       questionImportRow: { createMany: jest.fn(), update: jest.fn() },

@@ -117,6 +117,7 @@ describe('IBA upload + import (QuestionImportService)', () => {
 
   function setup() {
     const tx = {
+      $executeRaw: jest.fn(),
       category: { create: jest.fn() },
       question: { create: jest.fn().mockResolvedValue({ id: 'q-new' }) },
       questionImportRow: { createMany: jest.fn(), update: jest.fn() },

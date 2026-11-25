@@ -1040,8 +1040,12 @@ export class WrittenImportService {
 
     for (let i = 0; i < rows.length; i += chunkSize) {
       const chunk = rows.slice(i, i + chunkSize);
-      await this.prisma.$transaction(async (tx) => {
+      await this.prisma.$transaction(
+        async (tx) => {
         for (const row of chunk) {
+          // PERF-4: per-row savepoint — a failed INSERT must not abort the whole chunk.
+          let createdTopicKey: string | null = null;
+          await tx.$executeRaw`SAVEPOINT import_row`;
           try {
             if (!row.contentHash) throw new Error('Missing content hash');
             const subject = resolveWrittenRoot(categoryIndex, row.subjectName);
@@ -1080,10 +1084,8 @@ export class WrittenImportService {
                 },
               });
               topicId = createdTopic.id;
-              categoryIndex.topicsByParentAndKey.set(
-                `${subject.id}::${nameKey(topicHint)}`,
-                topicId,
-              );
+              createdTopicKey = `${subject.id}::${nameKey(topicHint)}`;
+              categoryIndex.topicsByParentAndKey.set(createdTopicKey, topicId);
               categoryIndex.topicNameById.set(topicId, createdTopic.name);
             }
 
@@ -1142,8 +1144,12 @@ export class WrittenImportService {
                 errorMessage: null,
               },
             });
+            await tx.$executeRaw`RELEASE SAVEPOINT import_row`;
             importedCount += 1;
           } catch (err) {
+            await tx.$executeRaw`ROLLBACK TO SAVEPOINT import_row`;
+            // A topic created for this row was rolled back with it — never reuse its id.
+            if (createdTopicKey) categoryIndex.topicsByParentAndKey.delete(createdTopicKey);
             failedCount += 1;
             await tx.writtenImportRow.update({
               where: { id: row.id },
@@ -1155,7 +1161,9 @@ export class WrittenImportService {
             });
           }
         }
-      });
+        },
+        { timeout: 60_000 },
+      );
     }
 
     const skippedCount = await this.prisma.writtenImportRow.count({

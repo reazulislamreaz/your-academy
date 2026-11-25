@@ -854,8 +854,14 @@ export class QuestionImportService {
 
     for (let i = 0; i < rows.length; i += chunkSize) {
       const chunk = rows.slice(i, i + chunkSize);
-      await this.prisma.$transaction(async (tx) => {
+      await this.prisma.$transaction(
+        async (tx) => {
         for (const row of chunk) {
+          // PERF-4: each row runs in its own savepoint. Without it, one failed INSERT aborts the
+          // whole Postgres transaction, the error-row update below fails too, and the entire
+          // 25-row chunk rolls back while the counters say otherwise.
+          let createdTopicKey: string | null = null;
+          await tx.$executeRaw`SAVEPOINT import_row`;
           try {
             if (!row.contentHash) throw new Error('Missing content hash');
             const subject = categoryIndex.rootsByName.get(this.nameKey(row.subjectName ?? ''));
@@ -880,10 +886,8 @@ export class QuestionImportService {
                 },
               });
               topicId = createdTopic.id;
-              categoryIndex.topicsByParentAndName.set(
-                `${subject.id}::${this.nameKey(row.topicName)}`,
-                topicId,
-              );
+              createdTopicKey = `${subject.id}::${this.nameKey(row.topicName)}`;
+              categoryIndex.topicsByParentAndName.set(createdTopicKey, topicId);
             }
 
             const difficulty = (parseDifficulty(row.difficulty) ?? 'MEDIUM') as Difficulty;
@@ -976,9 +980,13 @@ export class QuestionImportService {
                 errorMessage: null,
               },
             });
+            await tx.$executeRaw`RELEASE SAVEPOINT import_row`;
             importedCount += 1;
           } catch (err) {
             // Genuine insert failures only — duplicates are allowed and must not be skipped.
+            await tx.$executeRaw`ROLLBACK TO SAVEPOINT import_row`;
+            // A topic created for this row was rolled back with it — never reuse its id.
+            if (createdTopicKey) categoryIndex.topicsByParentAndName.delete(createdTopicKey);
             failedCount += 1;
             const message =
               err instanceof Error ? err.message.slice(0, 500) : 'Import failed';
@@ -991,7 +999,10 @@ export class QuestionImportService {
             });
           }
         }
-      });
+        },
+        // 25 rows with nested options; the 5 s default is too tight on a busy database.
+        { timeout: 60_000 },
+      );
     }
 
     const skippedCount = await this.prisma.questionImportRow.count({
