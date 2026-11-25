@@ -58,8 +58,12 @@ Prefer **cursor** pagination for questions. Offset allowed for small admin table
 | 404 | Not found (no existence leak where required) |
 | 409 | Conflict (duplicate WhatsApp, duplicate bookmark) |
 | 422 | Validation failed |
-| 429 | Rate limited |
+| 429 | Rate limited — `RATE_LIMITED`, readable Bangla + English message, standard `Retry-After` (seconds) |
 | 500 | Unexpected |
+
+- **Request id:** every response carries `X-Request-Id`; error envelopes use the same value in `meta.requestId`, and server logs for 5xx include it (`rid=`). The web client shows it on 5xx so users can quote it.
+- **Body validation (DTO / ValidationPipe):** HTTP 400, `code: "VALIDATION_ERROR"`, `details: [{ "field": "email", "message": "email must be an email" }]` (nested fields as dotted paths); `message` summarises which fields to check.
+- **Unique-constraint races** not handled by a service: HTTP 409 `CONFLICT`.
 
 ### 1.3 Auth header / cookies (DEC-012 CONFIRMED)
 

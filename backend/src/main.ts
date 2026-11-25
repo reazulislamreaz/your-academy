@@ -1,3 +1,5 @@
+import { requestIdMiddleware } from './common/request-id';
+import { validationExceptionFactory } from './common/validation-exception';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
@@ -19,11 +21,13 @@ async function bootstrap() {
   app.useBodyParser('urlencoded', { limit: '2mb', extended: true });
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
   app.use(cookieParser());
+  app.use(requestIdMiddleware);
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
+      exceptionFactory: validationExceptionFactory,
     }),
   );
 

@@ -7,8 +7,9 @@ import {
   Logger,
 } from '@nestjs/common';
 import { createErrorResponse } from '@your-academy/shared';
+import { Prisma } from '@prisma/client';
 import type { Response } from 'express';
-import { newRequestId } from '../request-id';
+import { newRequestId, type RequestWithId } from '../request-id';
 
 @Catch()
 export class ApiExceptionFilter implements ExceptionFilter {
@@ -17,14 +18,23 @@ export class ApiExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
-    const requestId = newRequestId();
+    const request = ctx.getRequest<RequestWithId | undefined>();
+    // ERR-8: the request's own id (also in X-Request-Id), so the envelope, the header and the
+    // log line all carry the same value.
+    const requestId = request?.requestId ?? newRequestId();
+    const where = request ? `${request.method} ${(request.originalUrl ?? request.url).split('?')[0]}` : '';
 
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
       const payload = exception.getResponse();
+      // ERR-15: server-side HttpExceptions (e.g. 503 from the payment gateway) were not logged.
+      if (status >= 500) {
+        this.logger.error(`${where} -> ${status} rid=${requestId}: ${exception.message}`);
+      }
 
       if (typeof payload === 'object' && payload !== null && 'success' in payload) {
-        response.status(status).json(payload);
+        const meta = (payload as { meta?: Record<string, unknown> }).meta;
+        response.status(status).json(meta ? { ...payload, meta: { ...meta, requestId } } : payload);
         return;
       }
 
@@ -45,7 +55,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
       return;
     }
 
-    this.logger.error(exception);
+    this.logger.error(`${where} rid=${requestId}`, exception instanceof Error ? exception.stack : String(exception));
 
     const mapped = mapUnknownException(exception);
     response
@@ -83,6 +93,14 @@ function mapUnknownException(exception: unknown): {
   code: string;
   message: string;
 } {
+  // ERR-15: a unique-constraint race outside the services that handle it is a conflict, not a 500.
+  if (exception instanceof Prisma.PrismaClientKnownRequestError && exception.code === 'P2002') {
+    return {
+      status: HttpStatus.CONFLICT,
+      code: 'CONFLICT',
+      message: 'This already exists (it may have just been created). Refresh and try again.',
+    };
+  }
   const err = exception as NodeJS.ErrnoException & { code?: string; message?: string };
   const code = typeof err?.code === 'string' ? err.code : '';
   const message = typeof err?.message === 'string' ? err.message : '';
