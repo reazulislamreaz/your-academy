@@ -53,28 +53,14 @@ export function AuthPromoPanel({ className }: { className?: string }) {
               <stop offset="1" stopColor="#38bdf8" stopOpacity="0" />
             </linearGradient>
           </defs>
-          <path
-            className="auth-glow-line"
-            d="M-40 640C180 560 360 700 560 600C700 530 760 420 860 380"
-            stroke="url(#authLineRed)"
-            strokeWidth="1.5"
-          />
-          <path
-            className="auth-glow-line auth-glow-line--late"
-            d="M-40 760C200 700 380 800 600 700C720 646 790 560 860 520"
-            stroke="url(#authLineBlue)"
-            strokeWidth="1.25"
-          />
+          <path className="auth-glow-line" d="M-40 640C180 560 360 700 560 600C700 530 760 420 860 380" stroke="url(#authLineRed)" strokeWidth="1.5" />
+          <path className="auth-glow-line auth-glow-line--late" d="M-40 760C200 700 380 800 600 700C720 646 790 560 860 520" stroke="url(#authLineBlue)" strokeWidth="1.25" />
         </svg>
         <div className="auth-promo-vignette absolute inset-0" />
       </div>
 
       <div className="relative z-[1] flex min-h-0 flex-1 flex-col gap-8 px-8 py-8 xl:px-12 xl:py-10">
-        <BrandMark
-          inverse
-          priority
-          className="auth-promo-logo shrink-0 self-start [&_img]:h-11 xl:[&_img]:h-12"
-        />
+        <BrandMark inverse priority className="auth-promo-logo shrink-0 self-start [&_img]:h-11 xl:[&_img]:h-12" />
 
         <div className="grid min-h-0 flex-1 items-center gap-10 xl:grid-cols-[minmax(0,1fr)_minmax(15rem,17rem)]">
           <div className="flex max-w-[25rem] flex-col gap-7">
@@ -97,20 +83,13 @@ export function AuthPromoPanel({ className }: { className?: string }) {
 
             <ul className="auth-feature-grid grid grid-cols-2 gap-3">
               {FEATURES.map((feature) => (
-                <li
-                  key={feature.title}
-                  className="auth-feature-card flex items-start gap-3 rounded-2xl p-3.5"
-                >
+                <li key={feature.title} className="auth-feature-card flex items-start gap-3 rounded-2xl p-3.5">
                   <span className="auth-feature-icon inline-flex size-9 shrink-0 items-center justify-center rounded-xl">
                     <feature.icon className="size-4 text-white" aria-hidden strokeWidth={2.25} />
                   </span>
                   <div className="min-w-0">
-                    <p className="font-display text-[0.8125rem] leading-snug font-semibold text-white">
-                      {feature.title}
-                    </p>
-                    <p className="mt-0.5 text-[0.72rem] leading-snug text-white/70">
-                      {feature.body}
-                    </p>
+                    <p className="font-display text-[0.8125rem] leading-snug font-semibold text-white">{feature.title}</p>
+                    <p className="mt-0.5 text-[0.72rem] leading-snug text-white/70">{feature.body}</p>
                   </div>
                 </li>
               ))}
@@ -136,9 +115,7 @@ function ExamVignette() {
         <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/10">
           <div className="auth-quiz-progress h-full rounded-full bg-gradient-to-r from-[#ff5a5f] to-[var(--highlight)]" />
         </div>
-        <p className="type-prose mt-3 text-[0.95rem] leading-snug font-medium text-white">
-          ‘বৃক্ষ’ শব্দের সমার্থক কোনটি?
-        </p>
+        <p className="type-prose mt-3 text-[0.95rem] leading-snug font-medium text-white">‘বৃক্ষ’ শব্দের সমার্থক কোনটি?</p>
         <ul className="mt-3 space-y-1.5">
           {MCQ_OPTIONS.map((option, i) => (
             <li
@@ -165,9 +142,7 @@ function ExamVignette() {
       <div className="auth-glass auth-float-b absolute -right-2 bottom-0 left-10 rounded-2xl p-4">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-[0.65rem] font-semibold tracking-wide text-white/60 uppercase">
-              Mock test score
-            </p>
+            <p className="text-[0.65rem] font-semibold tracking-wide text-white/60 uppercase">Mock test score</p>
             <p className="mt-0.5 font-display text-2xl font-bold text-white">
               86<span className="text-base text-white/70">%</span>
             </p>
@@ -187,11 +162,7 @@ function ExamVignette() {
               />
             ))}
           </div>
-          <svg
-            className="absolute inset-0 h-full w-full overflow-visible"
-            viewBox="0 0 120 64"
-            preserveAspectRatio="none"
-          >
+          <svg className="absolute inset-0 h-full w-full overflow-visible" viewBox="0 0 120 64" preserveAspectRatio="none">
             <path
               className="auth-score-line"
               d="M4 44 L24 36 L44 40 L64 26 L84 20 L112 8"

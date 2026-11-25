@@ -76,9 +76,8 @@ export default function ForgotPasswordPage() {
             </Field>
             {error ? <Alert variant="danger">{error}</Alert> : null}
             <p className="text-xs leading-relaxed text-[var(--muted-strong)]">
-              Admin and Moderator accounts need a{' '}
-              <strong className="font-semibold">verified</strong> email (Account Settings) to use
-              this form.
+              Admin and Moderator accounts need a <strong className="font-semibold">verified</strong>{' '}
+              email (Account Settings) to use this form.
             </p>
             <Button
               type="submit"
@@ -119,8 +118,7 @@ function NoEmailHelp() {
           WhatsApp and we will help you reset your password.
         </p>
         <p className="text-sm leading-relaxed text-[var(--muted-strong)]" lang="bn">
-          আপনার অ্যাকাউন্টে ইমেইল না থাকলে পাসওয়ার্ড রিসেট করতে হোয়াটসঅ্যাপে সাপোর্টের সাথে
-          যোগাযোগ করুন।
+          আপনার অ্যাকাউন্টে ইমেইল না থাকলে পাসওয়ার্ড রিসেট করতে হোয়াটসঅ্যাপে সাপোর্টের সাথে যোগাযোগ করুন।
         </p>
       </div>
       {href ? (

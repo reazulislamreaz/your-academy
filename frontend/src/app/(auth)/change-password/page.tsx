@@ -66,16 +66,10 @@ export default function ChangePasswordPage() {
             : 'Choose a new password for your account.'}
         </p>
       </div>
-      <Surface
-        elevated
-        className="motion-rise auth-card-ref p-5 sm:p-6"
-        style={{ animationDelay: '60ms' }}
-      >
+      <Surface elevated className="motion-rise auth-card-ref p-5 sm:p-6" style={{ animationDelay: '60ms' }}>
         <form onSubmit={onSubmit} className="space-y-4" noValidate>
           <Field>
-            <Label htmlFor="current-password">
-              {required ? 'Temporary password' : 'Current password'}
-            </Label>
+            <Label htmlFor="current-password">{required ? 'Temporary password' : 'Current password'}</Label>
             <PasswordField
               id="current-password"
               value={current}
@@ -109,9 +103,7 @@ export default function ChangePasswordPage() {
               inputClassName="auth-input"
             />
             {mismatch ? (
-              <FieldHint className="text-xs text-[var(--danger-fg)]">
-                Passwords do not match.
-              </FieldHint>
+              <FieldHint className="text-xs text-[var(--danger-fg)]">Passwords do not match.</FieldHint>
             ) : null}
           </Field>
           {error ? <Alert variant="danger">{error}</Alert> : null}
