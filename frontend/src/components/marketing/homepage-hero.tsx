@@ -71,7 +71,9 @@ export function HomepageHero({ hero, heroImageUrl, liveStats = null }: Props) {
   return (
     <section
       className={cn(
-        'hero-section relative isolate overflow-x-hidden',
+        // Horizontal clipping lives in `.hero-section` (globals.css) as overflow-x: clip —
+        // `overflow-x-hidden` here turned the hero into a vertical scroll container on mobile.
+        'hero-section relative isolate',
         'bg-[var(--bg)] text-[var(--ink)]',
       )}
       aria-labelledby="homepage-hero-heading"

@@ -82,6 +82,7 @@ export function HomepageHeroVisual({ primarySrc }: Props) {
   const hiddenRef = useRef(false);
   const nudgeTimerRef = useRef<number | null>(null);
   const pointerStartX = useRef<number | null>(null);
+  const pointerStartY = useRef<number | null>(null);
 
   const count = slides.length;
   const safeIndex = count > 0 ? ((index % count) + count) % count : 0;
@@ -140,14 +141,19 @@ export function HomepageHeroVisual({ primarySrc }: Props) {
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     pointerStartX.current = e.clientX;
+    pointerStartY.current = e.clientY;
   };
 
   const onPointerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
     const start = pointerStartX.current;
+    const startY = pointerStartY.current;
     pointerStartX.current = null;
+    pointerStartY.current = null;
     if (start == null) return;
     const delta = e.clientX - start;
     if (Math.abs(delta) < SWIPE_THRESHOLD_PX) return;
+    // Axis lock: a mostly-vertical swipe is page scrolling, never a slide change.
+    if (startY != null && Math.abs(e.clientY - startY) >= Math.abs(delta)) return;
     if (delta < 0) goNext();
     else goPrev();
   };
@@ -206,11 +212,14 @@ export function HomepageHeroVisual({ primarySrc }: Props) {
         >
           <figure className="relative m-0 size-full bg-transparent">
             <div
-              className="relative size-full overflow-hidden rounded-[44px] bg-transparent shadow-[0_30px_70px_-20px_rgba(0,32,80,0.35)]"
+              // pan-y: vertical finger swipes always scroll the page natively; horizontal
+              // swipes reach the pointer handlers (slide change). Pinch-zoom stays allowed.
+              className="relative size-full overflow-hidden rounded-[44px] bg-transparent shadow-[0_30px_70px_-20px_rgba(0,32,80,0.35)] [touch-action:pan-y_pinch-zoom]"
               onPointerDown={onPointerDown}
               onPointerUp={onPointerUp}
               onPointerCancel={() => {
                 pointerStartX.current = null;
+                pointerStartY.current = null;
               }}
             >
               {slides.map((slide, i) => {

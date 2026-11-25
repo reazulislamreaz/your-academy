@@ -1419,6 +1419,20 @@ input:disabled {
 /* Marketing hero — light SaaS mesh + framed photo treatment */
 .hero-section {
   isolation: isolate;
+  /*
+   * Mobile touch-scroll fix: `overflow-x: hidden` forces overflow-y to `auto`, making the hero
+   * its own (nearly invisible) vertical scroll container — the entrance / float transforms
+   * give it a few px to scroll, so a finger swipe on the hero moved the hero, not the page.
+   * `clip` cuts horizontal overflow identically without creating a scroll container.
+   */
+  overflow-x: clip;
+}
+
+/* Fallback for browsers without `clip` (Safari < 16): keep the old horizontal clipping. */
+@supports not (overflow: clip) {
+  .hero-section {
+    overflow-x: hidden;
+  }
 }
 
 .hero-mesh {
