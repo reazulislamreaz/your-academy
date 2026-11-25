@@ -4,8 +4,11 @@
 const CONTENT_PATH =
   /^\/api\/v1\/(public\/(questions|question-sets|written-question-sets|topic-|exams|model-tests)|questions|practice-sets|practice-attempts)/;
 
+/** Autosaves while answering (one per answer) — not content reads (RL-7). */
+const PROGRESS_SAVE_PATH = /^\/api\/v1\/practice-attempts\/[^/]+\/progress\/?$/;
+
 export function isContentPath(path: string): boolean {
-  return CONTENT_PATH.test(path);
+  return CONTENT_PATH.test(path) && !PROGRESS_SAVE_PATH.test(path);
 }
 
 /** Client IP: a trusted edge header (e.g. Cloudflare's) when configured, else Express's req.ip. */

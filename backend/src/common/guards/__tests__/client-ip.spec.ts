@@ -1,4 +1,4 @@
-import { clientIp, isInternalServerRequest } from '../client-ip';
+import { clientIp, isContentPath, isInternalServerRequest } from '../client-ip';
 
 /** RL-2 — which requests skip the throttler (container-to-container only). */
 describe('isInternalServerRequest', () => {
@@ -33,5 +33,16 @@ describe('clientIp', () => {
     expect(clientIp({ headers: { 'cf-connecting-ip': '9.9.9.9' }, ip: '203.0.113.7' })).toBe(
       '203.0.113.7',
     );
+  });
+});
+
+describe('isContentPath', () => {
+  it('counts question and set reads toward the content budget', () => {
+    expect(isContentPath('/api/v1/public/question-sets/abc/questions')).toBe(true);
+    expect(isContentPath('/api/v1/practice-attempts/abc')).toBe(true);
+  });
+
+  it('does not count progress autosaves (RL-7)', () => {
+    expect(isContentPath('/api/v1/practice-attempts/abc/progress')).toBe(false);
   });
 });
