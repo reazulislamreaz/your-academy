@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { WrittenSubcategoriesDirectory } from '@/components/marketing/written-subcategories-directory';
 
 export const metadata: Metadata = {
-  title: 'All Written Subcategories — Your Academy',
+  title: 'All Written Subcategories',
   description:
     'Browse every Written Question Bank subcategory and open filtered collections on Your Academy.',
 };

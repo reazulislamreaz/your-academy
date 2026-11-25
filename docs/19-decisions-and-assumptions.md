@@ -52,6 +52,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | DEC-063 | 7-day trial scoped to Topic Base only — no site-wide trial (amends DEC-061) | CONFIRMED |
 | DEC-064 | IBA (5-option) Preli bulk upload + single-question Option E | CONFIRMED |
 | DEC-065 | Homepage Free vs Paid plan cards, admin-editable (display only) | CONFIRMED |
+| DEC-066 | Technical SEO: dynamic sitemap, crawlable bank pages, canonical host | CONFIRMED |
 
 ---
 
@@ -707,6 +708,13 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Decision | New table `plan_features` (`plan_key` FREE / PAID, `label` ≤ 200, `is_included`, `sort_order`, `is_active`), seeded by its migration with the list derived from `AccessPolicyService`. Labels may contain `{preliFreeSets}`, `{writtenFreeSets}`, `{topicTrialDays}`, filled from live settings (`TOPIC_TRIAL_DAYS` = 7, the DB trial default) — Bangla digits for Bangla labels. `GET /public/plan-comparison` (no-cache) returns active rows, the paid switch, whether SSLCommerz is configured, and the cheapest active package (shown as "৳X / 3 months" + "See all plans"). Homepage cards: Free (CMS CTA, default "Start Free") and Paid ("Recommended"); logged-in learners see "Current Plan" on their plan; the Paid button is "Upgrade" → /packages when payments are configured, otherwise "Contact us to upgrade", which opens the existing support chat; with the paid system OFF a notice says everything is free and there is no Upgrade button. On API error or with no active rows the section renders its previous layout unchanged. Heading / intro / Free-card CTA / FAQ stay in Admin → Homepage (no duplicate settings record). Admin → Pricing & Plan Features (`subscriptions` permission) adds / edits / hides / deletes / reorders rows. Built-in homepage defaults updated: paid plans are live; free users see answers and explanations in every set they can open. Published homepage content is untouched. |
 | Not used for | Access control — labels never grant or deny anything. |
 | Status | **CONFIRMED** (owner approval 2026-11-26) |
+### DEC-066 — Technical SEO: dynamic sitemap, crawlable bank pages, canonical host
+
+| Field | Value |
+|-------|-------|
+| Problem | Search Console could not use the sitemap / did not index the Preli and Written bank pages. The sitemap was valid but listed only 10 static URLs; robots.txt blocked `/api/`, so Googlebot could not load the public data client-rendered pages fetch; the bank pages had no H1, no canonical and no server-rendered list; ~750 set pages shared one default title; `www` served duplicate pages with 200. |
+| Decision | `sitemap.xml` built from the public API hourly (static landing pages + free Preli / Written sets, PUBLIC PDFs, quizzes, free Model Tests); locked sets, login-only PDFs and Topic-Based sets are excluded and locked / unknown set pages send `noindex, follow`. robots.txt allows `/api/v1/public/`, `/api/v1/categories`, `/api/v1/news/`, `/api/pdf/` (blocks `/api/pdf/auth/`, `/payment/`). Bank pages server-render an H1, intro and the first 20 collections (client refetches with the viewer's session; filters unchanged). Public layout sets a self-referencing canonical (query strings dropped). Per-set / per-PDF / per-article titles, descriptions and BreadcrumbList; Organization + WebSite on the homepage; Article only for real news articles. nginx 301s `www` (http and https) to `https://youracademy.com.bd` in one hop. |
+| Status | **CONFIRMED** (owner request 2026-11-26) |
 ### Deferred / NEEDS APPROVAL (explicitly out of Phase 1)
 
 | Item | Notes |

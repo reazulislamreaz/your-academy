@@ -4,7 +4,7 @@ import { QuestionBankCategoriesDirectory } from '@/components/marketing/question
 import { getPublicHomepage } from '@/lib/api/homepage';
 
 export const metadata: Metadata = {
-  title: 'All Target Exam Categories — Your Academy',
+  title: 'All Target Exam Categories',
   description:
     'Browse every target exam category in the Your Academy question bank, with logos and icons.',
 };

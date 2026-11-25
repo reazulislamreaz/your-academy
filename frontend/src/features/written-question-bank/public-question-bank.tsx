@@ -20,7 +20,9 @@ import {
 import {
   listPublicWrittenQuestionSetYears,
   listPublicWrittenQuestionSets,
+  type PublicWrittenQuestionSet,
 } from '@/lib/api/written-questions';
+import type { ApiResult } from '@/lib/api/client';
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import { cn } from '@/lib/utils';
 
@@ -30,6 +32,11 @@ type Props = {
   basePath?: string;
   /** Hide homepage marketing CTAs when nested in the learner shell. */
   embedded?: boolean;
+  /**
+   * Server-fetched first page (no filters) so the collection list is in the server HTML for
+   * search engines. Treated as stale: the browser refetches with the viewer's session at once.
+   */
+  initialSets?: ApiResult<PublicWrittenQuestionSet[]>;
 };
 
 const filterControlClass =
@@ -58,6 +65,7 @@ export function WrittenQuestionBank({
   className,
   basePath = '/written-question-bank',
   embedded = false,
+  initialSets,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -205,6 +213,13 @@ export function WrittenQuestionBank({
     getNextPageParam: (last) => last.pagination?.nextCursor ?? undefined,
     placeholderData: keepPreviousData,
     staleTime: 30_000,
+    // Only for the unfiltered list the server rendered; filtered URLs fetch as before.
+    ...(initialSets && !(appliedQ || appliedCategoryId || appliedSubcategoryId || appliedYear)
+      ? {
+          initialData: { pages: [initialSets], pageParams: [undefined] },
+          initialDataUpdatedAt: 0,
+        }
+      : {}),
   });
 
   const sets = list.data?.pages.flatMap((p) => p.data) ?? [];

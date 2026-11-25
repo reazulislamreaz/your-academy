@@ -9,7 +9,7 @@ type Props = { params: Promise<{ subcategoryId: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { subcategoryId } = await params;
   return {
-    title: 'Topic collections — Topic Base Question Analysis — Your Academy',
+    title: 'Topic collections — Topic Base Question Analysis',
     description: `Browse Topic Base collections for topic ${subcategoryId}.`,
   };
 }

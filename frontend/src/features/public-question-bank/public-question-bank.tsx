@@ -19,7 +19,12 @@ import {
 } from '@/lib/api/categories';
 import { PreliPracticeStartModal } from '@/features/preli-practice/preli-practice-start-modal';
 import { savePreliPracticeSession } from '@/features/preli-practice/preli-practice-session';
-import { listPublicQuestionSetYears, listPublicQuestionSets } from '@/lib/api/public-questions';
+import type { ApiResult } from '@/lib/api/client';
+import {
+  listPublicQuestionSetYears,
+  listPublicQuestionSets,
+  type PublicQuestionSet,
+} from '@/lib/api/public-questions';
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import { cn } from '@/lib/utils';
 
@@ -29,6 +34,11 @@ type Props = {
   basePath?: string;
   /** Hide homepage marketing CTAs when nested in the learner shell. */
   embedded?: boolean;
+  /**
+   * Server-fetched first page (no filters) so the collection list is in the server HTML for
+   * search engines. Treated as stale: the browser refetches with the viewer's session at once.
+   */
+  initialSets?: ApiResult<PublicQuestionSet[]>;
   /**
    * Learner Preli Practice: clicking a set opens the timed-exam start modal
    * instead of navigating to the browse view.
@@ -62,6 +72,7 @@ export function PublicQuestionBank({
   className,
   basePath = '/preli-question-bank',
   embedded = false,
+  initialSets,
   timedPractice = false,
 }: Props) {
   const router = useRouter();
@@ -217,6 +228,13 @@ export function PublicQuestionBank({
     getNextPageParam: (last) => last.pagination?.nextCursor ?? undefined,
     placeholderData: keepPreviousData,
     staleTime: 30_000,
+    // Only for the unfiltered list the server rendered; filtered URLs fetch as before.
+    ...(initialSets && !(appliedQ || appliedCategoryId || appliedSubcategoryId || appliedYear)
+      ? {
+          initialData: { pages: [initialSets], pageParams: [undefined] },
+          initialDataUpdatedAt: 0,
+        }
+      : {}),
   });
 
   const sets = list.data?.pages.flatMap((p) => p.data) ?? [];

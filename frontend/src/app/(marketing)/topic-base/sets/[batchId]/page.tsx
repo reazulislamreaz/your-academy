@@ -7,7 +7,7 @@ type Props = { params: Promise<{ batchId: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { batchId } = await params;
   return {
-    title: 'Topic collection — Topic Base Question Analysis — Your Academy',
+    title: 'Topic collection — Topic Base Question Analysis',
     description: `Browse Topic Base questions for collection ${batchId}.`,
   };
 }

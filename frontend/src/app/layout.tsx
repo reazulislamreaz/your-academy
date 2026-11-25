@@ -4,7 +4,7 @@ import { Providers } from '@/components/providers';
 import { fontVariableClassName } from '@/lib/fonts';
 import './globals.css';
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://youracademy.com.bd';
+import { SITE_URL } from '@/lib/seo/site';
 
 export const viewport: Viewport = {
   width: 'device-width',

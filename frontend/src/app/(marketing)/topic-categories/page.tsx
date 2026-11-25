@@ -6,7 +6,7 @@ import { DirectoryTileGridSkeleton } from '@/components/marketing/directory-tile
 import { getPublicHomepage } from '@/lib/api/homepage';
 
 export const metadata: Metadata = {
-  title: 'All Topics — Topic Base Question Analysis — Your Academy',
+  title: 'All Topics — Topic Base Question Analysis',
   description:
     'Browse Topic Base folders (Category → Sub Category → Child Category) and open question collections.',
 };

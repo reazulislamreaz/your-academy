@@ -6,12 +6,13 @@ import { getPublicDocumentsServer } from '@/lib/api/public-documents';
 import { getPublicQuestionsServer } from '@/lib/api/public-questions';
 import { getPublicPlatformStats } from '@/lib/api/public-stats';
 import { presentHomepagePayload } from '@/lib/marketing/homepage-presentation';
+import { JsonLd, organizationAndWebsiteJsonLd } from '@/lib/seo/json-ld';
+import { SITE_URL } from '@/lib/seo/site';
 import '@/styles/homepage-polish.css';
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://youracademy.com.bd';
-
 export const metadata: Metadata = {
-  title: 'Your Academy — BCS, Bank & Government Job Exam Preparation',
+  // Absolute: the root template would otherwise append "· Your Academy" a second time.
+  title: { absolute: 'Your Academy — BCS, Bank & Government Job Exam Preparation' },
   description:
     'Practice published MCQs for BCS, Bank, NTRCA, Primary Teacher, and government jobs. Browse the Preli bank, read newspaper columns, and create a free account on Your Academy Bangladesh.',
   alternates: { canonical: '/' },
@@ -58,12 +59,15 @@ export default async function HomePage() {
   const payload = presentHomepagePayload(home.payload, liveStats);
 
   return (
-    <HomepageSectionsRenderer
-      payload={payload}
-      heroImageUrl={home.heroImageUrl}
-      liveStats={liveStats}
-      sampleMcq={sampleMcq}
-      newsDocs={newsDocs}
-    />
+    <>
+      <JsonLd data={organizationAndWebsiteJsonLd()} />
+      <HomepageSectionsRenderer
+        payload={payload}
+        heroImageUrl={home.heroImageUrl}
+        liveStats={liveStats}
+        sampleMcq={sampleMcq}
+        newsDocs={newsDocs}
+      />
+    </>
   );
 }
