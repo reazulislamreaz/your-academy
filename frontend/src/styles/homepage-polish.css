@@ -251,6 +251,33 @@
   }
 }
 
+/* Full-width FAQ cards: hover lift of the border; open/close animates its height where the
+   browser supports ::details-content (others keep the fade-in above). */
+.homepage-shell.hp-polish .hp-faq-card:hover {
+  border-color: var(--hp-panel-border-strong);
+}
+
+@supports selector(::details-content) {
+  @media (prefers-reduced-motion: no-preference) {
+    .homepage-shell.hp-polish .hp-faq-card {
+      interpolate-size: allow-keywords;
+    }
+    .homepage-shell.hp-polish .hp-faq-card::details-content {
+      block-size: 0;
+      opacity: 0;
+      overflow: clip;
+      transition:
+        block-size 260ms var(--hp-ease),
+        opacity 220ms var(--hp-ease),
+        content-visibility 260ms allow-discrete;
+    }
+    .homepage-shell.hp-polish .hp-faq-card[open]::details-content {
+      block-size: auto;
+      opacity: 1;
+    }
+  }
+}
+
 /* ---------- Motion: hero entrance (transform only — LCP-safe) ---------- */
 
 @media (prefers-reduced-motion: no-preference) {

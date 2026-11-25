@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight, Plus } from 'lucide-react';
+import { ArrowRight, ChevronDown } from 'lucide-react';
 import { createDefaultExtendedSections, type HomepagePayload } from '@your-academy/shared';
 import { Button } from '@/components/ui/button';
 import { HomepagePlanComparison } from '@/components/marketing/homepage-plan-comparison';
@@ -56,23 +56,23 @@ export function HomepageAccessFaq({ content }: Props) {
     </div>
   );
   const faq = (
-    <div id="faq" className="scroll-mt-24 space-y-4">
+    <div id="faq" className="w-full min-w-0 scroll-mt-24 space-y-4 sm:space-y-5">
       <h3 className="hp-heading text-lg sm:text-xl">{data.faqHeading}</h3>
-      <div className="space-y-2.5">
+      <div className="space-y-3">
         {data.faqs.map((item) => (
-          <details key={item.id} className="hp-faq-item group px-4">
-            <summary className="min-h-12 cursor-pointer list-none touch-manipulation font-display text-sm font-semibold text-[var(--ink)] marker:content-none [&::-webkit-details-marker]:hidden">
-              <span className="flex items-center justify-between gap-3 py-3.5">
+          <details key={item.id} className="hp-faq-item hp-faq-card group">
+            <summary className="block cursor-pointer list-none touch-manipulation rounded-[inherit] px-4 font-display text-[0.9375rem] font-semibold text-[var(--ink)] outline-none marker:content-none focus-visible:ring-2 focus-visible:ring-[var(--highlight)] focus-visible:ring-offset-2 sm:px-5 [&::-webkit-details-marker]:hidden">
+              <span className="flex min-h-14 items-center justify-between gap-4 py-3.5 leading-[1.6]">
                 {item.question}
                 <span
                   aria-hidden
-                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[var(--hp-panel-border)] text-[var(--muted)] transition-[transform,border-color,color] duration-200 ease-out group-open:rotate-45 group-open:border-[var(--highlight)] group-open:text-[var(--highlight)] motion-reduce:transition-none"
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[var(--hp-panel-border)] text-[var(--muted)] transition-[transform,border-color,color,background-color] duration-200 ease-out group-open:rotate-180 group-open:border-[var(--highlight)] group-open:bg-[var(--highlight-soft)] group-open:text-[var(--highlight)] motion-reduce:transition-none"
                 >
-                  <Plus className="h-3.5 w-3.5" strokeWidth={2.25} />
+                  <ChevronDown className="h-4 w-4" strokeWidth={2.25} />
                 </span>
               </span>
             </summary>
-            <p className="pr-10 pb-4 text-sm leading-relaxed text-[var(--muted-strong)]">
+            <p className="px-4 pb-5 text-sm leading-[1.8] text-[var(--muted-strong)] sm:px-5 sm:pr-16 sm:text-[0.9375rem]">
               {item.answer}
             </p>
           </details>

@@ -2,7 +2,7 @@
  * DEC-065 — homepage "Access & Pricing" Free vs Paid comparison. Display only: what a learner
  * can open is decided by the API's AccessPolicyService, never by these labels.
  */
-import type { PackageDuration } from './billing';
+import type { PackageDuration, SubscriptionPackageDto } from './billing';
 
 /** DEC-061 / DEC-063 — Topic-Based trial length (DB default `users.trial_ends_at = now() + 7 days`). */
 export const TOPIC_TRIAL_DAYS = 7;
@@ -74,5 +74,7 @@ export type PlanComparisonDto = {
       effectivePriceBdt: string;
     } | null;
     packageCount: number;
+    /** Every active package in admin sort order (homepage shows one card per package). */
+    packages: SubscriptionPackageDto[];
   };
 };

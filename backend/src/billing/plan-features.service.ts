@@ -79,6 +79,7 @@ export class PlanFeaturesService {
             }
           : null,
         packageCount: onSale.length,
+        packages: onSale,
       },
     };
   }

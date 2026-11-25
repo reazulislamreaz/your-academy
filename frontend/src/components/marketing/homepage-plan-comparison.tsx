@@ -19,7 +19,9 @@ import {
   type PlanCardCta,
   type PlanCardViewer,
 } from '@/features/billing/plan-card-cta';
+import { describePackages } from '@/features/billing/plan-pricing';
 import { openSupportChat } from '@/features/support/support-events';
+import { getMySubscription } from '@/lib/api/billing';
 import { getPlanComparison } from '@/lib/api/plan-features';
 import { cn } from '@/lib/utils';
 
@@ -30,10 +32,17 @@ type Props = {
   faq: ReactNode;
 };
 
+/** Columns follow the number of cards (Free + active packages), up to four across. */
+function gridClass(count: number): string {
+  if (count >= 4) return 'sm:grid-cols-2 lg:grid-cols-4';
+  if (count === 3) return 'sm:grid-cols-2 lg:grid-cols-3';
+  return 'sm:grid-cols-2';
+}
+
 /**
- * DEC-065 — "Access & Pricing": Free | Paid cards from Admin → Pricing & Plan Features.
- * Display only; the API enforces access. Never breaks the homepage: on error or an empty list
- * it renders the previous two-column layout unchanged.
+ * DEC-065 — "Access & Pricing": a Free card plus one card per active package (Admin →
+ * Packages), features from Admin → Pricing & Plan Features. Display only; the API enforces
+ * access. On error or an empty feature list it renders the previous two-column layout.
  */
 export function HomepagePlanComparison({ content, legacyIntro, faq }: Props) {
   const comparison = useQuery({
@@ -43,6 +52,18 @@ export function HomepagePlanComparison({ content, legacyIntro, faq }: Props) {
     retry: 1,
   });
   const me = useMe();
+  const viewer: PlanCardViewer = me.data
+    ? me.data.role === 'ADMIN'
+      ? { kind: 'admin' }
+      : { kind: 'learner', isPaid: Boolean(me.data.access?.isPaid) }
+    : { kind: 'guest' };
+  // Only paid learners: which package card is "Current Plan".
+  const mine = useQuery({
+    queryKey: ['my-subscription'],
+    queryFn: getMySubscription,
+    enabled: viewer.kind === 'learner' && viewer.isPaid,
+    staleTime: 60_000,
+  });
 
   const data = comparison.data;
   const empty = data && data.free.features.length === 0 && data.paid.features.length === 0;
@@ -55,11 +76,10 @@ export function HomepagePlanComparison({ content, legacyIntro, faq }: Props) {
     );
   }
 
-  const viewer: PlanCardViewer = me.data
-    ? me.data.role === 'ADMIN'
-      ? { kind: 'admin' }
-      : { kind: 'learner', isPaid: Boolean(me.data.access?.isPaid) }
-    : { kind: 'guest' };
+  const packages = data ? describePackages(data.paid.packages) : [];
+  const myPackageId = mine.data?.billing.packageId ?? null;
+  const knowsMyPackage = Boolean(myPackageId && packages.some((p) => p.pkg.id === myPackageId));
+  const cardCount = 1 + Math.max(packages.length, 1);
 
   return (
     <HomepageReveal className="marketing-container min-w-0 space-y-8 sm:space-y-10">
@@ -84,113 +104,164 @@ export function HomepagePlanComparison({ content, legacyIntro, faq }: Props) {
 
       {!data ? (
         <div
-          className="grid gap-4 md:grid-cols-2 md:gap-6"
+          className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5"
           aria-busy="true"
           aria-label="Loading plans"
         >
-          {[0, 1].map((i) => (
-            <div key={i} className="hp-card h-80 animate-pulse" />
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className={cn('hp-card h-72 animate-pulse', i > 1 && 'hidden lg:block')} />
           ))}
         </div>
       ) : (
-        <ul className="grid gap-4 md:grid-cols-2 md:gap-6">
-          <li className="min-w-0">
-            <PlanCard
-              title="Free"
-              price="৳0"
-              priceNote="No payment needed"
-              description="Start practicing with an account — no card, no commitment."
-              features={data.free.features}
-              cta={freeCardCta(viewer, content.cta)}
-            />
-          </li>
-          <li className="min-w-0">
-            <PlanCard
-              highlighted
-              title="Paid"
-              price={
-                data.paid.cheapest ? formatBdt(data.paid.cheapest.effectivePriceBdt) : undefined
-              }
-              priceNote={
-                data.paid.cheapest
-                  ? `/ ${PACKAGE_DURATION_LABELS[data.paid.cheapest.duration].toLowerCase()}`
-                  : undefined
-              }
-              strikePrice={
-                data.paid.cheapest &&
-                data.paid.cheapest.priceBdt !== data.paid.cheapest.effectivePriceBdt
-                  ? formatBdt(data.paid.cheapest.priceBdt)
-                  : undefined
-              }
-              description="Unlock every question set, Model Test and premium PDF."
-              features={data.paid.features}
-              cta={paidCardCta(viewer, data)}
-              footer={
-                data.paid.packageCount > 0 ? (
-                  <Link
-                    href="/packages"
-                    className="inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
-                  >
-                    See all plans
-                    <ArrowRight className="size-3.5" aria-hidden />
-                  </Link>
-                ) : null
-              }
-            />
-          </li>
-        </ul>
+        <div className="space-y-3">
+          <ul className={cn('grid grid-cols-1 gap-4 lg:gap-5', gridClass(cardCount))}>
+            <li className="min-w-0">
+              <PlanCard
+                id="free"
+                title="Free"
+                price="৳0"
+                priceNote="forever"
+                description="Start practicing with an account — no card, no commitment."
+                features={data.free.features}
+                cta={freeCardCta(viewer, content.cta)}
+              />
+            </li>
+            {packages.length ? (
+              packages.map(({ pkg, perMonthBdt, savingsPercent, highlight }) => (
+                <li key={pkg.id} className="min-w-0">
+                  <PlanCard
+                    id={pkg.id}
+                    title={pkg.name}
+                    badge={
+                      highlight === 'popular'
+                        ? 'Popular'
+                        : highlight === 'best-value'
+                          ? 'Best value'
+                          : highlight === 'recommended'
+                            ? 'Recommended'
+                            : undefined
+                    }
+                    highlighted={highlight !== null}
+                    price={formatBdt(pkg.effectivePriceBdt)}
+                    priceNote={`/ ${PACKAGE_DURATION_LABELS[pkg.duration].toLowerCase()}`}
+                    strikePrice={pkg.discountedPriceBdt ? formatBdt(pkg.priceBdt) : undefined}
+                    subPrice={
+                      pkg.duration === 'MONTHLY'
+                        ? undefined
+                        : `≈ ${formatBdt(String(perMonthBdt))}/month${savingsPercent ? ` · save ${savingsPercent}%` : ''}`
+                    }
+                    description={
+                      pkg.description?.trim() ||
+                      'Unlock every question set, Model Test and premium PDF.'
+                    }
+                    features={
+                      pkg.features.length
+                        ? pkg.features.map((label, i) => ({
+                            id: `${pkg.id}-${i}`,
+                            label,
+                            isIncluded: true,
+                          }))
+                        : data.paid.features
+                    }
+                    cta={paidCardCta(
+                      viewer,
+                      data,
+                      // Known package → mark that card. Unknown (e.g. admin grant) → only a lone
+                      // paid card may say "Current Plan"; with several, none does.
+                      knowsMyPackage
+                        ? pkg.id === myPackageId
+                        : packages.length === 1
+                          ? null
+                          : false,
+                    )}
+                  />
+                </li>
+              ))
+            ) : (
+              // No package on sale yet: one generic Paid card (no price).
+              <li className="min-w-0">
+                <PlanCard
+                  id="paid"
+                  title="Paid"
+                  highlighted
+                  badge="Recommended"
+                  description="Unlock every question set, Model Test and premium PDF."
+                  features={data.paid.features}
+                  cta={paidCardCta(viewer, data)}
+                />
+              </li>
+            )}
+          </ul>
+          {packages.length ? (
+            <p className="text-xs text-[var(--muted-strong)]">
+              Prices in BDT. One-time payment per plan — nothing renews automatically.{' '}
+              <Link
+                href="/packages"
+                className="font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
+              >
+                Plan details
+              </Link>
+            </p>
+          ) : null}
+        </div>
       )}
 
-      <div className="max-w-3xl">{faq}</div>
+      {/* FAQ spans the same container width as the plan grid above. */}
+      <div className="border-t border-[var(--hp-panel-border)] pt-8 sm:pt-10">{faq}</div>
     </HomepageReveal>
   );
 }
 
 function PlanCard({
+  id,
   title,
+  badge,
   price,
   priceNote,
   strikePrice,
+  subPrice,
   description,
   features,
   cta,
-  footer,
   highlighted = false,
 }: {
+  id: string;
   title: string;
+  badge?: string;
   price?: string;
   priceNote?: string;
   strikePrice?: string;
+  subPrice?: string;
   description: string;
   features: PlanFeatureDto[];
   cta: PlanCardCta;
-  footer?: ReactNode;
   highlighted?: boolean;
 }) {
-  const headingId = `plan-${title.toLowerCase()}-heading`;
+  const headingId = `plan-${id}-heading`;
   return (
     <article
       aria-labelledby={headingId}
       className={cn(
-        'hp-card flex h-full flex-col gap-5 p-5 sm:p-6',
-        highlighted && 'border-2 !border-[var(--highlight)] shadow-[var(--hp-shadow-hover)]',
+        'hp-card relative flex h-full flex-col gap-4 p-4 sm:p-5',
+        highlighted &&
+          '!border-[var(--highlight)] shadow-[var(--hp-shadow-hover)] ring-1 ring-[var(--highlight)]',
       )}
     >
-      <div className="space-y-2">
-        <div className="flex items-center justify-between gap-2">
-          <h3 id={headingId} className="font-display text-lg font-bold text-[var(--ink)]">
+      <div className="space-y-1.5">
+        <div className="flex min-h-6 items-center justify-between gap-2">
+          <h3 id={headingId} className="font-display text-base font-bold text-[var(--ink)]">
             {title}
           </h3>
-          {highlighted ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--highlight)] px-2.5 py-1 text-xs font-bold text-[var(--highlight-fg)]">
-              <Sparkles className="size-3.5" aria-hidden />
-              Recommended
+          {badge ? (
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[var(--highlight)] px-2 py-0.5 text-[0.6875rem] font-bold text-[var(--highlight-fg)]">
+              <Sparkles className="size-3" aria-hidden />
+              {badge}
             </span>
           ) : null}
         </div>
         {price ? (
-          <p className="flex flex-wrap items-baseline gap-x-2">
-            <span className="font-display text-3xl font-bold text-[var(--ink)] tabular-nums">
+          <p className="flex flex-wrap items-baseline gap-x-1.5">
+            <span className="font-display text-2xl font-bold text-[var(--ink)] tabular-nums">
               {price}
             </span>
             {strikePrice ? (
@@ -204,17 +275,20 @@ function PlanCard({
             ) : null}
           </p>
         ) : null}
-        <p className="text-sm leading-relaxed text-[var(--ink-soft)]">{description}</p>
+        {subPrice ? (
+          <p className="text-xs font-semibold text-[var(--success-fg)] tabular-nums">{subPrice}</p>
+        ) : null}
+        <p className="text-sm leading-snug text-[var(--ink-soft)]">{description}</p>
       </div>
 
       {features.length ? (
-        <ul className="space-y-2.5 text-sm">
+        <ul className="space-y-1.5 text-[0.8125rem] leading-snug">
           {features.map((f) => (
-            <li key={f.id} className="flex items-start gap-2.5">
+            <li key={f.id} className="flex items-start gap-2">
               {f.isIncluded ? (
-                <Check className="mt-0.5 size-4 shrink-0 text-[var(--success)]" aria-hidden />
+                <Check className="mt-0.5 size-3.5 shrink-0 text-[var(--success)]" aria-hidden />
               ) : (
-                <Lock className="mt-0.5 size-4 shrink-0 text-[var(--muted)]" aria-hidden />
+                <Lock className="mt-0.5 size-3.5 shrink-0 text-[var(--muted)]" aria-hidden />
               )}
               <span className={f.isIncluded ? 'text-[var(--ink)]' : 'text-[var(--muted-strong)]'}>
                 <span className="sr-only">{f.isIncluded ? 'Included: ' : 'Not included: '}</span>
@@ -225,16 +299,15 @@ function PlanCard({
         </ul>
       ) : null}
 
-      <div className="mt-auto space-y-2 pt-1">
+      <div className="mt-auto pt-1">
         <PlanCtaButton cta={cta} highlighted={highlighted} />
-        {footer}
       </div>
     </article>
   );
 }
 
 function PlanCtaButton({ cta, highlighted }: { cta: PlanCardCta; highlighted: boolean }) {
-  const className = 'min-h-11 w-full rounded-full font-semibold';
+  const className = 'min-h-10 w-full rounded-full text-sm font-semibold';
   switch (cta.type) {
     case 'link':
       return (
@@ -259,14 +332,14 @@ function PlanCtaButton({ cta, highlighted }: { cta: PlanCardCta; highlighted: bo
       );
     case 'current':
       return (
-        <p className="flex min-h-11 items-center justify-center gap-2 rounded-full border border-[var(--success)]/40 bg-[var(--success-soft)] text-sm font-semibold text-[var(--success-fg)]">
+        <p className="flex min-h-10 items-center justify-center gap-2 rounded-full border border-[var(--success)]/40 bg-[var(--success-soft)] text-sm font-semibold text-[var(--success-fg)]">
           <CircleCheck className="size-4" aria-hidden />
           {cta.label}
         </p>
       );
     case 'note':
       return (
-        <p className="flex min-h-11 items-center justify-center text-sm font-semibold text-[var(--muted-strong)]">
+        <p className="flex min-h-10 items-center justify-center text-center text-sm font-semibold text-[var(--muted-strong)]">
           {cta.label}
         </p>
       );

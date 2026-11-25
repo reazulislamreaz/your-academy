@@ -94,6 +94,8 @@ describe('PlanFeaturesService (DEC-065, display only)', () => {
     expect(c.paid.features.map((f) => f.label)).toEqual(['Every set']);
     expect(c.paid.cheapest).toMatchObject({ name: '3 Months', effectivePriceBdt: '897.00' });
     expect(c.paid.packageCount).toBe(2);
+    // Every active package, in the admin's order (listActive is already sorted).
+    expect(c.paid.packages.map((p) => p.name)).toEqual(['1 Year', '3 Months']);
     expect(c).toMatchObject({ paidSystemEnabled: true, paymentsConfigured: false });
   });
 
@@ -102,7 +104,7 @@ describe('PlanFeaturesService (DEC-065, display only)', () => {
     expect(c).toMatchObject({
       paidSystemEnabled: false,
       free: { features: [] },
-      paid: { features: [], cheapest: null, packageCount: 0 },
+      paid: { features: [], cheapest: null, packageCount: 0, packages: [] },
     });
   });
 
