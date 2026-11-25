@@ -25,6 +25,34 @@ export const siteLinkSchema = z
 
 const linkItem = z.object({ label, href: siteLinkSchema });
 
+/**
+ * SEC-6 — script / data URLs and protocol-relative links (`//evil.example`) in older CMS link
+ * fields. Browsers ignore whitespace and control characters inside the scheme, so strip them first.
+ */
+export function isUnsafeHref(value: string): boolean {
+  // eslint-disable-next-line no-control-regex -- deliberately matching control characters
+  const v = value.replace(/[\u0000-\u0020\u007f]+/g, '').toLowerCase();
+  return (
+    v.startsWith('javascript:') ||
+    v.startsWith('data:') ||
+    v.startsWith('vbscript:') ||
+    v.startsWith('//') ||
+    v.startsWith('\\\\') ||
+    v.startsWith('/\\')
+  );
+}
+
+/**
+ * Link field of the older homepage sections. Same shape as before (any internal path, #anchor,
+ * https:, mailto:, tel:), but an unsafe value is neutralised to "/" instead of rejected, so a
+ * stored payload can never fail to parse on read (that would blank the homepage).
+ */
+export const cmsHrefSchema = z
+  .string()
+  .min(1)
+  .max(500)
+  .transform((v) => (isUnsafeHref(v) ? '/' : v));
+
 // ─── Homepage section additions ───────────────────────────────────────────────
 
 export const DEFAULT_HERO_QUICK_LINKS = [

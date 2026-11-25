@@ -1,4 +1,4 @@
-import { heroQuickLinksSchema } from './site-content';
+import { cmsHrefSchema, heroQuickLinksSchema } from './site-content';
 import { z } from 'zod';
 import {
   createDefaultExtendedSections,
@@ -47,7 +47,7 @@ export const HOMEPAGE_ICON_KEYS = [
 
 export type HomepageIconKey = (typeof HOMEPAGE_ICON_KEYS)[number];
 
-const hrefSchema = z.string().min(1).max(500);
+const hrefSchema = cmsHrefSchema;
 const shortText = z.string().max(200);
 const mediumText = z.string().max(500);
 const longText = z.string().max(4000);

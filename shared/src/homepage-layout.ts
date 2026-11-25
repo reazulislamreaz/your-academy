@@ -9,12 +9,13 @@ import {
   liveStatLabelsSchema,
   pageHeadersSchema,
   pricingLabelsSchema,
+  cmsHrefSchema,
 } from './site-content';
 
 const shortText = z.string().max(200);
 const mediumText = z.string().max(500);
 const longText = z.string().max(4000);
-const hrefSchema = z.string().min(1).max(500);
+const hrefSchema = cmsHrefSchema;
 
 const ctaSchema = z.object({
   label: shortText,
