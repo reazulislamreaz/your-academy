@@ -120,15 +120,8 @@ export class DocumentsService {
     contentType: string;
     filename: string;
   }> {
-    const cached = publicPdfByteCache.get(`public:${id}`);
-    if (cached) {
-      return {
-        buffer: cached.buffer,
-        contentType: cached.contentType,
-        filename: cached.filename,
-      };
-    }
-
+    // SEC-1: confirm the document is still published and PUBLIC before serving cached bytes
+    // (a visibility change or unpublish must take effect immediately, not after the cache TTL).
     const doc = await this.prisma.document.findFirst({
       where: {
         id,
@@ -155,6 +148,14 @@ export class DocumentsService {
         createErrorResponse('DOCUMENT_NOT_FOUND', 'Document not found', newRequestId()),
       );
     }
+    const cached = publicPdfByteCache.get(`public:${id}`);
+    if (cached) {
+      return {
+        buffer: cached.buffer,
+        contentType: cached.contentType,
+        filename: cached.filename,
+      };
+    }
     const payload = await this.fetchPdfPayload(doc.mediaAsset);
     publicPdfByteCache.set(`public:${id}`, payload);
     return payload;
@@ -167,16 +168,8 @@ export class DocumentsService {
     id: string,
     user: RequestUser,
   ): Promise<{ buffer: Buffer; contentType: string; filename: string }> {
-    const cacheKey = `auth:${id}`;
-    const cached = publicPdfByteCache.get(cacheKey);
-    if (cached) {
-      return {
-        buffer: cached.buffer,
-        contentType: cached.contentType,
-        filename: cached.filename,
-      };
-    }
-
+    // SEC-1: the document lookup and the access check always run BEFORE the byte cache. The
+    // cache key is per document, not per viewer, so a cache hit must never skip the check.
     const doc = await this.prisma.document.findFirst({
       where: { id, isPublished: true, deletedAt: null },
       select: {
@@ -213,6 +206,16 @@ export class DocumentsService {
           newRequestId(),
         ),
       );
+    }
+
+    const cacheKey = `auth:${id}`;
+    const cached = publicPdfByteCache.get(cacheKey);
+    if (cached) {
+      return {
+        buffer: cached.buffer,
+        contentType: cached.contentType,
+        filename: cached.filename,
+      };
     }
 
     const payload = await this.fetchPdfPayload(doc.mediaAsset);
