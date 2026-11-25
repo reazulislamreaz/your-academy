@@ -88,15 +88,13 @@ export class AdminMonitoringService implements OnApplicationBootstrap, OnModuleD
       }),
       this.distinctHeartbeatUsers(ago(ONLINE_HEARTBEAT_WINDOW_MS), true),
       this.distinctHeartbeatUsers(ago(5 * 60_000), false),
-      this.prisma.browsingSession.findMany({
+      this.prisma.browsingSession.groupBy({
+        by: ['userId'],
         where: { lastHeartbeatAt: { gte: day } },
-        distinct: ['userId'],
-        select: { userId: true },
       }),
-      this.prisma.learningActivityEvent.findMany({
+      this.prisma.learningActivityEvent.groupBy({
+        by: ['userId'],
         where: { occurredAt: { gte: day } },
-        distinct: ['userId'],
-        select: { userId: true },
       }),
       // First-ever paid purchase per user → "new paid conversions".
       this.prisma.subscriptionEvent.groupBy({
@@ -126,14 +124,13 @@ export class AdminMonitoringService implements OnApplicationBootstrap, OnModuleD
   }
 
   private async distinctHeartbeatUsers(since: Date, activeOnly: boolean): Promise<number> {
-    const rows = await this.prisma.browsingSession.findMany({
+    const rows = await this.prisma.browsingSession.groupBy({
+      by: ['userId'],
       where: {
         lastHeartbeatAt: { gte: since },
         ...(activeOnly ? { status: BrowsingSessionStatus.ACTIVE } : {}),
         user: { deletedAt: null },
       },
-      distinct: ['userId'],
-      select: { userId: true },
     });
     return rows.length;
   }

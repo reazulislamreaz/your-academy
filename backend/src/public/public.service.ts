@@ -176,34 +176,31 @@ export class PublicService {
    */
   async listQuestionSetYears(): Promise<string[]> {
     const [datedQuestions, batchYears, questionYears] = await Promise.all([
-      this.prisma.question.findMany({
+      this.prisma.question.groupBy({
+        by: ['questionDate'],
         where: {
           status: QuestionStatus.PUBLISHED,
           deletedAt: null,
           uploadBatchId: { not: null },
           questionDate: { not: null },
         },
-        distinct: ['questionDate'],
-        select: { questionDate: true },
       }),
-      this.prisma.questionUploadBatch.findMany({
+      this.prisma.questionUploadBatch.groupBy({
+        by: ['examYear'],
         where: {
           status: { in: [QuestionUploadStatus.COMPLETED, QuestionUploadStatus.ARCHIVED] },
           examYear: { not: null },
           questions: { some: { status: QuestionStatus.PUBLISHED, deletedAt: null } },
         },
-        distinct: ['examYear'],
-        select: { examYear: true },
       }),
-      this.prisma.question.findMany({
+      this.prisma.question.groupBy({
+        by: ['examYear'],
         where: {
           status: QuestionStatus.PUBLISHED,
           deletedAt: null,
           examYear: { not: null },
           uploadBatchId: { not: null },
         },
-        distinct: ['examYear'],
-        select: { examYear: true },
       }),
     ]);
     const years = new Set<string>();
@@ -863,34 +860,31 @@ export class PublicService {
 
   async listWrittenQuestionSetYears(): Promise<string[]> {
     const [datedQuestions, batchYears, questionYears] = await Promise.all([
-      this.prisma.writtenQuestion.findMany({
+      this.prisma.writtenQuestion.groupBy({
+        by: ['questionDate'],
         where: {
           status: QuestionStatus.PUBLISHED,
           deletedAt: null,
           uploadBatchId: { not: null },
           questionDate: { not: null },
         },
-        distinct: ['questionDate'],
-        select: { questionDate: true },
       }),
-      this.prisma.writtenUploadBatch.findMany({
+      this.prisma.writtenUploadBatch.groupBy({
+        by: ['examYear'],
         where: {
           status: { in: [QuestionUploadStatus.COMPLETED, QuestionUploadStatus.ARCHIVED] },
           examYear: { not: null },
           questions: { some: { status: QuestionStatus.PUBLISHED, deletedAt: null } },
         },
-        distinct: ['examYear'],
-        select: { examYear: true },
       }),
-      this.prisma.writtenQuestion.findMany({
+      this.prisma.writtenQuestion.groupBy({
+        by: ['examYear'],
         where: {
           status: QuestionStatus.PUBLISHED,
           deletedAt: null,
           examYear: { not: null },
           uploadBatchId: { not: null },
         },
-        distinct: ['examYear'],
-        select: { examYear: true },
       }),
     ]);
     const years = new Set<string>();
