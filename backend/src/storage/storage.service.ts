@@ -1,3 +1,4 @@
+import { detectUploadedMime } from './detect-mime';
 import {
   BadRequestException,
   ForbiddenException,
@@ -31,6 +32,7 @@ type CloudinaryResource = {
   height?: number;
   type?: string;
   resource_type?: string;
+  public_id?: string;
   etag?: string;
 };
 
@@ -177,11 +179,11 @@ export class StorageService {
       );
     }
 
-    const mimeType =
-      input.mimeType ??
-      (resourceType === 'raw'
-        ? 'application/pdf'
-        : `image/${remote.format ?? input.format ?? 'jpeg'}`);
+    // SEC-3: derived from Cloudinary's view of the file; input.mimeType is ignored.
+    const mimeType = detectUploadedMime(resourceType, {
+      format: remote.format,
+      publicId: remote.public_id ?? input.publicId,
+    });
 
     this.assertMimeForPurpose(purpose, mimeType);
     const bytes = remote.bytes ?? input.bytes ?? 0;
@@ -418,16 +420,11 @@ export class StorageService {
         ),
       );
     }
-    const format = (remote.format ?? input.format ?? '').toLowerCase();
-    const mimeType =
-      input.mimeType ??
-      (resourceType === 'image'
-        ? `image/${format || 'jpeg'}`
-        : format === 'pdf'
-          ? 'application/pdf'
-          : format === 'txt'
-            ? 'text/plain'
-            : 'application/octet-stream');
+    // SEC-3: derived from Cloudinary's view of the file; input.mimeType is ignored.
+    const mimeType = detectUploadedMime(resourceType, {
+      format: remote.format,
+      publicId: remote.public_id ?? input.publicId,
+    });
     this.assertMimeForPurpose(purpose, mimeType);
     const bytes = remote.bytes ?? input.bytes ?? 0;
     this.assertBytesForPurpose(purpose, bytes);
