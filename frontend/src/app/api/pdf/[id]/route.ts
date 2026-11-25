@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { forwardedForFrom } from '@/lib/api/visitor-ip';
 
 export const runtime = 'nodejs';
 /** Allow slow Cloudinary → API first fetch (authenticated raw can take 20–40s). */
@@ -13,7 +14,7 @@ function apiOrigin(): string {
  * Next rewrites to the API time out (~30s) before Cloudinary finishes — this route does not.
  */
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   ctx: { params: Promise<{ id: string }> },
 ) {
   const { id } = await ctx.params;
@@ -23,7 +24,7 @@ export async function GET(
 
   try {
     const upstream = await fetch(`${apiOrigin()}/api/v1/public/documents/${id}/file`, {
-      headers: { Accept: 'application/pdf' },
+      headers: { Accept: 'application/pdf', ...forwardedForFrom(req.headers.get('x-forwarded-for')) },
       signal: AbortSignal.timeout(120_000),
       cache: 'no-store',
     });

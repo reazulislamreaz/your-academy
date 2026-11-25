@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { GuestExamPlayer } from '@/features/guest-exams/exam-player';
 import { serverApiBase } from '@/lib/api/client';
+import { visitorIpHeader } from '@/lib/api/visitor-ip';
 import type { PublicExamDetail } from '@your-academy/shared';
 import { decodeRouteParam } from '@/lib/route-params';
 
@@ -10,6 +11,7 @@ type Props = { params: Promise<{ id: string }> };
 async function fetchExam(idOrSlug: string): Promise<PublicExamDetail | null> {
   const res = await fetch(`${serverApiBase()}/public/exams/${encodeURIComponent(idOrSlug)}`, {
     cache: 'no-store',
+    headers: await visitorIpHeader(),
   });
   if (res.status === 404) return null;
   // Anything else is an outage, not a missing quiz — let the error boundary offer a retry.

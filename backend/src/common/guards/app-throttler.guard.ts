@@ -3,23 +3,8 @@ import { ThrottlerGuard, type ThrottlerLimitDetail } from '@nestjs/throttler';
 import { JwtService } from '@nestjs/jwt';
 import { getJwtAccessSecret } from '../../config/env';
 
-/** Paths that serve question/exam content — the bulk-scraping budget applies here. */
-const CONTENT_PATH =
-  /^\/api\/v1\/(public\/(questions|question-sets|written-question-sets|topic-|exams|model-tests)|questions|practice-sets|practice-attempts)/;
-
-export function isContentPath(path: string): boolean {
-  return CONTENT_PATH.test(path);
-}
-
-/** Client IP: a trusted edge header (e.g. Cloudflare's) when configured, else Express's req.ip. */
-export function clientIp(req: { headers: Record<string, unknown>; ip?: string }): string {
-  const header = process.env.TRUSTED_CLIENT_IP_HEADER?.toLowerCase();
-  const fromHeader = header ? req.headers[header] : undefined;
-  if (typeof fromHeader === 'string' && fromHeader.length > 0 && fromHeader.length <= 64) {
-    return fromHeader.split(',')[0].trim();
-  }
-  return req.ip ?? 'unknown';
-}
+export { clientIp, isContentPath, isInternalServerRequest } from './client-ip';
+import { clientIp, isInternalServerRequest } from './client-ip';
 
 /**
  * Rate limits per signed-in user (verified access JWT) and per IP for guests, instead of
@@ -48,6 +33,16 @@ export class AppThrottlerGuard extends ThrottlerGuard {
       }
     }
     return `ip:${clientIp(req as { headers: Record<string, unknown>; ip?: string })}`;
+  }
+
+  protected async shouldSkip(context: ExecutionContext): Promise<boolean> {
+    if (context.getType() !== 'http') return false;
+    return isInternalServerRequest(
+      context.switchToHttp().getRequest<{
+        headers: Record<string, unknown>;
+        socket?: { remoteAddress?: string };
+      }>(),
+    );
   }
 
   protected async throwThrottlingException(

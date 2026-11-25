@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { forwardedForFrom } from '@/lib/api/visitor-ip';
 
 export const runtime = 'nodejs';
 export const maxDuration = 120;
@@ -24,6 +25,7 @@ export async function GET(
     const upstream = await fetch(`${apiOrigin()}/api/v1/documents/${id}/file`, {
       headers: {
         Accept: 'application/pdf',
+        ...forwardedForFrom(req.headers.get('x-forwarded-for')),
         ...(cookie ? { Cookie: cookie } : {}),
       },
       signal: AbortSignal.timeout(120_000),
