@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { AdminFormPanel, AdminPage } from '@/components/admin/admin-page';
 import { PageHeader } from '@/components/layout/page-header';
+import { LoadError } from '@/components/loading';
 import { Button } from '@/components/ui/button';
 import {
   QuestionForm,
@@ -70,6 +71,15 @@ export default function NewQuestionPage() {
               </div>
             ))}
           </div>
+        ) : categories.isError ? (
+          // ERR-11: without categories the form can't be filled — say so instead of an empty list.
+          <LoadError
+            message={`Could not load categories: ${
+              categories.error instanceof Error ? categories.error.message : 'unknown error'
+            }`}
+            onRetry={() => void categories.refetch()}
+            retryLabel="Try again"
+          />
         ) : (
           <QuestionForm
             key={categories.data?.[0]?.id ?? 'empty'}
