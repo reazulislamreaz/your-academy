@@ -308,6 +308,25 @@ export async function apiFetchResult<T>(
     throw new ApiError('NETWORK_ERROR', NETWORK_ERROR_MESSAGE, 0);
   }
 
+  // ERR-10: a stale CSRF cookie (rotated in another tab, or expired with the session) used to
+  // fail the action with a 403 until a manual reload. Refresh once (it re-issues the CSRF
+  // cookie) and retry with the new token.
+  const csrfRejected =
+    res.status === 403 &&
+    !['GET', 'HEAD', 'OPTIONS'].includes(method) &&
+    shouldAttemptRefresh(path, skipRefresh) &&
+    (await peekErrorCode(res)) === 'CSRF_VALIDATION_FAILED';
+  if (csrfRejected && (await refreshSession()) === true) {
+    const csrf = getCookie(process.env.NEXT_PUBLIC_CSRF_COOKIE_NAME ?? 'csrf_token');
+    if (csrf) headers.set('X-CSRF-Token', csrf);
+    try {
+      res = await doFetch();
+    } catch (err) {
+      if (err instanceof ApiError) throw err;
+      throw new ApiError('NETWORK_ERROR', NETWORK_ERROR_MESSAGE, 0);
+    }
+  }
+
   const replacedNow = res.status === 401 && (await peekErrorCode(res)) === 'SESSION_REPLACED';
   // Public routes read the session optionally: an expired access cookie looks like a guest
   // and gets a "log in" lock (DEC-060/061). With session cookies present, refresh once and retry.
