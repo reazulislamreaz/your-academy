@@ -17,6 +17,11 @@ const SECRET_KEY_RE = /pass|token|secret|otp|code|csrf|signature|hash/i;
 /** Access / money / security overrides. */
 const CRITICAL_PATH_RE =
   /\/(role|status|force-logout|reset-password|password-reset|grant|extend|disable|enable|approve|mark-refunded|access-settings|logs\/purge)/;
+/**
+ * SEC-7 — staff-only mutations outside /api/v1/admin: confirming a Cloudinary upload creates
+ * the media asset (question images, PDFs, homepage art). Learner uploads are skipped below.
+ */
+const EXTRA_STAFF_PATH_RE = /^\/api\/v1\/storage\/confirm\/?$/;
 /** Routes that already write a precise entry themselves. */
 const SKIP_PATH_RE = /\/admin\/logs\/purge/;
 
@@ -38,7 +43,7 @@ function summarizeBody(body: unknown): Record<string, unknown> | undefined {
 
 /**
  * DEC-067 — one audit entry for every successful staff change (POST / PUT / PATCH / DELETE
- * under /api/v1/admin), tagged with the actor's role, IP and user agent. Covers uploads, edits,
+ * under /api/v1/admin, plus staff upload confirms), tagged with the actor's role, IP and user agent. Covers uploads, edits,
  * CMS changes, overrides and deletions without touching each service. Reads are not logged.
  */
 @Injectable()
@@ -51,7 +56,7 @@ export class StaffAuditInterceptor implements NestInterceptor {
     const path = (req.originalUrl ?? req.url ?? '').split('?')[0] ?? '';
     if (
       !MUTATING.has(req.method) ||
-      !path.startsWith('/api/v1/admin/') ||
+      !(path.startsWith('/api/v1/admin/') || EXTRA_STAFF_PATH_RE.test(path)) ||
       SKIP_PATH_RE.test(path)
     ) {
       return next.handle();

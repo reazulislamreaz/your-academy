@@ -86,6 +86,30 @@ describe('DEC-067 StaffAuditInterceptor', () => {
     await run({ originalUrl: '/api/v1/admin/logs/purge', method: 'POST' });
     expect(audit.record).not.toHaveBeenCalled();
   });
+
+  it('SEC-7: logs a staff upload confirm, but not a learner one', async () => {
+    const audit = { record: jest.fn() };
+    const i = new StaffAuditInterceptor(audit as never);
+    const confirm = {
+      method: 'POST',
+      originalUrl: '/api/v1/storage/confirm',
+      route: { path: '/api/v1/storage/confirm' },
+      params: {},
+      body: { purpose: 'pdf', publicId: 'newspaper/abc.pdf', signature: 'x' },
+    };
+    await lastValueFrom(i.intercept(ctx(baseReq(confirm)), { handle: () => of(1) }));
+    await lastValueFrom(
+      i.intercept(ctx(baseReq({ ...confirm, user: { userId: 'u', role: UserRole.USER } })), {
+        handle: () => of(1),
+      }),
+    );
+    expect(audit.record).toHaveBeenCalledTimes(1);
+    expect(audit.record.mock.calls[0][0]).toMatchObject({
+      action: 'STAFF_POST',
+      entityType: 'storage/confirm',
+    });
+    expect(audit.record.mock.calls[0][0].metadata.body.signature).toBe('[redacted]');
+  });
 });
 
 describe('DEC-067 AdminMonitoringService — purge', () => {
