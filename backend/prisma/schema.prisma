@@ -491,6 +491,7 @@ model QuestionAttempt {
   @@index([userId, createdAt(sort: Desc)])
   @@index([userId, categoryId])
   @@index([userId, questionId, createdAt(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
   @@map("question_attempts")
 }
 
@@ -684,6 +685,7 @@ model BrowsingSession {
 
   @@index([userId, startedAt(sort: Desc)])
   @@index([status, lastHeartbeatAt(sort: Desc)])
+  @@index([lastHeartbeatAt(sort: Desc)])
   /// Partial unique (migration): one ACTIVE session per user_id
   @@map("browsing_sessions")
 }
@@ -1129,6 +1131,7 @@ model PracticeAttempt {
   @@index([practiceSetId, createdAt(sort: Desc)])
   @@index([userId, status])
   @@index([userId, submittedAt(sort: Desc)])
+  @@index([submittedAt(sort: Desc)])
   @@map("practice_attempts")
 }
 
