@@ -9,9 +9,29 @@ export class ApiError extends Error {
     public code: string,
     message: string,
     public status: number,
+    /** ERR-8 — server request id (also in the X-Request-Id header) for support / logs. */
+    public requestId?: string,
+    /** ERR-3 — VALIDATION_ERROR field errors: [{ field, message }]. */
+    public details: unknown[] = [],
   ) {
     super(message);
   }
+}
+
+/**
+ * ERR-4 / ERR-5 — learner-readable texts (Bangla first, English after) for failures that used
+ * to surface browser or proxy jargon ("Failed to fetch", "API gateway / proxy error…").
+ */
+export const NETWORK_ERROR_MESSAGE =
+  'ইন্টারনেট সংযোগ নেই বা সার্ভারে পৌঁছানো যাচ্ছে না। সংযোগ দেখে আবার চেষ্টা করুন। (Can’t reach the server — check your connection and try again.)';
+const TIMEOUT_MESSAGE =
+  'অনুরোধে বেশি সময় লাগছে। আবার চেষ্টা করুন। (The request took too long — please try again.)';
+const SERVER_BUSY_MESSAGE =
+  'সার্ভার সাময়িকভাবে ব্যস্ত। কিছুক্ষণ পর আবার চেষ্টা করুন। (The server is busy or restarting — try again in a moment.)';
+
+/** "… (Ref: 1a2b3c4d)" on server errors, so users can quote it and we can find the log line. */
+function withRef(message: string, status: number, requestId?: string): string {
+  return status >= 500 && requestId ? `${message} (Ref: ${requestId.slice(0, 8)})` : message;
 }
 
 type ApiEnvelope<T> = {
@@ -44,10 +64,9 @@ async function parseJson<T>(res: Response): Promise<ApiEnvelope<T>> {
   if (!text) {
     throw new ApiError(
       'EMPTY_RESPONSE',
-      res.status >= 500
-        ? 'API returned an empty error response — the backend may be restarting. Retry in a moment.'
-        : 'Empty response from API',
+      res.status >= 500 ? SERVER_BUSY_MESSAGE : 'Empty response from the server — please try again.',
       res.status,
+      res.headers.get('x-request-id') ?? undefined,
     );
   }
   try {
@@ -57,15 +76,18 @@ async function parseJson<T>(res: Response): Promise<ApiEnvelope<T>> {
     if (res.status === 429) {
       throw new ApiError('RATE_LIMITED', RATE_LIMITED_MESSAGE, 429);
     }
-    const hint =
+    const message =
       res.status === 413
-        ? 'Request body too large'
-        : res.status === 502 || res.status === 504
-          ? 'API gateway / proxy error — backend may be down or restarting'
-          : res.status >= 500
-            ? 'Backend returned a non-JSON error page'
-            : 'API returned non-JSON response';
-    throw new ApiError('INVALID_JSON', `${hint} (HTTP ${res.status})`, res.status);
+        ? 'The file or request is too large to upload. Use a smaller file.'
+        : res.status >= 500
+          ? SERVER_BUSY_MESSAGE
+          : `Unexpected response from the server (HTTP ${res.status}) — please try again.`;
+    throw new ApiError(
+      'INVALID_JSON',
+      message,
+      res.status,
+      res.headers.get('x-request-id') ?? undefined,
+    );
   }
 }
 
@@ -269,7 +291,7 @@ export async function apiFetchResult<T>(
     } catch (err) {
       const name = err instanceof Error ? err.name : '';
       if (name === 'AbortError') {
-        throw new ApiError('REQUEST_TIMEOUT', 'Request timed out. Please try again.', 408);
+        throw new ApiError('REQUEST_TIMEOUT', TIMEOUT_MESSAGE, 408);
       }
       throw err;
     } finally {
@@ -283,11 +305,7 @@ export async function apiFetchResult<T>(
     res = await doFetch();
   } catch (err) {
     if (err instanceof ApiError) throw err;
-    throw new ApiError(
-      'NETWORK_ERROR',
-      err instanceof Error ? err.message : 'Network request failed',
-      0,
-    );
+    throw new ApiError('NETWORK_ERROR', NETWORK_ERROR_MESSAGE, 0);
   }
 
   const replacedNow = res.status === 401 && (await peekErrorCode(res)) === 'SESSION_REPLACED';
@@ -307,11 +325,7 @@ export async function apiFetchResult<T>(
         res = await doFetch();
       } catch (err) {
         if (err instanceof ApiError) throw err;
-        throw new ApiError(
-          'NETWORK_ERROR',
-          err instanceof Error ? err.message : 'Network request failed',
-          0,
-        );
+        throw new ApiError('NETWORK_ERROR', NETWORK_ERROR_MESSAGE, 0);
       }
     }
   } else if (replacedNow && shouldAttemptRefresh(path, skipRefresh)) {
@@ -330,11 +344,7 @@ export async function apiFetchResult<T>(
         res = await doFetch();
       } catch (err) {
         if (err instanceof ApiError) throw err;
-        throw new ApiError(
-          'NETWORK_ERROR',
-          err instanceof Error ? err.message : 'Network request failed',
-          0,
-        );
+        throw new ApiError('NETWORK_ERROR', NETWORK_ERROR_MESSAGE, 0);
       }
     }
   }
@@ -344,10 +354,13 @@ export async function apiFetchResult<T>(
     if (res.status === 403 && json.error?.code === 'PASSWORD_CHANGE_REQUIRED') {
       handlePasswordChangeRequired();
     }
+    const requestId = json.meta?.requestId ?? res.headers.get('x-request-id') ?? undefined;
     throw new ApiError(
       json.error?.code ?? 'HTTP_ERROR',
-      json.error?.message ?? 'Request failed',
+      withRef(json.error?.message ?? 'Request failed', res.status, requestId),
       res.status,
+      requestId,
+      (json.error as { details?: unknown[] } | undefined)?.details ?? [],
     );
   }
   return {
