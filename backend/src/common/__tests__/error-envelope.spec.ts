@@ -1,12 +1,13 @@
 import {
   BadRequestException,
   HttpStatus,
+  PayloadTooLargeException,
   ServiceUnavailableException,
   ValidationPipe,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { IsEmail, IsString, MinLength } from 'class-validator';
-import { ApiExceptionFilter } from '../filters/api-exception.filter';
+import { ApiExceptionFilter, fileTooLargeMessage } from '../filters/api-exception.filter';
 import { validationExceptionFactory } from '../validation-exception';
 
 class RegisterLike {
@@ -101,5 +102,24 @@ describe('ERR-8 / ERR-15 ApiExceptionFilter', () => {
     );
     expect(res.statusCode).toBe(HttpStatus.CONFLICT);
     expect((res.body as { error: { code: string } }).error.code).toBe('CONFLICT');
+  });
+});
+
+describe('ERR-13 file too large', () => {
+  it('names the limit of the route', () => {
+    expect(fileTooLargeMessage('/api/v1/admin/question-imports/upload')).toContain('15 MB');
+    expect(fileTooLargeMessage('/api/v1/admin/topic-question-imports/upload')).toContain('20 MB');
+  });
+
+  it("replaces Multer's bare 413 text", () => {
+    const filter = new ApiExceptionFilter();
+    const { res, host: h } = host({
+      method: 'POST',
+      originalUrl: '/api/v1/admin/topic-question-imports/upload',
+      url: '',
+    });
+    filter.catch(new PayloadTooLargeException('File too large'), h);
+    expect(res.statusCode).toBe(413);
+    expect((res.body as { error: { message: string } }).error.message).toContain('20 MB');
   });
 });

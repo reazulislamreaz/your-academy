@@ -42,7 +42,11 @@ export class ApiExceptionFilter implements ExceptionFilter {
         typeof payload === 'string'
           ? payload
           : ((payload as { message?: string | string[] }).message ?? exception.message);
-      const normalized = Array.isArray(message) ? message.join(', ') : String(message);
+      let normalized = Array.isArray(message) ? message.join(', ') : String(message);
+      // ERR-13: Multer's bare "File too large" never said what the limit is.
+      if (status === HttpStatus.PAYLOAD_TOO_LARGE && /file too large/i.test(normalized)) {
+        normalized = fileTooLargeMessage(request?.originalUrl ?? request?.url ?? '');
+      }
       const code =
         typeof payload === 'object' &&
         payload !== null &&
@@ -57,7 +61,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
 
     this.logger.error(`${where} rid=${requestId}`, exception instanceof Error ? exception.stack : String(exception));
 
-    const mapped = mapUnknownException(exception);
+    const mapped = mapUnknownException(exception, request?.originalUrl ?? request?.url ?? '');
     response
       .status(mapped.status)
       .json(createErrorResponse(mapped.code, mapped.message, requestId));
@@ -88,7 +92,13 @@ function httpCodeToErrorCode(status: number): string {
 }
 
 /** Map raw Node / Multer failures to actionable API errors (no stack traces to clients). */
-function mapUnknownException(exception: unknown): {
+/** Upload size limits by route (must match the FileInterceptor limits). */
+export function fileTooLargeMessage(url: string): string {
+  const mb = /\/admin\/topic-question-imports\//.test(url) ? 20 : 15;
+  return `The file is larger than ${mb} MB. Split the sheet into smaller files and upload them one by one.`;
+}
+
+function mapUnknownException(exception: unknown, url = ''): {
   status: number;
   code: string;
   message: string;
@@ -124,7 +134,7 @@ function mapUnknownException(exception: unknown): {
     return {
       status: HttpStatus.BAD_REQUEST,
       code: 'FILE_TOO_LARGE',
-      message: 'File must be 15MB or smaller',
+      message: fileTooLargeMessage(url),
     };
   }
   if (code === 'LIMIT_UNEXPECTED_FILE' || /Unexpected field/i.test(message)) {
