@@ -779,6 +779,7 @@ model SubscriptionEvent {
   paymentOrder PaymentOrder?        @relation(fields: [paymentOrderId], references: [id], onDelete: SetNull)
 
   @@index([userId, createdAt(sort: Desc)])
+  @@index([action, userId, createdAt])
   @@map("subscription_events")
 }
 
@@ -1266,6 +1267,7 @@ model QuestionImportRow {
   @@unique([batchId, rowNumber])
   @@index([batchId, status])
   @@index([contentHash])
+  @@index([createdQuestionId])
   @@map("question_import_rows")
 }
 
