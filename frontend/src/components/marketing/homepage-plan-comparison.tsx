@@ -21,7 +21,7 @@ import {
   type PlanCardViewer,
 } from '@/features/billing/plan-card-cta';
 import { describePackages, mergePaidFeatures } from '@/features/billing/plan-pricing';
-import { useCheckout } from '@/features/billing/use-checkout';
+import { useAnyCheckoutPending, useCheckout } from '@/features/billing/use-checkout';
 import { openSupportChat } from '@/features/support/support-events';
 import { getMySubscription } from '@/lib/api/billing';
 import { ApiError } from '@/lib/api/client';
@@ -278,6 +278,7 @@ function PlanCard({
 
 function PlanCtaButton({ cta, highlighted }: { cta: PlanCardCta; highlighted: boolean }) {
   const checkout = useCheckout();
+  const anyCheckoutPending = useAnyCheckoutPending();
   const className = 'min-h-10 w-full rounded-full text-sm font-semibold';
   switch (cta.type) {
     case 'link':
@@ -297,7 +298,7 @@ function PlanCtaButton({ cta, highlighted }: { cta: PlanCardCta; highlighted: bo
             className={className}
             variant={highlighted ? 'primary' : 'outline'}
             loading={checkout.isPending}
-            disabled={checkout.isPending}
+            disabled={anyCheckoutPending}
             onClick={() => checkout.mutate(cta.packageId)}
           >
             {cta.label}
