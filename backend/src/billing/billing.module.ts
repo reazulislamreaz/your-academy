@@ -6,6 +6,7 @@ import { PackagesService } from './packages.service';
 import { PaymentRecheckService } from './payment-recheck.service';
 import { PaymentsService } from './payments.service';
 import { SiteSettingsService } from './site-settings.service';
+import { SubscriptionRemindersService } from './subscription-reminders.service';
 import { SubscriptionsService } from './subscriptions.service';
 
 /** DEC-060 — Free vs Paid access, packages, subscriptions and SSLCommerz payments. */
@@ -19,6 +20,7 @@ import { SubscriptionsService } from './subscriptions.service';
     SubscriptionsService,
     PaymentsService,
     PaymentRecheckService,
+    SubscriptionRemindersService,
   ],
   exports: [AccessPolicyService, SiteSettingsService, SubscriptionsService],
 })

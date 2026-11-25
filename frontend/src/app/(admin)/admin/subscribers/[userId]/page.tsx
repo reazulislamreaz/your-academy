@@ -35,7 +35,11 @@ import {
   formatDate,
   formatDateTime,
 } from '@/features/admin/billing/billing-format';
-import { ExtendDialog, GrantDialog, type GrantInput } from '@/features/admin/billing/subscriber-dialogs';
+import {
+  ExtendDialog,
+  GrantDialog,
+  type GrantInput,
+} from '@/features/admin/billing/subscriber-dialogs';
 import { adminBillingApi } from '@/lib/api/admin-billing';
 
 const ACTION_LABELS: Record<SubscriptionEventAction, string> = {
@@ -46,6 +50,10 @@ const ACTION_LABELS: Record<SubscriptionEventAction, string> = {
   ENABLE: 'Re-enabled',
   PURCHASE: 'Purchased',
   MIGRATED: 'Migrated from old system',
+  CANCEL: 'Renewal cancelled by user',
+  RESUME: 'Renewal resumed by user',
+  SCHEDULE_CHANGE: 'Downgrade scheduled by user',
+  CLEAR_SCHEDULED_CHANGE: 'Scheduled downgrade removed',
 };
 
 const SOURCE_VARIANT: Record<SubscriptionEventSource, 'info' | 'success' | 'default'> = {
@@ -64,7 +72,10 @@ export default function AdminSubscriberDetailPage() {
     queryFn: () => adminBillingApi.getSubscriber(userId),
     enabled: Boolean(userId),
   });
-  const packages = useQuery({ queryKey: ['admin-packages'], queryFn: adminBillingApi.listPackages });
+  const packages = useQuery({
+    queryKey: ['admin-packages'],
+    queryFn: adminBillingApi.listPackages,
+  });
   const [grantOpen, setGrantOpen] = useState(false);
   const [extendOpen, setExtendOpen] = useState(false);
   const [dialogError, setDialogError] = useState<string | null>(null);
@@ -111,7 +122,9 @@ export default function AdminSubscriberDetailPage() {
     );
   }
   if (detail.error || !detail.data) {
-    return <LoadError message="Could not load this subscriber." onRetry={() => void detail.refetch()} />;
+    return (
+      <LoadError message="Could not load this subscriber." onRetry={() => void detail.refetch()} />
+    );
   }
 
   const { user, subscription, events, payments } = detail.data;
@@ -154,6 +167,13 @@ export default function AdminSubscriberDetailPage() {
               <span className="text-[var(--ink-soft)]">Custom grant</span>
             ) : null}
           </div>
+          {subscription.cancelAtPeriodEnd || subscription.scheduledPackageName ? (
+            <p className="text-sm text-[var(--ink-soft)]">
+              {subscription.cancelAtPeriodEnd
+                ? `User cancelled renewal${subscription.canceledAt ? ` on ${formatDate(subscription.canceledAt)}` : ''} — access continues until the expiry date.`
+                : `User scheduled a switch to ${subscription.scheduledPackageName} at next renewal.`}
+            </p>
+          ) : null}
           <dl className="grid gap-3 text-sm sm:grid-cols-3">
             <div>
               <dt className="text-xs text-[var(--muted)]">Started</dt>
@@ -225,7 +245,10 @@ export default function AdminSubscriberDetailPage() {
         </Surface>
       </AdminSection>
 
-      <AdminSection title="Change log" description="Every subscription change — manual, payment, or migration.">
+      <AdminSection
+        title="Change log"
+        description="Every subscription change — manual, payment, or migration."
+      >
         <AdminTableShell minWidth="48rem">
           <AdminTable>
             <thead>
@@ -259,7 +282,9 @@ export default function AdminSubscriberDetailPage() {
                     <AdminTd>
                       <Badge variant={SOURCE_VARIANT[e.source]}>{e.source.toLowerCase()}</Badge>
                     </AdminTd>
-                    <AdminTd className="text-sm">{e.actor?.name ?? (e.source === 'PAYMENT' ? 'SSLCommerz' : '—')}</AdminTd>
+                    <AdminTd className="text-sm">
+                      {e.actor?.name ?? (e.source === 'PAYMENT' ? 'SSLCommerz' : '—')}
+                    </AdminTd>
                     <AdminTd muted className="text-xs whitespace-nowrap">
                       {e.previousEndsAt ? `${formatDate(e.previousEndsAt)} → ` : ''}
                       {formatDate(e.newEndsAt)}

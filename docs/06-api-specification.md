@@ -427,16 +427,19 @@ Admin vs user allowed MIME/size differ by purpose (`avatar`, `question-image`, `
 | Method | Endpoint | Description | Auth | Role |
 |--------|----------|-------------|------|------|
 | GET | `/public/access-config` | `{ paidSystemEnabled, paymentsConfigured }` | Public | — |
-| GET | `/public/packages` | Active, non-deleted packages (`priceBdt` decimal string) | Public | — |
-| GET | `/me/access` | `UserAccessSnapshot` `{ paidSystemEnabled, fullAccess, isPaid, subscriptionEndsAt }` (also `user.access` on `/users/me`) | User | any |
-| GET | `/me/subscription` | Own plan (`SubscriptionSummary`) + last 50 payments | User | any |
+| GET | `/public/packages` | Active, non-deleted packages (`priceBdt`, `discountedPriceBdt`, `effectivePriceBdt` decimal strings, `isPopular`) | Public | — |
+| GET | `/me/access` | `UserAccessSnapshot` `{ paidSystemEnabled, fullAccess, isPaid, subscriptionEndsAt, isTrialActive, topicAccess, trialEndsAt, trialDaysLeft }` (trial = Topic Base only, DEC-063) (also `user.access` on `/users/me`) | User | any |
+| GET | `/me/subscription` | Own plan (`SubscriptionSummary` incl. `cancelAtPeriodEnd`, `scheduledPackageName`) + last 50 payments + `billing` (`renewalPackage`, `scheduledPackage`, `options[]` with `change` NEW / RENEW / UPGRADE / DOWNGRADE) — DEC-062 | User | any |
+| POST | `/me/subscription/cancel` · `/resume` | Turn renewal off / back on (access runs to `endsAt`). `409 SUBSCRIPTION_NOT_ACTIVE`, `409 SUBSCRIPTION_ALREADY_CANCELLED` / `SUBSCRIPTION_NOT_CANCELLED`, `409 SUBSCRIPTION_NOT_NEEDED` (Admin). Returns `MySubscriptionDto` | User + CSRF | USER / MODERATOR |
+| POST / DELETE | `/me/subscription/scheduled-change` | `{ packageId }` schedules a **downgrade** for the next renewal (`422 PLAN_CHANGE_NOT_DOWNGRADE` for upgrades — buy those via checkout) / remove it (`409 NO_SCHEDULED_CHANGE`) | User + CSRF | USER / MODERATOR |
 | POST | `/payments/checkout` | `{ packageId }` → `{ tranId, gatewayUrl }`. Price/user from server. `403 PAID_SYSTEM_OFF`, `503 PAYMENT_NOT_CONFIGURED`, `503 PAYMENT_GATEWAY_UNAVAILABLE` (order stays PENDING), `502 PAYMENT_GATEWAY_ERROR`, `409 SUBSCRIPTION_NOT_NEEDED` (Admin), `409 PACKAGE_PRICE_INVALID` (< ৳10 / > ৳500,000). Throttled 10/min | User + CSRF | USER / MODERATOR |
 | GET | `/payments/orders/:tranId/status` | `PaymentOrderPublicStatus` for result pages (no session needed; tran_id is random) | Public | — |
 | POST | `/payments/sslcommerz/success` · `/fail` · `/cancel` | Gateway browser callbacks (form POST, **no CSRF / JWT**). Validated server-side, then `303` → `${APP_PUBLIC_URL}/payment/{success|failed|cancelled}?tran_id=` | Gateway | — |
 | POST | `/payments/sslcommerz/ipn` | IPN listener (source of truth). `200 { received, outcome }`; `503` when the validation API was unreachable (gateway retries) | Gateway | — |
 | GET/PATCH | `/admin/access-settings` | `{ paidSystemEnabled, preliFreeSetCount, writtenFreeSetCount }` | User + CSRF | `subscriptions` |
 | GET/POST | `/admin/packages` | List (with `orderCount`) / create | User + CSRF | `subscriptions` |
-| PATCH/DELETE | `/admin/packages/:id` | Update / delete → `{ softDeleted }` (soft when referenced) | User + CSRF | `subscriptions` |
+| PATCH/DELETE | `/admin/packages/:id` | Update / delete → `{ softDeleted }` (soft when referenced). `422 PACKAGE_DISCOUNT_INVALID` (discount ≥ price), `422 PACKAGE_DURATION_RETIRED` (switching to MONTHLY) | User + CSRF | `subscriptions` |
+| POST | `/admin/subscriptions/reminders/run` | Run the 7- / 3-day expiry reminder pass now → `{ sent7, sent3, failed }` (DEC-062; also hourly) | User + CSRF | `subscriptions` |
 | GET | `/admin/subscribers` | Users + `SubscriptionSummary`; `q`, `state` (FREE/ACTIVE/SCHEDULED/EXPIRED/DISABLED), `packageId`, cursor | User | `subscriptions` |
 | GET | `/admin/subscribers/:userId` | Detail + events + payments | User | `subscriptions` |
 | POST | `/admin/subscribers/:userId/grant` | `{ packageId }` (adds duration) **or** `{ endsAt }` (sets end), `note?` | User + CSRF | `subscriptions` |

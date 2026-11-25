@@ -3,7 +3,13 @@ import { Queue, Worker } from 'bullmq';
 import { v2 as cloudinary } from 'cloudinary';
 import IORedis from 'ioredis';
 import { createEmailSender, emailConfigWarnings, loadEmailConfig } from './email/send';
-import { emailChangedNoticeEmail, emailVerificationEmail, passwordResetEmail } from './email/templates';
+import {
+  emailChangedNoticeEmail,
+  emailVerificationEmail,
+  passwordResetEmail,
+  subscriptionReminderEmail,
+  type SubscriptionReminderInput,
+} from './email/templates';
 
 const redisUrl = process.env.REDIS_URL ?? 'redis://127.0.0.1:6379';
 const service = process.env.APP_NAME ?? 'your-academy';
@@ -40,6 +46,14 @@ const sendEmail = createEmailSender(emailConfig, {
   isProduction,
   log: (m) => console.log(`[${service}-worker] ${m}`),
 });
+
+/** DEC-062 — queued by the API's SubscriptionRemindersService. */
+type SubscriptionReminderJob = SubscriptionReminderInput & { to: string; userId: string };
+
+function sendSubscriptionReminder(data: SubscriptionReminderJob) {
+  const email = subscriptionReminderEmail(emailConfig.brand, data);
+  return sendEmail('subscription-reminder', data.to, email, data.manageUrl);
+}
 
 type DeleteAssetJob = {
   mediaAssetId: string;
@@ -190,6 +204,10 @@ async function main() {
       }
       if (job.name === 'email-changed-notice') {
         await sendEmailChangedNotice(job.data as EmailChangedNoticeJob);
+        return;
+      }
+      if (job.name === 'subscription-reminder') {
+        await sendSubscriptionReminder(job.data as SubscriptionReminderJob);
         return;
       }
       console.log(`[${service}-worker] email job ${job.id}`, job.name, job.data);

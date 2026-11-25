@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import {
   PACKAGE_DURATION_LABELS,
+  SELLABLE_PACKAGE_DURATIONS,
   type AdminSubscriptionPackageDto,
   type PackageDuration,
 } from '@your-academy/shared';
@@ -14,13 +15,14 @@ import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import type { PackageInput } from '@/lib/api/admin-billing';
 
-const DURATIONS: PackageDuration[] = ['MONTHLY', 'SIX_MONTHS', 'YEARLY'];
 const PRICE_RE = /^\d{1,7}(\.\d{1,2})?$/;
 
 type Draft = {
   name: string;
   duration: PackageDuration;
   priceBdt: string;
+  discountedPriceBdt: string;
+  isPopular: boolean;
   description: string;
   features: string;
   isActive: boolean;
@@ -30,9 +32,11 @@ type Draft = {
 function toDraft(pkg: AdminSubscriptionPackageDto | null): Draft {
   return {
     name: pkg?.name ?? '',
-    duration: pkg?.duration ?? 'MONTHLY',
+    duration: pkg?.duration ?? 'THREE_MONTHS',
     // "499.00" → "499" for editing; keep real decimals.
     priceBdt: pkg ? pkg.priceBdt.replace(/\.00$/, '') : '',
+    discountedPriceBdt: pkg?.discountedPriceBdt?.replace(/\.00$/, '') ?? '',
+    isPopular: pkg?.isPopular ?? false,
     description: pkg?.description ?? '',
     features: pkg?.features.join('\n') ?? '',
     isActive: pkg?.isActive ?? true,
@@ -67,9 +71,19 @@ export function PackageFormDialog({
 
   const price = draft.priceBdt.trim();
   const priceOk = PRICE_RE.test(price) && Number(price) >= 10;
+  const discount = draft.discountedPriceBdt.trim();
+  const discountOk =
+    !discount ||
+    (PRICE_RE.test(discount) &&
+      Number(discount) >= 10 &&
+      (!priceOk || Number(discount) < Number(price)));
   const sortOk = /^\d{1,5}$/.test(draft.sortOrder.trim());
   const nameOk = draft.name.trim().length >= 2;
-  const valid = priceOk && sortOk && nameOk;
+  const valid = priceOk && discountOk && sortOk && nameOk;
+  // A legacy Monthly package keeps its length unless the admin picks a new one (DEC-062).
+  const durations = SELLABLE_PACKAGE_DURATIONS.includes(draft.duration)
+    ? SELLABLE_PACKAGE_DURATIONS
+    : [draft.duration, ...SELLABLE_PACKAGE_DURATIONS];
 
   return (
     <FormDialog
@@ -86,6 +100,8 @@ export function PackageFormDialog({
           name: draft.name.trim(),
           duration: draft.duration,
           priceBdt: price,
+          discountedPriceBdt: discount || null,
+          isPopular: draft.isPopular,
           description: draft.description.trim() || null,
           features: draft.features
             .split('\n')
@@ -115,9 +131,10 @@ export function PackageFormDialog({
             value={draft.duration}
             onChange={(e) => set('duration', e.target.value as PackageDuration)}
           >
-            {DURATIONS.map((d) => (
+            {durations.map((d) => (
               <option key={d} value={d}>
                 {PACKAGE_DURATION_LABELS[d]}
+                {SELLABLE_PACKAGE_DURATIONS.includes(d) ? '' : ' (retired)'}
               </option>
             ))}
           </Select>
@@ -138,6 +155,40 @@ export function PackageFormDialog({
           ) : (
             <FieldHint>Minimum ৳10 (SSLCommerz limit).</FieldHint>
           )}
+        </Field>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field>
+          <Label htmlFor="pkg-discount">Discounted price (optional)</Label>
+          <Input
+            id="pkg-discount"
+            inputMode="decimal"
+            value={draft.discountedPriceBdt}
+            placeholder="399"
+            onChange={(e) => set('discountedPriceBdt', e.target.value)}
+          />
+          {!discountOk ? (
+            <FieldHint className="text-[var(--danger-fg)]">
+              Must be at least ৳10 and lower than the regular price.
+            </FieldHint>
+          ) : (
+            <FieldHint>
+              When set, learners pay this and see the regular price crossed out.
+            </FieldHint>
+          )}
+        </Field>
+        <Field>
+          <Label htmlFor="pkg-popular">Badge</Label>
+          <label className="flex h-10 items-center gap-2 text-sm text-[var(--ink)]">
+            <input
+              id="pkg-popular"
+              type="checkbox"
+              className="size-4 accent-[var(--accent)]"
+              checked={draft.isPopular}
+              onChange={(e) => set('isPopular', e.target.checked)}
+            />
+            Show a “Popular” badge
+          </label>
         </Field>
       </div>
       <Field>

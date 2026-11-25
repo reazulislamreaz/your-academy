@@ -63,7 +63,7 @@ erDiagram
 
 **Purpose:** Account identity, role, profile, trial window.
 
-`trial_ends_at` TIMESTAMPTZ NOT NULL — DB default `now() + 7 days` (DEC-061); existing rows backfilled from `created_at`.
+`trial_ends_at` TIMESTAMPTZ NOT NULL — DB default `now() + 7 days` (DEC-061); existing rows backfilled from `created_at`. Unlocks Topic Base questions only (DEC-063).
 
 | Field | Type | Notes |
 |-------|------|-------|
@@ -281,15 +281,15 @@ PK: (newsId, documentId).
 
 `site_settings` — single row `id = 'default'`: `paid_system_enabled` (default false), `preli_free_set_count`, `written_free_set_count` (default 10), `updated_by_id`, `updated_at`.
 
-`subscription_packages` — `name`, `duration` ENUM(`MONTHLY`,`SIX_MONTHS`,`YEARLY`), `price_bdt` DECIMAL(12,2), `description`, `features` TEXT[], `is_active`, `sort_order`, `deleted_at` (soft delete once referenced). Index (is_active, deleted_at, sort_order).
+`subscription_packages` — `name`, `duration` ENUM(`MONTHLY` (legacy, DEC-062),`THREE_MONTHS`,`SIX_MONTHS`,`YEARLY`), `price_bdt` DECIMAL(12,2), `discounted_price_bdt` DECIMAL(12,2) NULL (< price; charged when set), `is_popular` BOOLEAN default false, `description`, `features` TEXT[], `is_active`, `sort_order`, `deleted_at` (soft delete once referenced). Index (is_active, deleted_at, sort_order).
 
 `model_tests.access` ENUM(`FREE`,`PAID`) default `FREE`.
 
 ### 3.14 UserSubscription (DEC-060)
 
-One row per user (`user_id` UNIQUE): `package_id` NULL (last package; NULL for custom grants / migrated rows), `starts_at`, `ends_at`, `disabled_at`, `disabled_by_id`. Paid = `disabled_at IS NULL AND starts_at <= now < ends_at`. Index (ends_at).
+One row per user (`user_id` UNIQUE): `package_id` NULL (last package; NULL for custom grants / migrated rows), `starts_at`, `ends_at`, `disabled_at`, `disabled_by_id`. Paid = `disabled_at IS NULL AND starts_at <= now < ends_at`. Index (ends_at). DEC-062: `cancel_at_period_end` BOOLEAN default false + `canceled_at` (learner will not renew), `scheduled_package_id` → `subscription_packages` ON DELETE SET NULL (downgrade at next renewal), `reminder_7d_sent_at` / `reminder_3d_sent_at` (cleared whenever `ends_at` changes).
 
-`subscription_events` — append-only: `user_id`, `actor_user_id`, `source` (`MANUAL`,`PAYMENT`,`MIGRATION`), `action` (`GRANT`,`EXTEND`,`SET_END`,`DISABLE`,`ENABLE`,`PURCHASE`,`MIGRATED`), `package_id`, `payment_order_id`, `previous_ends_at`, `new_ends_at`, `note`. Index (user_id, created_at DESC).
+`subscription_events` — append-only: `user_id`, `actor_user_id`, `source` (`MANUAL`,`PAYMENT`,`MIGRATION`), `action` (`GRANT`,`EXTEND`,`SET_END`,`DISABLE`,`ENABLE`,`PURCHASE`,`MIGRATED`,`CANCEL`,`RESUME`,`SCHEDULE_CHANGE`,`CLEAR_SCHEDULED_CHANGE`), `package_id`, `payment_order_id`, `previous_ends_at`, `new_ends_at`, `note`. Index (user_id, created_at DESC).
 
 ### 3.15 PaymentOrder / PaymentGatewayLog (DEC-060)
 

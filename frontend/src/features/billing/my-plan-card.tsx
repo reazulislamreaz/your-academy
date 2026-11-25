@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
-import type { PaymentOrderStatus, SubscriptionState } from '@your-academy/shared';
+import type { PaymentOrderDto, PaymentOrderStatus, SubscriptionState } from '@your-academy/shared';
 import { LoadError } from '@/components/loading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,7 @@ import { useMe } from '@/features/auth/use-auth';
 import { getAccessConfig, getMySubscription } from '@/lib/api/billing';
 import { formatBdt, formatDate, formatDateTime } from './format';
 
-const STATE_LABEL: Record<SubscriptionState, string> = {
+export const STATE_LABEL: Record<SubscriptionState, string> = {
   FREE: 'Free',
   ACTIVE: 'Active',
   SCHEDULED: 'Starts soon',
@@ -71,7 +71,7 @@ export function MyPlanCard() {
             : !paidOn
               ? 'All content is free right now.'
               : sub.state !== 'ACTIVE' && trial?.isTrialActive && trial.trialEndsAt
-                ? `Free trial: full access until ${formatDate(trial.trialEndsAt)} (${trial.trialDaysLeft} ${trial.trialDaysLeft === 1 ? 'day' : 'days'} left).`
+                ? `Free plan, plus Topic-Based questions free until ${formatDate(trial.trialEndsAt)} (${trial.trialDaysLeft} ${trial.trialDaysLeft === 1 ? 'day' : 'days'} left).`
                 : sub.state === 'ACTIVE' && sub.endsAt
                   ? `Full access until ${formatDate(sub.endsAt)}.`
                   : sub.state === 'SCHEDULED' && sub.startsAt
@@ -83,14 +83,25 @@ export function MyPlanCard() {
                         : 'You are on the free plan: the first sets of each bank and free Model Tests are open.'}
         </p>
         {!isAdmin && paidOn ? (
-          <Link href="/packages">
-            <Button size="sm" variant={sub.state === 'ACTIVE' ? 'outline' : 'primary'}>
-              {sub.state === 'ACTIVE' ? 'Extend plan' : 'See packages'}
-            </Button>
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/billing">
+              <Button size="sm" variant={sub.state === 'ACTIVE' ? 'outline' : 'primary'}>
+                {sub.state === 'ACTIVE' ? 'Manage subscription' : 'See plans'}
+              </Button>
+            </Link>
+          </div>
         ) : null}
       </Surface>
 
+      <MyPaymentHistory payments={payments} />
+    </section>
+  );
+}
+
+/** Learner's own SSLCommerz orders (profile + billing page). */
+export function MyPaymentHistory({ payments }: { payments: PaymentOrderDto[] }) {
+  return (
+    <div className="space-y-3">
       <h3 className="pt-2 text-sm font-semibold text-[var(--ink)]">Payment history</h3>
       {payments.length === 0 ? (
         <p className="text-sm text-[var(--muted)]">No payments yet.</p>
@@ -116,6 +127,6 @@ export function MyPlanCard() {
           ))}
         </ul>
       )}
-    </section>
+    </div>
   );
 }

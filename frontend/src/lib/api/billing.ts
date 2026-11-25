@@ -30,6 +30,22 @@ export function getMySubscription(): Promise<MySubscriptionDto> {
   return apiFetch<MySubscriptionDto>('/me/subscription');
 }
 
+// DEC-062 — self-service plan management. Each returns the refreshed billing state.
+
+const post = (path: string, body?: unknown) =>
+  apiFetch<MySubscriptionDto>(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body ?? {}),
+  });
+
+export const cancelRenewal = () => post('/me/subscription/cancel');
+export const resumeRenewal = () => post('/me/subscription/resume');
+export const scheduleDowngrade = (packageId: string) =>
+  post('/me/subscription/scheduled-change', { packageId });
+export const clearScheduledChange = () =>
+  apiFetch<MySubscriptionDto>('/me/subscription/scheduled-change', { method: 'DELETE' });
+
 /** Result pages: works even when the learner was logged out at the gateway. */
 export function getPaymentStatus(tranId: string): Promise<PaymentOrderPublicStatus> {
   return apiFetch<PaymentOrderPublicStatus>(

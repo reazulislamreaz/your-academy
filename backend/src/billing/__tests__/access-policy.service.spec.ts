@@ -90,32 +90,84 @@ describe('AccessPolicyService (DEC-060)', () => {
     });
   });
 
-  describe('7-day trial (DEC-061)', () => {
-    it('running trial → full access while the paid system is ON', async () => {
-      prisma.user.findUnique.mockResolvedValue({
-        ...learner,
-        trialEndsAt: new Date(now.getTime() + 3 * 86_400_000 - 1000),
-      });
+  describe('7-day trial — Topic Base only (DEC-063)', () => {
+    const inTrial = { ...learner, trialEndsAt: new Date(now.getTime() + 3 * 86_400_000 - 1000) };
+
+    it('running trial is NOT full access (site-wide locks stay as on the free plan)', async () => {
+      prisma.user.findUnique.mockResolvedValue(inTrial);
       const a = await service.resolve({ userId: 'u1' }, now);
-      expect(a).toMatchObject({ fullAccess: true, isTrialActive: true, isPaid: false });
+      expect(a).toMatchObject({ fullAccess: false, isTrialActive: true, isPaid: false });
     });
 
-    it('trial ended (server time) and no subscription → locked', async () => {
+    it('free user in trial: Topic Base open; every other section obeys the free plan', async () => {
+      prisma.user.findUnique.mockResolvedValue(inTrial);
+      const a = await service.resolve({ userId: 'u1' }, now);
+      expect(await service.canAccess(a, { kind: 'TOPIC' })).toBe(true);
+      // Free-plan items stay open…
+      expect(await service.canAccess(a, { kind: 'PRELI_SET', id: 'p1' })).toBe(true);
+      expect(await service.canAccess(a, { kind: 'WRITTEN_SET', id: 'w1' })).toBe(true);
+      expect(await service.canAccess(a, { kind: 'MODEL_TEST', access: ContentAccess.FREE })).toBe(
+        true,
+      );
+      expect(
+        await service.canAccess(a, { kind: 'DOCUMENT', visibility: DocumentVisibility.PUBLIC }),
+      ).toBe(true);
+      // …and paid items stay locked during the trial.
+      expect(await service.canAccess(a, { kind: 'PRELI_SET', id: 'p99' })).toBe(false);
+      expect(await service.canAccess(a, { kind: 'WRITTEN_SET', id: 'w99' })).toBe(false);
+      expect(await service.canAccess(a, { kind: 'PRELI_QUESTION', uploadBatchId: 'p99' })).toBe(
+        false,
+      );
+      expect(await service.canAccess(a, { kind: 'MODEL_TEST', access: ContentAccess.PAID })).toBe(
+        false,
+      );
+      expect(
+        await service.canAccess(a, { kind: 'DOCUMENT', visibility: DocumentVisibility.PREMIUM }),
+      ).toBe(false);
+      expect(await service.openPreliQuestionsWhere(a)).toBeDefined();
+    });
+
+    it('free user after the trial (server time): Topic Base locked, free plan unchanged', async () => {
       prisma.user.findUnique.mockResolvedValue({ ...learner, trialEndsAt: now });
       const a = await service.resolve({ userId: 'u1' }, now);
       expect(a).toMatchObject({ fullAccess: false, isTrialActive: false });
+      expect(await service.canAccess(a, { kind: 'TOPIC' })).toBe(false);
+      expect(await service.canAccess(a, { kind: 'PRELI_SET', id: 'p1' })).toBe(true);
+      expect(await service.canAccess(a, { kind: 'MODEL_TEST', access: ContentAccess.FREE })).toBe(
+        true,
+      );
+      expect(await service.canAccess(a, { kind: 'PRELI_SET', id: 'p99' })).toBe(false);
     });
 
-    it('snapshot reports whole days left (rounded up) and 0 after the end', async () => {
+    it('active paid user (trial over): full access everywhere, Topic Base included', async () => {
+      prisma.user.findUnique.mockResolvedValue({ ...learner, trialEndsAt: trialOver });
+      prisma.userSubscription.findFirst.mockResolvedValue({ id: 's1' });
+      const a = await service.resolve({ userId: 'u1' }, now);
+      expect(a.fullAccess).toBe(true);
+      expect(await service.canAccess(a, { kind: 'TOPIC' })).toBe(true);
+      expect(await service.canAccess(a, { kind: 'PRELI_SET', id: 'p99' })).toBe(true);
+      expect(await service.canAccess(a, { kind: 'MODEL_TEST', access: ContentAccess.PAID })).toBe(
+        true,
+      );
+    });
+
+    it('snapshot: topicAccess follows the trial; days left rounded up, 0 after the end', async () => {
       prisma.userSubscription.findUnique.mockResolvedValue(null);
       prisma.user.findUnique.mockResolvedValue({
         ...learner,
         trialEndsAt: new Date(now.getTime() + 2.1 * 86_400_000),
       });
-      expect((await service.snapshot('u1', now)).trialDaysLeft).toBe(3);
+      expect(await service.snapshot('u1', now)).toMatchObject({
+        trialDaysLeft: 3,
+        fullAccess: false,
+        topicAccess: true,
+      });
       prisma.user.findUnique.mockResolvedValue({ ...learner, trialEndsAt: trialOver });
-      const s = await service.snapshot('u1', now);
-      expect(s).toMatchObject({ trialDaysLeft: 0, isTrialActive: false });
+      expect(await service.snapshot('u1', now)).toMatchObject({
+        trialDaysLeft: 0,
+        isTrialActive: false,
+        topicAccess: false,
+      });
     });
   });
 
@@ -140,13 +192,18 @@ describe('AccessPolicyService (DEC-060)', () => {
       expect(body.error.details[0]!.loginRequired).toBe(true);
     });
 
-    it('signed-in user: open with full access (trial / paid / switch OFF), locked otherwise', async () => {
+    it('signed-in user: open with full access or a running trial, locked otherwise', async () => {
+      const user = { ...base, userId: 'u1' };
+      expect(await service.canAccess({ ...user, fullAccess: true }, { kind: 'TOPIC' })).toBe(true);
       expect(
-        await service.canAccess({ ...base, userId: 'u1', fullAccess: true }, { kind: 'TOPIC' }),
+        await service.canAccess(
+          { ...user, fullAccess: false, isTrialActive: true },
+          { kind: 'TOPIC' },
+        ),
       ).toBe(true);
-      expect(
-        await service.canAccess({ ...base, userId: 'u1', fullAccess: false }, { kind: 'TOPIC' }),
-      ).toBe(false);
+      expect(await service.canAccess({ ...user, fullAccess: false }, { kind: 'TOPIC' })).toBe(
+        false,
+      );
     });
   });
 

@@ -7,6 +7,7 @@ import { PACKAGE_DURATION_LABELS, type SubscriptionPackageDto } from '@your-acad
 import { PageHeader } from '@/components/layout/page-header';
 import { ListCardSkeleton, LoadError } from '@/components/loading';
 import { Alert } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Surface } from '@/components/ui/surface';
@@ -115,16 +116,29 @@ export function PackageCard({
   action: React.ReactNode;
 }) {
   return (
-    <Surface className="flex h-full flex-col gap-4 p-5 sm:p-6">
+    <Surface
+      className={`flex h-full flex-col gap-4 p-5 sm:p-6 ${pkg.isPopular ? 'ring-2 ring-[var(--highlight)]' : ''}`}
+    >
       <div>
-        <p className="text-xs font-semibold tracking-[0.12em] text-[var(--highlight)] uppercase">
-          {PACKAGE_DURATION_LABELS[pkg.duration]}
-        </p>
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs font-semibold tracking-[0.12em] text-[var(--highlight)] uppercase">
+            {PACKAGE_DURATION_LABELS[pkg.duration]}
+          </p>
+          {pkg.isPopular ? <Badge variant="highlight">Popular</Badge> : null}
+        </div>
         <h2 className="font-display mt-1 text-xl font-bold tracking-tight text-[var(--ink)]">
           {pkg.name}
         </h2>
-        <p className="font-display mt-2 text-3xl font-bold text-[var(--ink)] tabular-nums">
-          {formatBdt(pkg.priceBdt)}
+        <p className="mt-2 flex flex-wrap items-baseline gap-x-2">
+          <span className="font-display text-3xl font-bold text-[var(--ink)] tabular-nums">
+            {formatBdt(pkg.effectivePriceBdt)}
+          </span>
+          {pkg.discountedPriceBdt ? (
+            <span className="text-base text-[var(--muted)] tabular-nums line-through">
+              <span className="sr-only">Regular price </span>
+              {formatBdt(pkg.priceBdt)}
+            </span>
+          ) : null}
         </p>
       </div>
       {pkg.description ? (

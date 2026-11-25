@@ -16,6 +16,7 @@ export const LEARNER_APP_PREFIXES = [
   '/bookmarks',
   '/documents',
   '/profile',
+  '/billing',
   '/practice',
   '/results',
   '/subjects',

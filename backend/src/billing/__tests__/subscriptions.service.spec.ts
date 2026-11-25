@@ -49,7 +49,11 @@ describe('SubscriptionsService (DEC-060)', () => {
         subscriptionEvent: { create: jest.fn().mockResolvedValue({}) },
       };
     }
-    const service = new SubscriptionsService({} as never, { record: jest.fn() } as never);
+    const service = new SubscriptionsService(
+      {} as never,
+      { record: jest.fn() } as never,
+      {} as never,
+    );
     const order = { id: 'o1', userId: 'u1', packageId: 'pkg', duration: PackageDuration.MONTHLY };
 
     it('active subscriber: new duration is added to the current end date (not reset)', async () => {

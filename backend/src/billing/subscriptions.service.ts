@@ -16,8 +16,10 @@ import {
   createErrorResponse,
   type AdminSubscriberRow,
   type AdminUserSubscriptionDetail,
+  type MyBillingDetail,
   type MySubscriptionDto,
   type PaymentOrderDto,
+  type PlanChangeKind,
   type SubscriptionEventDto,
   type SubscriptionState,
   type SubscriptionSummary,
@@ -26,6 +28,7 @@ import { AuditService } from '../audit/audit.service';
 import { paginateById } from '../common/pagination';
 import { newRequestId } from '../common/request-id';
 import { PrismaService } from '../database/prisma.service';
+import { PackagesService, effectivePrice } from './packages.service';
 
 type Tx = Prisma.TransactionClient;
 
@@ -34,6 +37,9 @@ type SubscriptionRow = {
   endsAt: Date;
   disabledAt: Date | null;
   package: { name: string } | null;
+  cancelAtPeriodEnd?: boolean;
+  canceledAt?: Date | null;
+  scheduledPackage?: { name: string } | null;
 };
 
 const SUB_SELECT = {
@@ -41,7 +47,34 @@ const SUB_SELECT = {
   endsAt: true,
   disabledAt: true,
   package: { select: { name: true } },
+  cancelAtPeriodEnd: true,
+  canceledAt: true,
+  scheduledPackage: { select: { name: true } },
 } as const;
+
+/** endsAt changed → a new period: its 7- and 3-day reminders may be sent again (DEC-062). */
+const RESET_REMINDERS = { reminder7DaysSentAt: null, reminder3DaysSentAt: null } as const;
+
+type PlanRef = {
+  id: string;
+  duration: PackageDuration;
+  priceBdt: Prisma.Decimal;
+  discountedPriceBdt: Prisma.Decimal | null;
+};
+
+/**
+ * DEC-062 — longer plan (or same length at a higher price) = UPGRADE, paid now and added on
+ * top of the remaining time; anything else = DOWNGRADE, scheduled for the next renewal.
+ * `current` is null when nothing is running (or the plan is unknown) → every option is NEW.
+ */
+export function classifyPlanChange(current: PlanRef | null, candidate: PlanRef): PlanChangeKind {
+  if (!current) return 'NEW';
+  if (candidate.id === current.id) return 'RENEW';
+  const cm = PACKAGE_DURATION_MONTHS[current.duration];
+  const nm = PACKAGE_DURATION_MONTHS[candidate.duration];
+  if (nm !== cm) return nm > cm ? 'UPGRADE' : 'DOWNGRADE';
+  return effectivePrice(candidate).gt(effectivePrice(current)) ? 'UPGRADE' : 'DOWNGRADE';
+}
 
 const HISTORY_LIMIT = 50;
 /** Admin "extend by days" bounds (~10 years). */
@@ -88,23 +121,64 @@ export class SubscriptionsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly packages: PackagesService,
   ) {}
 
   // ─── Reads ──────────────────────────────────────────────────────────────────
 
-  async getMine(userId: string, role: UserRole): Promise<MySubscriptionDto> {
+  async getMine(userId: string, role: UserRole, now = new Date()): Promise<MySubscriptionDto> {
     const [sub, payments] = await Promise.all([
-      this.prisma.userSubscription.findUnique({ where: { userId }, select: SUB_SELECT }),
+      this.prisma.userSubscription.findUnique({
+        where: { userId },
+        select: {
+          ...SUB_SELECT,
+          packageId: true,
+          package: {
+            select: {
+              name: true,
+              id: true,
+              duration: true,
+              priceBdt: true,
+              discountedPriceBdt: true,
+            },
+          },
+          scheduledPackage: true,
+        },
+      }),
       this.prisma.paymentOrder.findMany({
         where: { userId },
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         take: HISTORY_LIMIT,
       }),
     ]);
+    const isAdmin = role === UserRole.ADMIN;
+    const summary = this.toSummary(sub, now);
+    const onSale = isAdmin ? [] : await this.packages.listActive();
+    const running = summary.state === 'ACTIVE' || summary.state === 'SCHEDULED';
+    const current = running && sub?.package ? sub.package : null;
+    const sale = (id: string | null | undefined) => onSale.find((p) => p.id === id) ?? null;
+    const scheduled = sub?.scheduledPackage ?? null;
+
+    const billing: MyBillingDetail = {
+      packageId: sub?.packageId ?? null,
+      scheduledPackage: scheduled ? this.packages.toDto(scheduled) : null,
+      renewalPackage: sale(scheduled?.id) ?? sale(sub?.packageId),
+      options: onSale.map((p) => ({
+        package: p,
+        change: classifyPlanChange(current, {
+          id: p.id,
+          duration: p.duration,
+          priceBdt: new Prisma.Decimal(p.priceBdt),
+          discountedPriceBdt:
+            p.discountedPriceBdt === null ? null : new Prisma.Decimal(p.discountedPriceBdt),
+        }),
+      })),
+    };
     return {
-      isAdmin: role === UserRole.ADMIN,
-      subscription: this.toSummary(sub),
+      isAdmin,
+      subscription: summary,
       payments: payments.map((p) => this.toPaymentDto(p)),
+      billing,
     };
   }
 
@@ -225,6 +299,8 @@ export class SubscriptionsService {
       packageId: order.packageId,
       now,
       computeEnd: (base) => addMonths(base, months),
+      // Paying = renewing: a cancellation or scheduled downgrade is settled by this purchase.
+      clearRenewalChoices: true,
       event: {
         source: SubscriptionEventSource.PAYMENT,
         action: SubscriptionEventAction.PURCHASE,
@@ -288,6 +364,7 @@ export class SubscriptionsService {
             endsAt,
             disabledAt: null,
             disabledById: null,
+            ...RESET_REMINDERS,
             ...(running ? {} : { startsAt: now }),
           },
         });
@@ -404,6 +481,145 @@ export class SubscriptionsService {
     return this.getUserDetail(userId, now);
   }
 
+  // ─── Learner self-service (DEC-062) ─────────────────────────────────────────
+  // No automatic charging exists (SSLCommerz recurring is not enabled): "renewal" is the
+  // learner buying again. Cancel = "I will not renew" (access runs to the end date);
+  // a downgrade is remembered and offered by the Renew button.
+
+  async cancelAtPeriodEnd(userId: string, role: UserRole, now = new Date()) {
+    this.assertLearner(role);
+    await this.prisma.$transaction(async (tx) => {
+      const current = await this.requireRunning(tx, userId, now);
+      if (current.cancelAtPeriodEnd) {
+        throw this.conflict('SUBSCRIPTION_ALREADY_CANCELLED', 'Renewal is already cancelled');
+      }
+      await tx.userSubscription.update({
+        where: { userId },
+        data: { cancelAtPeriodEnd: true, canceledAt: now, scheduledPackageId: null },
+      });
+      await this.logSelf(
+        tx,
+        userId,
+        SubscriptionEventAction.CANCEL,
+        current,
+        null,
+        'Cancelled renewal',
+      );
+    });
+    return this.getMine(userId, role, now);
+  }
+
+  async resume(userId: string, role: UserRole, now = new Date()) {
+    this.assertLearner(role);
+    await this.prisma.$transaction(async (tx) => {
+      const current = await this.requireRunning(tx, userId, now);
+      if (!current.cancelAtPeriodEnd) {
+        throw this.conflict('SUBSCRIPTION_NOT_CANCELLED', 'Renewal is not cancelled');
+      }
+      await tx.userSubscription.update({
+        where: { userId },
+        data: { cancelAtPeriodEnd: false, canceledAt: null },
+      });
+      await this.logSelf(
+        tx,
+        userId,
+        SubscriptionEventAction.RESUME,
+        current,
+        null,
+        'Resumed renewal',
+      );
+    });
+    return this.getMine(userId, role, now);
+  }
+
+  /** Only a DOWNGRADE can be scheduled; upgrades are bought (and applied) right away. */
+  async scheduleChange(userId: string, role: UserRole, packageId: string, now = new Date()) {
+    this.assertLearner(role);
+    const target = await this.packages.findPurchasable(packageId);
+    await this.prisma.$transaction(async (tx) => {
+      const current = await this.requireRunning(tx, userId, now);
+      const kind = classifyPlanChange(current.package, target);
+      if (kind !== 'DOWNGRADE') {
+        throw this.invalid(
+          'PLAN_CHANGE_NOT_DOWNGRADE',
+          kind === 'UPGRADE'
+            ? 'Upgrades are applied right away — buy the plan instead'
+            : 'Choose a different, lower plan',
+        );
+      }
+      await tx.userSubscription.update({
+        where: { userId },
+        // Picking a plan for next time means the learner does intend to renew.
+        data: { scheduledPackageId: target.id, cancelAtPeriodEnd: false, canceledAt: null },
+      });
+      await this.logSelf(
+        tx,
+        userId,
+        SubscriptionEventAction.SCHEDULE_CHANGE,
+        current,
+        target.id,
+        `Switch to ${target.name} at next renewal`,
+      );
+    });
+    return this.getMine(userId, role, now);
+  }
+
+  async clearScheduledChange(userId: string, role: UserRole, now = new Date()) {
+    this.assertLearner(role);
+    await this.prisma.$transaction(async (tx) => {
+      const current = await this.requireRunning(tx, userId, now);
+      if (!current.scheduledPackageId) {
+        throw this.conflict('NO_SCHEDULED_CHANGE', 'No plan change is scheduled');
+      }
+      await tx.userSubscription.update({ where: { userId }, data: { scheduledPackageId: null } });
+      await this.logSelf(
+        tx,
+        userId,
+        SubscriptionEventAction.CLEAR_SCHEDULED_CHANGE,
+        current,
+        current.scheduledPackageId,
+        'Kept current plan',
+      );
+    });
+    return this.getMine(userId, role, now);
+  }
+
+  private assertLearner(role: UserRole) {
+    if (role === UserRole.ADMIN) {
+      throw this.conflict('SUBSCRIPTION_NOT_NEEDED', 'Admins already have full access');
+    }
+  }
+
+  /** Locked subscription that is active or starts later (not expired / disabled). */
+  private async requireRunning(tx: Tx, userId: string, now: Date) {
+    const current = await this.lockSubscription(tx, userId);
+    if (!current || current.disabledAt || current.endsAt.getTime() <= now.getTime()) {
+      throw this.conflict('SUBSCRIPTION_NOT_ACTIVE', 'You have no active plan');
+    }
+    return current;
+  }
+
+  private logSelf(
+    tx: Tx,
+    userId: string,
+    action: SubscriptionEventAction,
+    current: { endsAt: Date; packageId: string | null },
+    packageId: string | null,
+    note: string,
+  ) {
+    return this.logEvent(tx, {
+      userId,
+      actorUserId: userId,
+      source: SubscriptionEventSource.MANUAL,
+      action,
+      packageId: packageId ?? current.packageId,
+      paymentOrderId: null,
+      previousEndsAt: current.endsAt,
+      newEndsAt: current.endsAt,
+      note,
+    });
+  }
+
   // ─── Internals ──────────────────────────────────────────────────────────────
 
   private async extendWithin(
@@ -413,6 +629,7 @@ export class SubscriptionsService {
       /** undefined = keep the current package. */
       packageId: string | undefined;
       now: Date;
+      clearRenewalChoices?: boolean;
       computeEnd: (base: Date) => Date;
       event: {
         source: SubscriptionEventSource;
@@ -429,6 +646,9 @@ export class SubscriptionsService {
     const base = running ? current!.endsAt : now;
     const endsAt = args.computeEnd(base);
     const pkg = args.packageId === undefined ? {} : { packageId: args.packageId };
+    const renewal = args.clearRenewalChoices
+      ? { cancelAtPeriodEnd: false, canceledAt: null, scheduledPackageId: null }
+      : {};
 
     await tx.userSubscription.upsert({
       where: { userId },
@@ -437,6 +657,8 @@ export class SubscriptionsService {
         endsAt,
         disabledAt: null,
         disabledById: null,
+        ...RESET_REMINDERS,
+        ...renewal,
         ...(running ? {} : { startsAt: now }),
         ...pkg,
       },
@@ -459,7 +681,17 @@ export class SubscriptionsService {
     await tx.$queryRaw`SELECT id FROM users WHERE id = ${userId}::uuid FOR UPDATE`;
     return tx.userSubscription.findUnique({
       where: { userId },
-      select: { endsAt: true, disabledAt: true, packageId: true },
+      select: {
+        startsAt: true,
+        endsAt: true,
+        disabledAt: true,
+        packageId: true,
+        cancelAtPeriodEnd: true,
+        scheduledPackageId: true,
+        package: {
+          select: { id: true, duration: true, priceBdt: true, discountedPriceBdt: true },
+        },
+      },
     });
   }
 
@@ -533,6 +765,9 @@ export class SubscriptionsService {
       startsAt: row?.startsAt.toISOString() ?? null,
       endsAt: row?.endsAt.toISOString() ?? null,
       disabledAt: row?.disabledAt?.toISOString() ?? null,
+      cancelAtPeriodEnd: row?.cancelAtPeriodEnd ?? false,
+      canceledAt: row?.canceledAt?.toISOString() ?? null,
+      scheduledPackageName: row?.scheduledPackage?.name ?? null,
     };
   }
 

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Header,
   HttpCode,
@@ -17,7 +18,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { CsrfGuard } from '../common/guards/csrf.guard';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { newRequestId } from '../common/request-id';
-import { CheckoutDto } from './dto/billing.dto';
+import { CheckoutDto, ScheduleChangeDto } from './dto/billing.dto';
 import { PackagesService } from './packages.service';
 import { PaymentsService, type CallbackKind } from './payments.service';
 import { SiteSettingsService } from './site-settings.service';
@@ -59,6 +60,49 @@ export class BillingController {
   async mySubscription(@CurrentUser() user: RequestUser) {
     return createSuccessResponse(
       await this.subscriptions.getMine(user.userId, user.role),
+      newRequestId(),
+    );
+  }
+
+  // ─── DEC-062 — self-service plan management (no automatic charges exist) ─────
+
+  /** Stop renewing: access stays until the end date, reminders say so. */
+  @Post('me/subscription/cancel')
+  @HttpCode(200)
+  @UseGuards(JwtAuthGuard, CsrfGuard)
+  async cancelRenewal(@CurrentUser() user: RequestUser) {
+    return createSuccessResponse(
+      await this.subscriptions.cancelAtPeriodEnd(user.userId, user.role),
+      newRequestId(),
+    );
+  }
+
+  @Post('me/subscription/resume')
+  @HttpCode(200)
+  @UseGuards(JwtAuthGuard, CsrfGuard)
+  async resumeRenewal(@CurrentUser() user: RequestUser) {
+    return createSuccessResponse(
+      await this.subscriptions.resume(user.userId, user.role),
+      newRequestId(),
+    );
+  }
+
+  /** Downgrade for the next renewal (upgrades go through checkout and apply at once). */
+  @Post('me/subscription/scheduled-change')
+  @HttpCode(200)
+  @UseGuards(JwtAuthGuard, CsrfGuard)
+  async scheduleChange(@CurrentUser() user: RequestUser, @Body() dto: ScheduleChangeDto) {
+    return createSuccessResponse(
+      await this.subscriptions.scheduleChange(user.userId, user.role, dto.packageId),
+      newRequestId(),
+    );
+  }
+
+  @Delete('me/subscription/scheduled-change')
+  @UseGuards(JwtAuthGuard, CsrfGuard)
+  async clearScheduledChange(@CurrentUser() user: RequestUser) {
+    return createSuccessResponse(
+      await this.subscriptions.clearScheduledChange(user.userId, user.role),
       newRequestId(),
     );
   }

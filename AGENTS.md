@@ -63,12 +63,13 @@ Forbidden without approval: microservices, GraphQL, alternate ORMs, payment prov
 
 | ID | Rule |
 |----|------|
-| Trial | **7 days of full access** from account creation (DEC-061): `users.trial_ends_at` = DB `now() + 7 days` at insert (existing accounts backfilled from `created_at`). Server time only; counts as full access in `AccessPolicyService`. Days left on the learner dashboard |
-| Free plan (paid system ON, after trial) | First **N** Preli and first **N** Written sets (admin-set, default 10, display order), FREE Model Tests, Quizzes, practice sets, news, non-PREMIUM PDFs, profile, bookmarks. Paid system **OFF** → everything open (DEC-060) |
-| Topic Base | Directory / set **names** public; topic **questions** require login **always** (even with paid system OFF), then trial or active subscription when paid system is ON → else 403 `CONTENT_LOCKED` + paywall (DEC-061). Signed-out visitors are sent to `/login?next=<page>` |
+| Trial | **7 days of free Topic-Based access only** from account creation (DEC-061, scoped by DEC-063): `users.trial_ends_at` = DB `now() + 7 days` at insert (existing accounts backfilled from `created_at`). Server time only. It unlocks **only** `TOPIC` content in `AccessPolicyService` — it is **never** `fullAccess` and unlocks nothing else (sets beyond N, PAID Model Tests, PREMIUM PDFs stay locked). `access.topicAccess` drives the topic UI gate. Days left on the learner dashboard |
+| Free plan (paid system ON; trial or not) | First **N** Preli and first **N** Written sets (admin-set, default 10, display order), FREE Model Tests, Quizzes, practice sets, news, non-PREMIUM PDFs, profile, bookmarks. Paid system **OFF** → everything open (DEC-060) |
+| Topic Base | Directory / set **names** public; topic **questions** require login **always** (even with paid system OFF), then 7-day trial or active subscription when paid system is ON → else 403 `CONTENT_LOCKED` + paywall (DEC-061 / DEC-063). Signed-out visitors are sent to `/login?next=<page>` |
 | Locked content | Sets beyond N, PAID Model Tests, PREMIUM PDFs: listed with `locked: true`, content routes return **403 `CONTENT_LOCKED`** and never load questions. Decided only by `AccessPolicyService` (Admin → switch → free item → active subscription). Answers are **not** separately gated (DEC-060 replaces DEC-051) |
 | Questions CRUD | **Admin or Moderator** (content sections only — DEC-048) |
 | Question browse | Public Preli / Written / Topic banks + homepage via `/api/v1/public/*` (DEC-031/040/042); a bank MCQ inherits its set's lock; learner practice `/questions*` remains authenticated (DEC-003) |
+| Plans & renewal | **3 Months / 6 Months / 1 Year** (Monthly retired) with optional discounted price + Popular badge. **No automatic charging** (DEC-062): learners renew from `/billing`; upgrade = pay now, time added on top; downgrade = scheduled for the next renewal; cancel = access until end date. Reminder emails 7 and 3 days before the end (verified email, once per period) |
 | Payments | **SSLCommerz** (DEC-060): server-priced checkout, activation only after Order Validation API + amount/currency/tran_id/store match, IPN is source of truth, idempotent apply. Admins also grant/extend/disable manually; every change logged in `subscription_events` |
 | Register fields | name, WhatsApp (unique), password; avatar optional; email optional at register |
 | Password reset | Self-service by **email** (DEC-004, no enumeration); Admin-assisted email link / WhatsApp link / temporary password for accounts without email (DEC-054) |
@@ -249,6 +250,8 @@ Forbidden without approval: microservices, GraphQL, alternate ORMs, payment prov
 | `docs/19` DEC-048 | Admin / Moderator roles, account settings, email verification |
 | `docs/19` DEC-060 | Free vs Paid system, packages, SSLCommerz payments (supersedes DEC-051 / DEC-052) |
 | `docs/19` DEC-061 | 7-day trial + Topic Base login / paywall |
+| `docs/19` DEC-063 | 7-day trial scoped to Topic Base only (no site-wide trial) |
+| `docs/19` DEC-062 | 3-month plan, discounts, cancel / upgrade / downgrade, expiry reminders (no auto-charge) |
 | `docs/04`–`06` | Architecture, DB, API |
 | `docs/07`–`08` | Auth, access control |
 | `docs/09`–`10` | Cloudinary, BullMQ |

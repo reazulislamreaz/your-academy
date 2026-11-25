@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useState } from 'react';
 import {
@@ -20,6 +20,7 @@ import {
 } from '@/components/admin/admin-table';
 import { PageHeader } from '@/components/layout/page-header';
 import { LoadError } from '@/components/loading';
+import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { LoadMoreButton } from '@/components/ui/load-more-button';
@@ -58,6 +59,7 @@ export default function AdminSubscribersPage() {
     },
   );
   const total = list.data?.pages[0]?.pagination?.total ?? null;
+  const reminders = useMutation({ mutationFn: adminBillingApi.runReminders });
 
   return (
     <AdminPage dense>
@@ -65,7 +67,25 @@ export default function AdminSubscribersPage() {
         eyebrow="Billing"
         title="Subscribers"
         description="Subscription status of every user. Open a user to grant, extend, or disable access."
+        actions={
+          <Button
+            size="sm"
+            variant="outline"
+            loading={reminders.isPending}
+            onClick={() => reminders.mutate()}
+          >
+            Send due reminders
+          </Button>
+        }
       />
+      {reminders.data ? (
+        <Alert variant={reminders.data.failed ? 'warning' : 'success'}>
+          Expiry reminders queued: {reminders.data.sent7} × 7-day, {reminders.data.sent3} × 3-day
+          {reminders.data.failed ? `, ${reminders.data.failed} failed (retried next run)` : ''}.
+          They also go out automatically every hour; each one is sent once per plan period.
+        </Alert>
+      ) : null}
+      {reminders.error ? <Alert variant="danger">Could not run the reminders.</Alert> : null}
 
       <AdminToolbar>
         <div className="admin-filter-grid">
@@ -169,6 +189,13 @@ export default function AdminSubscribersPage() {
                     </AdminTd>
                     <AdminTd muted className="text-xs whitespace-nowrap">
                       {formatDate(subscription.endsAt)}
+                      {subscription.cancelAtPeriodEnd ? (
+                        <span className="block text-[var(--warning-fg)]">Renewal cancelled</span>
+                      ) : subscription.scheduledPackageName ? (
+                        <span className="block">
+                          → {subscription.scheduledPackageName} at renewal
+                        </span>
+                      ) : null}
                     </AdminTd>
                     <AdminTd align="right">
                       <Link href={`/admin/subscribers/${user.id}`}>

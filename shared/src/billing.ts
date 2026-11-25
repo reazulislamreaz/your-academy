@@ -4,7 +4,14 @@
  */
 
 export type ContentAccessLevel = 'FREE' | 'PAID';
-export type PackageDuration = 'MONTHLY' | 'SIX_MONTHS' | 'YEARLY';
+/** MONTHLY is legacy (DEC-062) — kept so old orders / packages still read. */
+export type PackageDuration = 'MONTHLY' | 'THREE_MONTHS' | 'SIX_MONTHS' | 'YEARLY';
+/** Lengths an admin can sell (DEC-062: 3 Months replaced Monthly). */
+export const SELLABLE_PACKAGE_DURATIONS: readonly PackageDuration[] = [
+  'THREE_MONTHS',
+  'SIX_MONTHS',
+  'YEARLY',
+];
 export type PaymentOrderStatus =
   | 'PENDING'
   | 'SUCCESS'
@@ -29,16 +36,22 @@ export type SubscriptionEventAction =
   | 'DISABLE'
   | 'ENABLE'
   | 'PURCHASE'
-  | 'MIGRATED';
+  | 'MIGRATED'
+  | 'CANCEL'
+  | 'RESUME'
+  | 'SCHEDULE_CHANGE'
+  | 'CLEAR_SCHEDULED_CHANGE';
 
 export const PACKAGE_DURATION_MONTHS: Readonly<Record<PackageDuration, number>> = {
   MONTHLY: 1,
+  THREE_MONTHS: 3,
   SIX_MONTHS: 6,
   YEARLY: 12,
 };
 
 export const PACKAGE_DURATION_LABELS: Readonly<Record<PackageDuration, string>> = {
   MONTHLY: 'Monthly',
+  THREE_MONTHS: '3 Months',
   SIX_MONTHS: '6 Months',
   YEARLY: '1 Year',
 };
@@ -55,13 +68,15 @@ export type ContentLockedDetail = {
 /** `user.access` on /auth/me — UX only; the API enforces every lock itself. */
 export type UserAccessSnapshot = {
   paidSystemEnabled: boolean;
-  /** Admin, paid system OFF, or an active subscriber. */
+  /** Admin, paid system OFF, or an active subscriber. The trial never sets this (DEC-063). */
   fullAccess: boolean;
   /** Active subscription right now. */
   isPaid: boolean;
   subscriptionEndsAt: string | null;
-  /** DEC-061 — 7-day trial from account creation (server time). */
+  /** DEC-061 / DEC-063 — 7-day trial from account creation (server time); Topic Base only. */
   isTrialActive: boolean;
+  /** DEC-063 — may open Topic Base questions: fullAccess or a running trial. */
+  topicAccess: boolean;
   trialEndsAt: string | null;
   /** Whole days left, rounded up; 0 when ended. */
   trialDaysLeft: number;
@@ -86,8 +101,14 @@ export type SubscriptionPackageDto = {
   id: string;
   name: string;
   duration: PackageDuration;
-  /** Decimal string in BDT, e.g. "499.00" — never a float. */
+  /** Decimal string in BDT, e.g. "499.00" — never a float. Regular (list) price. */
   priceBdt: string;
+  /** DEC-062 — sale price when set; always below priceBdt. */
+  discountedPriceBdt: string | null;
+  /** What checkout charges: discountedPriceBdt ?? priceBdt. */
+  effectivePriceBdt: string;
+  /** DEC-062 — "Popular" badge. */
+  isPopular: boolean;
   description: string | null;
   features: string[];
   isActive: boolean;
@@ -107,6 +128,29 @@ export type SubscriptionSummary = {
   startsAt: string | null;
   endsAt: string | null;
   disabledAt: string | null;
+  /** DEC-062 — learner turned renewal off; access still runs until endsAt. */
+  cancelAtPeriodEnd: boolean;
+  canceledAt: string | null;
+  /** DEC-062 — downgrade bought at the next renewal. */
+  scheduledPackageName: string | null;
+};
+
+/**
+ * DEC-062 — how buying `pkg` relates to the current plan.
+ * UPGRADE = pay now, duration added on top of the remaining time.
+ * DOWNGRADE = scheduled; bought when the learner next renews.
+ * RENEW = same plan, adds its duration. NEW = no running plan (or no known current plan).
+ */
+export type PlanChangeKind = 'NEW' | 'RENEW' | 'UPGRADE' | 'DOWNGRADE';
+
+/** Learner billing page (`GET /me/subscription`). */
+export type MyBillingDetail = {
+  packageId: string | null;
+  scheduledPackage: SubscriptionPackageDto | null;
+  /** Plan the Renew button buys: scheduled downgrade, else the current plan (if still sold). */
+  renewalPackage: SubscriptionPackageDto | null;
+  /** Every plan on sale with how it relates to the current one. */
+  options: { package: SubscriptionPackageDto; change: PlanChangeKind }[];
 };
 
 export type PaymentOrderDto = {
@@ -125,6 +169,8 @@ export type MySubscriptionDto = {
   isAdmin: boolean;
   subscription: SubscriptionSummary;
   payments: PaymentOrderDto[];
+  /** DEC-062 — plan management (upgrade / downgrade / cancel / renew). */
+  billing: MyBillingDetail;
 };
 
 export type AdminPaymentOrderDto = PaymentOrderDto & {

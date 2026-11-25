@@ -38,11 +38,11 @@ export function Paywall({ title }: { title?: string }) {
           id="paywall-heading"
           className="font-display text-xl font-bold tracking-tight text-[var(--ink)]"
         >
-          {trialEndsAt ? 'Your 7-day free trial has ended' : 'Subscribe to unlock'}
+          {trialEndsAt ? 'Your 7-day Topic-Based free access has ended' : 'Subscribe to unlock'}
         </h2>
         <p className="text-sm leading-relaxed text-[var(--ink-soft)]">
           {trialEndsAt
-            ? `Your free trial ended on ${formatDate(trialEndsAt)}. Choose a plan to keep studying every topic.`
+            ? `Your free Topic-Based access ended on ${formatDate(trialEndsAt)}. Choose a plan to keep studying every topic.`
             : 'Choose a plan to unlock every topic category.'}
         </p>
       </Surface>

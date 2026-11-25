@@ -38,6 +38,7 @@ import {
 import { PackagesService } from './packages.service';
 import { PaymentsService } from './payments.service';
 import { SiteSettingsService } from './site-settings.service';
+import { SubscriptionRemindersService } from './subscription-reminders.service';
 import { SubscriptionsService } from './subscriptions.service';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -57,7 +58,16 @@ export class AdminSubscriptionsController {
     private readonly packages: PackagesService,
     private readonly settings: SiteSettingsService,
     private readonly subscriptions: SubscriptionsService,
+    private readonly reminders: SubscriptionRemindersService,
   ) {}
+
+  /** DEC-062 — runs the 7- / 3-day reminder pass now (it also runs hourly on its own). */
+  @Post('subscriptions/reminders/run')
+  @HttpCode(200)
+  @UseGuards(CsrfGuard)
+  async runReminders() {
+    return createSuccessResponse(await this.reminders.runOnce(), newRequestId());
+  }
 
   @Get('access-settings')
   async getSettings() {

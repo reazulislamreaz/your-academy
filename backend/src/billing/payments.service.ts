@@ -21,7 +21,7 @@ import { AuditService } from '../audit/audit.service';
 import { paginateById } from '../common/pagination';
 import { newRequestId } from '../common/request-id';
 import { PrismaService } from '../database/prisma.service';
-import { PackagesService } from './packages.service';
+import { PackagesService, effectivePrice } from './packages.service';
 import { SiteSettingsService } from './site-settings.service';
 import {
   GatewayUnavailableError,
@@ -132,7 +132,8 @@ export class PaymentsService {
     }
     // Price, package and user come from the database only — never from the request body.
     const pkg = await this.packages.findPurchasable(packageId);
-    const amount = pkg.priceBdt;
+    // DEC-062 — the sale price when the admin set one.
+    const amount = effectivePrice(pkg);
     if (amount.lt(MIN_AMOUNT_BDT) || amount.gt(MAX_AMOUNT_BDT)) {
       throw new ConflictException(
         createErrorResponse(

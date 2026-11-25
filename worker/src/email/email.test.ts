@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { createEmailSender, emailConfigWarnings, loadEmailConfig, maskEmail } from './send';
-import { emailChangedNoticeEmail, emailVerificationEmail, passwordResetEmail } from './templates';
+import {
+  emailChangedNoticeEmail,
+  emailVerificationEmail,
+  passwordResetEmail,
+  subscriptionReminderEmail,
+} from './templates';
 
 const prodEnv = {
   NODE_ENV: 'production',
@@ -38,12 +43,19 @@ describe('password reset email', () => {
     const urls = [...email.html.matchAll(/(?:href|src)="([^"]+)"/g)].map((m) => m[1]);
     assert.ok(urls.length >= 4);
     for (const url of urls) {
-      assert.match(url, /^(https:\/\/youracademy\.com\.bd(\/|$)|mailto:support@youracademy\.com\.bd$)/, url);
+      assert.match(
+        url,
+        /^(https:\/\/youracademy\.com\.bd(\/|$)|mailto:support@youracademy\.com\.bd$)/,
+        url,
+      );
     }
   });
 
   it('uses the logo on our domain with alt text and no scripts', () => {
-    assert.match(email.html, /src="https:\/\/youracademy\.com\.bd\/images\/email-logo\.png"[^>]*alt="Your Academy"/);
+    assert.match(
+      email.html,
+      /src="https:\/\/youracademy\.com\.bd\/images\/email-logo\.png"[^>]*alt="Your Academy"/,
+    );
     assert.doesNotMatch(email.html, /<script/i);
   });
 
@@ -72,7 +84,10 @@ describe('email verification email', () => {
 
 describe('config + sending', () => {
   it('warns when sending from a free-mail domain', () => {
-    const config = loadEmailConfig({ ...prodEnv, EMAIL_FROM: 'Your Academy <youracademy04@gmail.com>' });
+    const config = loadEmailConfig({
+      ...prodEnv,
+      EMAIL_FROM: 'Your Academy <youracademy04@gmail.com>',
+    });
     assert.ok(emailConfigWarnings(config, true).some((w) => w.includes('gmail.com')));
     assert.deepEqual(emailConfigWarnings(loadEmailConfig(prodEnv), true), []);
   });
@@ -111,10 +126,54 @@ describe('config + sending', () => {
 
 describe('email changed notice', () => {
   it('renders without a button or link and masks the new address', () => {
-    const brand = { name: 'Your Academy', siteUrl: 'https://youracademy.com.bd', logoUrl: 'x', supportEmail: 'support@youracademy.com.bd' };
-    const email = emailChangedNoticeEmail(brand, { newEmailMasked: 'so***@gmail.com', changedBy: 'admin' });
+    const brand = {
+      name: 'Your Academy',
+      siteUrl: 'https://youracademy.com.bd',
+      logoUrl: 'x',
+      supportEmail: 'support@youracademy.com.bd',
+    };
+    const email = emailChangedNoticeEmail(brand, {
+      newEmailMasked: 'so***@gmail.com',
+      changedBy: 'admin',
+    });
     assert.match(email.subject, /email address was changed/);
     assert.match(email.text, /so\*\*\*@gmail\.com/);
     assert.doesNotMatch(email.html, /Button not working/);
+  });
+});
+
+describe('subscription reminder email (DEC-062)', () => {
+  const config = loadEmailConfig(prodEnv);
+  const base = {
+    name: 'Rahim',
+    daysLeft: 7,
+    endsAt: '2026-12-02T10:00:00.000Z',
+    planName: '6 Months',
+    renewal: { planName: '6 Months', amountBdt: '1499.00' },
+    cancelled: false,
+    manageUrl: 'https://youracademy.com.bd/billing',
+  };
+
+  it('7-day: date, renewal price, renew link, never claims an automatic charge', () => {
+    const email = subscriptionReminderEmail(config.brand, { ...base, window: 7 });
+    assert.match(email.subject, /2 December 2026/);
+    for (const part of [email.html, email.text]) {
+      assert.ok(part.includes('https://youracademy.com.bd/billing'));
+      assert.match(part, /BDT 1,499/);
+      assert.match(part, /never charged automatically/);
+    }
+    assert.doesNotMatch(email.subject, /!|urgent|free/i);
+  });
+
+  it('3-day + cancelled: says renewal is off, no price pitch', () => {
+    const email = subscriptionReminderEmail(config.brand, {
+      ...base,
+      window: 3,
+      daysLeft: 3,
+      cancelled: true,
+    });
+    assert.match(email.subject, /ends in 3 days/);
+    assert.match(email.text, /turned off renewal/);
+    assert.doesNotMatch(email.text, /BDT 1,499/);
   });
 });

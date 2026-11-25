@@ -16,7 +16,8 @@ payloads, not in SSR HTML). The UI lock icon is UX only.
 1. **Admin** → full access.
 2. **Paid system OFF** (`site_settings.paid_system_enabled`) → full access for everyone.
 3. **Content is free** → open.
-4. **Active subscription** (`disabled_at IS NULL AND starts_at <= now < ends_at`) **or running 7-day trial** (`now < users.trial_ends_at`, DEC-061) → open.
+4. **Active subscription** (`disabled_at IS NULL AND starts_at <= now < ends_at`) → open.
+4a. **Topic Base only:** running 7-day trial (`now < users.trial_ends_at`, DEC-061 / DEC-063) → open. The trial is never `fullAccess` and unlocks nothing else.
 5. Otherwise → `403 CONTENT_LOCKED` (`error.details[0].loginRequired` for guests).
 
 Suspended / deleted / unknown accounts are treated as guests. Moderators have no paid bypass.
@@ -45,7 +46,13 @@ plan unlocks; detail, questions, practice-score, attempts and results answer 403
 
 - One `user_subscriptions` row per user (`package_id` = last package applied).
 - Purchase / package grant: if running, the duration is added to `ends_at`; otherwise it starts now.
-  Durations are calendar months (1 / 6 / 12).
+  Durations are calendar months (3 / 6 / 12; legacy Monthly = 1).
+- DEC-062 — no automatic charging (SSLCommerz recurring is not enabled). Learners renew from
+  `/billing`; **upgrade** = buy now (time added on top, plan switches at once), **downgrade** =
+  `scheduled_package_id`, bought by the Renew button at the next renewal, **cancel** =
+  `cancel_at_period_end` (access until `ends_at`). A purchase clears cancel / scheduled change.
+- DEC-062 — reminders 7 and 3 days before `ends_at` (verified email only, paid system ON), once
+  per period: flags are claimed atomically and reset whenever `ends_at` changes.
 - Admin: grant (package or custom end date), extend by days, disable / enable.
 - Every change → `subscription_events` (source `MANUAL | PAYMENT | MIGRATION`, actor, previous /
   new end) in the same transaction, plus `audit_logs`.

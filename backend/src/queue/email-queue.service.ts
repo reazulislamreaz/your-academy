@@ -25,6 +25,24 @@ export type EmailChangedNoticeJob = {
   changedBy: 'admin' | 'user';
 };
 
+/** DEC-062 — 7- / 3-day expiry reminder. No automatic charging exists, so it always asks to renew. */
+export type SubscriptionReminderJob = {
+  to: string;
+  userId: string;
+  name: string;
+  /** Reminder window: 7 or 3 days before the end date. */
+  window: 7 | 3;
+  /** Whole days left (rounded up) when queued. */
+  daysLeft: number;
+  endsAt: string;
+  planName: string | null;
+  /** Plan + price the Renew button buys (scheduled downgrade or current plan). */
+  renewal: { planName: string; amountBdt: string } | null;
+  /** Learner turned renewal off. */
+  cancelled: boolean;
+  manageUrl: string;
+};
+
 @Injectable()
 export class EmailQueueService {
   private readonly logger = new Logger(EmailQueueService.name);
@@ -51,5 +69,13 @@ export class EmailQueueService {
       jobId: `email-changed-notice-${dedupeKey}`,
     });
     this.logger.debug(`Enqueued email-changed-notice for user ${job.userId}`);
+  }
+
+  /** jobId is per subscription + window + end date, so a period is never emailed twice. */
+  async enqueueSubscriptionReminder(job: SubscriptionReminderJob, dedupeKey: string) {
+    await this.emailQueue.add('subscription-reminder', job, {
+      jobId: `subscription-reminder-${dedupeKey}`,
+    });
+    this.logger.debug(`Enqueued subscription-reminder (${job.window}d) for user ${job.userId}`);
   }
 }

@@ -20,11 +20,11 @@ export type AccessViewer = { userId: string } | null | undefined;
  */
 export type ViewerAccess = {
   userId: string | null;
-  /** Admin, paid system OFF, active subscriber or 7-day trial — nothing is locked. */
+  /** Admin, paid system OFF or active subscriber — nothing is locked. Never the trial. */
   fullAccess: boolean;
   isAdmin: boolean;
   isPaid: boolean;
-  /** DEC-061 — `now < users.trial_ends_at`. */
+  /** DEC-061 / DEC-063 — `now < users.trial_ends_at`. Unlocks Topic Base ONLY. */
   isTrialActive: boolean;
   trialEndsAt: Date | null;
   paidSystemEnabled: boolean;
@@ -39,14 +39,16 @@ export type LockableContent =
   | { kind: 'PRELI_QUESTION'; uploadBatchId: string | null }
   | { kind: 'MODEL_TEST'; access: ContentAccess }
   | { kind: 'DOCUMENT'; visibility: DocumentVisibility }
-  /** DEC-061 — Topic Base content: login always, then trial / subscription (when paid ON). */
+  /** DEC-061 / DEC-063 — Topic Base: login always, then trial / subscription (when paid ON). */
   | { kind: 'TOPIC' };
 
 /**
- * DEC-060 / DEC-061 — the one place that decides Free vs Paid access:
+ * DEC-060 / DEC-061 / DEC-063 — the one place that decides Free vs Paid access:
  *   0. Topic Base content always needs a signed-in account.
- *   1. Admin → everything.  2. Paid system OFF → everything.
- *   3. Content is free → open.  4. Active subscription or 7-day trial → open.  Otherwise locked.
+ *   1. Admin → everything.  2. Paid system OFF → everything.  3. Active subscription → everything.
+ *   4. Content is free (free-N sets, FREE Model Tests, non-PREMIUM PDFs) → open.
+ *   5. Topic Base only: the 7-day trial → open (DEC-063 — it unlocks nothing else).
+ *   Otherwise locked.
  * Locked content must not be sent at all — callers check before loading it.
  */
 @Injectable()
@@ -103,7 +105,8 @@ export class AccessPolicyService {
       isPaid,
       isTrialActive,
       trialEndsAt: user.trialEndsAt,
-      fullAccess: isAdmin || isPaid || isTrialActive || !base.paidSystemEnabled,
+      // DEC-063: the trial is NOT full access — it only unlocks Topic Base (canAccess).
+      fullAccess: isAdmin || isPaid || !base.paidSystemEnabled,
     };
   }
 
@@ -122,6 +125,7 @@ export class AccessPolicyService {
       isPaid: access.isPaid,
       subscriptionEndsAt: sub && !sub.disabledAt ? sub.endsAt.toISOString() : null,
       isTrialActive: access.isTrialActive,
+      topicAccess: access.userId !== null && (access.fullAccess || access.isTrialActive),
       trialEndsAt: access.trialEndsAt?.toISOString() ?? null,
       trialDaysLeft: trialDaysLeft(access.trialEndsAt, now),
     };
@@ -156,7 +160,8 @@ export class AccessPolicyService {
           (await this.freePreliSetIds(access)).has(content.uploadBatchId)
         );
       case 'TOPIC':
-        return false;
+        // DEC-063 — the 7-day trial applies to Topic Base and nowhere else.
+        return access.isTrialActive;
     }
   }
 

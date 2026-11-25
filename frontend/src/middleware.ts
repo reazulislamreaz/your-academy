@@ -96,6 +96,8 @@ export const config = {
     '/documents/:path*',
     '/profile',
     '/profile/:path*',
+    '/billing',
+    '/billing/:path*',
     '/practice',
     '/practice/:path*',
     '/results',

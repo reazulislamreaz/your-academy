@@ -40,6 +40,7 @@ function Gate({ children }: { children: ReactNode }) {
       </div>
     );
   }
-  if (!me.data!.access.fullAccess) return <Paywall />;
+  // DEC-063 — trial users pass here only; the API enforces the same rule.
+  if (!me.data!.access.topicAccess) return <Paywall />;
   return <>{children}</>;
 }

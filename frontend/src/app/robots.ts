@@ -16,6 +16,7 @@ export default function robots(): MetadataRoute.Robots {
           // Authenticated learner app — personal/paid content, never indexed.
           '/home',
           '/profile',
+          '/billing',
           '/bookmarks',
           '/onboarding',
           '/questions',

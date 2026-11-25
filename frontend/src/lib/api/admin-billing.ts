@@ -14,6 +14,9 @@ export type PackageInput = {
   name: string;
   duration: PackageDuration;
   priceBdt: string;
+  /** DEC-062 — sale price; null removes it. */
+  discountedPriceBdt: string | null;
+  isPopular: boolean;
   description: string | null;
   features: string[];
   isActive: boolean;
@@ -54,6 +57,13 @@ export const adminBillingApi = {
     }),
   deletePackage: (id: string) =>
     apiFetch<{ id: string; softDeleted: boolean }>(`/admin/packages/${id}`, { method: 'DELETE' }),
+
+  /** DEC-062 — send due 7- / 3-day reminders now (also runs hourly by itself). */
+  runReminders: () =>
+    apiFetch<{ sent7: number; sent3: number; failed: number }>(
+      '/admin/subscriptions/reminders/run',
+      { method: 'POST', body: json({}) },
+    ),
 
   getSubscriber: (userId: string) =>
     apiFetch<AdminUserSubscriptionDetail>(`/admin/subscribers/${userId}`),

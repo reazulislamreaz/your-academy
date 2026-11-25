@@ -125,7 +125,14 @@ export default function AdminPackagesPage() {
                 packages.data.map((pkg) => (
                   <tr key={pkg.id}>
                     <AdminTd className="max-w-[20rem]">
-                      <p className="font-semibold text-[var(--ink)]">{pkg.name}</p>
+                      <p className="font-semibold text-[var(--ink)]">
+                        {pkg.name}
+                        {pkg.isPopular ? (
+                          <Badge variant="warning" className="ml-2 align-middle">
+                            Popular
+                          </Badge>
+                        ) : null}
+                      </p>
                       {pkg.description ? (
                         <p className="truncate text-xs text-[var(--muted-strong)]">
                           {pkg.description}
@@ -139,7 +146,12 @@ export default function AdminPackagesPage() {
                     </AdminTd>
                     <AdminTd>{PACKAGE_DURATION_LABELS[pkg.duration]}</AdminTd>
                     <AdminTd className="font-semibold whitespace-nowrap">
-                      {formatBdt(pkg.priceBdt)}
+                      {formatBdt(pkg.effectivePriceBdt)}
+                      {pkg.discountedPriceBdt ? (
+                        <span className="ml-1.5 text-xs font-normal text-[var(--muted-strong)] line-through">
+                          {formatBdt(pkg.priceBdt)}
+                        </span>
+                      ) : null}
                     </AdminTd>
                     <AdminTd>
                       <Badge variant={pkg.isActive ? 'success' : 'default'}>

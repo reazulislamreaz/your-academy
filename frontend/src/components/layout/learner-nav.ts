@@ -1,6 +1,7 @@
 import {
   BookMarked,
   BookOpenText,
+  CreditCard,
   Crown,
   FilePenLine,
   FileText,
@@ -31,6 +32,7 @@ export const learnerNavGroups: LearnerNavGroup[] = [
       { href: '/home', label: 'Dashboard', icon: LayoutDashboard, match: 'exact' },
       { href: '/profile', label: 'My Profile', icon: UserRound, match: 'prefix' },
       { href: '/packages', label: 'Packages', icon: Crown, match: 'prefix' },
+      { href: '/billing', label: 'My Subscription', icon: CreditCard, match: 'prefix' },
     ],
   },
   {

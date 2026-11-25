@@ -165,6 +165,8 @@ Rollback switches images only — it does **not** touch the database (expand-onl
 
 The first deploy with this script adopts the containers that were already running as version `legacy`, so even that deploy can roll back.
 
+**DEC-062 (3-month plan):** versions older than DEC-062 cannot read the new `THREE_MONTHS` package duration, so their Packages page / checkout would fail. Before rolling back below the DEC-062 release, disable or delete the 3-month package(s) in Admin → Packages (or restore that deploy's pre-deploy backup).
+
 ---
 
 ### 6a. Failed migration record (Prisma P3009)

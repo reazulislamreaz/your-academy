@@ -89,8 +89,10 @@ enum BrowsingSessionStatus {
 }
 
 /// DEC-060 — package lengths offered on the Packages page.
+/// MONTHLY is legacy (DEC-062: replaced by THREE_MONTHS) — kept for old orders / packages.
 enum PackageDuration {
   MONTHLY
+  THREE_MONTHS
   SIX_MONTHS
   YEARLY
 }
@@ -125,6 +127,11 @@ enum SubscriptionEventAction {
   ENABLE
   PURCHASE
   MIGRATED
+  /// DEC-062 — learner self-service.
+  CANCEL
+  RESUME
+  SCHEDULE_CHANGE
+  CLEAR_SCHEDULED_CHANGE
 }
 
 /// Practice / quiz / model-test products (DEC-023).
@@ -675,21 +682,26 @@ model SiteSetting {
 
 /// DEC-060 — admin-managed packages. Soft-deleted once purchased so orders keep their package.
 model SubscriptionPackage {
-  id          String          @id @default(uuid()) @db.Uuid
-  name        String          @db.VarChar(120)
-  duration    PackageDuration
-  priceBdt    Decimal         @map("price_bdt") @db.Decimal(12, 2)
-  description String?
-  features    String[]        @default([])
-  isActive    Boolean         @default(true) @map("is_active")
-  sortOrder   Int             @default(0) @map("sort_order")
-  deletedAt   DateTime?       @map("deleted_at") @db.Timestamptz(3)
-  createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt   DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+  id                 String          @id @default(uuid()) @db.Uuid
+  name               String          @db.VarChar(120)
+  duration           PackageDuration
+  priceBdt           Decimal         @map("price_bdt") @db.Decimal(12, 2)
+  /// DEC-062 — when set (and below priceBdt) this is what checkout charges.
+  discountedPriceBdt Decimal?        @map("discounted_price_bdt") @db.Decimal(12, 2)
+  /// DEC-062 — "Popular" badge on the pricing page.
+  isPopular          Boolean         @default(false) @map("is_popular")
+  description        String?
+  features           String[]        @default([])
+  isActive           Boolean         @default(true) @map("is_active")
+  sortOrder          Int             @default(0) @map("sort_order")
+  deletedAt          DateTime?       @map("deleted_at") @db.Timestamptz(3)
+  createdAt          DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  subscriptions UserSubscription[]
-  orders        PaymentOrder[]
-  events        SubscriptionEvent[]
+  subscriptions          UserSubscription[]
+  scheduledSubscriptions UserSubscription[]  @relation("ScheduledPackage")
+  orders                 PaymentOrder[]
+  events                 SubscriptionEvent[]
 
   @@index([isActive, deletedAt, sortOrder])
   @@map("subscription_packages")
@@ -697,19 +709,28 @@ model SubscriptionPackage {
 
 /// DEC-060 — one row per user. Paid = not disabled and startsAt <= now < endsAt (checked per request).
 model UserSubscription {
-  id           String    @id @default(uuid()) @db.Uuid
-  userId       String    @unique @map("user_id") @db.Uuid
+  id                  String    @id @default(uuid()) @db.Uuid
+  userId              String    @unique @map("user_id") @db.Uuid
   /// Last package applied; null for custom-date grants and migrated legacy subscriptions.
-  packageId    String?   @map("package_id") @db.Uuid
-  startsAt     DateTime  @map("starts_at") @db.Timestamptz(3)
-  endsAt       DateTime  @map("ends_at") @db.Timestamptz(3)
-  disabledAt   DateTime? @map("disabled_at") @db.Timestamptz(3)
-  disabledById String?   @map("disabled_by_id") @db.Uuid
-  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  packageId           String?   @map("package_id") @db.Uuid
+  startsAt            DateTime  @map("starts_at") @db.Timestamptz(3)
+  endsAt              DateTime  @map("ends_at") @db.Timestamptz(3)
+  disabledAt          DateTime? @map("disabled_at") @db.Timestamptz(3)
+  disabledById        String?   @map("disabled_by_id") @db.Uuid
+  /// DEC-062 — learner chose not to renew; access continues until endsAt.
+  cancelAtPeriodEnd   Boolean   @default(false) @map("cancel_at_period_end")
+  canceledAt          DateTime? @map("canceled_at") @db.Timestamptz(3)
+  /// DEC-062 — downgrade chosen by the learner; bought at the next renewal.
+  scheduledPackageId  String?   @map("scheduled_package_id") @db.Uuid
+  /// DEC-062 — expiry reminders sent for the current period; cleared whenever endsAt changes.
+  reminder7DaysSentAt DateTime? @map("reminder_7d_sent_at") @db.Timestamptz(3)
+  reminder3DaysSentAt DateTime? @map("reminder_3d_sent_at") @db.Timestamptz(3)
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  user    User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  package SubscriptionPackage? @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  package          SubscriptionPackage? @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  scheduledPackage SubscriptionPackage? @relation("ScheduledPackage", fields: [scheduledPackageId], references: [id], onDelete: SetNull)
 
   @@index([endsAt])
   @@map("user_subscriptions")
