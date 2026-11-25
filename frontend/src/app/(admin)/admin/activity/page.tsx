@@ -344,6 +344,10 @@ function ActivityPageInner() {
             ) : null}
             {trends.isLoading ? (
               <p className="text-sm text-[var(--muted-strong)]">Loading trends…</p>
+            ) : trends.isError ? (
+              <Alert variant="danger">
+                {trends.error instanceof Error ? trends.error.message : 'Could not load trends.'}
+              </Alert>
             ) : (
               <div className="space-y-6">
                 <div>

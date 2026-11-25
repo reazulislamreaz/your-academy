@@ -25,6 +25,9 @@ import {
 const ACTIVITY_TYPES = new Set<string>(Object.values(LearningActivityType));
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/** PERF-2 — widest range the activity trends chart may request. */
+const MAX_TREND_DAYS = 92;
+
 @Injectable()
 export class AdminService {
   constructor(
@@ -763,52 +766,54 @@ export class AdminService {
       );
     }
 
+    // PERF-2: bounded range, and per-day totals computed by Postgres (GROUP BY day) instead of
+    // loading every attempt / session row and filtering it once per day in memory.
+    if (to.getTime() - from.getTime() > MAX_TREND_DAYS * 24 * 60 * 60 * 1000) {
+      throw new BadRequestException(
+        createErrorResponse(
+          'VALIDATION_ERROR',
+          `Choose a range of at most ${MAX_TREND_DAYS} days`,
+          newRequestId(),
+        ),
+      );
+    }
+
     const days = this.eachUtcDay(from, to);
 
     const [attempts, practices, sessions] = await Promise.all([
-      this.prisma.questionAttempt.findMany({
-        where: { createdAt: { gte: from, lte: to } },
-        select: { createdAt: true, isCorrect: true },
-      }),
-      this.prisma.practiceAttempt.findMany({
-        where: {
-          submittedAt: { gte: from, lte: to },
-          status: { in: [PracticeAttemptStatus.SUBMITTED, PracticeAttemptStatus.EXPIRED] },
-        },
-        select: { submittedAt: true },
-      }),
-      this.prisma.browsingSession.findMany({
-        where: { lastHeartbeatAt: { gte: from, lte: to } },
-        select: { lastHeartbeatAt: true, accruedSeconds: true, startedAt: true },
-      }),
+      this.prisma.$queryRaw<Array<{ day: string; total: number; correct: number }>>`
+        SELECT to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS day,
+               count(*)::int AS total,
+               (count(*) FILTER (WHERE is_correct))::int AS correct
+        FROM question_attempts
+        WHERE created_at >= ${from} AND created_at <= ${to}
+        GROUP BY 1`,
+      this.prisma.$queryRaw<Array<{ day: string; total: number }>>`
+        SELECT to_char(submitted_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS day, count(*)::int AS total
+        FROM practice_attempts
+        WHERE submitted_at >= ${from} AND submitted_at <= ${to}
+          AND status::text IN ('SUBMITTED', 'EXPIRED')
+        GROUP BY 1`,
+      // Accrued seconds are attributed to the day of the last heartbeat (on-read approx).
+      this.prisma.$queryRaw<Array<{ day: string; seconds: number }>>`
+        SELECT to_char(last_heartbeat_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS day,
+               coalesce(sum(accrued_seconds), 0)::int AS seconds
+        FROM browsing_sessions
+        WHERE last_heartbeat_at >= ${from} AND last_heartbeat_at <= ${to}
+        GROUP BY 1`,
     ]);
+    const attemptsByDay = new Map(attempts.map((r) => [r.day, r]));
+    const practiceByDay = new Map(practices.map((r) => [r.day, r.total]));
+    const secondsByDay = new Map(sessions.map((r) => [r.day, r.seconds]));
 
     const series = days.map((day) => {
       const key = day.toISOString().slice(0, 10);
-      const dayStart = day.getTime();
-      const dayEnd = dayStart + 24 * 60 * 60 * 1000;
-      const dayAttempts = attempts.filter((a) => {
-        const t = a.createdAt.getTime();
-        return t >= dayStart && t < dayEnd;
-      });
-      const dayPractice = practices.filter((p) => {
-        const t = p.submittedAt?.getTime() ?? 0;
-        return t >= dayStart && t < dayEnd;
-      });
-      // Attribute accrued seconds to the day of lastHeartbeat (on-read approx).
-      const activeSeconds = sessions
-        .filter((s) => {
-          const t = s.lastHeartbeatAt.getTime();
-          return t >= dayStart && t < dayEnd;
-        })
-        .reduce((sum, s) => sum + s.accruedSeconds, 0);
-
       return {
         date: key,
-        attempts: dayAttempts.length,
-        correct: dayAttempts.filter((a) => a.isCorrect).length,
-        practiceCompletes: dayPractice.length,
-        activeSeconds,
+        attempts: attemptsByDay.get(key)?.total ?? 0,
+        correct: attemptsByDay.get(key)?.correct ?? 0,
+        practiceCompletes: practiceByDay.get(key) ?? 0,
+        activeSeconds: secondsByDay.get(key) ?? 0,
       };
     });
 
