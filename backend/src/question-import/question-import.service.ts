@@ -1,3 +1,4 @@
+import { importErrorMessage } from '../common/import-error-message';
 import {
   BadRequestException,
   Injectable,
@@ -818,7 +819,7 @@ export class QuestionImportService {
         where: { id: batchId },
         data: {
           status: QuestionUploadStatus.FAILED,
-          errorMessage: err instanceof Error ? err.message.slice(0, 500) : 'Import failed',
+          errorMessage: importErrorMessage(err, `Preli import ${batchId}`),
         },
       });
       throw err;
@@ -989,7 +990,7 @@ export class QuestionImportService {
             if (createdTopicKey) categoryIndex.topicsByParentAndName.delete(createdTopicKey);
             failedCount += 1;
             const message =
-              err instanceof Error ? err.message.slice(0, 500) : 'Import failed';
+              importErrorMessage(err, `Preli import ${batchId}`);
             await tx.questionImportRow.update({
               where: { id: row.id },
               data: {

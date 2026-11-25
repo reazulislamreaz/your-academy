@@ -1,3 +1,4 @@
+import { importErrorMessage } from '../common/import-error-message';
 import {
   BadRequestException,
   Injectable,
@@ -992,7 +993,7 @@ export class WrittenImportService {
         where: { id: batchId },
         data: {
           status: QuestionUploadStatus.FAILED,
-          errorMessage: err instanceof Error ? err.message.slice(0, 500) : 'Import failed',
+          errorMessage: importErrorMessage(err, `Written import ${batchId}`),
         },
       });
       throw err;
@@ -1156,7 +1157,7 @@ export class WrittenImportService {
               data: {
                 status: QuestionImportRowStatus.INVALID,
                 errorMessage:
-                  err instanceof Error ? err.message.slice(0, 500) : 'Import failed',
+                  importErrorMessage(err, `Written import ${batchId}`),
               },
             });
           }
