@@ -252,6 +252,7 @@ Forbidden without approval: microservices, GraphQL, alternate ORMs, payment prov
 | `docs/19` DEC-061 | 7-day trial + Topic Base login / paywall |
 | `docs/19` DEC-063 | 7-day trial scoped to Topic Base only (no site-wide trial) |
 | `docs/19` DEC-064 | IBA (5-option) Preli bulk upload |
+| `docs/19` DEC-065 | Homepage Free vs Paid plan cards (admin-editable, display only) |
 | `docs/19` DEC-062 | 3-month plan, discounts, cancel / upgrade / downgrade, expiry reminders (no auto-charge) |
 | `docs/04`–`06` | Architecture, DB, API |
 | `docs/07`–`08` | Auth, access control |

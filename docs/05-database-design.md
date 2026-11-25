@@ -287,6 +287,8 @@ PK: (newsId, documentId).
 
 `model_tests.access` ENUM(`FREE`,`PAID`) default `FREE`.
 
+`plan_features` (DEC-065, display only) — `plan_key` ENUM(`FREE`,`PAID`), `label` VARCHAR(200) (may contain `{preliFreeSets}` / `{writtenFreeSets}` / `{topicTrialDays}`), `is_included`, `sort_order`, `is_active`, timestamps. Index (plan_key, is_active, sort_order). Homepage comparison text only — never read by access checks.
+
 ### 3.14 UserSubscription (DEC-060)
 
 One row per user (`user_id` UNIQUE): `package_id` NULL (last package; NULL for custom grants / migrated rows), `starts_at`, `ends_at`, `disabled_at`, `disabled_by_id`. Paid = `disabled_at IS NULL AND starts_at <= now < ends_at`. Index (ends_at). DEC-062: `cancel_at_period_end` BOOLEAN default false + `canceled_at` (learner will not renew), `scheduled_package_id` → `subscription_packages` ON DELETE SET NULL (downgrade at next renewal), `reminder_7d_sent_at` / `reminder_3d_sent_at` (cleared whenever `ends_at` changes).

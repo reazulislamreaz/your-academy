@@ -20,6 +20,7 @@ export const ADMIN_ROUTE_PERMISSIONS: ReadonlyArray<{
   // DEC-060 — Free vs Paid system (admin-only)
   { prefix: '/admin/paid-system', permission: 'subscriptions' },
   { prefix: '/admin/packages', permission: 'subscriptions' },
+  { prefix: '/admin/pricing-features', permission: 'subscriptions' },
   { prefix: '/admin/subscribers', permission: 'subscriptions' },
   { prefix: '/admin/payments', permission: 'payments' },
   // Moderator content sections

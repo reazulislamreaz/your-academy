@@ -1,4 +1,4 @@
-import { PackageDuration } from '@prisma/client';
+import { PackageDuration, PlanKey } from '@prisma/client';
 import { Type } from 'class-transformer';
 import { SELLABLE_PACKAGE_DURATIONS } from '@your-academy/shared';
 import {
@@ -184,4 +184,49 @@ export class SubscriptionNoteDto {
 export class ScheduleChangeDto {
   @IsUUID()
   packageId!: string;
+}
+
+/** DEC-065 — homepage Free vs Paid comparison rows (display only). */
+export class CreatePlanFeatureDto {
+  @IsEnum(PlanKey)
+  planKey!: PlanKey;
+
+  @IsString()
+  @MinLength(1)
+  @MaxLength(200)
+  label!: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isIncluded?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+}
+
+export class UpdatePlanFeatureDto {
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  @MaxLength(200)
+  label?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isIncluded?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+}
+
+export class ReorderPlanFeaturesDto {
+  @IsEnum(PlanKey)
+  planKey!: PlanKey;
+
+  @IsArray()
+  @ArrayMaxSize(100)
+  @IsUUID('all', { each: true })
+  ids!: string[];
 }

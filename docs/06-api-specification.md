@@ -439,6 +439,10 @@ Admin vs user allowed MIME/size differ by purpose (`avatar`, `question-image`, `
 | GET/PATCH | `/admin/access-settings` | `{ paidSystemEnabled, preliFreeSetCount, writtenFreeSetCount }` | User + CSRF | `subscriptions` |
 | GET/POST | `/admin/packages` | List (with `orderCount`) / create | User + CSRF | `subscriptions` |
 | PATCH/DELETE | `/admin/packages/:id` | Update / delete → `{ softDeleted }` (soft when referenced). `422 PACKAGE_DISCOUNT_INVALID` (discount ≥ price), `422 PACKAGE_DURATION_RETIRED` (switching to MONTHLY) | User + CSRF | `subscriptions` |
+| GET | `/public/plan-comparison` | Homepage Free / Paid cards (DEC-065): active `plan_features` with placeholders filled, `paidSystemEnabled`, `paymentsConfigured`, cheapest active package. No-cache. Display only | Public | — |
+| GET/POST | `/admin/plan-features` | List all rows (raw labels) / create `{ planKey, label (1–200), isIncluded?, isActive? }` (appended to its plan) | User + CSRF | `subscriptions` |
+| PATCH/DELETE | `/admin/plan-features/:id` | Update `{ label?, isIncluded?, isActive? }` / delete. `422 PLAN_FEATURE_LABEL_INVALID` | User + CSRF | `subscriptions` |
+| POST | `/admin/plan-features/reorder` | `{ planKey, ids }` — the plan's full list in new order (`422 PLAN_FEATURE_ORDER_INVALID`) | User + CSRF | `subscriptions` |
 | POST | `/admin/subscriptions/reminders/run` | Run the 7- / 3-day expiry reminder pass now → `{ sent7, sent3, failed }` (DEC-062; also hourly) | User + CSRF | `subscriptions` |
 | GET | `/admin/subscribers` | Users + `SubscriptionSummary`; `q`, `state` (FREE/ACTIVE/SCHEDULED/EXPIRED/DISABLED), `packageId`, cursor | User | `subscriptions` |
 | GET | `/admin/subscribers/:userId` | Detail + events + payments | User | `subscriptions` |

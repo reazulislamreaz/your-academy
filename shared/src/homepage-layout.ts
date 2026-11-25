@@ -395,20 +395,20 @@ export const homepageExtendedSectionsSchema = z.object({
       visible: true,
       eyebrow: 'Access',
       heading: 'Access & pricing',
-      body: 'Honest entitlements only. No invented student counts, success rates, or subscription prices.',
+      body: 'Start free with an account, then upgrade when you need every set. What each plan unlocks is listed below.',
       highlights: [
-        'Free to browse — Preli bank & published PDFs',
-        'Create an account — bookmarks, practice sets, and dashboard',
-        'Paid plans — coming in a later release',
+        'Free plan — the first question sets of each bank, free Model Tests, quizzes and practice sets',
+        'Topic-Based questions — free for 7 days after sign-up',
+        'Paid plans — every Preli and Written set, all Model Tests and premium PDFs',
       ],
-      cta: { label: 'Create free account', href: '/register', visible: true },
+      cta: { label: 'Start Free', href: '/register', visible: true },
       faqHeading: 'Frequently asked questions',
       faqs: [
         {
           id: 'browse',
-          question: 'Can I browse questions without paying?',
+          question: 'Can I practice without paying?',
           answer:
-            'Yes. The public Preli Question Bank and published newspaper PDF columns are available without login. Learner practice routes and answer privacy still follow entitlement rules.',
+            'Yes. The free plan opens the first question sets of the Preli and Written banks, free Model Tests, quizzes, practice sets and newspaper columns. Topic-Based questions are free for 7 days after you sign up.',
         },
         {
           id: 'account',
@@ -420,13 +420,13 @@ export const homepageExtendedSectionsSchema = z.object({
           id: 'answers',
           question: 'When can I see correct answers and explanations?',
           answer:
-            'Correct answers and explanations are omitted from learner APIs until a future paid plan entitles you. You can still browse, search, and save bookmarks after signup.',
+            'In every set you can open, on the free plan too. A paid plan unlocks more sets and tests; it does not hide answers from free users.',
         },
         {
           id: 'paid',
-          question: 'Is there a paid subscription price today?',
+          question: 'What does a paid plan include?',
           answer:
-            'Paid checkout is not live in v1. Subscription tables are ready for a future release — we will not invent prices on this page.',
+            'Every Preli and Written question set, all Model Tests including paid ones, premium PDFs and unlimited Topic-Based questions. Prices and plan lengths are on the Packages page.',
         },
       ],
     }),

@@ -103,6 +103,12 @@ enum ContentAccess {
   PAID
 }
 
+/// Homepage "Access & Pricing" comparison card (informational only — never used for access).
+enum PlanKey {
+  FREE
+  PAID
+}
+
 /// DEC-060 — SSLCommerz order lifecycle. RISK = gateway flagged (risk_level 1), held for admin review.
 enum PaymentOrderStatus {
   PENDING
@@ -1564,4 +1570,20 @@ model TopicQuestion {
   @@index([categoryId, subcategoryId])
   @@index([batchId, rowNumber])
   @@map("topic_questions")
+}
+
+/// Homepage Free vs Paid comparison rows (admin-edited, informational only — access is decided by
+/// AccessPolicyService). Labels may use {preliFreeSets} / {writtenFreeSets} / {topicTrialDays}.
+model PlanFeature {
+  id         String   @id @default(uuid()) @db.Uuid
+  planKey    PlanKey  @map("plan_key")
+  label      String   @db.VarChar(200)
+  isIncluded Boolean  @default(true) @map("is_included")
+  sortOrder  Int      @default(0) @map("sort_order")
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([planKey, isActive, sortOrder])
+  @@map("plan_features")
 }

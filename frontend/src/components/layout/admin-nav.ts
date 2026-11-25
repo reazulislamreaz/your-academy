@@ -11,6 +11,7 @@ import {
   FolderTree,
   Home,
   LayoutDashboard,
+  ListChecks,
   LayoutGrid,
   Layers,
   MessageCircle,
@@ -99,6 +100,13 @@ export const adminNavItems: AdminNavItem[] = [
   // DEC-060 — Free vs Paid system
   { href: '/admin/paid-system', label: 'Paid system', shortLabel: 'Paid', icon: ToggleRight },
   { href: '/admin/packages', label: 'Packages', icon: Package },
+  // DEC-065 — homepage Free vs Paid comparison
+  {
+    href: '/admin/pricing-features',
+    label: 'Pricing & Plan Features',
+    shortLabel: 'Pricing',
+    icon: ListChecks,
+  },
   { href: '/admin/subscribers', label: 'Subscribers', icon: BadgeCheck },
   { href: '/admin/payments', label: 'Payments', icon: CreditCard },
 ];
@@ -139,9 +147,13 @@ export const adminNavGroups: AdminNavGroup[] = [
   {
     title: 'Billing',
     items: adminNavItems.filter((i) =>
-      ['/admin/paid-system', '/admin/packages', '/admin/subscribers', '/admin/payments'].includes(
-        i.href,
-      ),
+      [
+        '/admin/paid-system',
+        '/admin/packages',
+        '/admin/pricing-features',
+        '/admin/subscribers',
+        '/admin/payments',
+      ].includes(i.href),
     ),
   },
   {

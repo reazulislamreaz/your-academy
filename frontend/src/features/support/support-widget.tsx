@@ -15,6 +15,7 @@ import {
   type SupportConversation,
 } from '@/lib/api/support';
 import { cn, getCookie } from '@/lib/utils';
+import { OPEN_SUPPORT_CHAT_EVENT } from './support-events';
 
 const SupportChatWindow = dynamic(
   () => import('./support-chat-window').then((m) => m.SupportChatWindow),
@@ -57,6 +58,13 @@ export function SupportWidget({
     },
     [onOpenChange, openProp],
   );
+
+  // "Contact us" buttons elsewhere on the page open this widget (support-events.ts).
+  useEffect(() => {
+    const onOpenRequest = () => setOpen(true);
+    window.addEventListener(OPEN_SUPPORT_CHAT_EVENT, onOpenRequest);
+    return () => window.removeEventListener(OPEN_SUPPORT_CHAT_EVENT, onOpenRequest);
+  }, [setOpen]);
 
   const [conversation, setConversation] = useState<SupportConversation | null>(null);
   const [bootError, setBootError] = useState<string | null>(null);

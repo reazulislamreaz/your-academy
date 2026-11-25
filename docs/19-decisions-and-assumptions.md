@@ -51,6 +51,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | DEC-062 | 3-month plan, discounts, learner cancel / upgrade / downgrade, 7- / 3-day expiry reminders (no auto-charge) | CONFIRMED |
 | DEC-063 | 7-day trial scoped to Topic Base only — no site-wide trial (amends DEC-061) | CONFIRMED |
 | DEC-064 | IBA (5-option) Preli bulk upload + single-question Option E | CONFIRMED |
+| DEC-065 | Homepage Free vs Paid plan cards, admin-editable (display only) | CONFIRMED |
 
 ---
 
@@ -697,6 +698,14 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 |-------|-------|
 | Question | IBA exam questions have 5 options (A–E); the Preli bulk upload only handled 4. The owner asked to add IBA support without changing the existing flow. |
 | Decision | Upload page checkbox **IBA Questions (5 options)**, off by default. Off = existing parser, validation, template and import exactly as before (a `ঙ` / `option_e` column is ignored; answer E stays invalid). On = `ঙ` (option E) column required, all five options and an answer ক–ঙ / A–E required; failing rows are INVALID with a reason and skipped, valid rows import. Questions get a 5th `question_options` row (label `E`) and the `iba` exam tag (existing `exam_tags`; no new question column — options are rows, not columns). Staging: `question_upload_batches.is_iba`, `question_import_rows.option_e` (migration `20261126090000_iba_five_option_import`, manual rollback in its `down.sql`). Parser additions apply to both modes but cannot change accepted files: UTF-8 BOM stripped from headers, snake_case headers `option_a…option_e` / `correct_answer` recognised. Single-question form: "IBA question" checkbox shows Option E and sets / clears the `iba` tag (`isIba` on create / update; omitted = unchanged). Learner views label the 5th option ঙ. Import keeps its existing 25-row transaction chunks. Model Tests and timed Exams (own 4-option storage and uploads) are unchanged. |
+| Status | **CONFIRMED** (owner approval 2026-11-26) |
+### DEC-065 — Homepage "Access & Pricing" Free vs Paid cards (admin-editable, display only)
+
+| Field | Value |
+|-------|-------|
+| Question | The homepage access section only had free-text highlights (and outdated "paid plans coming later" copy). The owner wants Free vs Paid plan cards that match what the system enforces, editable from the dashboard. |
+| Decision | New table `plan_features` (`plan_key` FREE / PAID, `label` ≤ 200, `is_included`, `sort_order`, `is_active`), seeded by its migration with the list derived from `AccessPolicyService`. Labels may contain `{preliFreeSets}`, `{writtenFreeSets}`, `{topicTrialDays}`, filled from live settings (`TOPIC_TRIAL_DAYS` = 7, the DB trial default) — Bangla digits for Bangla labels. `GET /public/plan-comparison` (no-cache) returns active rows, the paid switch, whether SSLCommerz is configured, and the cheapest active package (shown as "৳X / 3 months" + "See all plans"). Homepage cards: Free (CMS CTA, default "Start Free") and Paid ("Recommended"); logged-in learners see "Current Plan" on their plan; the Paid button is "Upgrade" → /packages when payments are configured, otherwise "Contact us to upgrade", which opens the existing support chat; with the paid system OFF a notice says everything is free and there is no Upgrade button. On API error or with no active rows the section renders its previous layout unchanged. Heading / intro / Free-card CTA / FAQ stay in Admin → Homepage (no duplicate settings record). Admin → Pricing & Plan Features (`subscriptions` permission) adds / edits / hides / deletes / reorders rows. Built-in homepage defaults updated: paid plans are live; free users see answers and explanations in every set they can open. Published homepage content is untouched. |
+| Not used for | Access control — labels never grant or deny anything. |
 | Status | **CONFIRMED** (owner approval 2026-11-26) |
 ### Deferred / NEEDS APPROVAL (explicitly out of Phase 1)
 
