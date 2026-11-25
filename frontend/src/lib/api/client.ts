@@ -36,6 +36,9 @@ type FetchOptions = RequestInit & {
 
 const DEFAULT_FETCH_TIMEOUT_MS = 30_000;
 
+const RATE_LIMITED_MESSAGE =
+  'অনেকবার চেষ্টা করা হয়েছে। একটু পর আবার চেষ্টা করুন। (Too many requests — please wait a moment.)';
+
 async function parseJson<T>(res: Response): Promise<ApiEnvelope<T>> {
   const text = await res.text();
   if (!text) {
@@ -50,6 +53,10 @@ async function parseJson<T>(res: Response): Promise<ApiEnvelope<T>> {
   try {
     return JSON.parse(text) as ApiEnvelope<T>;
   } catch {
+    // ERR-2: the edge (nginx) answers bursts with an HTML 429 page.
+    if (res.status === 429) {
+      throw new ApiError('RATE_LIMITED', RATE_LIMITED_MESSAGE, 429);
+    }
     const hint =
       res.status === 413
         ? 'Request body too large'

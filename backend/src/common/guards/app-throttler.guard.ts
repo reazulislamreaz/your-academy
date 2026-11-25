@@ -1,7 +1,9 @@
-import { ExecutionContext, Injectable, Logger } from '@nestjs/common';
+import { ExecutionContext, HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { ThrottlerGuard, type ThrottlerLimitDetail } from '@nestjs/throttler';
 import { JwtService } from '@nestjs/jwt';
+import { createErrorResponse } from '@your-academy/shared';
 import { getJwtAccessSecret } from '../../config/env';
+import { newRequestId } from '../request-id';
 
 export { clientIp, isContentPath, isInternalServerRequest } from './client-ip';
 import { clientIp, isInternalServerRequest } from './client-ip';
@@ -49,11 +51,31 @@ export class AppThrottlerGuard extends ThrottlerGuard {
     context: ExecutionContext,
     detail: ThrottlerLimitDetail,
   ): Promise<void> {
-    const req = context.switchToHttp().getRequest<{ method: string; originalUrl?: string; url: string }>();
+    const req = context
+      .switchToHttp()
+      .getRequest<{ method: string; originalUrl?: string; url: string }>();
     // Unusual bulk access is worth a log line; never log tokens or bodies.
     this.log.warn(
       `${detail.tracker} hit limit ${detail.limit}/${Math.round(detail.ttl / 1000)}s on ${req.method} ${(req.originalUrl ?? req.url).split('?')[0]}`,
     );
-    return super.throwThrottlingException(context, detail);
+    // ERR-2 / RL-6: a standard Retry-After for every named throttler (the library only sets the
+    // bare header for `default`; `content` got the non-standard Retry-After-content), and a
+    // readable message instead of "ThrottlerException: Too Many Requests".
+    const seconds = Math.max(1, Math.ceil(detail.timeToBlockExpire || detail.timeToExpire || 60));
+    context
+      .switchToHttp()
+      .getResponse<{ setHeader(n: string, v: string): void }>()
+      .setHeader('Retry-After', String(seconds));
+    throw new HttpException(
+      createErrorResponse('RATE_LIMITED', rateLimitMessage(seconds), newRequestId()),
+      HttpStatus.TOO_MANY_REQUESTS,
+    );
   }
+}
+
+/** Learner-facing (Bangla first, English after) — shown as-is by every form. */
+export function rateLimitMessage(seconds: number): string {
+  const wait = seconds >= 90 ? `${Math.ceil(seconds / 60)} মিনিট` : `${seconds} সেকেন্ড`;
+  const waitEn = seconds >= 90 ? `${Math.ceil(seconds / 60)} min` : `${seconds} s`;
+  return `অনেকবার চেষ্টা করা হয়েছে। ${wait} পর আবার চেষ্টা করুন। (Too many attempts — try again in ${waitEn}.)`;
 }
