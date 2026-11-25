@@ -21,10 +21,10 @@ export function NotFoundView() {
         </p>
 
         <h1 className="motion-rise mt-3 font-display text-xl font-bold tracking-tight text-[var(--ink)] sm:mt-4 sm:text-2xl">
-          Page not found
+          পেজটি পাওয়া যায়নি
         </h1>
         <p className="motion-rise mx-auto mt-2 max-w-sm text-sm leading-relaxed text-pretty text-[var(--muted-strong)] sm:mt-3 sm:max-w-md sm:text-[0.9375rem]">
-          The page you are looking for doesn&apos;t exist or has been moved.
+          Page not found — the page you are looking for doesn&apos;t exist or has been moved.
         </p>
 
         <div className="motion-rise mt-7 flex justify-center sm:mt-8">

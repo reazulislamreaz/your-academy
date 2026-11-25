@@ -19,19 +19,22 @@ export default function AppError({
 
   return (
     <div className="mx-auto flex min-h-[50vh] w-full max-w-lg flex-col items-center justify-center gap-4 px-4 py-16 text-center">
-      <h1 className="font-display text-2xl font-bold text-[var(--ink)]">Something went wrong</h1>
+      <h1 className="font-display text-2xl font-bold text-[var(--ink)]">কিছু একটা সমস্যা হয়েছে</h1>
       <p className="text-sm text-[var(--muted-strong)]">
-        The page failed to load. This can happen briefly after a site update — try again.
+        পেজটি লোড হয়নি। সাইট আপডেটের পর কিছুক্ষণ এমন হতে পারে — আবার চেষ্টা করুন।
+        <br />
+        Something went wrong while loading this page. This can happen briefly after a site update —
+        try again.
       </p>
       {error.digest ? (
         <p className="text-xs text-[var(--muted)]">Reference: {error.digest}</p>
       ) : null}
       <div className="flex flex-wrap items-center justify-center gap-2">
         <Button type="button" onClick={() => reset()}>
-          Try again
+          আবার চেষ্টা করুন
         </Button>
         <Button type="button" variant="secondary" onClick={() => window.location.assign('/')}>
-          Go home
+          হোমে যান
         </Button>
       </div>
     </div>

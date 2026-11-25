@@ -32,10 +32,12 @@ export default function GlobalError({
         }}
       >
         <div style={{ maxWidth: 420, textAlign: 'center' }}>
-          <h1 style={{ fontSize: 24, marginBottom: 8 }}>Application error</h1>
+          <h1 style={{ fontSize: 24, marginBottom: 8 }}>পেজটি লোড হয়নি</h1>
           <p style={{ fontSize: 14, opacity: 0.75, marginBottom: 20 }}>
-            A client-side exception occurred. If you just opened the site after an update, reload
-            once to fetch the latest assets.
+            একবার রিলোড করুন — সাইট আপডেটের পরে এমন হতে পারে।
+            <br />
+            The page couldn&apos;t load. If the site was just updated, reload once to get the latest
+            version.
           </p>
           <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
             <button
@@ -51,7 +53,7 @@ export default function GlobalError({
                 fontWeight: 600,
               }}
             >
-              Try again
+              আবার চেষ্টা করুন
             </button>
             <button
               type="button"
@@ -65,7 +67,7 @@ export default function GlobalError({
                 fontWeight: 600,
               }}
             >
-              Reload
+              রিলোড করুন
             </button>
           </div>
         </div>

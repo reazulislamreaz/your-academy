@@ -30,7 +30,8 @@ export class CsrfGuard implements CanActivate {
 
     if (!header || !cookie || !safeEqual(header, cookie)) {
       throw new ForbiddenException(
-        createErrorResponse('CSRF_VALIDATION_FAILED', 'Invalid CSRF token', newRequestId()),
+        createErrorResponse('CSRF_VALIDATION_FAILED',
+          'নিরাপত্তার কারণে পেজটি রিফ্রেশ করে আবার চেষ্টা করুন। (Your session check expired — refresh the page and try again.)', newRequestId()),
       );
     }
     return true;

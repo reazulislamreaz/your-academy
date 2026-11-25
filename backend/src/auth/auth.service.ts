@@ -53,6 +53,10 @@ export function singleSessionApplies(role: UserRole): boolean {
   return true;
 }
 
+/** ERR-6 — shown on the login form as-is (same text for every reason: no account enumeration). */
+const INVALID_CREDENTIALS_MESSAGE =
+  'WhatsApp নম্বর বা পাসওয়ার্ড সঠিক নয়। (Wrong WhatsApp number or password.)';
+
 const failedLoginAuditGuard = new AuditFloodGuard(10, 10 * 60_000);
 
 @Injectable()
@@ -79,7 +83,8 @@ export class AuthService {
     const existing = await this.prisma.user.findUnique({ where: { whatsappNumber } });
     if (existing) {
       throw new ConflictException(
-        createErrorResponse('WHATSAPP_EXISTS', 'WhatsApp number already registered', newRequestId()),
+        createErrorResponse('WHATSAPP_EXISTS',
+          'এই WhatsApp নম্বরে আগে থেকেই অ্যাকাউন্ট আছে — লগইন করুন বা পাসওয়ার্ড রিসেট করুন। (This WhatsApp number already has an account — sign in or reset your password.)', newRequestId()),
       );
     }
 
@@ -87,7 +92,8 @@ export class AuthService {
       const emailTaken = await this.prisma.user.findUnique({ where: { email: dto.email } });
       if (emailTaken) {
         throw new ConflictException(
-          createErrorResponse('EMAIL_EXISTS', 'Email already registered', newRequestId()),
+          createErrorResponse('EMAIL_EXISTS',
+            'এই ইমেইল দিয়ে আগে থেকেই অ্যাকাউন্ট আছে। (This email is already used by another account.)', newRequestId()),
         );
       }
     }
@@ -127,7 +133,7 @@ export class AuthService {
     if (!isValidWhatsapp(whatsappNumber)) {
       await this.recordFailedLogin(null, whatsappNumber, 'INVALID_NUMBER', meta);
       throw new UnauthorizedException(
-        createErrorResponse('INVALID_CREDENTIALS', 'Invalid credentials', newRequestId()),
+        createErrorResponse('INVALID_CREDENTIALS', INVALID_CREDENTIALS_MESSAGE, newRequestId()),
       );
     }
     const user = await this.prisma.user.findUnique({ where: { whatsappNumber } });
@@ -139,7 +145,7 @@ export class AuthService {
         meta,
       );
       throw new UnauthorizedException(
-        createErrorResponse('INVALID_CREDENTIALS', 'Invalid credentials', newRequestId()),
+        createErrorResponse('INVALID_CREDENTIALS', INVALID_CREDENTIALS_MESSAGE, newRequestId()),
       );
     }
 
@@ -147,7 +153,7 @@ export class AuthService {
     if (!valid) {
       await this.recordFailedLogin(user, whatsappNumber, 'WRONG_PASSWORD', meta);
       throw new UnauthorizedException(
-        createErrorResponse('INVALID_CREDENTIALS', 'Invalid credentials', newRequestId()),
+        createErrorResponse('INVALID_CREDENTIALS', INVALID_CREDENTIALS_MESSAGE, newRequestId()),
       );
     }
 

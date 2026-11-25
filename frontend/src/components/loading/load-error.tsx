@@ -13,9 +13,9 @@ type Props = {
 
 /** Failed fetch — never leave an infinite skeleton spinning. */
 export function LoadError({
-  message = 'Something went wrong while loading.',
+  message = 'লোড করা যায়নি। আবার চেষ্টা করুন। (Could not load — please try again.)',
   onRetry,
-  retryLabel = 'Try again',
+  retryLabel = 'আবার চেষ্টা করুন',
   className,
   children,
 }: Props) {
