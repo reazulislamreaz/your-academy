@@ -1,3 +1,4 @@
+import { SupportUploadConfirmDto, SupportUploadSignDto } from './dto/support-upload.dto';
 import {
   Body,
   Controller,
@@ -126,7 +127,7 @@ export class SupportController {
   @UseGuards(OptionalJwtAuthGuard, CsrfGuard)
   async signUpload(
     @Req() req: Request & { user?: RequestUser },
-    @Body() body?: { resourceType?: 'image' | 'raw'; mimeType?: string },
+    @Body() body?: SupportUploadSignDto,
   ) {
     const actor = await resolveSupportActor(req, this.guests);
     const mime = body?.mimeType?.toLowerCase() ?? '';
@@ -158,17 +159,7 @@ export class SupportController {
   @UseGuards(OptionalJwtAuthGuard, CsrfGuard)
   async confirmUpload(
     @Req() req: Request & { user?: RequestUser },
-    @Body()
-    body: {
-      publicId: string;
-      resourceType?: 'image' | 'raw';
-      bytes?: number;
-      mimeType?: string;
-      format?: string;
-      width?: number;
-      height?: number;
-      originalFilename?: string;
-    },
+    @Body() body: SupportUploadConfirmDto,
   ) {
     const actor = await resolveSupportActor(req, this.guests);
     if (actor.kind === 'guest') {

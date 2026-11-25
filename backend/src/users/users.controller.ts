@@ -1,3 +1,4 @@
+import { SetAvatarDto } from './dto/set-avatar.dto';
 import { Body, Controller, Get, Patch, Post, UseGuards } from '@nestjs/common';
 import { createSuccessResponse } from '@your-academy/shared';
 import type { RequestUser } from '../auth/auth.types';
@@ -41,7 +42,7 @@ export class UsersController {
   @UseGuards(CsrfGuard)
   async setAvatar(
     @CurrentUser() user: RequestUser,
-    @Body() body: { mediaAssetId: string },
+    @Body() body: SetAvatarDto,
   ) {
     return createSuccessResponse(
       await this.users.setAvatar(user, body.mediaAssetId),
