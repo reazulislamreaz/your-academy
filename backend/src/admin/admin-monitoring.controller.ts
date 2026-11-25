@@ -27,6 +27,7 @@ export class AdminMonitoringController {
   /** Name / email / WhatsApp ↔ User ID (full UUID or prefix). Invalid input → empty, never 500. */
   @RequirePermission('activity')
   @Get('activity/users/lookup')
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   async lookup(@Query('q') q?: string) {
     return createSuccessResponse(await this.monitoring.lookupUsers(q), newRequestId());
   }

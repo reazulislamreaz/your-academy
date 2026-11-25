@@ -12,6 +12,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { QuestionImportRowStatus, QuestionUploadStatus } from '@prisma/client';
 import { createSuccessResponse } from '@your-academy/shared';
@@ -90,6 +91,7 @@ export class QuestionImportController {
   }
 
   @Post('upload')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @UseGuards(CsrfGuard)
   @UseInterceptors(
     FileInterceptor('file', {
@@ -186,6 +188,7 @@ export class QuestionImportController {
   }
 
   @Post(':id/confirm')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @UseGuards(CsrfGuard)
   async confirm(
     @CurrentUser() user: RequestUser,

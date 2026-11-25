@@ -14,6 +14,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ContentAccess } from '@prisma/client';
 import {
@@ -103,6 +104,7 @@ export class AdminModelTestsController {
   }
 
   @Post('upload')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @UseGuards(CsrfGuard)
   @UseInterceptors(
     FileInterceptor('file', {

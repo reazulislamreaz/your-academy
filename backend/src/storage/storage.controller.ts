@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { createSuccessResponse } from '@your-academy/shared';
 import type { RequestUser } from '../auth/auth.types';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -23,6 +24,7 @@ export class StorageController {
   }
 
   @Post('sign-upload')
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
   @UseGuards(CsrfGuard)
   sign(@CurrentUser() user: RequestUser, @Body() body: SignUploadDto) {
     return createSuccessResponse(
@@ -32,6 +34,7 @@ export class StorageController {
   }
 
   @Post('confirm')
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
   @UseGuards(CsrfGuard)
   async confirm(@CurrentUser() user: RequestUser, @Body() body: ConfirmUploadDto) {
     return createSuccessResponse(await this.storage.confirmUpload(user, body), newRequestId());

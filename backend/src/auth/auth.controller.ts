@@ -130,6 +130,8 @@ export class AuthController {
   }
 
   @Post('change-password')
+  // RL-5: password guessing with a stolen session.
+  @Throttle({ default: { limit: 5, ttl: 15 * 60_000 } })
   @HttpCode(200)
   @UseGuards(JwtAuthGuard, CsrfGuard)
   async changePassword(

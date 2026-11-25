@@ -14,6 +14,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { createSuccessResponse, cursorPaginationMeta } from '@your-academy/shared';
 import type { Response } from 'express';
@@ -79,6 +80,7 @@ export class AdminExamsController {
   }
 
   @Post('upload')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @UseGuards(CsrfGuard)
   @UseInterceptors(
     FileInterceptor('file', {

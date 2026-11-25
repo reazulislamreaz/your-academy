@@ -130,6 +130,7 @@ export class AdminController {
   }
 
   @Post('users/:id/reset-password')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @HttpCode(200)
   @UseGuards(CsrfGuard)
   async resetStaffPassword(

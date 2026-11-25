@@ -122,6 +122,7 @@ export class SupportController {
   }
 
   @Post('uploads/sign')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @UseGuards(OptionalJwtAuthGuard, CsrfGuard)
   async signUpload(
     @Req() req: Request & { user?: RequestUser },
@@ -153,6 +154,7 @@ export class SupportController {
   }
 
   @Post('uploads/confirm')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @UseGuards(OptionalJwtAuthGuard, CsrfGuard)
   async confirmUpload(
     @Req() req: Request & { user?: RequestUser },
