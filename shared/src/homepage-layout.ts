@@ -1,4 +1,15 @@
 import { z } from 'zod';
+import {
+  DEFAULT_DASHBOARD_TILES,
+  DEFAULT_LIVE_STAT_LABELS,
+  DEFAULT_PRICING_LABELS,
+  DEFAULT_SAMPLE_MCQ_TEXT,
+  dashboardTilesSchema,
+  footerContentSchema,
+  liveStatLabelsSchema,
+  pageHeadersSchema,
+  pricingLabelsSchema,
+} from './site-content';
 
 const shortText = z.string().max(200);
 const mediumText = z.string().max(500);
@@ -231,12 +242,15 @@ export const homepageExtendedSectionsSchema = z.object({
       subtitle: mediumText.optional().default(
         'Live counts from published content — not marketing estimates.',
       ),
+      /** DEC-069 — the four counter labels (counts stay live). */
+      labels: liveStatLabelsSchema,
     })
     .default({
       visible: true,
       eyebrow: 'Live data',
       heading: '',
       subtitle: 'Live counts from published content — not marketing estimates.',
+      labels: DEFAULT_LIVE_STAT_LABELS,
     }),
   sampleMcq: z
     .object({
@@ -244,12 +258,19 @@ export const homepageExtendedSectionsSchema = z.object({
       eyebrow: shortText,
       ctaLabel: shortText,
       ctaHref: hrefSchema,
+      /** DEC-069 — previously hard-coded copy. */
+      label: shortText.default(DEFAULT_SAMPLE_MCQ_TEXT.label),
+      heading: mediumText.default(DEFAULT_SAMPLE_MCQ_TEXT.heading),
+      bullets: z.array(mediumText).max(6).default(DEFAULT_SAMPLE_MCQ_TEXT.bullets),
+      emptyTitle: shortText.default(DEFAULT_SAMPLE_MCQ_TEXT.emptyTitle),
+      emptyDescription: mediumText.default(DEFAULT_SAMPLE_MCQ_TEXT.emptyDescription),
     })
     .default({
       visible: true,
       eyebrow: 'Sample from Preli bank',
       ctaLabel: 'Browse more questions',
       ctaHref: '/preli-question-bank',
+      ...DEFAULT_SAMPLE_MCQ_TEXT,
     }),
   productFeatures: z
     .object({
@@ -356,6 +377,8 @@ export const homepageExtendedSectionsSchema = z.object({
       body: longText,
       primaryCta: ctaSchema,
       secondaryCta: ctaSchema,
+      /** DEC-069 — the four preview tiles (icons stay by position). */
+      tiles: dashboardTilesSchema,
     })
     .default({
       visible: true,
@@ -364,6 +387,7 @@ export const homepageExtendedSectionsSchema = z.object({
       body: 'Bookmarks, attempt history, timed practice, and accuracy come from your real activity — we never show placeholder scores on this page.',
       primaryCta: { label: 'Create free account', href: '/register', visible: true },
       secondaryCta: { label: 'Sign in', href: '/login', visible: true },
+      tiles: DEFAULT_DASHBOARD_TILES,
     }),
   newsStrip: z
     .object({
@@ -390,6 +414,8 @@ export const homepageExtendedSectionsSchema = z.object({
       cta: ctaSchema,
       faqHeading: mediumText,
       faqs: z.array(faqItemSchema).max(20).default([]),
+      /** DEC-069 — plan card labels (prices, per-month and savings stay computed). */
+      pricing: pricingLabelsSchema,
     })
     .default({
       visible: true,
@@ -402,6 +428,7 @@ export const homepageExtendedSectionsSchema = z.object({
         'Paid plans — every Preli and Written set, all Model Tests and premium PDFs',
       ],
       cta: { label: 'Start Free', href: '/register', visible: true },
+      pricing: DEFAULT_PRICING_LABELS,
       faqHeading: 'Frequently asked questions',
       faqs: [
         {
@@ -430,6 +457,10 @@ export const homepageExtendedSectionsSchema = z.object({
         },
       ],
     }),
+  /** DEC-069 — marketing footer copy (Explore links follow the site navigation). */
+  footer: footerContentSchema,
+  /** DEC-069 — heading / intro / SEO of the listing pages (Admin → Page Headers). */
+  pageHeaders: pageHeadersSchema,
   customSections: z
     .array(
       z.object({

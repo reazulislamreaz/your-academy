@@ -1,17 +1,18 @@
 import type { Metadata } from 'next';
 import { MarketingPage } from '@/components/layout/marketing-page';
 import { PackagesView } from '@/features/billing/packages-view';
+import { getPageHeader, pageHeaderMetadata } from '@/lib/site-content';
 
-export const metadata: Metadata = {
-  title: 'Packages',
-  description: 'Subscribe to unlock every Preli and Written question set and paid Model Test.',
-  alternates: { canonical: '/packages' },
-};
+/** DEC-069 — header + SEO from Admin → Page Headers (defaults = previous text). */
+export async function generateMetadata(): Promise<Metadata> {
+  return pageHeaderMetadata(await getPageHeader('packages'), '/packages');
+}
 
-export default function PackagesPage() {
+export default async function PackagesPage() {
+  const header = await getPageHeader('packages');
   return (
     <MarketingPage>
-      <PackagesView />
+      <PackagesView header={header} />
     </MarketingPage>
   );
 }

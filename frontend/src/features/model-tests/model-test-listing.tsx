@@ -40,9 +40,15 @@ type Props = {
   basePath?: string;
   /** Hide marketing page chrome when nested under learner `PageHeader`. */
   embedded?: boolean;
+  /** DEC-069 — page header from Admin → Page Headers (server-rendered by the page). */
+  header?: { eyebrow?: string; heading: string; description?: string };
 };
 
-export function ModelTestListing({ basePath = '/model-test', embedded = false }: Props) {
+export function ModelTestListing({
+  basePath = '/model-test',
+  embedded = false,
+  header,
+}: Props) {
   const takeBase = basePath.replace(/\/$/, '') || '/model-test';
   const unlockHref = useUnlockHref();
   const [q, setQ] = useState('');
@@ -116,9 +122,19 @@ export function ModelTestListing({ basePath = '/model-test', embedded = false }:
     >
       {embedded ? null : (
         <header className="min-w-0">
+          {header?.eyebrow ? (
+            <p className="mb-1 text-[0.6875rem] font-semibold tracking-[0.16em] text-[var(--muted)] uppercase">
+              {header.eyebrow}
+            </p>
+          ) : null}
           <h1 className="font-display text-[1.75rem] font-bold tracking-tight text-[var(--ink)] sm:text-3xl">
-            Model Test
+            {header?.heading || 'Model Test'}
           </h1>
+          {header?.description ? (
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--muted-strong)] sm:text-[0.9375rem]">
+              {header.description}
+            </p>
+          ) : null}
         </header>
       )}
 

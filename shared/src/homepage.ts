@@ -1,3 +1,4 @@
+import { heroQuickLinksSchema } from './site-content';
 import { z } from 'zod';
 import {
   createDefaultExtendedSections,
@@ -419,6 +420,9 @@ const coreHomepagePayloadSchema = z.object({
     secondaryCta: ctaSchema,
     stats: z.array(heroStatSchema).max(6).default([]),
     backgroundToken: z.enum(['inverse', 'desk', 'elevated']).default('inverse'),
+    /** DEC-069 — exam chips under the hero (previously hard-coded). */
+    quickLinks: heroQuickLinksSchema,
+    quickLinksLabel: z.string().max(60).default('Quick start'),
   }),
   categories: z.object({
     visible: z.boolean().default(true),

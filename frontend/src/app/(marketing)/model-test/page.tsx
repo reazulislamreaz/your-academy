@@ -1,11 +1,13 @@
 import type { Metadata } from 'next';
 import { ModelTestListing } from '@/features/model-tests/model-test-listing';
+import { getPageHeader, pageHeaderMetadata } from '@/lib/site-content';
 
-export const metadata: Metadata = {
-  title: 'Model Test',
-  description: 'Take timed public Model Tests on Your Academy — search, filter, and review.',
-};
+/** DEC-069 — header + SEO from Admin → Page Headers (defaults = previous text). */
+export async function generateMetadata(): Promise<Metadata> {
+  return pageHeaderMetadata(await getPageHeader('modelTest'), '/model-test');
+}
 
-export default function PublicModelTestListPage() {
-  return <ModelTestListing />;
+export default async function PublicModelTestListPage() {
+  const header = await getPageHeader('modelTest');
+  return <ModelTestListing header={header} />;
 }

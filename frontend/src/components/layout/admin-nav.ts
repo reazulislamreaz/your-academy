@@ -12,6 +12,7 @@ import {
   Home,
   LayoutDashboard,
   ListChecks,
+  PanelTop,
   LayoutGrid,
   Layers,
   MessageCircle,
@@ -88,6 +89,8 @@ export const adminNavItems: AdminNavItem[] = [
     icon: Shapes,
   },
   { href: '/admin/homepage', label: 'Homepage', icon: Home },
+  // DEC-069 — listing-page headers + footer (homepage CMS draft)
+  { href: '/admin/page-headers', label: 'Page Headers & Footer', shortLabel: 'Headers', icon: PanelTop },
   {
     href: '/admin/social-links',
     label: 'Social media links',
@@ -138,6 +141,7 @@ export const adminNavGroups: AdminNavGroup[] = [
         '/admin/written-bank-categories',
         '/admin/topic-categories',
         '/admin/homepage',
+        '/admin/page-headers',
         '/admin/social-links',
         '/admin/news',
         '/admin/documents',

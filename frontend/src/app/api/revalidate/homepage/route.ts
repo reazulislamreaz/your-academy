@@ -8,6 +8,13 @@ const HOMEPAGE_PATHS = [
   '/question-bank-categories',
   '/topic-categories',
   '/written-question-bank-categories',
+  // DEC-069 — pages whose header / footer text lives in the homepage CMS.
+  '/preli-question-bank',
+  '/written-question-bank',
+  '/model-test',
+  '/exams',
+  '/news',
+  '/packages',
 ] as const;
 
 /**

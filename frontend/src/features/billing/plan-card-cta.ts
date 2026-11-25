@@ -1,4 +1,11 @@
 /** DEC-065 — which button each homepage plan card shows. Pure, so every case is easy to check. */
+import { DEFAULT_PRICING_LABELS, type PricingLabels } from '@your-academy/shared';
+
+/** DEC-069 — button texts come from Admin → Homepage → Access & Pricing. */
+type CtaLabels = Pick<
+  PricingLabels,
+  'upgradeLabel' | 'contactLabel' | 'currentPlanLabel' | 'managePlanLabel' | 'adminNote'
+>;
 
 export type PlanCardViewer =
   { kind: 'guest' } | { kind: 'admin' } | { kind: 'learner'; isPaid: boolean };
@@ -15,6 +22,7 @@ export type PlanCardCta =
 export function freeCardCta(
   viewer: PlanCardViewer,
   cmsCta: { label: string; href: string; visible: boolean },
+  labels: CtaLabels = DEFAULT_PRICING_LABELS,
 ): PlanCardCta {
   if (viewer.kind === 'guest') {
     return cmsCta.visible
@@ -22,7 +30,7 @@ export function freeCardCta(
       : { type: 'none' };
   }
   if (viewer.kind === 'learner' && !viewer.isPaid)
-    return { type: 'current', label: 'Current Plan' };
+    return { type: 'current', label: labels.currentPlanLabel };
   return { type: 'none' };
 }
 
@@ -36,24 +44,26 @@ export function paidCardCta(
   isCurrentPackage: boolean | null = null,
   /** When given, "Upgrade" checks out this exact package (logged-out → login, then /packages). */
   packageId?: string,
+  labels: CtaLabels = DEFAULT_PRICING_LABELS,
 ): PlanCardCta {
-  if (viewer.kind === 'admin') return { type: 'note', label: 'Admins have full access' };
+  if (viewer.kind === 'admin') return { type: 'note', label: labels.adminNote };
   if (viewer.kind === 'learner' && viewer.isPaid) {
-    if (isCurrentPackage === false) return { type: 'link', label: 'Manage plan', href: '/billing' };
-    return { type: 'current', label: 'Current Plan' };
+    if (isCurrentPackage === false)
+      return { type: 'link', label: labels.managePlanLabel, href: '/billing' };
+    return { type: 'current', label: labels.currentPlanLabel };
   }
   // Paid system OFF: everything is open — no Upgrade button.
   if (!opts.paidSystemEnabled) return { type: 'none' };
   // Never send people to a "payment isn't configured" page.
-  if (!opts.paymentsConfigured) return { type: 'contact', label: 'Contact us to upgrade' };
+  if (!opts.paymentsConfigured) return { type: 'contact', label: labels.contactLabel };
   if (packageId) {
     return viewer.kind === 'guest'
       ? {
           type: 'link',
-          label: 'Upgrade',
+          label: labels.upgradeLabel,
           href: `/login?callbackUrl=${encodeURIComponent('/packages')}`,
         }
-      : { type: 'checkout', label: 'Upgrade', packageId };
+      : { type: 'checkout', label: labels.upgradeLabel, packageId };
   }
-  return { type: 'link', label: 'Upgrade', href: '/packages' };
+  return { type: 'link', label: labels.upgradeLabel, href: '/packages' };
 }

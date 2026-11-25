@@ -8,6 +8,9 @@ import {
   normalizeHomepagePayload,
   toCustomLayoutId,
   type HomepagePayload,
+  DEFAULT_DASHBOARD_TILES,
+  DEFAULT_LIVE_STAT_LABELS,
+  DEFAULT_PRICING_LABELS,
 } from '@your-academy/shared';
 import {
   ArrowDown,
@@ -29,6 +32,12 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import {
+  EditorGroup,
+  LabelFieldsEditor,
+  LinkListEditor,
+  TextListEditor,
+} from '@/features/admin/homepage/site-text-editors';
 import { CmsImagePreview } from '@/components/admin/cms-image-preview';
 import { AdminFormPanel, AdminPage } from '@/components/admin/admin-page';
 import { PageHeader } from '@/components/layout/page-header';
@@ -618,10 +627,20 @@ export function HomepageCms() {
           >
             {selected ? (
               <div className="space-y-4">
-                <SectionVisibilityToggle
-                  checked={selected.visible}
-                  onChange={() => toggleVisible(selected.id)}
-                />
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <SectionVisibilityToggle
+                    checked={selected.visible}
+                    onChange={() => toggleVisible(selected.id)}
+                  />
+                  <Link
+                    href={`/${SECTION_ANCHORS[selected.id] ? `#${SECTION_ANCHORS[selected.id]}` : ''}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm font-semibold text-[var(--accent)] hover:underline"
+                  >
+                    Preview on the live homepage ↗
+                  </Link>
+                </div>
                 <SectionEditor
                   sectionId={selected.id}
                   payload={payload}
@@ -907,6 +926,23 @@ function SectionEditor({
             </p>
           ) : null}
         </div>
+        <EditorGroup title="Quick links (chips under the hero)">
+          <Field label="Label above the chips">
+            <Input
+              value={payload.hero.quickLinksLabel ?? ''}
+              placeholder="Quick start"
+              onChange={(e) =>
+                onPatch((p) => ({ ...p, hero: { ...p.hero, quickLinksLabel: e.target.value } }))
+              }
+            />
+          </Field>
+          <LinkListEditor
+            items={payload.hero.quickLinks ?? []}
+            max={8}
+            itemName="chip"
+            onChange={(quickLinks) => onPatch((p) => ({ ...p, hero: { ...p.hero, quickLinks } }))}
+          />
+        </EditorGroup>
       </div>
     );
   }
@@ -1296,6 +1332,38 @@ function SectionEditor({
           cta={b.cta}
           onChange={(cta) => onPatch((p) => ({ ...p, accessFaq: { ...p.accessFaq, cta } }))}
         />
+        <EditorGroup
+          title="Plan card labels"
+          hint={
+            <>
+              Prices, per-month amounts and savings are calculated automatically. Plans, prices and
+              their own features are managed in{' '}
+              <Link href="/admin/packages" className="font-semibold underline">
+                Admin → Packages
+              </Link>
+              ; the Free / Paid feature lists in{' '}
+              <Link href="/admin/pricing-features" className="font-semibold underline">
+                Pricing &amp; Plan Features
+              </Link>
+              . The Free card button is the “Button” above.
+            </>
+          }
+        >
+          <LabelFieldsEditor
+            fields={PRICING_LABEL_FIELDS}
+            multiline={['freeDescription', 'paidDescriptionFallback', 'footnote']}
+            values={{ ...DEFAULT_PRICING_LABELS, ...b.pricing }}
+            onChange={(key, value) =>
+              onPatch((p) => ({
+                ...p,
+                accessFaq: {
+                  ...p.accessFaq,
+                  pricing: { ...DEFAULT_PRICING_LABELS, ...p.accessFaq.pricing, [key]: value },
+                },
+              }))
+            }
+          />
+        </EditorGroup>
         <Field label="FAQ heading">
           <Input
             value={b.faqHeading}
@@ -1665,6 +1733,42 @@ function SectionEditor({
             }))
           }
         />
+        <EditorGroup title="Preview tiles" hint="Four tiles; each keeps its icon by position.">
+          {(b.tiles?.length === 4 ? b.tiles : DEFAULT_DASHBOARD_TILES).map((tile, i) => (
+            <div key={i} className="grid gap-2 sm:grid-cols-2">
+              <Input
+                aria-label={`Tile ${i + 1} title`}
+                value={tile.label}
+                onChange={(e) =>
+                  onPatch((p) => {
+                    const tiles = [
+                      ...(p.dashboardPreview.tiles?.length === 4
+                        ? p.dashboardPreview.tiles
+                        : DEFAULT_DASHBOARD_TILES),
+                    ];
+                    tiles[i] = { ...tiles[i]!, label: e.target.value };
+                    return { ...p, dashboardPreview: { ...p.dashboardPreview, tiles } };
+                  })
+                }
+              />
+              <Input
+                aria-label={`Tile ${i + 1} hint`}
+                value={tile.hint}
+                onChange={(e) =>
+                  onPatch((p) => {
+                    const tiles = [
+                      ...(p.dashboardPreview.tiles?.length === 4
+                        ? p.dashboardPreview.tiles
+                        : DEFAULT_DASHBOARD_TILES),
+                    ];
+                    tiles[i] = { ...tiles[i]!, hint: e.target.value };
+                    return { ...p, dashboardPreview: { ...p.dashboardPreview, tiles } };
+                  })
+                }
+              />
+            </div>
+          ))}
+        </EditorGroup>
       </div>
     );
   }
@@ -1825,6 +1929,26 @@ function SectionEditor({
             <p className="text-xs text-[var(--muted)]">
               Stat numbers always come from live published platform counts.
             </p>
+            <EditorGroup title="Counter labels">
+              <LabelFieldsEditor
+                fields={[
+                  { key: 'questions', label: 'Published questions' },
+                  { key: 'questionSets', label: 'Collections' },
+                  { key: 'categories', label: 'Exam categories' },
+                  { key: 'documents', label: 'Newspaper columns' },
+                ]}
+                values={{ ...DEFAULT_LIVE_STAT_LABELS, ...payload.liveStats.labels }}
+                onChange={(key, value) =>
+                  onPatch((p) => ({
+                    ...p,
+                    liveStats: {
+                      ...p.liveStats,
+                      labels: { ...DEFAULT_LIVE_STAT_LABELS, ...p.liveStats.labels, [key]: value },
+                    },
+                  }))
+                }
+              />
+            </EditorGroup>
           </>
         ) : (
           <>
@@ -1861,6 +1985,36 @@ function SectionEditor({
                 }
               />
             </Field>
+            <EditorGroup title="Section text">
+              <LabelFieldsEditor
+                fields={[
+                  { key: 'label', label: 'Small label' },
+                  { key: 'heading', label: 'Heading' },
+                  { key: 'emptyTitle', label: 'No-question title' },
+                  { key: 'emptyDescription', label: 'No-question text' },
+                ]}
+                multiline={['emptyDescription']}
+                values={{
+                  label: payload.sampleMcq.label ?? '',
+                  heading: payload.sampleMcq.heading ?? '',
+                  emptyTitle: payload.sampleMcq.emptyTitle ?? '',
+                  emptyDescription: payload.sampleMcq.emptyDescription ?? '',
+                }}
+                onChange={(key, value) =>
+                  onPatch((p) => ({ ...p, sampleMcq: { ...p.sampleMcq, [key]: value } }))
+                }
+              />
+            </EditorGroup>
+            <EditorGroup title="Bullet points">
+              <TextListEditor
+                items={payload.sampleMcq.bullets ?? []}
+                max={6}
+                itemName="bullet"
+                onChange={(bullets) =>
+                  onPatch((p) => ({ ...p, sampleMcq: { ...p.sampleMcq, bullets } }))
+                }
+              />
+            </EditorGroup>
           </>
         )}
         <p>Use the visibility toggle in the section list to hide it entirely.</p>
@@ -1875,6 +2029,48 @@ function SectionEditor({
     </p>
   );
 }
+
+/** DEC-069 — anchor of each section on the live homepage (Preview link; published content). */
+const SECTION_ANCHORS: Record<string, string> = {
+  hero: 'homepage-hero-heading',
+  liveStats: 'stats-heading',
+  categories: 'preli-exam-categories-heading',
+  writtenCategories: 'written-exam-categories-heading',
+  topics: 'topic-analysis-heading',
+  sampleMcq: 'mcq-preview',
+  productFeatures: 'features-heading',
+  howItWorks: 'how-heading',
+  dashboardPreview: 'dashboard-preview-heading',
+  why: 'why-heading',
+  latest: 'latest-collections-heading',
+  newsStrip: 'newspaper',
+  accessFaq: 'access',
+  ctaBanner: 'get-started',
+};
+
+/** DEC-069 — Access & Pricing card labels editable in the CMS. */
+const PRICING_LABEL_FIELDS: Array<{
+  key: keyof typeof DEFAULT_PRICING_LABELS;
+  label: string;
+  hint?: string;
+}> = [
+  { key: 'freeTitle', label: 'Free card title' },
+  { key: 'freePrice', label: 'Free card price' },
+  { key: 'freePriceNote', label: 'Free price note' },
+  { key: 'freeDescription', label: 'Free card description' },
+  { key: 'paidDescriptionFallback', label: 'Paid card description (when a package has none)' },
+  { key: 'recommendedBadge', label: 'Recommended badge' },
+  { key: 'perMonthSuffix', label: 'Per-month suffix', hint: 'Shown after “≈ ৳299”' },
+  { key: 'saveLabel', label: 'Savings label', hint: '{percent} is replaced with the saving' },
+  { key: 'upgradeLabel', label: 'Upgrade button' },
+  { key: 'contactLabel', label: 'Button when online payment is off' },
+  { key: 'currentPlanLabel', label: 'Current plan label' },
+  { key: 'managePlanLabel', label: 'Manage plan button' },
+  { key: 'adminNote', label: 'Note shown to admins' },
+  { key: 'paidOffNotice', label: 'Notice when the paid system is OFF' },
+  { key: 'footnote', label: 'Note under the cards' },
+  { key: 'detailsLinkLabel', label: '“Plan details” link text' },
+];
 
 function Field({ label, error, children }: { label: string; error?: string; children: ReactNode }) {
   return (

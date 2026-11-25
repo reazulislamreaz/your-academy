@@ -89,7 +89,14 @@ export function HomepageDashboardPreview({ content }: Props) {
             </div>
 
             <div className="grid gap-3 p-4 sm:grid-cols-2 sm:gap-3.5 sm:p-5">
-              {DESK_TILES.map((tile) => {
+              {DESK_TILES.map((fallback, i) => {
+                // DEC-069 — text from Admin → Homepage; the icon stays fixed by position.
+                const cms = content?.tiles?.[i];
+                const tile = {
+                  ...fallback,
+                  label: cms?.label?.trim() || fallback.label,
+                  hint: cms?.hint?.trim() || fallback.hint,
+                };
                 const Icon = tile.icon;
                 return (
                   <div

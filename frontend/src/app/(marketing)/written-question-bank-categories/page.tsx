@@ -1,20 +1,24 @@
 import type { Metadata } from 'next';
 import { WrittenSubcategoriesDirectory } from '@/components/marketing/written-subcategories-directory';
+import { getPageHeader, pageHeaderMetadata } from '@/lib/site-content';
 
-export const metadata: Metadata = {
-  title: 'All Written Subcategories',
-  description:
-    'Browse every Written Question Bank subcategory and open filtered collections on Your Academy.',
-};
+/** DEC-069 — header + SEO from Admin → Page Headers (defaults = previous text). */
+export async function generateMetadata(): Promise<Metadata> {
+  return pageHeaderMetadata(
+    await getPageHeader('writtenCategories'),
+    '/written-question-bank-categories',
+  );
+}
 
 export const revalidate = 30;
 
-export default function WrittenQuestionBankCategoriesPage() {
+export default async function WrittenQuestionBankCategoriesPage() {
+  const header = await getPageHeader('writtenCategories');
   return (
     <WrittenSubcategoriesDirectory
-      heading="All Written Subcategories"
+      heading={header.heading}
       breadcrumbLabel="Written exam categories"
-      subtitle="Explore every Written exam subcategory — tap a card to open the Written Question Bank filtered to that topic."
+      subtitle={header.description}
     />
   );
 }

@@ -1,5 +1,6 @@
 'use client';
 
+import { DEFAULT_HERO_QUICK_LINKS } from '@your-academy/shared';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import type { HomepagePayload } from '@your-academy/shared';
@@ -15,12 +16,8 @@ type Props = {
   liveStats?: PublicPlatformStats | null;
 };
 
-const EXAM_PILLS = [
-  { label: 'BCS', href: '/preli-question-bank?q=BCS' },
-  { label: 'Bank', href: '/preli-question-bank?q=Bank' },
-  { label: 'Primary & NTRCA', href: '/preli-question-bank?q=NTRCA' },
-  { label: 'Model Test', href: '/model-test' },
-] as const;
+/** Fallback when the CMS has no quick links (DEC-069: edited in Admin → Homepage → Hero). */
+const EXAM_PILLS = DEFAULT_HERO_QUICK_LINKS;
 
 function formatCount(n: number): string {
   return new Intl.NumberFormat('en-BD').format(n);
@@ -185,11 +182,11 @@ export function HomepageHero({ hero, heroImageUrl, liveStats = null }: Props) {
 
           <div data-hp-hero className="w-full space-y-2.5 pt-0.5">
             <p className="text-[0.68rem] font-semibold tracking-[0.11em] text-[var(--muted)] uppercase">
-              Quick start
+              {hero.quickLinksLabel?.trim() || 'Quick start'}
             </p>
             <ul className="flex flex-wrap gap-2" aria-label="Quick exam links">
-              {EXAM_PILLS.map((pill) => (
-                <li key={pill.href}>
+              {(hero.quickLinks?.length ? hero.quickLinks : EXAM_PILLS).map((pill) => (
+                <li key={`${pill.href}-${pill.label}`}>
                   <Link
                     href={pill.href}
                     className="inline-flex min-h-11 items-center rounded-full border border-[var(--hp-panel-border)] bg-[linear-gradient(180deg,rgba(255,255,255,0.95),var(--bg-elevated))] px-3.5 text-xs font-semibold text-[var(--ink-soft)] shadow-[var(--shadow-sm)] transition-[transform,border-color,color,background-color,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--highlight)_30%,var(--line))] hover:text-[var(--highlight)] hover:shadow-[var(--hp-shadow)] active:translate-y-0"

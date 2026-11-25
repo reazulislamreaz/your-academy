@@ -5,6 +5,7 @@ import { ArrowRight, Check, CircleCheck, Lock, MessageCircle, Sparkles } from 'l
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import {
+  DEFAULT_PRICING_LABELS,
   PACKAGE_DURATION_LABELS,
   type HomepagePayload,
   type PlanFeatureDto,
@@ -79,6 +80,8 @@ export function HomepagePlanComparison({ content, legacyIntro, faq }: Props) {
   }
 
   const packages = data ? describePackages(data.paid.packages) : [];
+  // DEC-069 — card labels from Admin → Homepage → Access & Pricing (defaults = previous text).
+  const L = { ...DEFAULT_PRICING_LABELS, ...(content.pricing ?? {}) };
   const myPackageId = mine.data?.billing.packageId ?? null;
   const knowsMyPackage = Boolean(myPackageId && packages.some((p) => p.pkg.id === myPackageId));
   const cardCount = 1 + packages.length;
@@ -100,7 +103,7 @@ export function HomepagePlanComparison({ content, legacyIntro, faq }: Props) {
           className="flex items-center gap-2 rounded-[var(--hp-radius)] border border-[var(--success)]/30 bg-[var(--success-soft)] px-4 py-3 text-sm font-semibold text-[var(--success-fg)]"
         >
           <CircleCheck className="size-4 shrink-0" aria-hidden />
-          Everything is free right now.
+          {L.paidOffNotice}
         </p>
       ) : null}
 
@@ -120,12 +123,12 @@ export function HomepagePlanComparison({ content, legacyIntro, faq }: Props) {
             <li className="min-w-0">
               <PlanCard
                 id="free"
-                title="Free"
-                price="৳0"
-                priceNote="forever"
-                description="Start practicing with an account — no card, no commitment."
+                title={L.freeTitle}
+                price={L.freePrice}
+                priceNote={L.freePriceNote}
+                description={L.freeDescription}
                 features={data.free.features}
-                cta={freeCardCta(viewer, content.cta)}
+                cta={freeCardCta(viewer, content.cta, L)}
               />
             </li>
             {packages.map(({ pkg, perMonthBdt, savingsPercent, highlight }) => (
@@ -133,7 +136,7 @@ export function HomepagePlanComparison({ content, legacyIntro, faq }: Props) {
                 <PlanCard
                   id={pkg.id}
                   title={pkg.name}
-                  badge={highlight === 'recommended' ? 'Recommended' : undefined}
+                  badge={highlight === 'recommended' ? L.recommendedBadge : undefined}
                   highlighted={highlight !== null}
                   price={formatBdt(pkg.effectivePriceBdt)}
                   priceNote={`/ ${PACKAGE_DURATION_LABELS[pkg.duration].toLowerCase()}`}
@@ -141,12 +144,9 @@ export function HomepagePlanComparison({ content, legacyIntro, faq }: Props) {
                   subPrice={
                     pkg.duration === 'MONTHLY'
                       ? undefined
-                      : `≈ ${formatBdt(String(perMonthBdt))}/month${savingsPercent ? ` · save ${savingsPercent}%` : ''}`
+                      : `≈ ${formatBdt(String(perMonthBdt))}${L.perMonthSuffix}${savingsPercent ? ` · ${L.saveLabel.replace('{percent}', String(savingsPercent))}` : ''}`
                   }
-                  description={
-                    pkg.description?.trim() ||
-                    'Unlock every question set, Model Test and premium PDF.'
-                  }
+                  description={pkg.description?.trim() || L.paidDescriptionFallback}
                   features={mergePaidFeatures(data.paid.features, pkg)}
                   cta={paidCardCta(
                     viewer,
@@ -155,6 +155,7 @@ export function HomepagePlanComparison({ content, legacyIntro, faq }: Props) {
                     // paid card may say "Current Plan"; with several, none does.
                     knowsMyPackage ? pkg.id === myPackageId : packages.length === 1 ? null : false,
                     pkg.id,
+                    L,
                   )}
                 />
               </li>
@@ -163,12 +164,12 @@ export function HomepagePlanComparison({ content, legacyIntro, faq }: Props) {
           </ul>
           {packages.length ? (
             <p className="text-xs text-[var(--muted-strong)]">
-              Prices in BDT. One-time payment per plan — nothing renews automatically.{' '}
+              {L.footnote}{' '}
               <Link
                 href="/packages"
                 className="font-semibold text-[var(--highlight)] underline-offset-2 hover:underline"
               >
-                Plan details
+                {L.detailsLinkLabel}
               </Link>
             </p>
           ) : null}

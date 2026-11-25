@@ -153,6 +153,12 @@ type Props = {
     eyebrow?: string;
     ctaLabel?: string;
     ctaHref?: string;
+    /** DEC-069 — previously hard-coded copy (Admin → Homepage → Sample MCQ). */
+    label?: string;
+    heading?: string;
+    bullets?: string[];
+    emptyTitle?: string;
+    emptyDescription?: string;
   };
 };
 
@@ -184,23 +190,26 @@ export function HomepageSampleMcq({ initial = null, content }: Props) {
       <HomepageReveal className="marketing-container relative grid items-center gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-14 xl:gap-16">
         <div className="space-y-5 lg:max-w-md">
           <span className="hp-mark" aria-hidden />
-          <p className="hp-eyebrow">Live preview</p>
+          <p className="hp-eyebrow">{content?.label?.trim() || 'Live preview'}</p>
           <div className="space-y-3">
             <h2
               id="mcq-preview-heading"
               className="hp-heading text-[1.6rem] sm:text-[1.9rem]"
             >
-              Try a real MCQ
+              {content?.heading?.trim() || 'Try a real MCQ'}
             </h2>
             <p className="hp-lede text-sm sm:text-[0.975rem]">{eyebrow}</p>
           </div>
 
           <ul className="space-y-2.5 text-sm text-[var(--ink-soft)]">
-            {[
-              'Live question from the Preli bank',
-              'Tap an option to check your answer instantly',
-              'Same reading face used in practice mode',
-            ].map((line) => (
+            {(content?.bullets?.length
+              ? content.bullets
+              : [
+                  'Live question from the Preli bank',
+                  'Tap an option to check your answer instantly',
+                  'Same reading face used in practice mode',
+                ]
+            ).map((line) => (
               <li key={line} className="flex items-start gap-2.5">
                 <span
                   className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--highlight)]"
@@ -234,8 +243,11 @@ export function HomepageSampleMcq({ initial = null, content }: Props) {
             ) : null}
             {!showSkeleton && !list.isError && !question ? (
               <EmptyState
-                title="No published questions yet"
-                description="When admins publish MCQs, a live sample will appear here."
+                title={content?.emptyTitle?.trim() || 'No published questions yet'}
+                description={
+                  content?.emptyDescription?.trim() ||
+                  'When admins publish MCQs, a live sample will appear here.'
+                }
               />
             ) : null}
             {question ? <McqPreviewCard question={question} /> : null}

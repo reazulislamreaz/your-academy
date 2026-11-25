@@ -1,5 +1,6 @@
 'use client';
 
+import { DEFAULT_LIVE_STAT_LABELS } from '@your-academy/shared';
 import Link from 'next/link';
 import { BookOpen, FolderTree, Layers, Newspaper, type LucideIcon } from 'lucide-react';
 import type { HomepagePayload } from '@your-academy/shared';
@@ -93,7 +94,8 @@ export function HomepageLiveStats({ stats, content }: Props) {
                   </span>
                   <div className="min-w-0">
                     <p className="text-[0.65rem] font-semibold leading-snug tracking-[0.03em] text-[var(--muted)] text-pretty">
-                      {item.label}
+                      {content?.labels?.[item.key as keyof typeof DEFAULT_LIVE_STAT_LABELS]?.trim() ||
+                        item.label}
                     </p>
                     <p className="mt-0.5 font-display text-[1.35rem] font-bold tracking-tight text-[var(--ink)] transition-colors duration-200 group-hover:text-[var(--highlight)] sm:text-[1.5rem]">
                       {raw == null ? (

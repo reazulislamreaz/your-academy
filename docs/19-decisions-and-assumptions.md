@@ -55,6 +55,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | DEC-066 | Technical SEO: dynamic sitemap, crawlable bank pages, canonical host | CONFIRMED |
 | DEC-067 | Activity KPIs + user lookup, staff/user audit trail, log retention | CONFIRMED |
 | DEC-068 | Three paid plans, package reorder / single Recommended / safe delete, four-card pricing | CONFIRMED |
+| DEC-069 | All public marketing text editable in the homepage CMS (sections, pricing labels, footer, page headers) | CONFIRMED |
 
 ---
 
@@ -729,6 +730,12 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | Field | Value |
 |-------|-------|
 | Decision | Migration `20261126170000_three_paid_plans` adds 6 Months (৳449) and 1 Year (৳899, Recommended) only if those durations are missing, marks exactly one package Recommended, and replaces the 3 Months placeholder text only while it still equals the test text (ID, price, subscribers untouched). Admin → Packages: up/down reorder (`POST /admin/packages/reorder`), saving a Recommended package unmarks all others (same transaction), delete only for packages with no orders / subscriptions / history — otherwise `409 PACKAGE_IN_USE` and the admin is offered Deactivate (hidden from homepage and /packages, records kept). Homepage: Free + one card per active package in admin order; paid features = shared Paid `plan_features` + the package's extras (deduplicated); savings vs the 3 Months per-month price; "Recommended" only on the admin-marked package; "Upgrade" starts checkout for that package (logged-out → login, then /packages); no generic Paid card when nothing is on sale. Renewal adds the remaining days (`SubscriptionsService.extendWithin` starts from the current end date while the plan runs). |
+| Status | **CONFIRMED** (owner approval 2026-11-26) |
+### DEC-069 — All public marketing text editable in the homepage CMS
+
+| Field | Value |
+|-------|-------|
+| Decision | No new table or second system: new keys in the existing homepage CMS payload (`homepage_content`, draft → publish → revisions → `homepage` cache purge). Added: `hero.quickLinks` + `quickLinksLabel`; `liveStats.labels`; `sampleMcq.label / heading / bullets / emptyTitle / emptyDescription`; `dashboardPreview.tiles` (4, icons by position); `accessFaq.pricing` (every plan-card label — prices, per-month and savings stay computed); `footer` (tagline, Account heading + links, help note, copyright); `pageHeaders` for `/preli-question-bank`, `/written-question-bank`, `/model-test`, `/exams`, `/news`, `/packages`, `/written-question-bank-categories` (eyebrow, H1, intro, SEO title + description). Defaults live in the shared schema **at field level** and equal the previous live text, so stored payloads without these keys render unchanged — no data migration (owner choice). Links must be internal paths or `https://`. Admin → Homepage panels edit the section fields (with links to Packages and Pricing Features and a per-section Preview link); new **Admin → Page Headers & Footer** edits `pageHeaders` + `footer`, merging into the latest draft. Pages read the *published* payload server-side via `lib/site-content.ts` and fall back to the defaults on missing content or API failure; publishing also revalidates the seven listing paths. |
 | Status | **CONFIRMED** (owner approval 2026-11-26) |
 ### Deferred / NEEDS APPROVAL (explicitly out of Phase 1)
 

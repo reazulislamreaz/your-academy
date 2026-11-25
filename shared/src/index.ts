@@ -9,3 +9,4 @@ export * from './whatsapp';
 export * from './permissions';
 export * from './billing';
 export * from './plan-features';
+export * from './site-content';

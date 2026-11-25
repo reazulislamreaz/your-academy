@@ -18,7 +18,12 @@ import { formatBdt, formatDate } from './format';
 import { useCheckout } from './use-checkout';
 
 /** DEC-060 — public Pricing / Packages page with server-priced SSLCommerz checkout. */
-export function PackagesView() {
+/** DEC-069 — header from Admin → Page Headers (passed by the server page). */
+export function PackagesView({
+  header,
+}: {
+  header?: { eyebrow?: string; heading: string; description?: string };
+} = {}) {
   const me = useMe();
   const config = useQuery({ queryKey: ['access-config'], queryFn: getAccessConfig });
   const packages = useQuery({ queryKey: ['public-packages'], queryFn: listPackages });
@@ -34,9 +39,13 @@ export function PackagesView() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Pricing"
-        title="Packages"
-        description="Unlock every Preli and Written question set and every paid Model Test."
+        eyebrow={header ? header.eyebrow || undefined : 'Pricing'}
+        title={header?.heading || 'Packages'}
+        description={
+          header
+            ? header.description || undefined
+            : 'Unlock every Preli and Written question set and every paid Model Test.'
+        }
       />
 
       {config.data && !paidOn ? (
