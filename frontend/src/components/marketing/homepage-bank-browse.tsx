@@ -12,6 +12,7 @@ import {
   splitHomepageSectionTiles,
   type HomepagePayload,
 } from '@your-academy/shared';
+import { AuthGatedLinks } from '@/components/auth/auth-gated-links';
 import { Button } from '@/components/ui/button';
 import { HomepageReveal } from '@/components/marketing/homepage-gsap';
 import { HomepageOthersTile, HomepageTileCard } from '@/components/marketing/homepage-tile-card';
@@ -225,29 +226,54 @@ export function HomepageBankBrowseTopics({ topics }: TopicsProps) {
     topics.subheading?.trim() ||
     'Explore subject-wise questions and practice important topics to strengthen your knowledge and prepare more effectively for competitive exams.';
 
+  // Signed-out visitors get a login prompt instead of leaving the homepage (cards + View All).
   return (
-    <BankSectionShell
-      id="topic-analysis-heading"
-      heading={topics.heading}
-      subtitle={topicsLede}
-      cta={topics.cta}
-      ctaHref={topicsCtaHref}
-      toneLabel={topics.eyebrow?.trim() || 'Topic analysis'}
-    >
-      {topicTree.isLoading ? (
-        <p
-          data-hp-stagger
-          className="rounded-[var(--radius-lg)] border border-dashed border-[var(--line)] bg-[var(--bg-elevated)] px-4 py-5 text-sm text-[var(--muted-strong)]"
-        >
-          Loading topics…
-        </p>
-      ) : previewTopics.length === 0 ? (
-        <div className="space-y-3" data-hp-stagger>
-          <p className="rounded-[var(--radius-lg)] border border-dashed border-[var(--line)] bg-[var(--bg-elevated)] px-4 py-5 text-sm text-[var(--muted-strong)]">
-            No topic categories yet. Admins add Topic Base categories under Taxonomy → Topics — use
-            Others to open the folder explorer anytime.
+    <AuthGatedLinks>
+      <BankSectionShell
+        id="topic-analysis-heading"
+        heading={topics.heading}
+        subtitle={topicsLede}
+        cta={topics.cta}
+        ctaHref={topicsCtaHref}
+        toneLabel={topics.eyebrow?.trim() || 'Topic analysis'}
+      >
+        {topicTree.isLoading ? (
+          <p
+            data-hp-stagger
+            className="rounded-[var(--radius-lg)] border border-dashed border-[var(--line)] bg-[var(--bg-elevated)] px-4 py-5 text-sm text-[var(--muted-strong)]"
+          >
+            Loading topics…
           </p>
+        ) : previewTopics.length === 0 ? (
+          <div className="space-y-3" data-hp-stagger>
+            <p className="rounded-[var(--radius-lg)] border border-dashed border-[var(--line)] bg-[var(--bg-elevated)] px-4 py-5 text-sm text-[var(--muted-strong)]">
+              No topic categories yet. Admins add Topic Base categories under Taxonomy → Topics —
+              use Others to open the folder explorer anytime.
+            </p>
+            <ul className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 sm:grid-cols-3 sm:gap-3.5 xl:grid-cols-5">
+              <li>
+                <HomepageOthersTile
+                  href={topicsOthersHref}
+                  title={topicsOthers.displayTitle}
+                  logoUrl={topicsOthers.logoUrl}
+                  iconKey={topicsOthers.iconKey}
+                />
+              </li>
+            </ul>
+          </div>
+        ) : (
           <ul className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 sm:grid-cols-3 sm:gap-3.5 xl:grid-cols-5">
+            {previewTopics.map((tile) => (
+              <li key={tile.id}>
+                <HomepageTileCard
+                  href={tile.href}
+                  title={tile.displayTitle}
+                  subtitle={tile.subtitle}
+                  iconKey={tile.iconKey}
+                  tone="topic"
+                />
+              </li>
+            ))}
             <li>
               <HomepageOthersTile
                 href={topicsOthersHref}
@@ -257,31 +283,9 @@ export function HomepageBankBrowseTopics({ topics }: TopicsProps) {
               />
             </li>
           </ul>
-        </div>
-      ) : (
-        <ul className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 sm:grid-cols-3 sm:gap-3.5 xl:grid-cols-5">
-          {previewTopics.map((tile) => (
-            <li key={tile.id}>
-              <HomepageTileCard
-                href={tile.href}
-                title={tile.displayTitle}
-                subtitle={tile.subtitle}
-                iconKey={tile.iconKey}
-                tone="topic"
-              />
-            </li>
-          ))}
-          <li>
-            <HomepageOthersTile
-              href={topicsOthersHref}
-              title={topicsOthers.displayTitle}
-              logoUrl={topicsOthers.logoUrl}
-              iconKey={topicsOthers.iconKey}
-            />
-          </li>
-        </ul>
-      )}
-    </BankSectionShell>
+        )}
+      </BankSectionShell>
+    </AuthGatedLinks>
   );
 }
 

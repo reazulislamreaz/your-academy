@@ -15,6 +15,7 @@ import { LoginPageSkeleton } from '@/components/skeletons';
 import { AuthModeSwitch } from '@/features/auth/auth-mode-switch';
 import { PasswordField } from '@/features/auth/password-field';
 import { postLoginPath } from '@/features/auth/post-login-path';
+import { readReturnTo, returnToQuery } from '@/features/auth/return-to';
 import { meQueryKey } from '@/features/auth/use-auth';
 import { WhatsappField, toAuthWhatsappPayload } from '@/features/auth/whatsapp-field';
 import {
@@ -58,10 +59,11 @@ function LoginForm() {
         skipRefresh: true,
       });
       qc.setQueryData(meQueryKey, result.user);
-      router.push(
+      // replace: Back should not return to the login form after signing in.
+      router.replace(
         result.user.mustChangePassword
           ? '/change-password'
-          : postLoginPath(result.user, searchParams.get('next')),
+          : postLoginPath(result.user, readReturnTo(searchParams)),
       );
       router.refresh();
     } catch (err) {
@@ -160,7 +162,7 @@ function LoginForm() {
       >
         New to Your Academy?{' '}
         <Link
-          href="/register"
+          href={`/register${returnToQuery(searchParams)}`}
           className="inline-flex min-h-11 items-center font-bold text-[var(--highlight)] underline-offset-2 hover:underline"
         >
           Create Account

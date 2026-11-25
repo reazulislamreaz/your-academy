@@ -1,10 +1,6 @@
 'use client';
 
-import {
-  WHATSAPP_INVALID_MESSAGE,
-  isValidWhatsapp,
-  normalizeWhatsapp,
-} from '@your-academy/shared';
+import { WHATSAPP_INVALID_MESSAGE, isValidWhatsapp, normalizeWhatsapp } from '@your-academy/shared';
 import { Phone } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';

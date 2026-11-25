@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { isSafeInternalPath, readReturnTo, returnToQuery } from '@/features/auth/return-to';
 import { Suspense, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { isValidWhatsapp } from '@your-academy/shared';
@@ -90,13 +91,13 @@ function RegisterForm() {
         }
         clearGuestResultLink();
       }
-      const next = searchParams.get('next') || guestLink?.resultPath || null;
-      // Prefer returning guests to their result sheet; otherwise onboarding.
-      const dest =
-        next && next.startsWith('/') && !next.startsWith('//')
-          ? resolvePostAuthPath(result.user.role, next)
-          : '/onboarding';
-      router.push(dest);
+      const next = readReturnTo(searchParams) || guestLink?.resultPath || null;
+      // Prefer the page they came from (callbackUrl / next) or their guest result sheet;
+      // otherwise onboarding.
+      const dest = isSafeInternalPath(next)
+        ? resolvePostAuthPath(result.user.role, next)
+        : '/onboarding';
+      router.replace(dest);
       router.refresh();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Registration failed');
@@ -239,11 +240,7 @@ function RegisterForm() {
       >
         Already have an account?{' '}
         <Link
-          href={
-            searchParams.get('next')
-              ? `/login?next=${encodeURIComponent(searchParams.get('next')!)}`
-              : '/login'
-          }
+          href={`/login${returnToQuery(searchParams)}`}
           className="inline-flex min-h-11 items-center font-bold text-[var(--highlight)] underline-offset-2 hover:underline"
         >
           Sign in

@@ -47,7 +47,11 @@ function VerifyEmail() {
           Confirming lets you receive password-reset links at this address.
         </p>
       </div>
-      <Surface elevated className="motion-rise auth-card-ref space-y-4 p-5 sm:p-6" style={{ animationDelay: '60ms' }}>
+      <Surface
+        elevated
+        className="motion-rise auth-card-ref space-y-4 p-5 sm:p-6"
+        style={{ animationDelay: '60ms' }}
+      >
         {state === 'done' ? (
           <>
             <Alert variant="success">Your email is verified.</Alert>
@@ -59,8 +63,8 @@ function VerifyEmail() {
           </>
         ) : !token ? (
           <Alert variant="danger">
-            This link is missing its token. Open the confirmation link from your email again, or send
-            a new one from Account Settings.
+            This link is missing its token. Open the confirmation link from your email again, or
+            send a new one from Account Settings.
           </Alert>
         ) : (
           <>
