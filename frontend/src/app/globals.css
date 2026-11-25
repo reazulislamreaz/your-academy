@@ -3551,7 +3551,7 @@ a.site-footer-social-link:focus-visible {
    PageShell there) — transform on `.motion-page` would break fixed PDF viewers. */
 @keyframes ya-page-in {
   from {
-    opacity: 0;
+    opacity: 0.92;
     transform: translateY(6px);
   }
   to {
