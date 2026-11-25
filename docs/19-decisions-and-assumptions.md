@@ -47,7 +47,7 @@ Status values: `CONFIRMED` | `PROPOSED` | `NEEDS APPROVAL`
 | DEC-051 | Answers are subscriber-only on public routes (amends DEC-031/039/040/042) | SUPERSEDED by DEC-060 |
 | DEC-052 | Admin grants / revokes learner subscriptions | SUPERSEDED by DEC-060 |
 | DEC-060 | Free vs Paid system + SSLCommerz payments (replaces DEC-051/052) | CONFIRMED |
-| DEC-061 | 7-day full-access trial + Topic Base login / paywall (amends DEC-060) | CONFIRMED |
+| DEC-061 | 7-day trial + Topic Base login / paywall (amends DEC-060; trial scoped to Topic Base only by DEC-063 — never full access) | CONFIRMED |
 | DEC-062 | 3-month plan, discounts, learner cancel / upgrade / downgrade, 7- / 3-day expiry reminders (no auto-charge) | CONFIRMED |
 | DEC-063 | 7-day trial scoped to Topic Base only — no site-wide trial (amends DEC-061) | CONFIRMED |
 | DEC-064 | IBA (5-option) Preli bulk upload + single-question Option E | CONFIRMED |
