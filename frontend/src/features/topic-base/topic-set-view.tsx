@@ -6,7 +6,7 @@ import { Paywall } from '@/features/billing/paywall';
 import { isContentLockedError } from '@/lib/api/billing';
 import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
-import { ListCardSkeleton, LoadError } from '@/components/loading';
+import { ListCardSkeleton, LoadError, SetLoadError } from '@/components/loading';
 import { PublicMcqCard } from '@/components/marketing/public-mcq-card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
@@ -99,7 +99,13 @@ export function TopicSetView({ batchId, className, topicsBasePath = '/topic-cate
           <Skeleton className="h-8 w-2/3 max-w-lg" />
         </div>
       ) : null}
-      {setQry.isError ? <LoadError message="Collection not found." /> : null}
+      {setQry.isError ? (
+        <SetLoadError
+          error={setQry.error}
+          notFoundMessage="Collection not found."
+          onRetry={() => void setQry.refetch()}
+        />
+      ) : null}
       {setQry.data ? (
         <header className="space-y-2 border-b border-[var(--line)] pb-5">
           {pathLabel ? (

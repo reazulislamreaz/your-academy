@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
-import { ListCardSkeleton, LoadError } from '@/components/loading';
+import { ListCardSkeleton, LoadError, SetLoadError } from '@/components/loading';
 import { GoForExamCta } from '@/components/marketing/go-for-exam-cta';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
@@ -84,7 +84,11 @@ export function PublicQuestionSetView({
         </div>
       ) : null}
       {setQry.isError ? (
-        <LoadError message="Question set not found or has no published questions." />
+        <SetLoadError
+          error={setQry.error}
+          notFoundMessage="Question set not found or has no published questions."
+          onRetry={() => void setQry.refetch()}
+        />
       ) : null}
       {setQry.data ? (
         <header className="space-y-3 border-b border-[var(--line)] pb-5">

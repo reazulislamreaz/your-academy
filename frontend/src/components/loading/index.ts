@@ -19,3 +19,4 @@ export { LoadError } from './load-error';
 export { PageLoader } from './page-loader';
 export { ProgressBar } from './progress-bar';
 export { RouteProgress } from './route-progress';
+export { SetLoadError } from './set-load-error';
