@@ -7,8 +7,14 @@ import { absoluteUrl } from '@/lib/seo/site';
  * so Googlebot) can actually read. Locked sets, paid Model Tests, login-only PDFs and
  * Topic-Based sets (login required) are left out — they show a paywall, not content.
  * Regenerated hourly at runtime; if the API is unreachable the static pages are still served.
+ *
+ * SEO-1: rendered per request (never prerendered). The image is built in CI where the API is
+ * unreachable, so a build-time sitemap held only the static pages and was served for an hour
+ * after every deploy. The API calls themselves stay in Next's data cache for an hour, so
+ * crawler hits stay cheap.
  */
-export const revalidate = 3600;
+export const dynamic = 'force-dynamic';
+const REVALIDATE_SECONDS = 3600;
 
 /** Protocol limit is 50,000 URLs per file — split into a sitemap index well before that. */
 const MAX_URLS = 45_000;
@@ -43,7 +49,7 @@ async function listAll(path: string): Promise<Listed[]> {
       const qs = new URLSearchParams({ limit: String(PAGE_SIZE) });
       if (cursor) qs.set('cursor', cursor);
       const res = await fetch(`${serverApiBase()}${path}?${qs}`, {
-        next: { revalidate },
+        next: { revalidate: REVALIDATE_SECONDS },
         signal: AbortSignal.timeout(15_000),
       });
       if (!res.ok) break;
