@@ -4,6 +4,9 @@ import { useEffect, useRef, useState } from 'react';
 import { io, type Socket } from 'socket.io-client';
 import type { SupportMessage } from '@/lib/api/support';
 
+/** How long a socket send may wait for the server's ack before falling back to REST. */
+const SEND_ACK_TIMEOUT_MS = 8_000;
+
 function socketOrigin(): string {
   // Always same-origin in the browser so HttpOnly auth + support_guest_token cookies
   // are sent (Next/Nginx rewrite `/socket.io` → API). Direct API origin breaks guests.
@@ -87,8 +90,18 @@ export function useSupportSocket(enabled: boolean, handlers: SupportSocketHandle
       clientMessageId?: string;
       mediaAssetId?: string;
       originalFilename?: string;
-    }) => {
-      socketRef.current?.emit('support:message:send', payload);
+    }): Promise<SupportMessage | null> => {
+      // ERR-1: wait for the server's ack. A failed or timed-out send rejects, so the caller can
+      // fall back to REST (idempotent on clientMessageId) instead of a bubble pending forever.
+      const s = socketRef.current;
+      if (!s?.connected) return Promise.reject(new Error('SOCKET_DISCONNECTED'));
+      return s
+        .timeout(SEND_ACK_TIMEOUT_MS)
+        .emitWithAck('support:message:send', payload)
+        .then((res: { ok?: boolean; message?: SupportMessage } | undefined) => {
+          if (!res?.ok) throw new Error('SEND_FAILED');
+          return res.message ?? null;
+        });
     },
     markRead: (conversationId: string) => {
       socketRef.current?.emit('support:message:read', { conversationId });

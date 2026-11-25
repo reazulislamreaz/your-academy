@@ -12,6 +12,7 @@ import {
   type SupportConversation,
   type SupportMessage,
 } from '@/lib/api/support';
+import { ApiError } from '@/lib/api/client';
 import { cn } from '@/lib/utils';
 import {
   SupportAttachmentBubble,
@@ -200,6 +201,22 @@ export function SupportChatWindow({
     typingTimer.current = setTimeout(() => socket.setTyping(conversation.id, false), 1200);
   };
 
+  /**
+   * ERR-1: socket first (live), REST when the socket is down, refuses, or never acks. The
+   * server de-duplicates on clientMessageId, so a late socket delivery can't double-post.
+   */
+  const sendWithFallback = async (payload: Parameters<typeof sendFn>[1]) => {
+    if (socket.connected) {
+      try {
+        const sent = await socket.sendMessage({ conversationId: conversation.id, ...payload });
+        if (sent) return sent;
+      } catch {
+        // fall through to REST
+      }
+    }
+    return sendFn(conversation.id, payload);
+  };
+
   const submit = async (e?: FormEvent) => {
     e?.preventDefault();
     const text = draft.trim();
@@ -227,13 +244,9 @@ export function SupportChatWindow({
     requestAnimationFrame(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }));
 
     try {
-      if (socket.connected) {
-        socket.sendMessage({ conversationId: conversation.id, body: text, clientMessageId });
-      } else {
-        mergeMessage(await sendFn(conversation.id, { body: text, clientMessageId }));
-      }
+      mergeMessage(await sendWithFallback({ body: text, clientMessageId }));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Send failed');
+      setError(sendErrorText(err));
       setMessages((prev) => prev.filter((m) => m.clientMessageId !== clientMessageId));
       setDraft(text);
     } finally {
@@ -292,15 +305,13 @@ export function SupportChatWindow({
           ],
         });
       }
-      if (socket.connected && !adminSend) {
-        socket.sendMessage({ conversationId: conversation.id, ...payload });
-      } else {
-        mergeMessage(await sendFn(conversation.id, payload));
-      }
+      mergeMessage(
+        adminSend ? await sendFn(conversation.id, payload) : await sendWithFallback(payload),
+      );
       setDraft('');
     } catch (err) {
       if (ticket === attachAbort.current) {
-        setError(err instanceof Error ? err.message : 'Attachment failed');
+        setError(sendErrorText(err));
       }
     } finally {
       if (ticket === attachAbort.current) {
@@ -529,4 +540,11 @@ export function SupportChatWindow({
       </form>
     </div>
   );
+}
+
+function sendErrorText(err: unknown): string {
+  // Server messages (e.g. rate limits, closed chat) are already readable; browser network
+  // errors ("Failed to fetch") are not.
+  if (err instanceof ApiError && err.status > 0) return err.message;
+  return 'বার্তা পাঠানো যায়নি। সংযোগ দেখে আবার চেষ্টা করুন। (Message not sent — check your connection and try again.)';
 }
